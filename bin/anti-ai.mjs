@@ -16,6 +16,7 @@ function parseArgs(argv) {
     command,
     date: undefined,
     source: "all",
+    lang: "zh",
     json: false,
     unknown: [],
     missing: undefined,
@@ -37,12 +38,22 @@ function parseArgs(argv) {
       } else {
         options.source = rest[++index];
       }
+    } else if (arg === "--lang") {
+      if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
+        options.missing ??= arg;
+      } else {
+        options.lang = rest[++index];
+      }
     } else if (!["--help", "-h", "--version", "-v"].includes(arg)) {
       options.unknown.push(arg);
     }
   }
 
   return options;
+}
+
+function localized(lang, zh, en) {
+  return lang === "en" ? en : zh;
 }
 
 function emptyUsage() {
@@ -61,6 +72,12 @@ function addUsage(target, usage) {
   for (const key of Object.keys(target)) {
     target[key] += usage[key] ?? 0;
   }
+}
+
+function addModelUsage(target, model, usage) {
+  const name = String(model ?? "").trim() || "unknown";
+  target[name] ??= emptyUsage();
+  addUsage(target[name], usage);
 }
 
 function estimateResources(usage) {
@@ -114,23 +131,35 @@ function formatPercentageRange([low, high]) {
   return `${formatter.format(low * 100)}%–${formatter.format(high * 100)}%`;
 }
 
-function formatChange(current, baseline) {
-  if (baseline === 0) return current === 0 ? "0.00%" : "首次记录";
+function formatChange(current, baseline, lang = "zh") {
+  if (baseline === 0) {
+    return current === 0 ? "0.00%" : localized(lang, "首次记录", "first record");
+  }
   const change = ((current - baseline) / baseline) * 100;
   const prefix = change > 0 ? "+" : "";
   return `${prefix}${change.toFixed(2)}%`;
 }
 
-function formatDurationRange(hours) {
+function formatDurationRange(hours, lang = "zh") {
   const high = hours[1];
-  if (high < 1 / 60) return formatScaledRange(hours, 3_600, "秒");
-  if (high < 1) return formatScaledRange(hours, 60, "分钟");
-  if (high < 48) return formatRange(hours, "小时");
-  if (high < 24 * 730) return formatScaledRange(hours, 1 / 24, "天");
-  return formatScaledRange(hours, 1 / (24 * 365), "年");
+  if (high < 1 / 60) {
+    return formatScaledRange(hours, 3_600, localized(lang, "秒", "seconds"));
+  }
+  if (high < 1) {
+    return formatScaledRange(hours, 60, localized(lang, "分钟", "minutes"));
+  }
+  if (high < 48) return formatRange(hours, localized(lang, "小时", "hours"));
+  if (high < 24 * 730) {
+    return formatScaledRange(hours, 1 / 24, localized(lang, "天", "days"));
+  }
+  return formatScaledRange(
+    hours,
+    1 / (24 * 365),
+    localized(lang, "年", "years"),
+  );
 }
 
-function everydayComparisons(resources) {
+function everydayComparisons(resources, lang = "zh") {
   const ledHours = resources.energyWh.map((value) => value / 10);
   const phoneCharges = resources.energyWh.map((value) => value / 15);
   const kettleBoils = resources.energyWh.map((value) => value / 100);
@@ -149,50 +178,79 @@ function everydayComparisons(resources) {
       resources.energyWh[1] < 15
         ? {
             icon: "💡",
-            label: "10W LED 灯",
-            value: formatDurationRange(ledHours),
+            label: localized(lang, "10W LED 灯", "10W LED light"),
+            value: formatDurationRange(ledHours, lang),
           }
         : resources.energyWh[1] < 1_500
           ? {
               icon: "📱",
-              label: "15Wh 手机充电",
-              value: formatRange(phoneCharges, "次"),
+              label: localized(lang, "15Wh 手机充电", "15Wh phone charge"),
+              value: formatRange(
+                phoneCharges,
+                localized(lang, "次", "charges"),
+              ),
             }
           : {
               icon: "🫖",
-              label: "烧开 1L 水",
-              value: formatRange(kettleBoils, "壶"),
+              label: localized(lang, "烧开 1L 水", "Boil 1L of water"),
+              value: formatRange(kettleBoils, localized(lang, "壶", "times")),
             },
     water:
       bottleCounts[1] < 1
         ? {
             icon: "🚰",
-            label: "550mL 矿泉水",
-            value: `一瓶的 ${formatPercentageRange(bottleCounts)}`,
+            label: localized(
+              lang,
+              "550mL 矿泉水",
+              "550mL water bottle",
+            ),
+            value: localized(
+              lang,
+              `一瓶的 ${formatPercentageRange(bottleCounts)}`,
+              `${formatPercentageRange(bottleCounts)} of one bottle`,
+            ),
           }
         : resources.waterMl[1] < 8_000
           ? {
               icon: "🚰",
-              label: "550mL 矿泉水",
-              value: formatRange(bottleCounts, "瓶"),
+              label: localized(
+                lang,
+                "550mL 矿泉水",
+                "550mL water bottle",
+              ),
+              value: formatRange(
+                bottleCounts,
+                localized(lang, "瓶", "bottles"),
+              ),
             }
           : {
               icon: "🚿",
-              label: "8L/min 淋浴",
-              value: formatRange(showerMinutes, "分钟"),
+              label: localized(lang, "8L/min 淋浴", "8L/min shower"),
+              value: formatRange(
+                showerMinutes,
+                localized(lang, "分钟", "minutes"),
+              ),
             },
     driving: {
       icon: "🚗",
-      label: "平均燃油车",
+      label: localized(lang, "平均燃油车", "Average gas car"),
       value:
         drivingKm[1] < 1
-          ? formatScaledRange(drivingKm, 1_000, "米")
-          : formatRange(drivingKm, "公里"),
+          ? formatScaledRange(
+              drivingKm,
+              1_000,
+              localized(lang, "米", "meters"),
+            )
+          : formatRange(drivingKm, localized(lang, "公里", "km")),
     },
     tree: {
       icon: "🌳",
-      label: "1 棵城市树",
-      value: `加班 ${formatDurationRange(treeAbsorptionHours)}才能吸回来`,
+      label: localized(lang, "1 棵城市树", "One urban tree"),
+      value: localized(
+        lang,
+        `加班 ${formatDurationRange(treeAbsorptionHours, lang)}才能吸回来`,
+        `needs ${formatDurationRange(treeAbsorptionHours, lang)} to absorb it`,
+      ),
     },
   };
 }
@@ -208,6 +266,71 @@ function padTerminal(value, width) {
 
 function renderComparison(comparison) {
   return `  ${comparison.icon}  ${padTerminal(comparison.label, 18)} ${comparison.value}`;
+}
+
+function resourceBreakdownLines(totals, title, lang = "zh") {
+  const resources = estimateResources(totals);
+  const comparisons = everydayComparisons(resources, lang);
+  return [
+    `  ${color("33", title)}`,
+    `  ⚡  ${formatRange(resources.energyWh, "Wh")}`,
+    `  💧  ${formatRange(resources.waterMl, "mL")}`,
+    `  ☁️  ${formatRange(resources.carbonGrams, "gCO₂e")}`,
+    "",
+    `  ${color("33", localized(lang, "生活翻译（终于像人话了）", "Everyday translation"))}`,
+    renderComparison(comparisons.energy),
+    renderComparison(comparisons.water),
+    renderComparison(comparisons.driving),
+    renderComparison(comparisons.tree),
+  ];
+}
+
+function sourceLabel(source) {
+  return source === "codex" ? "Codex" : "Claude Code";
+}
+
+function displayModelName(model) {
+  const sanitized = String(model).replace(/[\p{Cc}\p{Cf}]/gu, "�");
+  const characters = Array.from(sanitized);
+  return characters.length > 48
+    ? `${characters.slice(0, 47).join("")}…`
+    : sanitized;
+}
+
+function modelBreakdownLines(report, limit = 5, lang = "zh") {
+  const entries = Object.entries(report.models ?? {})
+    .flatMap(([source, models]) =>
+      Object.entries(models).map(([model, usage]) => ({
+        source,
+        model,
+        usage,
+      })),
+    )
+    .filter((entry) => entry.usage.requests > 0)
+    .sort((left, right) => right.usage.totalTokens - left.usage.totalTokens)
+    .slice(0, limit);
+
+  if (entries.length === 0) return [];
+  return [
+    `  ${color("33", localized(lang, "模型账单", "Model bill"))}`,
+    ...entries.map((entry) => {
+      const label = `${sourceLabel(entry.source)} · ${displayModelName(entry.model)}`;
+      return `  ${padTerminal(label, 32)} ${formatTokens(entry.usage.totalTokens)} tokens · ${entry.usage.requests} ${localized(lang, "次", entry.usage.requests === 1 ? "request" : "requests")}`;
+    }),
+  ];
+}
+
+function combinedModelBreakdownLines(reports, limit = 5, lang = "zh") {
+  const models = {};
+  for (const report of reports) {
+    for (const [source, sourceModels] of Object.entries(report.models ?? {})) {
+      models[source] ??= {};
+      for (const [model, usage] of Object.entries(sourceModels)) {
+        addModelUsage(models[source], model, usage);
+      }
+    }
+  }
+  return modelBreakdownLines({ models }, limit, lang);
 }
 
 function formatTokens(value) {
@@ -226,17 +349,60 @@ function averageTotals(reports) {
   return totals;
 }
 
-function dailyVerdict(totals, baseline) {
+function rotatingCopy(date, choices) {
+  const day = Number(date.slice(-2));
+  return choices[(day - 1) % choices.length];
+}
+
+function rotatingLocalizedCopy(date, lang, zhChoices, enChoices) {
+  return rotatingCopy(date, lang === "en" ? enChoices : zhChoices);
+}
+
+function dailyVerdict(totals, baseline, date, lang = "zh") {
   if (totals.requests === 0) {
     return {
-      title: "拒绝营业",
-      detail: "今天没有模型请求。数据中心暂时失去了你的关心。",
+      title: localized(lang, "拒绝营业", "NO SERVICE"),
+      detail: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "今天没有模型请求。显卡风扇第一次听见了鸟叫。",
+          "零 Token，零借口。数据中心暂时把你移出了通讯录。",
+          "今天没有模型请求。数据中心暂时失去了你的关心。",
+          "硅基同事空等一天，终于体验了一次人类的无效会议。",
+          "今日算力消耗为零：不是进步，可能只是忘了上班。",
+        ],
+        [
+          "No model requests today. A GPU fan heard birdsong for the first time.",
+          "Zero tokens, zero excuses. The data center removed you from its contacts.",
+          "No model requests today. The data center briefly stopped feeling needed.",
+          "Your silicon coworker waited all day and finally experienced a human meeting.",
+          "Today's compute use is zero. Progress—or perhaps you forgot to work.",
+        ],
+      ),
     };
   }
   if (baseline.requests === 0 || baseline.totalTokens === 0) {
     return {
-      title: "初犯记录",
-      detail: "过去 7 天没有可比记录，今天先把小票钉在墙上。",
+      title: localized(lang, "初犯记录", "FIRST OFFENSE"),
+      detail: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "历史一片空白，今天这张账单算是开业剪彩。",
+          "过去七天查无此人，今天突然来给 GPU 冲业绩。",
+          "过去 7 天没有可比记录，今天先把小票钉在墙上。",
+          "没有基线不代表没有代价，只代表以前没抓到。",
+          "第一次留下脚印。放心，数据中心已经替你裱起来了。",
+        ],
+        [
+          "History is blank, so today's receipt gets to cut the opening ribbon.",
+          "Missing for seven days, then suddenly back to hit the GPU's quota.",
+          "No comparable history. Pin today's receipt to the wall for now.",
+          "No baseline does not mean no cost. It means you were not caught before.",
+          "Your first footprint. The data center has already framed it.",
+        ],
+      ),
     };
   }
 
@@ -251,47 +417,151 @@ function dailyVerdict(totals, baseline) {
 
   if (requestRatio <= 1.2 && tokensPerRequestRatio >= 1.8) {
     return {
-      title: "上下文囤积",
-      detail: `请求没多，单次 Token 用量却膨胀到 ${tokensPerRequestRatio.toFixed(2)} 倍。`,
+      title: localized(lang, "上下文囤积", "CONTEXT HOARDING"),
+      detail: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          `单次请求是平时的 ${tokensPerRequestRatio.toFixed(2)} 倍。你把上下文窗口当成了储物间。`,
+          "请求次数很克制，附件体积很诚实：少问，不代表少塞。",
+          `请求没多，单次 Token 用量却膨胀到 ${tokensPerRequestRatio.toFixed(2)} 倍。`,
+          "模型没有被频繁打扰，只是每次都收到一整本附件。",
+          "今天走的是少量多餐的反面：少问几次，每次喂到撑。",
+        ],
+        [
+          `Each request was ${tokensPerRequestRatio.toFixed(2)}× normal. You used the context window as a storage unit.`,
+          "Very restrained request count. Very honest attachment size.",
+          `Requests stayed flat while tokens per request inflated to ${tokensPerRequestRatio.toFixed(2)}×.`,
+          "The model was not interrupted often. It just received a whole book each time.",
+          "The opposite of small frequent meals: ask less, feed until full.",
+        ],
+      ),
     };
   }
   if (requestRatio >= 2) {
     return {
-      title: "请求连发",
-      detail: `模型被叫了平时的 ${requestRatio.toFixed(2)} 倍，像个没有下班按钮的实习生。`,
+      title: localized(lang, "请求连发", "REQUEST BARRAGE"),
+      detail: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          `请求量冲到平时的 ${requestRatio.toFixed(2)} 倍，模型的在线状态被你理解成了劳动合同。`,
+          "一句话能问完的事，被你拆成了连续剧。",
+          `模型被叫了平时的 ${requestRatio.toFixed(2)} 倍，像个没有下班按钮的实习生。`,
+          "你没有在提问，你在对数据中心进行消息轰炸。",
+          "今日快捷键不是撤销，是再次发送。",
+        ],
+        [
+          `Requests hit ${requestRatio.toFixed(2)}× normal. You mistook “online” for a labor contract.`,
+          "A one-line question became a limited series.",
+          `You summoned the model ${requestRatio.toFixed(2)}× as often, like an intern without a logout button.`,
+          "This was not prompting. It was a denial-of-peace attack on a data center.",
+          "Today's favorite shortcut was not undo. It was send again.",
+        ],
+      ),
     };
   }
   if (cacheRatio >= 0.7) {
     return {
-      title: "缓存考古学家",
-      detail: `${(cacheRatio * 100).toFixed(2)}% 的输入来自缓存，今天主要在翻旧账。`,
+      title: localized(lang, "缓存考古学家", "CACHE ARCHAEOLOGIST"),
+      detail: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          `缓存占比 ${(cacheRatio * 100).toFixed(2)}%，新问题没有多少，旧上下文倒是盘得包浆。`,
+          "今天的主要工作：把昨天的 Token 再热一遍。",
+          `${(cacheRatio * 100).toFixed(2)}% 的输入来自缓存，今天主要在翻旧账。`,
+          "模型记性好不好不知道，你是真的舍不得删聊天记录。",
+          "上下文没有过期，只是逐渐有了历史文物的气质。",
+        ],
+        [
+          `${(cacheRatio * 100).toFixed(2)}% cache: few new questions, beautifully polished old context.`,
+          "Today's main task was reheating yesterday's tokens.",
+          `${(cacheRatio * 100).toFixed(2)}% of input came from cache. Mostly digging through old tabs.`,
+          "The model's memory is debatable. Your refusal to delete chats is not.",
+          "The context is not stale. It is acquiring archaeological value.",
+        ],
+      ),
     };
   }
   if (totals.totalTokens <= baseline.totalTokens * 0.3) {
     return {
-      title: "电子戒断",
-      detail: "用量不到平时三成，硅基同事开始担心失业。",
+      title: localized(lang, "电子戒断", "DIGITAL DETOX"),
+      detail: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "今天的 Token 少得像预算审批后的团建。",
+          "用量骤降，显卡怀疑自己是不是被优化了。",
+          "用量不到平时三成，硅基同事开始担心失业。",
+          "你短暂摆脱了补全按钮，生产力是否一同消失仍待观察。",
+          "数据中心今天省下的电，够你的自制力亮一会儿。",
+        ],
+        [
+          "Today's token count looks like a team event after budget review.",
+          "Usage collapsed. The GPU is wondering whether it was restructured.",
+          "Usage fell below 30% of normal. Your silicon coworker fears unemployment.",
+          "You escaped autocomplete briefly. Whether productivity escaped too is unclear.",
+          "The power saved today could keep your self-control lit for a moment.",
+        ],
+      ),
     };
   }
   if (totals.totalTokens >= baseline.totalTokens * 1.5) {
+    const totalRatio = totals.totalTokens / baseline.totalTokens;
     return {
-      title: "算力暴食",
-      detail: `Token 总量达到平时的 ${(totals.totalTokens / baseline.totalTokens).toFixed(2)} 倍。`,
+      title: localized(lang, "算力暴食", "COMPUTE BINGE"),
+      detail: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          `Token 吃到平时的 ${totalRatio.toFixed(2)} 倍，建议账单也开启上下文压缩。`,
+          "今天不是在用 AI，是在给数据中心做压力测试。",
+          `Token 总量达到平时的 ${totalRatio.toFixed(2)} 倍。`,
+          "你负责灵感喷涌，机房负责电表狂奔。",
+          "上下文窗口被你当成了自助餐盘，而且拒绝少拿多次。",
+        ],
+        [
+          `Tokens reached ${totalRatio.toFixed(2)}× normal. The receipt may need context compaction.`,
+          "You were not using AI today. You were load-testing a data center.",
+          `Total tokens reached ${totalRatio.toFixed(2)}× your baseline.`,
+          "You supplied the inspiration. The server room supplied the sprinting meter.",
+          "You treated the context window like an all-you-can-eat plate.",
+        ],
+      ),
     };
   }
   return {
-    title: "稳定消耗",
-    detail: "没有暴走，也没有戒断。只是稳定地把电变成文字。",
+    title: localized(lang, "稳定消耗", "STEADY BURN"),
+    detail: rotatingLocalizedCopy(
+      date,
+      lang,
+      [
+        "用量平稳得像心电图直线——这句是否吉利由你判断。",
+        "今天没有异常，只是照常把瓦时兑换成 Markdown。",
+        "没有暴走，也没有戒断。只是稳定地把电变成文字。",
+        "稳定发挥：你产出代码，数据中心产出热量。",
+        "平平无奇的一天，除了又有一批电子经过长途跋涉变成文字。",
+      ],
+      [
+        "Usage was as flat as a heart monitor. You decide whether that sounds healthy.",
+        "Nothing unusual today. Just converting watt-hours into Markdown as usual.",
+        "No binge, no detox. Just steadily turning electricity into text.",
+        "Consistent performance: you produced code; the data center produced heat.",
+        "An ordinary day, except more electrons completed a long trip into prose.",
+      ],
+    ),
   };
 }
 
-function renderReceipt(report, historicalReports = []) {
+function renderReceipt(report, historicalReports = [], lang = "zh") {
   const { date, sources, totals } = report;
-  const resources = estimateResources(totals);
-  const comparisons = everydayComparisons(resources);
   const baseline =
     historicalReports.length > 0 ? averageTotals(historicalReports) : undefined;
-  const verdict = baseline ? dailyVerdict(totals, baseline) : undefined;
+  const verdict = baseline
+    ? dailyVerdict(totals, baseline, date, lang)
+    : undefined;
+  const modelLines = modelBreakdownLines(report, 5, lang);
   const uncachedInputTokens = Math.max(
     0,
     totals.inputTokens -
@@ -303,41 +573,41 @@ function renderReceipt(report, historicalReports = []) {
     `  ${color("1;31", `YOUR AI RECEIPT · ${date}`)}`,
     color("2", "├──────────────────────────────────────────────┤"),
     "",
-    `  ${color("1", `${formatTokens(totals.totalTokens)} tokens`)} · ${totals.requests} 次模型请求`,
+    `  ${color("1", `${formatTokens(totals.totalTokens)} tokens`)} · ${totals.requests} ${localized(lang, "次模型请求", totals.requests === 1 ? "model request" : "model requests")}`,
     "",
     `  Codex       ${formatTokens(sources.codex?.totalTokens ?? 0)}`,
     `  Claude Code ${formatTokens(sources.claude?.totalTokens ?? 0)}`,
+    ...(modelLines.length > 0 ? ["", ...modelLines] : []),
     "",
-    `  新鲜输入    ${formatTokens(uncachedInputTokens)}`,
-    `  缓存读取    ${formatTokens(totals.cachedInputTokens)}`,
-    `  缓存写入    ${formatTokens(totals.cacheWriteInputTokens)}`,
-    `  模型输出    ${formatTokens(totals.outputTokens)}`,
+    `  ${localized(lang, "新鲜输入   ", "Fresh input  ")} ${formatTokens(uncachedInputTokens)}`,
+    `  ${localized(lang, "缓存读取   ", "Cache read   ")} ${formatTokens(totals.cachedInputTokens)}`,
+    `  ${localized(lang, "缓存写入   ", "Cache write  ")} ${formatTokens(totals.cacheWriteInputTokens)}`,
+    `  ${localized(lang, "模型输出   ", "Model output ")} ${formatTokens(totals.outputTokens)}`,
     "",
-    `  ${color("33", "公开代理跨度（不是电表）")}`,
-    `  ⚡  ${formatRange(resources.energyWh, "Wh")}`,
-    `  💧  ${formatRange(resources.waterMl, "mL")}`,
-    `  ☁️  ${formatRange(resources.carbonGrams, "gCO₂e")}`,
-    "",
-    `  ${color("33", "生活翻译（终于像人话了）")}`,
-    renderComparison(comparisons.energy),
-    renderComparison(comparisons.water),
-    renderComparison(comparisons.driving),
-    renderComparison(comparisons.tree),
+    ...resourceBreakdownLines(
+      totals,
+      localized(
+        lang,
+        "公开代理跨度（不是电表）",
+        "Published proxy range (not a power meter)",
+      ),
+      lang,
+    ),
     ...(baseline
       ? [
           "",
-          `  ${color("33", "个人基线（过去 7 个自然日）")}`,
-          `  Token  ${formatChange(totals.totalTokens, baseline.totalTokens)}`,
-          `  请求   ${formatChange(totals.requests, baseline.requests)}`,
+          `  ${color("33", localized(lang, "个人基线（过去 7 个自然日）", "Personal baseline (prior 7 calendar days)"))}`,
+          `  Token     ${formatChange(totals.totalTokens, baseline.totalTokens, lang)}`,
+          `  ${localized(lang, "请求      ", "Requests  ")} ${formatChange(totals.requests, baseline.requests, lang)}`,
           "",
-          `  ${color("1;31", `今日罪名：${verdict.title}`)}`,
+          `  ${color("1;31", localized(lang, `今日罪名：${verdict.title}`, `Today's charge: ${verdict.title}`))}`,
           `  ${verdict.detail}`,
         ]
       : []),
     "",
-    `  置信度：${color("1;31", "低")} · 运行 anti-ai explain 查看口径`,
+    `  ${localized(lang, `置信度：${color("1;31", "低")} · 运行 anti-ai explain 查看口径`, `Confidence: ${color("1;31", "LOW")} · run anti-ai explain for methodology`)}`,
     "",
-    `  ${color("2", `机器开了 ${totals.requests} 张小票，地球只收到一段估算。`)}`,
+    `  ${color("2", localized(lang, `机器开了 ${totals.requests} 张小票，地球只收到一段估算。`, `The machine printed ${totals.requests} ${totals.requests === 1 ? "receipt" : "receipts"}. Earth got an estimate.`))}`,
     color("2", "└──────────────────────────────────────────────┘"),
     "",
   ];
@@ -359,7 +629,7 @@ function isValidDate(date) {
   );
 }
 
-function renderWeek(dailyReports) {
+function renderWeek(dailyReports, lang = "zh") {
   const firstDate = dailyReports[0].date;
   const lastDate = dailyReports.at(-1).date;
   const totals = emptyUsage();
@@ -375,6 +645,7 @@ function renderWeek(dailyReports) {
     const bar = barLength === 0 ? "·" : "█".repeat(barLength);
     return `  ${report.date.slice(5)}  ${bar.padEnd(20)}  ${formatTokens(tokens)}`;
   });
+  const modelLines = combinedModelBreakdownLines(dailyReports, 5, lang);
 
   return [
     color("2", "┌──────────────────────────────────────────────┐"),
@@ -383,9 +654,16 @@ function renderWeek(dailyReports) {
     "",
     ...rows,
     "",
-    `  ${color("1", `7 日合计  ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} 次模型请求`)}`,
+    `  ${color("1", localized(lang, `7 日合计  ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} 次模型请求`, `7-day total  ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} ${totals.requests === 1 ? "model request" : "model requests"}`))}`,
+    ...(modelLines.length > 0 ? ["", ...modelLines] : []),
     "",
-    `  ${color("2", "七天过去了。代码也许能跑，账单肯定能。")}`,
+    ...resourceBreakdownLines(
+      totals,
+      localized(lang, "7 日资源账单", "7-day resource bill"),
+      lang,
+    ),
+    "",
+    `  ${color("2", localized(lang, "七天过去了。代码也许能跑，账单肯定能。", "Seven days passed. The code might run; the bill definitely does."))}`,
     color("2", "└──────────────────────────────────────────────┘"),
     "",
   ].join("\n");
@@ -414,7 +692,7 @@ function longestQuietStreak(dailyReports) {
   return longest;
 }
 
-function renderMonth(dailyReports) {
+function renderMonth(dailyReports, lang = "zh") {
   const firstDate = dailyReports[0].date;
   const lastDate = dailyReports.at(-1).date;
   const totals = emptyUsage();
@@ -446,23 +724,51 @@ function renderMonth(dailyReports) {
       ? report
       : currentPeak,
   );
+  const modelLines = combinedModelBreakdownLines(dailyReports, 5, lang);
 
   return [
     color("2", "┌──────────────────────────────────────────────┐"),
     `  ${color("1;31", `YOUR AI CALENDAR · ${firstDate} → ${lastDate}`)}`,
     color("2", "├──────────────────────────────────────────────┤"),
     "",
-    "  一    二    三    四    五    六    日",
+    localized(
+      lang,
+      "  一    二    三    四    五    六    日",
+      "  Mon  Tue  Wed  Thu  Fri  Sat  Sun",
+    ),
     ...rows,
     "",
-    "  · 无记录  ░ 少  ▒ 中  ▓ 多  █ 最重",
+    localized(
+      lang,
+      "  · 无记录  ░ 少  ▒ 中  ▓ 多  █ 最重",
+      "  · none  ░ low  ▒ medium  ▓ high  █ peak",
+    ),
     "",
-    `  ${color("1", `月度合计    ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} 次模型请求`)}`,
-    `  AI 清醒日  ${quietDays}/${dailyReports.length}`,
-    `  最长清醒期 ${longestQuietStreak(dailyReports)} 天`,
-    `  最重一天    ${peak.date.slice(5)} · ${formatTokens(peak.totals.totalTokens)} tokens`,
+    `  ${color("1", localized(lang, `月度合计    ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} 次模型请求`, `Monthly total  ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} ${totals.requests === 1 ? "model request" : "model requests"}`))}`,
+    localized(
+      lang,
+      `  AI 清醒日  ${quietDays} 天 / ${dailyReports.length} 天`,
+      `  AI-free days  ${quietDays} ${quietDays === 1 ? "day" : "days"} / ${dailyReports.length} ${dailyReports.length === 1 ? "day" : "days"}`,
+    ),
+    localized(
+      lang,
+      `  最长清醒期 ${longestQuietStreak(dailyReports)} 天`,
+      `  Longest break ${longestQuietStreak(dailyReports)} ${longestQuietStreak(dailyReports) === 1 ? "day" : "days"}`,
+    ),
+    localized(
+      lang,
+      `  最重一天    ${peak.date.slice(5)} · ${formatTokens(peak.totals.totalTokens)} tokens`,
+      `  Peak day      ${peak.date.slice(5)} · ${formatTokens(peak.totals.totalTokens)} tokens`,
+    ),
+    ...(modelLines.length > 0 ? ["", ...modelLines] : []),
     "",
-    `  ${color("2", "这个月还没结束，数据中心已经替你记住了。")}`,
+    ...resourceBreakdownLines(
+      totals,
+      localized(lang, "本月资源账单", "Monthly resource bill"),
+      lang,
+    ),
+    "",
+    `  ${color("2", localized(lang, "这个月还没结束，数据中心已经替你记住了。", "The month is not over. The data center already remembers it."))}`,
     color("2", "└──────────────────────────────────────────────┘"),
     "",
   ].join("\n");
@@ -506,8 +812,16 @@ async function* jsonlFiles(root, modifiedSince = undefined) {
   }
 }
 
-function usageByDate(dates) {
-  return new Map(dates.map((date) => [date, emptyUsage()]));
+function sourceUsageByDate(dates) {
+  return new Map(
+    dates.map((date) => [
+      date,
+      {
+        usage: emptyUsage(),
+        models: {},
+      },
+    ]),
+  );
 }
 
 function earliestLocalMidnight(dates) {
@@ -515,20 +829,31 @@ function earliestLocalMidnight(dates) {
 }
 
 async function scanCodex(root, dates, timezone) {
-  const results = usageByDate(dates);
+  const results = sourceUsageByDate(dates);
 
   for await (const file of jsonlFiles(root, earliestLocalMidnight(dates))) {
+    let currentModel = "unknown";
     const lines = readline.createInterface({
       input: createReadStream(file),
       crlfDelay: Infinity,
     });
 
     for await (const line of lines) {
-      if (!line.includes('"type":"token_count"')) continue;
+      if (
+        !line.includes('"type":"token_count"') &&
+        !line.includes('"type":"turn_context"')
+      ) {
+        continue;
+      }
       let record;
       try {
         record = JSON.parse(line);
       } catch {
+        continue;
+      }
+
+      if (record?.type === "turn_context") {
+        currentModel = record?.payload?.model ?? currentModel;
         continue;
       }
 
@@ -540,7 +865,7 @@ async function scanCodex(root, dates, timezone) {
 
       const inputTokens = Number(usage.input_tokens ?? 0);
       const outputTokens = Number(usage.output_tokens ?? 0);
-      addUsage(result, {
+      const delta = {
         requests: 1,
         inputTokens,
         cachedInputTokens: Number(usage.cached_input_tokens ?? 0),
@@ -548,7 +873,9 @@ async function scanCodex(root, dates, timezone) {
         outputTokens,
         reasoningOutputTokens: Number(usage.reasoning_output_tokens ?? 0),
         totalTokens: Number(usage.total_tokens ?? inputTokens + outputTokens),
-      });
+      };
+      addUsage(result.usage, delta);
+      addModelUsage(result.models, currentModel, delta);
     }
   }
 
@@ -590,6 +917,7 @@ async function scanClaude(root, dates, timezone) {
       const outputTokens = Number(usage.output_tokens ?? 0);
       const snapshot = {
         timestamp: record.timestamp,
+        model: message.model,
         usage: {
           requests: 1,
           inputTokens,
@@ -613,10 +941,13 @@ async function scanClaude(root, dates, timezone) {
     }
   }
 
-  const results = usageByDate(dates);
+  const results = sourceUsageByDate(dates);
   for (const snapshot of snapshots.values()) {
     const result = results.get(localDate(snapshot.timestamp, timezone));
-    if (result) addUsage(result, snapshot.usage);
+    if (result) {
+      addUsage(result.usage, snapshot.usage);
+      addModelUsage(result.models, snapshot.model, snapshot.usage);
+    }
   }
   return results;
 }
@@ -645,12 +976,15 @@ async function reportsForDates(options, dates, timezone) {
 
   return dates.map((date) => {
     const sources = {};
+    const models = {};
     for (const [source, results] of Object.entries(sourceResults)) {
-      sources[source] = results.get(date);
+      const sourceResult = results.get(date);
+      sources[source] = sourceResult.usage;
+      models[source] = sourceResult.models;
     }
     const totals = emptyUsage();
     for (const usage of Object.values(sources)) addUsage(totals, usage);
-    return { date, timezone, sources, totals };
+    return { date, timezone, sources, models, totals };
   });
 }
 
@@ -666,7 +1000,9 @@ async function runToday(options) {
       shiftDate(date, index - 7),
     );
     const reports = await reportsForDates(options, dates, timezone);
-    process.stdout.write(renderReceipt(reports.at(-1), reports.slice(0, -1)));
+    process.stdout.write(
+      renderReceipt(reports.at(-1), reports.slice(0, -1), options.lang),
+    );
   }
 }
 
@@ -677,7 +1013,7 @@ async function runWeek(options) {
     shiftDate(endDate, index - 6),
   );
   const reports = await reportsForDates(options, dates, timezone);
-  process.stdout.write(renderWeek(reports));
+  process.stdout.write(renderWeek(reports, options.lang));
 }
 
 async function runMonth(options) {
@@ -688,7 +1024,7 @@ async function runMonth(options) {
     `${endDate.slice(0, 8)}${String(index + 1).padStart(2, "0")}`,
   );
   const reports = await reportsForDates(options, dates, timezone);
-  process.stdout.write(renderMonth(reports));
+  process.stdout.write(renderMonth(reports, options.lang));
 }
 
 async function countJsonl(root) {
@@ -698,6 +1034,7 @@ async function countJsonl(root) {
 }
 
 async function runDoctor(options) {
+  const { lang } = options;
   const roots = sourceRoots();
   const checks = [];
 
@@ -720,19 +1057,110 @@ async function runDoctor(options) {
     color("1;31", "LOCAL LOG CHECK"),
     "",
     ...checks.flatMap((check) => [
-      `${check.label.padEnd(12)} ${check.count > 0 ? "✓" : "✗"}  ${check.count} 个 JSONL 文件`,
+      `${check.label.padEnd(12)} ${check.count > 0 ? "✓" : "✗"}  ${check.count} ${localized(lang, "个 JSONL 文件", check.count === 1 ? "JSONL file" : "JSONL files")}`,
       color("2", `             ${check.root}`),
     ]),
     "",
-    "只保留时间、消息 ID、模型和 usage 元数据。",
-    "不采集、不保存、不输出会话正文。",
+    localized(
+      lang,
+      "只保留时间、消息 ID、模型和 usage 元数据。",
+      "Keeps only timestamps, message IDs, models, and usage metadata.",
+    ),
+    localized(
+      lang,
+      "不采集、不保存、不输出会话正文。",
+      "Does not collect, store, or print conversation text.",
+    ),
     "",
   ];
   process.stdout.write(lines.join("\n"));
   if (checks.some((check) => check.count === 0)) process.exitCode = 1;
 }
 
-function runExplain() {
+function runExplain(lang = "zh") {
+  if (lang === "en") {
+    const lines = [
+      color("1;31", "HOW MUCH PLANET DID YOU AUTOCOMPLETE?"),
+      "",
+      "Published proxy range, not a measurement.",
+      "Codex and Claude Code do not expose measured per-request resource bills.",
+      "This tool uses published text-inference examples as references; it cannot",
+      "prove that your actual consumption falls inside the displayed range.",
+      "",
+      color("1", "Google · median Gemini Apps text prompt (2025-05)"),
+      "  0.24 Wh · 0.26 mL water · 0.03 gCO₂e / request",
+      "  Full-stack production measurement including accelerators, hosts,",
+      "  idle capacity, and data-center overhead.",
+      "  https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf",
+      "",
+      color("1", "OpenAI · average ChatGPT query (2025-06)"),
+      "  0.34 Wh · 0.32176 mL water / request",
+      "  Official statement without model, prompt-length, or measurement boundary details.",
+      "  https://blog.samaltman.com/the-gentle-singularity",
+      "",
+      color("1", "Mistral · Le Chat / Large 2 lifecycle assessment (2025-07)"),
+      "  400 output tokens · 45 mL water · 1.14 gCO₂e",
+      "  Includes upstream impacts such as server manufacturing; excludes user devices.",
+      "  https://mistral.ai/news/our-contribution-to-a-global-environmental-standard-for-ai/",
+      "",
+      color("1", "Calculations"),
+      "  Electricity range = requests × [0.24, 0.34] Wh",
+      "  Water references = requests × 0.26 / 0.32176 mL,",
+      "                     and output tokens ÷ 400 × 45 mL; show min/max",
+      "  Carbon references = requests × 0.03 gCO₂e,",
+      "                      and output tokens ÷ 400 × 1.14 gCO₂e; show min/max",
+      "",
+      color("1", "Model attribution"),
+      "  Codex: attribute token_count to the latest turn_context.payload.model",
+      "         in the same session.",
+      "  Claude Code: deduplicate messages by ID, then read assistant message.model.",
+      "  Missing model fields are grouped under unknown. Conversation text is not read or printed.",
+      "",
+      color("1", "Personal baseline and verdicts"),
+      "  Baseline = prior 7 calendar-day total ÷ 7, including days with no records",
+      "  The first matching verdict wins:",
+      "  CONTEXT HOARDING: requests ≤ 1.2× baseline and tokens/request ≥ 1.8×",
+      "  REQUEST BARRAGE: requests ≥ 2× baseline",
+      "  CACHE ARCHAEOLOGIST: cached reads are at least 70% of input",
+      "  DIGITAL DETOX: total tokens ≤ 30% of baseline",
+      "  COMPUTE BINGE: total tokens ≥ 1.5× baseline",
+      "  Otherwise show STEADY BURN; zero usage and missing history have dedicated verdicts.",
+      "  Verdicts are generated by fixed local rules; copy rotates deterministically by date.",
+      "",
+      color("1", "Everyday comparisons"),
+      "  10W LED light: electricity Wh ÷ 10W = hours lit",
+      "  15Wh phone charge: electricity Wh ÷ 15Wh = charges",
+      "  Boil 1L of water: electricity Wh ÷ 100Wh = boils",
+      "  550mL water bottle: water mL ÷ 550 = bottles",
+      "  8L/min shower: water mL ÷ 8,000 = shower minutes",
+      "  Electricity uses the range upper bound: <15 Wh LED, <1,500 Wh phone, otherwise boiling.",
+      "  Water uses the range upper bound: <550 mL bottle share, <8,000 mL bottles, otherwise shower.",
+      "  These power, capacity, and flow values are display assumptions, not measurement standards.",
+      "",
+      "  Average gas car: US EPA estimate of about 400 g CO₂/mile, or 248.55 g CO₂/km",
+      "  Driving distance = carbon gCO₂e ÷ 248.55",
+      "  https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle",
+      "",
+      "  Urban tree: US EPA estimate of about 60 kg CO₂/year",
+      "  Tree time = carbon gCO₂e ÷ 60,000 × 365 days",
+      "  Species, age, and what happens after felling vary too much, so this tool",
+      "  reports sequestration time instead of claiming a number of trees cut down.",
+      "  https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references",
+      "",
+      "These values are not statistical confidence intervals; they span public cases",
+      "that are not directly comparable.",
+      `Confidence: ${color("1;31", "LOW")}`,
+      "",
+      color(
+        "2",
+        "AI is excellent at generating answers. Vendors are still working on utility bills.",
+      ),
+      "",
+    ];
+    process.stdout.write(lines.join("\n"));
+    return;
+  }
+
   const lines = [
     color("1;31", "HOW MUCH PLANET DID YOU AUTOCOMPLETE?"),
     "",
@@ -762,6 +1190,11 @@ function runExplain() {
     "  碳排参照 = 请求数 × 0.03 gCO₂e，",
     "             以及输出 tokens ÷ 400 × 1.14 gCO₂e，取最小/最大值",
     "",
+    color("1", "模型统计"),
+    "  Codex：将 token_count 归属到同一会话中最近的 turn_context.payload.model",
+    "  Claude Code：消息按 ID 去重后，读取 assistant message.model",
+    "  缺少模型字段时统一显示 unknown；不读取或输出会话正文。",
+    "",
     color("1", "个人基线与判词"),
     "  基线 = 过去 7 个自然日总量 ÷ 7，包含无记录日",
     "  判词按以下顺序命中第一条：",
@@ -771,7 +1204,7 @@ function runExplain() {
     "  电子戒断：Token 总量不高于基线 30%",
     "  算力暴食：Token 总量不低于基线 1.5 倍",
     "  其余情况显示“稳定消耗”；无请求或无历史时使用专用判词。",
-    "  判词由本地固定规则生成，不调用模型。",
+    "  判词由本地固定规则生成，不调用模型；文案按日期固定轮换。",
     "",
     color("1", "生活化对照"),
     "  10W LED 灯：电力 Wh ÷ 10W = 点灯小时数",
@@ -801,7 +1234,30 @@ function runExplain() {
   process.stdout.write(lines.join("\n"));
 }
 
-function runHelp() {
+function runHelp(lang = "zh") {
+  if (lang === "en") {
+    process.stdout.write(`Usage: anti-ai <command> [options]
+
+Turn local AI tokens into an uncomfortable resource bill.
+
+Commands:
+  today    Print today's AI resource receipt
+  week     Print the latest seven-day trend
+  month    Print this month's usage heatmap through a selected date
+  doctor   Check local log sources
+  explain  Explain resource proxy methodology
+
+Options:
+  --date <YYYY-MM-DD>             Select today date or week/month end date
+  --source <all|codex|claude>     Filter log source (default: all)
+  --lang <zh|en>                  Select human-readable output language (default: zh)
+  --json                          Print exact machine-readable today statistics
+  -v, --version                   Show version
+  -h, --help                      Show help
+`);
+    return;
+  }
+
   process.stdout.write(`Usage: anti-ai <command> [options]
 
 把本地 AI Token 变成一张不太令人愉快的资源账单。
@@ -816,6 +1272,7 @@ Commands:
 Options:
   --date <YYYY-MM-DD>             指定 today 日期，或 week/month 结束日期
   --source <all|codex|claude>     过滤日志来源（默认 all）
+  --lang <zh|en>                  选择人类可读输出语言（默认 zh）
   --json                          today 输出机器可读的精确 Token 统计
   -v, --version                   显示版本
   -h, --help                      显示帮助
@@ -836,20 +1293,31 @@ const versionRequested =
   rawArgs.includes("-v");
 
 if (helpRequested) {
-  runHelp();
+  runHelp(options.lang);
 } else if (versionRequested) {
   process.stdout.write(`anti-ai ${VERSION}\n`);
 } else if (options.missing) {
-  process.stderr.write(`参数 ${options.missing} 缺少值\n`);
+  process.stderr.write(
+    `${localized(options.lang, `参数 ${options.missing} 缺少值`, `Option ${options.missing} requires a value`)}\n`,
+  );
   process.exitCode = 2;
 } else if (options.unknown.length > 0) {
-  process.stderr.write(`未知参数：${options.unknown[0]}\n`);
+  process.stderr.write(
+    `${localized(options.lang, `未知参数：${options.unknown[0]}`, `Unknown option: ${options.unknown[0]}`)}\n`,
+  );
+  process.exitCode = 2;
+} else if (!["zh", "en"].includes(options.lang)) {
+  process.stderr.write(`不支持的语言：${options.lang}\n`);
   process.exitCode = 2;
 } else if (!["all", "codex", "claude"].includes(options.source)) {
-  process.stderr.write(`不支持的数据源：${options.source}\n`);
+  process.stderr.write(
+    `${localized(options.lang, `不支持的数据源：${options.source}`, `Unsupported data source: ${options.source}`)}\n`,
+  );
   process.exitCode = 2;
 } else if (rawArgs.includes("--date") && !isValidDate(options.date)) {
-  process.stderr.write(`无效日期：${options.date}\n`);
+  process.stderr.write(
+    `${localized(options.lang, `无效日期：${options.date}`, `Invalid date: ${options.date}`)}\n`,
+  );
   process.exitCode = 2;
 } else if (options.command === "today") {
   await runToday(options);
@@ -860,10 +1328,10 @@ if (helpRequested) {
 } else if (options.command === "doctor") {
   await runDoctor(options);
 } else if (options.command === "explain") {
-  runExplain();
+  runExplain(options.lang);
 } else {
   process.stderr.write(
-    "Usage: anti-ai <today|week|month|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude] [--json]\n",
+    `Usage: anti-ai <today|week|month|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude] [--lang zh|en] [--json]\n`,
   );
   process.exitCode = 1;
 }

@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a focused improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Show the desired CLI input and output when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: methodology
+    attributes:
+      label: Methodology and sources
+      description: Required for new resource conversions or comparisons.

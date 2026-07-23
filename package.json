@@ -1,0 +1,53 @@
+{
+  "name": "anti-ai",
+  "version": "0.1.0",
+  "description": "Turn local Codex and Claude Code token usage into a transparent, satirical resource receipt.",
+  "type": "module",
+  "bin": {
+    "anti-ai": "bin/anti-ai.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check bin/anti-ai.mjs",
+    "verify": "npm run check && npm test",
+    "prepublishOnly": "npm run verify",
+    "start": "node ./bin/anti-ai.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ppxu/anti-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ppxu/anti-ai/issues"
+  },
+  "homepage": "https://github.com/ppxu/anti-ai#readme",
+  "keywords": [
+    "ai",
+    "token",
+    "codex",
+    "claude-code",
+    "cli",
+    "sustainability",
+    "carbon-footprint",
+    "privacy"
+  ],
+  "author": "Yang Xu (https://github.com/ppxu)",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

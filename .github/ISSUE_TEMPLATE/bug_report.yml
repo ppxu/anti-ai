@@ -1,0 +1,43 @@
+name: Bug report
+description: Report incorrect counting, CLI behavior, or a compatibility problem.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach real Codex or Claude Code logs. Use a minimal redacted fixture.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: anti-ai version
+      placeholder: "anti-ai 0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "v24.0.0"
+    validations:
+      required: true
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include commands and synthetic or redacted data only.
+    validations:
+      required: true

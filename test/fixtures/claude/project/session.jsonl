@@ -1,0 +1,5 @@
+{"timestamp":"2026-07-22T16:05:00.000Z","type":"assistant","uuid":"event-1","message":{"id":"msg-1","model":"claude-test","usage":{"input_tokens":100,"output_tokens":0}}}
+{"timestamp":"2026-07-22T16:05:01.000Z","type":"assistant","uuid":"event-2","message":{"id":"msg-1","model":"claude-test","usage":{"input_tokens":10,"cache_creation_input_tokens":20,"cache_read_input_tokens":90,"output_tokens":30}}}
+{"timestamp":"2026-07-22T16:05:02.000Z","type":"assistant","uuid":"event-3","message":{"id":"msg-1","model":"claude-test","usage":{"input_tokens":10,"cache_creation_input_tokens":20,"cache_read_input_tokens":90,"output_tokens":30}}}
+{"timestamp":"2026-07-23T08:00:00.000Z","type":"assistant","uuid":"event-4","message":{"id":"msg-2","model":"claude-test","usage":{"input_tokens":5,"output_tokens":15}}}
+{"timestamp":"2026-07-23T16:00:00.000Z","type":"assistant","uuid":"event-5","message":{"id":"msg-next-day","model":"claude-test","usage":{"input_tokens":999,"output_tokens":1}}}

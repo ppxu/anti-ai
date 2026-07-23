@@ -18,7 +18,7 @@ body:
     id: version
     attributes:
       label: anti-ai version
-      placeholder: "anti-ai 0.1.0"
+      placeholder: "Output of: anti-ai --version"
     validations:
       required: true
   - type: input

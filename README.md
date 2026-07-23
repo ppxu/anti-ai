@@ -21,10 +21,15 @@ Turn local Codex and Claude Code token usage into a transparent, satirical AI re
   ☁️  31.74–1,368.39 gCO₂e
 
   Everyday translation
-  💡  10W LED            25.39–35.97 hours
-  🚰  550mL water bottle 0.50–98.21 bottles
+  📱  15Wh phone charge  16.93–23.98 charges
+  🚿  8L/min shower      0.03–6.75 minutes
   🚗  Average gas car    0.13–5.51 km
   🌳  One urban tree     0.19–8.32 days to absorb it
+
+  Personal baseline · prior 7 calendar days
+  Tokens +62.00% · requests -18.00%
+
+  Today's charge: CONTEXT HOARDING
 
   Confidence: LOW · run anti-ai explain
 └──────────────────────────────────────────────┘
@@ -69,6 +74,9 @@ anti-ai today --json
 anti-ai week
 anti-ai week --date 2026-07-23
 
+anti-ai month
+anti-ai month --date 2026-07-23
+
 anti-ai doctor
 anti-ai explain
 anti-ai --version
@@ -77,11 +85,19 @@ anti-ai --help
 
 ### `today`
 
-Print a daily receipt using your system timezone. `--json` returns exact token data only and deliberately excludes environmental proxies.
+Print a daily receipt using your system timezone. The human-readable receipt compares usage with the prior seven calendar days and selects one deterministic verdict. No model is called to generate it.
+
+`--json` returns exact token data only and deliberately excludes environmental proxies, baselines, and verdicts.
+
+The human-readable receipt scans the comparison window directly and may take several seconds when local logs are large. The tool deliberately avoids a persistent usage index in this release.
 
 ### `week`
 
 Print a seven-day token trend ending on the selected date. The current release scans recent logs directly and does not create an index.
+
+### `month`
+
+Print a terminal calendar heatmap from the first day of the month through the selected date, including quiet days, the longest quiet streak, and the peak day.
 
 ### `doctor`
 
@@ -118,13 +134,13 @@ Codex and Claude Code do not provide this tool with measured per-request electri
 - [OpenAI disclosure: The Gentle Singularity](https://blog.samaltman.com/the-gentle-singularity)
 - [Mistral: Our contribution to a global environmental standard for AI](https://mistral.ai/news/our-contribution-to-a-global-environmental-standard-for-ai/)
 
-Everyday comparisons use:
+Everyday comparisons adapt to the upper end of the displayed proxy range so that the output remains readable. They use:
 
-- a display assumption of a 10W LED and a 550mL water bottle;
+- display assumptions of a 10W LED, 15Wh phone charge, 100Wh to boil 1L of water, a 550mL water bottle, and an 8L/min shower;
 - [US EPA average gasoline passenger vehicle emissions](https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle);
 - [US EPA urban tree carbon sequestration methodology](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references).
 
-The tool reports how long one urban tree would need to sequester the carbon proxy. It does not claim an equivalent number of trees cut down.
+The household values are display assumptions, not environmental measurement standards. Run `anti-ai explain` to see each formula. The tool reports how long one urban tree would need to sequester the carbon proxy; it does not claim an equivalent number of trees cut down.
 
 ## Privacy
 

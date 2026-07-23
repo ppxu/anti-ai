@@ -1,6 +1,6 @@
 {
   "name": "anti-ai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Turn local Codex and Claude Code token usage into a transparent, satirical resource receipt.",
   "type": "module",
   "bin": {

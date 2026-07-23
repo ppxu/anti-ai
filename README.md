@@ -35,7 +35,7 @@ Turn local Codex and Claude Code token usage into a transparent, satirical AI re
 └──────────────────────────────────────────────┘
 ```
 
-> The current CLI output is in Simplified Chinese. English CLI output is planned for a future release.
+Human-readable output defaults to Simplified Chinese. Pass `--lang en` for English. JSON field names remain stable in either language.
 
 ## Why
 
@@ -43,7 +43,7 @@ Token counts are measurable. The electricity, water, and carbon impact of propri
 
 `anti-ai` keeps those two facts separate:
 
-- exact local token statistics are available through `--json`;
+- exact local token and model statistics are available through `--json`;
 - environmental values are clearly labelled low-confidence proxy ranges;
 - every assumption and source is visible through `anti-ai explain`;
 - no prompt or response text leaves your machine.
@@ -69,6 +69,7 @@ anti-ai today
 anti-ai today --date 2026-07-23
 anti-ai today --source codex
 anti-ai today --source claude
+anti-ai today --lang en
 anti-ai today --json
 
 anti-ai week
@@ -83,21 +84,33 @@ anti-ai --version
 anti-ai --help
 ```
 
+### Language
+
+All human-readable commands support `--lang zh|en`, including receipts, summaries, diagnostics, methodology, help, errors, and satirical verdicts. The default is `zh`.
+
+```bash
+anti-ai today --lang en
+anti-ai month --lang en
+anti-ai explain --lang en
+```
+
+`today --json` ignores presentation language and keeps the same machine-readable keys.
+
 ### `today`
 
-Print a daily receipt using your system timezone. The human-readable receipt compares usage with the prior seven calendar days and selects one deterministic verdict. No model is called to generate it.
+Print a daily receipt using your system timezone. It includes a token breakdown by source and model. The human-readable receipt compares usage with the prior seven calendar days and selects one verdict from an expanded satirical copy bank. The selected line is stable for a given date, and no model is called to generate it.
 
-`--json` returns exact token data only and deliberately excludes environmental proxies, baselines, and verdicts.
+`--json` returns exact token data grouped by source and model. It deliberately excludes environmental proxies, baselines, and verdicts.
 
 The human-readable receipt scans the comparison window directly and may take several seconds when local logs are large. The tool deliberately avoids a persistent usage index in this release.
 
 ### `week`
 
-Print a seven-day token trend ending on the selected date. The current release scans recent logs directly and does not create an index.
+Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. The current release scans recent logs directly and does not create an index.
 
 ### `month`
 
-Print a terminal calendar heatmap from the first day of the month through the selected date, including quiet days, the longest quiet streak, and the peak day.
+Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, and monthly resource comparisons.
 
 ### `doctor`
 
@@ -122,9 +135,11 @@ ANTI_AI_CLAUDE_DIR=/path/to/claude/projects \
 anti-ai today
 ```
 
-Codex records are counted from `token_count.info.last_token_usage`. Cached input and reasoning output are displayed as subsets and are never added twice.
+Codex records are counted from `token_count.info.last_token_usage`. Each record is attributed to the most recent `turn_context.payload.model` in the same session. Cached input and reasoning output are displayed as subsets and are never added twice.
 
-Claude Code may write multiple snapshots for one streamed assistant response. `anti-ai` deduplicates them by `message.id` and keeps the most complete usage snapshot.
+Claude Code may write multiple snapshots for one streamed assistant response. `anti-ai` deduplicates them by `message.id`, keeps the most complete usage snapshot, and reads its model from `message.model`.
+
+If a log does not contain a model field, the usage is grouped under `unknown`. Human-readable reports show the five highest-token source/model combinations; JSON keeps the complete breakdown.
 
 ## Environmental methodology
 

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-07-23
+
+### Added
+
+- Per-model token and request breakdowns for Codex and Claude Code in human-readable and JSON reports.
+- Resource proxy totals and everyday comparisons in both seven-day and monthly views.
+- Five rotating satirical lines for every daily verdict category, selected deterministically by date.
+- Complete Simplified Chinese and English human-readable output via `--lang zh|en`.
+
+### Changed
+
+- Monthly quiet days now read as an explicit ratio such as `7 天 / 23 天`.
+- `explain` now documents model attribution, unknown-model fallback, and deterministic copy rotation.
+- Human-readable model names are sanitized before terminal rendering.
+
 ## [0.2.0] - 2026-07-23
 
 ### Added
@@ -29,5 +44,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[0.3.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.1.0

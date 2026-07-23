@@ -70,6 +70,7 @@ anti-ai today
 anti-ai today --date 2026-07-23
 anti-ai today --source codex
 anti-ai today --source claude
+anti-ai today --lang en
 anti-ai today --json
 
 anti-ai week
@@ -84,21 +85,33 @@ anti-ai --version
 anti-ai --help
 ```
 
+### 语言
+
+所有人类可读命令都支持 `--lang zh|en`，包括账单、周期汇总、日志诊断、口径说明、帮助、错误提示和讽刺文案。默认语言为 `zh`。
+
+```bash
+anti-ai today --lang en
+anti-ai month --lang en
+anti-ai explain --lang en
+```
+
+`today --json` 不受展示语言影响，字段名和结构保持稳定。
+
 ### `today`
 
-打印指定自然日的 Token 用量、来源拆分和公开资源代理跨度。日期按系统本地时区计算。人类可读账单会与此前 7 个自然日比较，并根据可验证指标给出一条确定性“今日罪名”；这个过程不会调用模型。
+打印指定自然日的 Token 用量、来源/模型拆分和公开资源代理跨度。日期按系统本地时区计算。人类可读账单会与此前 7 个自然日比较，并从扩充后的讽刺文案库中给出一条“今日罪名”。同一天的文案固定不变，这个过程不会调用模型。
 
-`--json` 只输出可精确核对的 Token 统计，不把低置信度资源估算、个人基线或吐槽混入机器数据。
+`--json` 按来源和具体模型输出可精确核对的 Token 统计，不把低置信度资源估算、个人基线或吐槽混入机器数据。
 
 人类可读账单会直接扫描比较窗口；本地日志很多时可能需要数秒。当前版本仍不创建持久化用量索引。
 
 ### `week`
 
-打印截至指定日期的最近 7 个自然日趋势。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
+打印截至指定日期的最近 7 个自然日趋势，并展示模型账单、资源账单和生活化对照。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
 
 ### `month`
 
-打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日、最长清醒期和最重一天。
+打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日比例（例如 `7 天 / 23 天`）、最长清醒期、最重一天、模型账单和本月资源对照。
 
 ### `doctor`
 
@@ -126,6 +139,7 @@ anti-ai today
 Codex：
 
 - 累计每条 `token_count.info.last_token_usage`
+- 使用同一会话中最近的 `turn_context.payload.model` 归属具体模型
 - `cached_input_tokens` 是输入 Token 的子集，不重复加入总量
 - `reasoning_output_tokens` 是输出 Token 的子集，不重复加入总量
 
@@ -133,7 +147,10 @@ Claude Code：
 
 - 读取 assistant message 的 `usage`
 - 同一流式响应可能多次落盘，按 `message.id` 只保留最完整快照
+- 从 `message.model` 读取具体模型
 - 输入总量包含普通输入、缓存读取和缓存写入
+
+日志没有模型字段时会归入 `unknown`。终端账单最多展示 Token 用量最高的 5 个“来源 + 模型”组合，`today --json` 保留完整模型明细。
 
 ## 资源账单口径
 

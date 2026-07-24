@@ -19,6 +19,10 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /anti-ai today --json/);
   assert.match(skill, /anti-ai (today|week|month)/);
   assert.match(skill, /anti-ai share/);
+  assert.match(skill, /anti-ai creature/);
+  assert.match(skill, /anti-ai creature reset/);
+  assert.match(skill, /deterministic|确定性/i);
+  assert.match(skill, /~\/\.anti-ai\/creature\.json/);
   assert.match(skill, /low-confidence proxy|低置信度代理/i);
   assert.match(skill, /do not read raw logs|不要读取原始日志/i);
   assert.match(

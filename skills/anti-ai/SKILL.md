@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, or wants a privacy-safe share card—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe share card, or asks about their token-fed mutation creature—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local Codex and Claude Code usage metadata.
 ---
 
@@ -68,6 +68,28 @@ anti-ai share --date YYYY-MM-DD --lang en > anti-ai-receipt.svg
 ```
 
 The share card intentionally omits prompts, responses, paths, model names, and exact token counts. Tell the user where the file was saved. Do not add sensitive details back into the card.
+
+### Token mutation creature
+
+Inspect the user's locally persisted mutation creature:
+
+```bash
+anti-ai creature
+anti-ai creature --lang en
+anti-ai creature --json
+```
+
+The creature backfills the latest 30 calendar days, turns daily Token totals into a capped pollution dose, and evolves through four deterministic branches. A local seed plus the date selects repeatable daily events, including rare mutations. Describe this as a satirical growth system, not a resource measurement or productivity score.
+
+The creature state is stored at `~/.anti-ai/creature.json`. It contains only pollution doses, traits, event IDs, and a local deterministic seed—never prompts, responses, paths, model names, or exact Token totals. Do not open or edit the state file directly.
+
+Only destroy the mutation history when the user explicitly asks to reset or restart it:
+
+```bash
+anti-ai creature reset
+```
+
+Do not pass `--source` to `creature`; one evolution history always uses the complete Codex and Claude Code data set.
 
 ### Methodology questions
 

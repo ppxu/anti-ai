@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-07-24
+
+### Added
+
+- `creature` command with a persistent, satirical mutation system driven by logarithmically capped daily Token pollution.
+- Four stages, four behavior-derived evolution branches, deterministic daily events, and an 8% rare-mutation pool.
+- AI-free-day dormancy and exposure recovery, bilingual terminal art, stable JSON output, and explicit `creature reset`.
+
+### Changed
+
+- Agent Skill, help, `explain`, and both READMEs now document creature inspection, reset, formulas, chance, and privacy boundaries.
+
+### Security
+
+- Creature state stores only pollution doses, traits, event IDs, and a local seed; it excludes chats, paths, model names, exact Token totals, and per-request timestamps.
+- Corrupted creature state returns a recoverable error without printing a stack trace or local path.
+
 ## [0.4.0] - 2026-07-24
 
 ### Added
@@ -57,6 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[0.5.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.2.0

@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 
 import { createReadStream } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { createHash, randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -18,6 +27,7 @@ function parseArgs(argv) {
     source: "all",
     lang: "zh",
     json: false,
+    action: undefined,
     unknown: [],
     missing: undefined,
   };
@@ -44,6 +54,12 @@ function parseArgs(argv) {
       } else {
         options.lang = rest[++index];
       }
+    } else if (
+      command === "creature" &&
+      arg === "reset" &&
+      options.action === undefined
+    ) {
+      options.action = arg;
     } else if (!["--help", "-h", "--version", "-v"].includes(arg)) {
       options.unknown.push(arg);
     }
@@ -65,6 +81,428 @@ function emptyUsage() {
     outputTokens: 0,
     reasoningOutputTokens: 0,
     totalTokens: 0,
+  };
+}
+
+const CREATURE_STAGES = [
+  {
+    id: "contaminated_embryo",
+    threshold: 0,
+    nextAt: 50,
+  },
+  {
+    id: "mutated_juvenile",
+    threshold: 50,
+    nextAt: 150,
+  },
+  {
+    id: "runaway_adult",
+    threshold: 150,
+    nextAt: 350,
+  },
+  {
+    id: "catastrophe_complete",
+    threshold: 350,
+    nextAt: null,
+  },
+];
+
+const CREATURE_FORMS = {
+  context: [
+    "context_polyp",
+    "context_sarcoma",
+    "memory_devourer",
+    "infinite_dossier_matrix",
+  ],
+  cache: [
+    "cache_moss",
+    "cache_fossil_beast",
+    "fossil_armor_tyrant",
+    "archive_extinction",
+  ],
+  frenzy: [
+    "request_spore",
+    "request_hydra",
+    "concurrency_centipede",
+    "api_calamity",
+  ],
+  nuclear: [
+    "compute_embryo",
+    "reactor_hatchling",
+    "nuclear_feeder",
+    "compute_meltdown",
+  ],
+};
+
+const COMMON_CREATURE_EVENTS = [
+  {
+    id: "misplaced_context",
+    trait: "context",
+    delta: 8,
+  },
+  {
+    id: "cache_calcification",
+    trait: "cache",
+    delta: 8,
+  },
+  {
+    id: "request_budding",
+    trait: "frenzy",
+    delta: 8,
+  },
+  {
+    id: "reactor_leak",
+    trait: "nuclear",
+    delta: 8,
+  },
+];
+
+const RARE_CREATURE_EVENTS = [
+  {
+    id: "infinite_appendix",
+    trait: "context",
+    delta: 20,
+  },
+  {
+    id: "fossil_crown",
+    trait: "cache",
+    delta: 20,
+  },
+  {
+    id: "second_mouth",
+    trait: "frenzy",
+    delta: 20,
+  },
+  {
+    id: "black_core",
+    trait: "nuclear",
+    delta: 20,
+  },
+];
+
+const CREATURE_COPY = {
+  stages: {
+    contaminated_embryo: {
+      zh: "污染胚体 I",
+      en: "CONTAMINATED EMBRYO I",
+    },
+    mutated_juvenile: {
+      zh: "病变幼体 II",
+      en: "MUTATED JUVENILE II",
+    },
+    runaway_adult: {
+      zh: "失控成体 III",
+      en: "RUNAWAY ADULT III",
+    },
+    catastrophe_complete: {
+      zh: "灾变完全体 IV",
+      en: "CATASTROPHE COMPLETE IV",
+    },
+  },
+  branches: {
+    context: {
+      zh: "上下文病变系",
+      en: "CONTEXT PATHOLOGY",
+    },
+    cache: {
+      zh: "缓存化石系",
+      en: "CACHE FOSSIL",
+    },
+    frenzy: {
+      zh: "请求增殖系",
+      en: "REQUEST PROLIFERATION",
+    },
+    nuclear: {
+      zh: "核食系",
+      en: "NUCLEAR FEEDER",
+    },
+  },
+  forms: {
+    context_polyp: { zh: "上下文息肉", en: "CONTEXT POLYP" },
+    context_sarcoma: { zh: "上下文肉瘤", en: "CONTEXT SARCOMA" },
+    memory_devourer: { zh: "记忆吞噬兽", en: "MEMORY DEVOURER" },
+    infinite_dossier_matrix: {
+      zh: "无限卷宗母体",
+      en: "INFINITE DOSSIER MATRIX",
+    },
+    cache_moss: { zh: "缓存苔藓", en: "CACHE MOSS" },
+    cache_fossil_beast: { zh: "缓存化石兽", en: "CACHE FOSSIL BEAST" },
+    fossil_armor_tyrant: {
+      zh: "化石甲暴君",
+      en: "FOSSIL ARMOR TYRANT",
+    },
+    archive_extinction: { zh: "档案灭绝体", en: "ARCHIVE EXTINCTION" },
+    request_spore: { zh: "请求孢子", en: "REQUEST SPORE" },
+    request_hydra: { zh: "请求九头虫", en: "REQUEST HYDRA" },
+    concurrency_centipede: {
+      zh: "并发蜈蚣",
+      en: "CONCURRENCY CENTIPEDE",
+    },
+    api_calamity: { zh: "API 天灾", en: "API CALAMITY" },
+    compute_embryo: { zh: "算力胚胎", en: "COMPUTE EMBRYO" },
+    reactor_hatchling: { zh: "反应堆幼兽", en: "REACTOR HATCHLING" },
+    nuclear_feeder: { zh: "核食巨兽", en: "NUCLEAR FEEDER BEAST" },
+    compute_meltdown: { zh: "算力熔毁体", en: "COMPUTE MELTDOWN" },
+  },
+  events: {
+    misplaced_context: {
+      name: { zh: "误食上下文", en: "MISPLACED CONTEXT" },
+      body: {
+        zh: "它在日志缝里捡到一段没人记得为什么还在的上下文。",
+        en: "It found a context fragment nobody remembers keeping.",
+      },
+    },
+    cache_calcification: {
+      name: { zh: "缓存钙化", en: "CACHE CALCIFICATION" },
+      body: {
+        zh: "缓存残渣在背甲里钙化，敲一下能听见旧上下文的回声。",
+        en: "Cached residue hardened into armor that echoes old context.",
+      },
+    },
+    request_budding: {
+      name: { zh: "请求出芽", en: "REQUEST BUDDING" },
+      body: {
+        zh: "一次普通调用从侧面长出了另一张等待回复的嘴。",
+        en: "One ordinary call grew another mouth waiting for a reply.",
+      },
+    },
+    reactor_leak: {
+      name: { zh: "反应堆渗漏", en: "REACTOR LEAK" },
+      body: {
+        zh: "没有人承认那团荧光来自哪里，但它今晚更亮了。",
+        en: "Nobody admits where the glow came from, but it is brighter tonight.",
+      },
+    },
+    infinite_appendix: {
+      name: { zh: "无限附录", en: "INFINITE APPENDIX" },
+      body: {
+        zh: "稀有突变：正文结束后，又长出了一个永远读不完的附录。",
+        en: "Rare mutation: an appendix appeared after the ending and never stops.",
+      },
+    },
+    fossil_crown: {
+      name: { zh: "化石王冠", en: "FOSSIL CROWN" },
+      body: {
+        zh: "稀有突变：缓存碎片排列成王冠，统治的仍然是旧答案。",
+        en: "Rare mutation: cache shards formed a crown over yesterday's answers.",
+      },
+    },
+    second_mouth: {
+      name: { zh: "第二张嘴", en: "SECOND MOUTH" },
+      body: {
+        zh: "稀有突变：第一张嘴还没收到回复，第二张已经开始追问。",
+        en: "Rare mutation: the second mouth followed up before the first got an answer.",
+      },
+    },
+    black_core: {
+      name: { zh: "黑色核心", en: "BLACK CORE" },
+      body: {
+        zh: "稀有突变：胸腔里出现一个不在任何资源账单上的小型核心。",
+        en: "Rare mutation: a small unmetered core appeared in its chest.",
+      },
+    },
+  },
+};
+
+function creatureEvent(seed, date) {
+  const digest = createHash("sha256").update(`${seed}:${date}`).digest();
+  const rare = digest.readUInt32BE(0) % 100 < 8;
+  const pool = rare ? RARE_CREATURE_EVENTS : COMMON_CREATURE_EVENTS;
+  const event = pool[digest.readUInt32BE(4) % pool.length];
+  return {
+    ...event,
+    rarity: rare ? "rare" : "common",
+  };
+}
+
+function creatureLabel(group, id, lang) {
+  return CREATURE_COPY[group][id][lang];
+}
+
+function creatureArt(branch) {
+  const art = {
+    context: [
+      "          _________",
+      "      ___/  ◉   ◉  \\___",
+      "    <[[[     ∞      ]]]>",
+      "       \\___|||||___/",
+      "          /_/ \\_\\",
+    ],
+    cache: [
+      "        .#########.",
+      "      _/ []  []  []\\_",
+      "     /___  ◉__◉  ___\\",
+      "         \\_||||_/",
+      "          /_||_\\",
+    ],
+    frenzy: [
+      "       (◉) (◉) (◉)",
+      "        \\___|___/",
+      "     (◉)-{|||||}-(◉)",
+      "          / | \\",
+      "         /_/ \\_\\",
+    ],
+    nuclear: [
+      "          /\\  /\\",
+      "      ___/  \\/  \\___",
+      "     /   ◉   ☢   ◉   \\",
+      "    <       ___       >",
+      "     \\__/_/   \\_\\__/",
+    ],
+  };
+  return art[branch].map((line) => color("1;31", line)).join("\n");
+}
+
+function roundCreature(value) {
+  return Number(value.toFixed(2));
+}
+
+function pollutionDose(totalTokens) {
+  if (totalTokens <= 0) return 0;
+  return Math.min(100, Math.max(1, Math.round(Math.log10(totalTokens + 1) * 12)));
+}
+
+function dailyCreatureRecord(report) {
+  const { totals } = report;
+  const dose = pollutionDose(totals.totalTokens);
+  if (dose === 0) {
+    return {
+      pollutionDose: 0,
+      active: false,
+      traits: {
+        context: 0,
+        cache: 0,
+        frenzy: 0,
+        nuclear: 0,
+      },
+    };
+  }
+
+  const requests = Math.max(1, totals.requests);
+  const uncachedInput = Math.max(
+    0,
+    totals.inputTokens -
+      totals.cachedInputTokens -
+      totals.cacheWriteInputTokens,
+  );
+  const averageInput = uncachedInput / requests;
+  const contextIntensity = Math.min(1, averageInput / 100_000);
+  const cacheIntensity =
+    totals.inputTokens === 0
+      ? 0
+      : Math.min(1, totals.cachedInputTokens / totals.inputTokens);
+  const frenzyIntensity = Math.min(1, totals.requests / 50);
+  const dominantIntensity = Math.max(
+    contextIntensity,
+    cacheIntensity,
+    frenzyIntensity,
+  );
+
+  return {
+    pollutionDose: dose,
+    active: true,
+    traits: {
+      context: roundCreature(dose * contextIntensity),
+      cache: roundCreature(dose * cacheIntensity),
+      frenzy: roundCreature(dose * frenzyIntensity),
+      nuclear: roundCreature(dose * (1 - dominantIntensity * 0.6)),
+    },
+  };
+}
+
+function creatureStatePath() {
+  return path.join(os.homedir(), ".anti-ai", "creature.json");
+}
+
+async function loadCreatureState() {
+  try {
+    const contents = await readFile(creatureStatePath(), "utf8");
+    const state = JSON.parse(contents);
+    if (state?.schemaVersion === 1 && state.days) {
+      state.seed ??=
+        process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
+      return state;
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  return {
+    schemaVersion: 1,
+    seed:
+      process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
+    days: {},
+  };
+}
+
+async function saveCreatureState(state) {
+  const target = creatureStatePath();
+  const directory = path.dirname(target);
+  const temporary = path.join(directory, `.creature-${process.pid}.tmp`);
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  await writeFile(temporary, `${JSON.stringify(state, null, 2)}\n`, {
+    mode: 0o600,
+  });
+  await rename(temporary, target);
+}
+
+function deriveCreature(state, date) {
+  const entries = Object.entries(state.days)
+    .filter(([entryDate]) => entryDate <= date)
+    .sort(([left], [right]) => left.localeCompare(right));
+  const traits = {
+    context: 0,
+    cache: 0,
+    frenzy: 0,
+    nuclear: 0,
+  };
+  let exposure = 0;
+  let activeDays = 0;
+  let quietStreakDays = 0;
+
+  for (const [, day] of entries) {
+    if (day.active) {
+      exposure += day.pollutionDose;
+      activeDays += 1;
+      quietStreakDays = 0;
+      for (const key of Object.keys(traits)) traits[key] += day.traits[key];
+    } else if (activeDays > 0) {
+      exposure = Math.max(0, exposure - 2);
+      quietStreakDays += 1;
+    }
+  }
+
+  for (const key of Object.keys(traits)) traits[key] = roundCreature(traits[key]);
+  const branch = Object.entries(traits).sort(
+    ([leftKey, left], [rightKey, right]) =>
+      right - left || leftKey.localeCompare(rightKey),
+  )[0][0];
+  const resolvedBranch = activeDays === 0 ? "nuclear" : branch;
+  const stageIndex = CREATURE_STAGES.findLastIndex(
+    (stage) => exposure >= stage.threshold,
+  );
+  const stage = CREATURE_STAGES[stageIndex];
+  const progressPercent =
+    stage.nextAt === null
+      ? 100
+      : Math.min(
+          100,
+          Math.round(
+            ((exposure - stage.threshold) / (stage.nextAt - stage.threshold)) *
+              100,
+          ),
+        );
+
+  return {
+    stage: stage.id,
+    branch: resolvedBranch,
+    form: CREATURE_FORMS[resolvedBranch][stageIndex],
+    exposure,
+    nextStageAt: stage.nextAt,
+    progressPercent,
+    quietStreakDays,
+    observedDays: entries.length,
+    activeDays,
+    traits,
   };
 }
 
@@ -706,6 +1144,18 @@ function shiftDate(date, days) {
   return value.toISOString().slice(0, 10);
 }
 
+function inclusiveDateRange(startDate, endDate) {
+  const dates = [];
+  for (
+    let current = startDate;
+    current <= endDate;
+    current = shiftDate(current, 1)
+  ) {
+    dates.push(current);
+  }
+  return dates;
+}
+
 function isValidDate(date) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? "")) return false;
   const parsed = new Date(`${date}T12:00:00.000Z`);
@@ -1125,6 +1575,129 @@ async function runShare(options) {
   );
 }
 
+async function runCreature(options) {
+  if (options.action === "reset") {
+    await rm(creatureStatePath(), { force: true });
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify({ reset: true })}\n`);
+    } else {
+      process.stdout.write(
+        `${localized(options.lang, "异变体档案已销毁。下一枚 Token 会重新孵化它。", "Mutation file destroyed. The next token will hatch it again.")}\n`,
+      );
+    }
+    return;
+  }
+
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const date = options.date ?? localDate(new Date(), timezone);
+  let state;
+  try {
+    state = await loadCreatureState();
+  } catch {
+    process.stderr.write(
+      `${localized(options.lang, "异变体档案无法读取。运行 anti-ai creature reset 后可重新孵化。", "The mutation file cannot be read. Run anti-ai creature reset to hatch again.")}\n`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const defaultStart = shiftDate(date, -29);
+  const observedDates = Object.keys(state.days);
+  const latestObservedDate = observedDates
+    .filter((entryDate) => entryDate < date)
+    .sort()
+    .at(-1);
+  const startDate = state.days[date]
+    ? date
+    : latestObservedDate
+      ? shiftDate(latestObservedDate, 1)
+      : defaultStart;
+  const dates = inclusiveDateRange(startDate, date);
+  const reports = await reportsForDates(options, dates, timezone);
+
+  for (const report of reports) {
+    const record = dailyCreatureRecord(report);
+    if (record.active) {
+      const event = creatureEvent(state.seed, report.date);
+      record.traits[event.trait] = roundCreature(
+        record.traits[event.trait] + event.delta,
+      );
+      record.event = {
+        id: event.id,
+        rarity: event.rarity,
+      };
+    } else {
+      record.event = null;
+    }
+    state.days[report.date] = record;
+  }
+  await saveCreatureState(state);
+
+  const creature = deriveCreature(state, date);
+  const today = state.days[date];
+  const result = {
+    date,
+    status: today.active ? "active" : "dormant",
+    ...creature,
+    today: {
+      pollutionDose: today.pollutionDose,
+      event: today.event,
+    },
+  };
+
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return;
+  }
+
+  const lang = options.lang;
+  const eventCopy = today.event
+    ? CREATURE_COPY.events[today.event.id]
+    : undefined;
+  const rarity = today.event
+    ? localized(
+        lang,
+        today.event.rarity === "rare" ? "稀有" : "普通",
+        today.event.rarity.toUpperCase(),
+      )
+    : undefined;
+  const statusLine =
+    result.status === "dormant"
+      ? `${localized(lang, "状态", "STATUS")}  ${localized(lang, `休眠 · 连续 ${result.quietStreakDays} 个 AI 清醒日`, `DORMANT · ${result.quietStreakDays} AI-free days`)}`
+      : `${localized(lang, "状态", "STATUS")}  ${localized(lang, "正在进食", "FEEDING")}`;
+  const eventLines = eventCopy
+    ? [
+        `${localized(lang, "今日突变", "TODAY'S MUTATION")}  [${rarity}] ${eventCopy.name[lang]}`,
+        `  ${eventCopy.body[lang]}`,
+      ]
+    : [
+        `${localized(lang, "今日突变", "TODAY'S MUTATION")}  ${localized(lang, "无 · 今日未进食，污染 -2", "NONE · no feeding today, exposure -2")}`,
+      ];
+
+  process.stdout.write(
+    [
+      `TOKEN MUTATION FILE · ${date}`,
+      "",
+      creatureArt(result.branch),
+      "",
+      `☢ ${localized(lang, "今日污染剂量", "TODAY'S POLLUTION DOSE")}  +${today.pollutionDose}`,
+      statusLine,
+      `${localized(lang, "阶段", "STAGE")}  ${creatureLabel("stages", result.stage, lang)} · ${result.progressPercent}%`,
+      `${localized(lang, "进化分支", "EVOLUTION BRANCH")}  ${creatureLabel("branches", result.branch, lang)}`,
+      `${localized(lang, "形态", "FORM")}  ${creatureLabel("forms", result.form, lang)}`,
+      `${localized(lang, "累积污染", "ACCUMULATED EXPOSURE")}  ${result.exposure}${result.nextStageAt === null ? "" : ` / ${result.nextStageAt}`}`,
+      "",
+      ...eventLines,
+      "",
+      localized(
+        lang,
+        "隐私档案：只保存污染剂量、性状和事件；不保存对话、路径、模型名或精确 Token。",
+        "PRIVACY FILE: stores dose, traits, and events; stores no chats, paths, model names, or exact tokens.",
+      ),
+      "",
+    ].join("\n"),
+  );
+}
+
 async function countJsonl(root) {
   let count = 0;
   for await (const _file of jsonlFiles(root)) count += 1;
@@ -1225,6 +1798,28 @@ function runExplain(lang = "zh") {
       "  Otherwise show STEADY BURN; zero usage and missing history have dedicated verdicts.",
       "  Verdicts are generated by fixed local rules; copy rotates deterministically by date.",
       "",
+      color("1", "Mutation system"),
+      "  The first anti-ai creature run backfills the latest 30 calendar days.",
+      "  Later runs fill the entire date gap since the previous visit.",
+      "  Daily pollution dose = min(100, max(1, round(log10(daily tokens + 1) × 12))).",
+      "  Days with no tokens have dose 0.",
+      "  Branch traits: CONTEXT uses uncached input per request; CACHE uses the",
+      "  cached-read share of input; FRENZY uses request count; NUCLEAR is the",
+      "  fallback when no specialized trait dominates.",
+      "    context += dose × min(1, uncached input ÷ requests ÷ 100,000)",
+      "    cache   += dose × min(1, cached reads ÷ total input)",
+      "    frenzy  += dose × min(1, requests ÷ 50)",
+      "    nuclear += dose × (1 - 0.6 × max(context, cache, frenzy intensity))",
+      "  Four stages begin at exposure 0, 50, 150, and 350.",
+      "  One event is selected with SHA-256(local seed + date); 8% are rare mutations.",
+      "  A common event adds 8 to one trait; a rare event adds 20.",
+      "  After the first active day, each AI-free day reduces exposure by 2",
+      "  without clearing historical traits.",
+      "  State: ~/.anti-ai/creature.json",
+      "  It stores only dose, traits, events, and a local seed—not chats, paths,",
+      "  model names, exact tokens, or per-request timestamps.",
+      "  anti-ai creature reset explicitly destroys this file.",
+      "",
       color("1", "Everyday comparisons"),
       "  10W LED light: electricity Wh ÷ 10W = hours lit",
       "  15Wh phone charge: electricity Wh ÷ 15Wh = charges",
@@ -1309,6 +1904,25 @@ function runExplain(lang = "zh") {
     "  其余情况显示“稳定消耗”；无请求或无历史时使用专用判词。",
     "  判词由本地固定规则生成，不调用模型；文案按日期固定轮换。",
     "",
+    color("1", "污染进化系统"),
+    "  首次运行回看最近 30 个自然日。",
+    "  后续运行会补齐两次查看之间的全部日期空档。",
+    "  污染剂量 = min(100, max(1, round(log10(当日 Token + 1) × 12)))，每日上限 100。",
+    "  当日没有 Token 时污染剂量为 0。",
+    "  上下文病变：非缓存输入的单次平均量；缓存化石：缓存读取占比；",
+    "  请求增殖：请求数；核食：没有专门性状占优时的高剂量兜底。",
+    "    上下文 += 污染剂量 × min(1, 非缓存输入 ÷ 请求数 ÷ 100,000)",
+    "    缓存   += 污染剂量 × min(1, 缓存读取 ÷ 总输入)",
+    "    请求   += 污染剂量 × min(1, 请求数 ÷ 50)",
+    "    核食   += 污染剂量 × (1 - 0.6 × max(上下文、缓存、请求强度))",
+    "  4 个阶段的累计污染阈值分别是 0、50、150、350。",
+    "  每日事件由 SHA-256（本地 seed + 日期）确定，其中 8% 进入稀有突变池。",
+    "  普通事件给一个性状 +8，稀有事件 +20。",
+    "  首个活跃日之后，每个 AI 清醒日污染 -2，但不会清除历史性状。",
+    "  状态文件：~/.anti-ai/creature.json",
+    "  只保存污染剂量、性状、事件和本地 seed；不保存对话、路径、模型名、精确 Token 或逐请求时间。",
+    "  anti-ai creature reset 会显式销毁档案。",
+    "",
     color("1", "生活化对照"),
     "  10W LED 灯：电力 Wh ÷ 10W = 点灯小时数",
     "  15Wh 手机充电：电力 Wh ÷ 15Wh = 充电次数",
@@ -1348,18 +1962,19 @@ function runHelp(lang = "zh") {
 Turn local AI tokens into an uncomfortable resource bill.
 
 Commands:
-  today    Print today's AI resource receipt
-  week     Print the latest seven-day trend
-  month    Print this month's usage heatmap through a selected date
-  share    Print a privacy-safe SVG share card
-  doctor   Check local log sources
-  explain  Explain resource proxy methodology
+  today             Print today's AI resource receipt
+  week              Print the latest seven-day trend
+  month             Print this month's usage heatmap through a selected date
+  share             Print a privacy-safe SVG share card
+  creature [reset]  Inspect or reset your mutation file
+  doctor            Check local log sources
+  explain           Explain resource proxy methodology
 
 Options:
   --date <YYYY-MM-DD>             Select today date or week/month end date
   --source <all|codex|claude>     Filter log source (default: all)
   --lang <zh|en>                  Select human-readable output language (default: zh)
-  --json                          Print exact machine-readable today statistics
+  --json                          Print machine-readable today or creature data
   -v, --version                   Show version
   -h, --help                      Show help
 `);
@@ -1371,18 +1986,19 @@ Options:
 把本地 AI Token 变成一张不太令人愉快的资源账单。
 
 Commands:
-  today    打印今天的 AI 资源账单
-  week     打印最近 7 天趋势
-  month    打印本月至指定日期的用量热力图
-  share    输出隐私安全的 SVG 分享卡片
-  doctor   检查本地日志
-  explain  解释资源代理口径
+  today             打印今天的 AI 资源账单
+  week              打印最近 7 天趋势
+  month             打印本月至指定日期的用量热力图
+  share             输出隐私安全的 SVG 分享卡片
+  creature [reset]  查看或重置异变体档案
+  doctor            检查本地日志
+  explain           解释资源代理口径
 
 Options:
   --date <YYYY-MM-DD>             指定 today 日期，或 week/month 结束日期
   --source <all|codex|claude>     过滤日志来源（默认 all）
   --lang <zh|en>                  选择人类可读输出语言（默认 zh）
-  --json                          today 输出机器可读的精确 Token 统计
+  --json                          today 或 creature 输出机器可读数据
   -v, --version                   显示版本
   -h, --help                      显示帮助
 `);
@@ -1423,6 +2039,11 @@ if (helpRequested) {
     `${localized(options.lang, `不支持的数据源：${options.source}`, `Unsupported data source: ${options.source}`)}\n`,
   );
   process.exitCode = 2;
+} else if (options.command === "creature" && options.source !== "all") {
+  process.stderr.write(
+    `${localized(options.lang, "creature 必须使用完整数据源；请移除 --source 过滤。", "creature requires the complete data set; remove the --source filter.")}\n`,
+  );
+  process.exitCode = 2;
 } else if (rawArgs.includes("--date") && !isValidDate(options.date)) {
   process.stderr.write(
     `${localized(options.lang, `无效日期：${options.date}`, `Invalid date: ${options.date}`)}\n`,
@@ -1436,13 +2057,15 @@ if (helpRequested) {
   await runMonth(options);
 } else if (options.command === "share") {
   await runShare(options);
+} else if (options.command === "creature") {
+  await runCreature(options);
 } else if (options.command === "doctor") {
   await runDoctor(options);
 } else if (options.command === "explain") {
   runExplain(options.lang);
 } else {
   process.stderr.write(
-    `Usage: anti-ai <today|week|month|share|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude] [--lang zh|en] [--json]\n`,
+    `Usage: anti-ai <today|week|month|share|creature|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude] [--lang zh|en] [--json]\n`,
   );
   process.exitCode = 1;
 }

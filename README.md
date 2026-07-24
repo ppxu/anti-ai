@@ -62,6 +62,24 @@ anti-ai doctor
 anti-ai today
 ```
 
+### Install the Agent Skill
+
+Install the CLI first, then use the open [`skills`](https://github.com/vercel-labs/skills) installer to give Codex, Claude Code, Cursor, or another supported agent the safe anti-ai workflow:
+
+```bash
+npm install -g anti-ai
+npx skills add ppxu/anti-ai --skill anti-ai -g -y
+```
+
+For an explicit agent target:
+
+```bash
+npx skills add ppxu/anti-ai --skill anti-ai -g -a codex -y
+npx skills add ppxu/anti-ai --skill anti-ai -g -a claude-code -y
+```
+
+The Skill tells an Agent when to use exact JSON, when to show a human receipt, how to create a share card, and why it must not read raw conversation logs.
+
 ## Commands
 
 ```bash
@@ -77,6 +95,9 @@ anti-ai week --date 2026-07-23
 
 anti-ai month
 anti-ai month --date 2026-07-23
+
+anti-ai share > anti-ai-receipt.svg
+anti-ai share --lang en > anti-ai-receipt.svg
 
 anti-ai doctor
 anti-ai explain
@@ -111,6 +132,17 @@ Print a seven-day token trend ending on the selected date, followed by model and
 ### `month`
 
 Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, and monthly resource comparisons.
+
+### `share`
+
+Print a 1200×630 SVG share card to stdout. It uses the same resource proxy formulas, personal baseline, and deterministic verdict as `today`, but omits prompts, responses, paths, model names, request counts, and exact token counts.
+
+```bash
+anti-ai share > anti-ai-receipt.svg
+anti-ai share --date 2026-07-23 --lang en > anti-ai-receipt.svg
+```
+
+Nothing is uploaded. The destination file is controlled entirely by your shell.
 
 ### `doctor`
 
@@ -162,6 +194,7 @@ The household values are display assumptions, not environmental measurement stan
 - Runs locally and sends no log data over the network
 - Retains only timestamp, message ID, model, and usage metadata while scanning
 - Does not store or print prompts, responses, or tool-call content
+- The default share card omits paths, model names, request counts, and exact token counts
 - Creates no usage database and starts no background process
 
 Do not attach real Codex or Claude Code logs to public issues. Use a minimal, redacted fixture instead.

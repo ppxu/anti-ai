@@ -27,6 +27,33 @@ function runCli(args, env = {}) {
   });
 }
 
+function writeCodexUsage(root, usages, date = "2026-07-23") {
+  const dayStart = new Date(`${date}T00:00:00+08:00`).getTime();
+  const records = usages.flatMap((usage, index) => [
+    {
+      timestamp: new Date(dayStart + index * 60_000).toISOString(),
+      type: "turn_context",
+      payload: { model: "mutation-test" },
+    },
+    {
+      timestamp: new Date(dayStart + index * 60_000 + 30_000).toISOString(),
+      type: "event_msg",
+      payload: {
+        type: "token_count",
+        info: {
+          last_token_usage: usage,
+        },
+      },
+    },
+  ]);
+  const [year, month, day] = date.split("-");
+  mkdirSync(path.join(root, year, month, day), { recursive: true });
+  writeFileSync(
+    path.join(root, year, month, day, "session.jsonl"),
+    `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
+  );
+}
+
 test("today --json counts Codex request usage on the requested local date", () => {
   const result = runCli([
     "today",
@@ -471,6 +498,386 @@ test("share supports a fully English privacy-safe SVG", () => {
   assert.doesNotMatch(result.stdout, /今日罪名|隐私模式|生活翻译/);
 });
 
+test("creature --json turns the latest 30 days into an initial mutation file", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-home-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+
+  const result = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    {
+      HOME: home,
+      ANTI_AI_CREATURE_SEED: "test-seed",
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, "");
+  assert.deepEqual(JSON.parse(result.stdout), {
+    date: "2026-07-23",
+    status: "active",
+    stage: "contaminated_embryo",
+    branch: "nuclear",
+    form: "compute_embryo",
+    exposure: 27,
+    nextStageAt: 50,
+    progressPercent: 54,
+    quietStreakDays: 0,
+    observedDays: 30,
+    activeDays: 1,
+    traits: {
+      context: 0.01,
+      cache: 15.2,
+      frenzy: 1.08,
+      nuclear: 22.68,
+    },
+    today: {
+      pollutionDose: 27,
+      event: {
+        id: "cache_calcification",
+        rarity: "common",
+      },
+    },
+  });
+});
+
+test("creature persists one deterministic mutation event per active day", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-event-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "test-seed",
+  };
+
+  const first = runCli(["creature", "--date", "2026-07-23", "--json"], env);
+  const second = runCli(["creature", "--date", "2026-07-23", "--json"], env);
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(second.status, 0, second.stderr);
+  assert.deepEqual(JSON.parse(second.stdout), JSON.parse(first.stdout));
+  assert.deepEqual(JSON.parse(first.stdout).today.event, {
+    id: "cache_calcification",
+    rarity: "common",
+  });
+});
+
+test("creature can reach a rare mutation from its local deterministic seed", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-rare-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+
+  const result = runCli(["creature", "--date", "2026-07-23", "--json"], {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "rare-4",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).today.event, {
+    id: "infinite_appendix",
+    rarity: "rare",
+  });
+});
+
+test("creature evolves into four branches from distinct usage patterns", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-branches-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const patterns = {
+    context: [
+      {
+        input_tokens: 5_000_000,
+        cached_input_tokens: 0,
+        output_tokens: 100,
+        total_tokens: 5_000_100,
+      },
+    ],
+    cache: [
+      {
+        input_tokens: 1_000_000,
+        cached_input_tokens: 950_000,
+        output_tokens: 100,
+        total_tokens: 1_000_100,
+      },
+    ],
+    frenzy: Array.from({ length: 60 }, () => ({
+      input_tokens: 1_000,
+      cached_input_tokens: 0,
+      output_tokens: 100,
+      total_tokens: 1_100,
+    })),
+    nuclear: [
+      {
+        input_tokens: 10_000,
+        cached_input_tokens: 0,
+        output_tokens: 1_000_000,
+        total_tokens: 1_010_000,
+      },
+    ],
+  };
+  const actual = {};
+
+  for (const [name, usages] of Object.entries(patterns)) {
+    const root = path.join(workspace, name, "codex");
+    const home = path.join(workspace, name, "home");
+    mkdirSync(home, { recursive: true });
+    writeCodexUsage(root, usages);
+    const result = runCli(["creature", "--date", "2026-07-23", "--json"], {
+      HOME: home,
+      ANTI_AI_CODEX_DIR: root,
+      ANTI_AI_CREATURE_SEED: "branch-seed",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    actual[name] = {
+      branch: report.branch,
+      form: report.form,
+    };
+  }
+
+  assert.deepEqual(actual, {
+    context: {
+      branch: "context",
+      form: "context_sarcoma",
+    },
+    cache: {
+      branch: "cache",
+      form: "cache_fossil_beast",
+    },
+    frenzy: {
+      branch: "frenzy",
+      form: "request_hydra",
+    },
+    nuclear: {
+      branch: "nuclear",
+      form: "reactor_hatchling",
+    },
+  });
+});
+
+test("creature evolves across active days and becomes dormant on AI-free days", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-evolution-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  mkdirSync(home, { recursive: true });
+  const heavyContextUsage = [
+    {
+      input_tokens: 5_000_000,
+      cached_input_tokens: 0,
+      output_tokens: 100,
+      total_tokens: 5_000_100,
+    },
+  ];
+  for (const date of ["2026-07-20", "2026-07-21", "2026-07-22"]) {
+    writeCodexUsage(root, heavyContextUsage, date);
+  }
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "evolution-seed",
+  };
+
+  const firstQuietDay = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    env,
+  );
+  const secondQuietDay = runCli(
+    ["creature", "--date", "2026-07-24", "--json"],
+    env,
+  );
+
+  assert.equal(firstQuietDay.status, 0, firstQuietDay.stderr);
+  assert.equal(secondQuietDay.status, 0, secondQuietDay.stderr);
+  assert.deepEqual(
+    [firstQuietDay, secondQuietDay].map((result) => {
+      const report = JSON.parse(result.stdout);
+      return {
+        status: report.status,
+        stage: report.stage,
+        branch: report.branch,
+        form: report.form,
+        exposure: report.exposure,
+        quietStreakDays: report.quietStreakDays,
+        event: report.today.event,
+      };
+    }),
+    [
+      {
+        status: "dormant",
+        stage: "runaway_adult",
+        branch: "context",
+        form: "memory_devourer",
+        exposure: 238,
+        quietStreakDays: 1,
+        event: null,
+      },
+      {
+        status: "dormant",
+        stage: "runaway_adult",
+        branch: "context",
+        form: "memory_devourer",
+        exposure: 236,
+        quietStreakDays: 2,
+        event: null,
+      },
+    ],
+  );
+});
+
+test("creature backfills the full gap between visits after its initial 30 days", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-gap-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  mkdirSync(home, { recursive: true });
+  const usage = [
+    {
+      input_tokens: 5_000_000,
+      cached_input_tokens: 0,
+      output_tokens: 100,
+      total_tokens: 5_000_100,
+    },
+  ];
+  writeCodexUsage(root, usage, "2026-06-01");
+  writeCodexUsage(root, usage, "2026-07-01");
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "gap-seed",
+  };
+
+  const firstVisit = runCli(
+    ["creature", "--date", "2026-06-01", "--json"],
+    env,
+  );
+  const laterVisit = runCli(
+    ["creature", "--date", "2026-08-15", "--json"],
+    env,
+  );
+
+  assert.equal(firstVisit.status, 0, firstVisit.stderr);
+  assert.equal(laterVisit.status, 0, laterVisit.stderr);
+  assert.equal(JSON.parse(firstVisit.stdout).activeDays, 1);
+  assert.equal(JSON.parse(laterVisit.stdout).activeDays, 2);
+});
+
+test("creature renders bilingual mutation files without leaking raw usage", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-copy-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const env = {
+    HOME: path.join(workspace, "home"),
+    ANTI_AI_CREATURE_SEED: "test-seed",
+  };
+  mkdirSync(env.HOME, { recursive: true });
+
+  const zh = runCli(["creature", "--date", "2026-07-23"], env);
+  const en = runCli(
+    ["creature", "--date", "2026-07-23", "--lang", "en"],
+    env,
+  );
+
+  assert.equal(zh.status, 0, zh.stderr);
+  assert.match(zh.stdout, /TOKEN MUTATION FILE · 2026-07-23/);
+  assert.match(zh.stdout, /☢ 今日污染剂量\s+\+27/);
+  assert.match(zh.stdout, /阶段\s+污染胚体 I · 54%/);
+  assert.match(zh.stdout, /进化分支\s+核食系/);
+  assert.match(zh.stdout, /形态\s+算力胚胎/);
+  assert.match(zh.stdout, /今日突变\s+\[普通\] 缓存钙化/);
+  assert.match(zh.stdout, /不保存对话、路径、模型名或精确 Token/);
+  assert.doesNotMatch(zh.stdout, /180 tokens|gpt-test|Codex|\/Users\//);
+
+  assert.equal(en.status, 0, en.stderr);
+  assert.match(en.stdout, /TODAY'S POLLUTION DOSE\s+\+27/);
+  assert.match(en.stdout, /STAGE\s+CONTAMINATED EMBRYO I · 54%/);
+  assert.match(en.stdout, /EVOLUTION BRANCH\s+NUCLEAR FEEDER/);
+  assert.match(en.stdout, /FORM\s+COMPUTE EMBRYO/);
+  assert.match(en.stdout, /TODAY'S MUTATION\s+\[COMMON\] CACHE CALCIFICATION/);
+  assert.match(en.stdout, /stores no chats, paths, model names, or exact tokens/);
+  assert.doesNotMatch(en.stdout, /今日污染|阶段|进化分支|今日突变/);
+});
+
+test("creature reset removes prior evolution through an explicit CLI action", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-reset-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  mkdirSync(home, { recursive: true });
+  writeCodexUsage(
+    root,
+    [
+      {
+        input_tokens: 5_000_000,
+        cached_input_tokens: 0,
+        output_tokens: 100,
+        total_tokens: 5_000_100,
+      },
+    ],
+    "2026-06-01",
+  );
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "reset-seed",
+  };
+
+  const before = runCli(["creature", "--date", "2026-06-01", "--json"], env);
+  const reset = runCli(["creature", "reset", "--json"], env);
+  const after = runCli(["creature", "--date", "2026-07-23", "--json"], {
+    ...env,
+    ANTI_AI_CODEX_DIR: path.join(workspace, "empty-codex"),
+  });
+
+  assert.equal(before.status, 0, before.stderr);
+  assert.equal(reset.status, 0, reset.stderr);
+  assert.deepEqual(JSON.parse(reset.stdout), { reset: true });
+  assert.equal(after.status, 0, after.stderr);
+  assert.deepEqual(
+    (({ status, exposure, activeDays, quietStreakDays }) => ({
+      status,
+      exposure,
+      activeDays,
+      quietStreakDays,
+    }))(JSON.parse(after.stdout)),
+    {
+      status: "dormant",
+      exposure: 0,
+      activeDays: 0,
+      quietStreakDays: 0,
+    },
+  );
+});
+
+test("creature rejects filtered sources that would corrupt one evolution history", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-source-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+
+  const result = runCli(
+    ["creature", "--date", "2026-07-23", "--source", "codex"],
+    { HOME: home },
+  );
+
+  assert.equal(result.status, 2);
+  assert.equal(
+    result.stderr,
+    "creature 必须使用完整数据源；请移除 --source 过滤。\n",
+  );
+  assert.equal(result.stdout, "");
+});
+
+test("creature reports a recoverable error for a corrupted mutation file", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-corrupt-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(path.join(home, ".anti-ai", "creature.json"), "{not-json\n");
+
+  const result = runCli(["creature", "--date", "2026-07-23"], { HOME: home });
+
+  assert.equal(result.status, 1);
+  assert.equal(
+    result.stderr,
+    "异变体档案无法读取。运行 anti-ai creature reset 后可重新孵化。\n",
+  );
+  assert.equal(result.stdout, "");
+  assert.doesNotMatch(result.stderr, /\/Users\/|SyntaxError|at runCreature/);
+});
+
 test("doctor confirms both local log sources without exposing conversation text", () => {
   const result = runCli(
     ["doctor"],
@@ -556,6 +963,31 @@ test("explain discloses how model usage is attributed", () => {
   );
 });
 
+test("explain discloses creature growth, chance, recovery, and state privacy", () => {
+  const result = runCli(["explain"]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /污染进化系统/);
+  assert.match(
+    result.stdout,
+    /污染剂量.*log10\(当日 Token \+ 1\).*每日上限 100/s,
+  );
+  assert.match(result.stdout, /首次运行回看最近 30 个自然日/);
+  assert.match(
+    result.stdout,
+    /上下文病变.*非缓存输入.*缓存化石.*缓存读取占比.*请求增殖.*请求数.*核食.*兜底/s,
+  );
+  assert.match(result.stdout, /4 个阶段.*50.*150.*350/s);
+  assert.match(result.stdout, /SHA-256.*8%.*稀有突变/s);
+  assert.match(result.stdout, /AI 清醒日.*污染 -2.*不会清除历史性状/s);
+  assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
+  assert.match(
+    result.stdout,
+    /不保存对话、路径、模型名、精确 Token 或逐请求时间/s,
+  );
+  assert.match(result.stdout, /anti-ai creature reset/);
+});
+
 test("doctor, explain, and help support English output", () => {
   const doctor = runCli(
     ["doctor", "--lang", "en"],
@@ -578,11 +1010,14 @@ test("doctor, explain, and help support English output", () => {
     explain.stdout,
     /Share card.*omits chats, paths, model names, and exact token counts/s,
   );
+  assert.match(explain.stdout, /Mutation system/);
+  assert.match(explain.stdout, /8%.*rare mutation/s);
   assert.doesNotMatch(explain.stdout, /模型统计|个人基线与判词/);
 
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /Turn local AI tokens into an uncomfortable resource bill/);
   assert.match(help.stdout, /share\s+Print a privacy-safe SVG share card/);
+  assert.match(help.stdout, /creature \[reset\]\s+Inspect or reset your mutation file/);
   assert.match(help.stdout, /--lang <zh\|en>/);
   assert.doesNotMatch(help.stdout, /打印今天/);
 });
@@ -596,6 +1031,7 @@ test("--help documents the public commands and filters", () => {
   assert.match(result.stdout, /week\s+打印最近 7 天趋势/);
   assert.match(result.stdout, /month\s+打印本月至指定日期的用量热力图/);
   assert.match(result.stdout, /share\s+输出隐私安全的 SVG 分享卡片/);
+  assert.match(result.stdout, /creature \[reset\]\s+查看或重置异变体档案/);
   assert.match(result.stdout, /doctor\s+检查本地日志/);
   assert.match(result.stdout, /explain\s+解释资源代理口径/);
   assert.match(result.stdout, /--source <all\|codex\|claude>/);
@@ -607,7 +1043,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 0.4.0\n");
+  assert.equal(result.stdout, "anti-ai 0.5.0\n");
   assert.equal(result.stderr, "");
 });
 

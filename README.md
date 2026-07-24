@@ -6,7 +6,7 @@
 
 English | [简体中文](./README.zh-CN.md)
 
-Turn local Codex and Claude Code token usage into a transparent, satirical AI resource receipt.
+Turn local Codex and Claude Code token usage into a transparent, satirical AI resource receipt—and a mutation creature fed on compute waste.
 
 ```text
 ┌──────────────────────────────────────────────┐
@@ -99,6 +99,10 @@ anti-ai month --date 2026-07-23
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 
+anti-ai creature
+anti-ai creature --json
+anti-ai creature reset
+
 anti-ai doctor
 anti-ai explain
 anti-ai --version
@@ -112,10 +116,11 @@ All human-readable commands support `--lang zh|en`, including receipts, summarie
 ```bash
 anti-ai today --lang en
 anti-ai month --lang en
+anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json` ignores presentation language and keeps the same machine-readable keys.
+`today --json` and `creature --json` ignore presentation language and keep stable machine-readable keys.
 
 ### `today`
 
@@ -143,6 +148,40 @@ anti-ai share --date 2026-07-23 --lang en > anti-ai-receipt.svg
 ```
 
 Nothing is uploaded. The destination file is controlled entirely by your shell.
+
+### `creature`
+
+Turn recent Token use into a persistent compute mutation:
+
+```bash
+anti-ai creature
+anti-ai creature --date 2026-07-23
+anti-ai creature --lang en
+anti-ai creature --json
+```
+
+The first run backfills the latest 30 calendar days; later runs fill the entire gap since the previous visit. Daily Token totals are compressed logarithmically into a capped pollution dose from `1–100`; a zero-Token day has dose `0`, so wasteful volume does not produce linear growth.
+
+The initial backfill may take several seconds with large logs. Once the file exists, another visit on the same day scans only that day.
+
+The creature has four stages and four main branches:
+
+| Branch | Main signal |
+|---|---|
+| Context Pathology | Uncached input per request |
+| Cache Fossil | Cached reads as a share of input |
+| Request Proliferation | Daily request count |
+| Nuclear Feeder | High pollution when no specialized trait dominates |
+
+Accumulated exposure crosses later stages at `50`, `150`, and `350`. A local seed plus the date selects one repeatable event per active day; about `8%` enter a rare-mutation pool. After the first active day, every AI-free day reduces exposure by `2` and puts the creature to sleep without erasing historical traits.
+
+State lives at `~/.anti-ai/creature.json`. It contains pollution doses, traits, event IDs, and a local seed—not prompts, responses, paths, model names, exact Token totals, or per-request timestamps. One mutation history always uses the complete Codex + Claude Code data set, so `creature` rejects `--source` filters.
+
+Explicitly restart it with:
+
+```bash
+anti-ai creature reset
+```
 
 ### `doctor`
 
@@ -195,7 +234,7 @@ The household values are display assumptions, not environmental measurement stan
 - Retains only timestamp, message ID, model, and usage metadata while scanning
 - Does not store or print prompts, responses, or tool-call content
 - The default share card omits paths, model names, request counts, and exact token counts
-- Creates no usage database and starts no background process
+- Creates no usage database and starts no background process; `creature` maintains one local growth file without exact usage
 
 Do not attach real Codex or Claude Code logs to public issues. Use a minimal, redacted fixture instead.
 

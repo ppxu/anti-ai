@@ -2,7 +2,7 @@
 
 [English](./README.md) | 简体中文
 
-把 Codex 和 Claude Code 的本地 Token 记录，变成一张不太令人愉快的 AI 资源账单。
+把 Codex 和 Claude Code 的本地 Token 记录，变成一张不太令人愉快的 AI 资源账单，以及一只被算力废料喂大的异变体。
 
 ```text
 ┌──────────────────────────────────────────────┐
@@ -100,6 +100,10 @@ anti-ai month --date 2026-07-23
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 
+anti-ai creature
+anti-ai creature --json
+anti-ai creature reset
+
 anti-ai doctor
 anti-ai explain
 anti-ai --version
@@ -113,10 +117,11 @@ anti-ai --help
 ```bash
 anti-ai today --lang en
 anti-ai month --lang en
+anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json` 不受展示语言影响，字段名和结构保持稳定。
+`today --json` 和 `creature --json` 不受展示语言影响，字段名和结构保持稳定。
 
 ### `today`
 
@@ -144,6 +149,40 @@ anti-ai share --date 2026-07-23 --lang en > anti-ai-receipt.svg
 ```
 
 工具不会上传卡片，保存位置完全由你的命令行重定向决定。
+
+### `creature`
+
+把最近的 Token 使用变成一只持续进化的“算力异变体”：
+
+```bash
+anti-ai creature
+anti-ai creature --date 2026-07-23
+anti-ai creature --lang en
+anti-ai creature --json
+```
+
+首次运行会回看最近 30 个自然日，后续运行会自动补齐两次查看之间的空档。每天的 Token 总量先经过对数压缩，换算为 `1–100` 的污染剂量；无 Token 的日期为 `0`，因此单纯刷量不会线性加速进化。
+
+日志量很大时，首次回看可能需要数秒；档案建立后，同一天再次查看只增量扫描当天。
+
+异变体有 4 个阶段和 4 条主分支：
+
+| 分支 | 主要驱动 |
+|---|---|
+| 上下文病变系 | 每次请求的非缓存输入量 |
+| 缓存化石系 | 缓存读取占输入的比例 |
+| 请求增殖系 | 当日请求数量 |
+| 核食系 | 没有单项性状占优时的高污染兜底 |
+
+累计污染达到 `50`、`150`、`350` 时进入后续阶段。每天会根据本地随机种子和日期触发一个可复现事件，其中约 `8%` 进入稀有突变池。首个活跃日之后，每个 AI 清醒日让污染减少 `2`，怪兽进入休眠，但历史性状不会被清空。
+
+档案保存在 `~/.anti-ai/creature.json`。文件只包含污染剂量、性状、事件 ID 和本地随机种子，不包含 Prompt、回复、路径、模型名、精确 Token 或逐请求时间。成长档案固定使用 Codex + Claude Code 完整数据，不能配合 `--source` 过滤。
+
+显式重开：
+
+```bash
+anti-ai creature reset
+```
 
 ### `doctor`
 
@@ -213,7 +252,7 @@ Codex 和 Claude Code 没有向本工具提供逐请求的实际电力、水耗�
 - 解析 JSONL 时只保留时间、消息 ID、模型和 usage 元数据
 - 不采集、不保存、不输出 Prompt、回复或工具调用正文
 - 默认分享卡片不包含路径、模型名、请求数或精确 Token
-- 不创建用量数据库或后台进程
+- 不创建用量数据库或后台进程；`creature` 只维护一个不含精确用量的本地成长档案
 
 ## 测试
 

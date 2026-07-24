@@ -173,9 +173,23 @@ The creature has four stages and four main branches:
 | Request Proliferation | Daily request count |
 | Nuclear Feeder | High pollution when no specialized trait dominates |
 
-Accumulated exposure crosses later stages at `50`, `150`, and `350`. A local seed plus the date selects one repeatable event per active day; about `8%` enter a rare-mutation pool. After the first active day, every AI-free day reduces exposure by `2` and puts the creature to sleep without erasing historical traits.
+It also grows seven deliberately unhealthy abilities:
 
-State lives at `~/.anti-ai/creature.json`. It contains pollution doses, traits, event IDs, and a local seed—not prompts, responses, paths, model names, exact Token totals, or per-request timestamps. One mutation history always uses the complete Codex + Claude Code data set, so `creature` rejects `--source` filters.
+| Ability | Main growth source |
+|---|---|
+| Token Appetite | Pollution dose |
+| Parasitic Memory | Context-heavy use |
+| Cache Carapace | Cached input |
+| Request Maws | Request proliferation |
+| Core Glow | Unspecialized compute pollution |
+| Instability | Seeded random gains and rare events |
+| Withdrawal | AI-free days after hatching |
+
+Each active day grants usage-driven points, one deterministic random gain, and an event-related bonus. Values cap at `99`; reaching `5`, `15`, and `30` unlocks progressively worse mutation talents. Every 10 Instability points adds one percentage point to the rare-mutation chance, from a base `8%` up to `20%`. Level, temperament, mood, epithet, active streak, age, talent collection, and daily gains are shown in the terminal and in `creature --json`.
+
+Accumulated exposure crosses later stages at `50`, `150`, and `350`. A local seed plus the date selects one repeatable event per active day. After the first active day, every AI-free day reduces exposure by `2`, grows Withdrawal by `1`, and puts the creature to sleep without erasing historical traits.
+
+State lives at `~/.anti-ai/creature.json`. It contains pollution doses, traits, ability gains, event IDs, and a local seed—not prompts, responses, paths, model names, exact Token totals, or per-request timestamps. Existing v0.5 files are upgraded locally on first use. One mutation history always uses the complete Codex + Claude Code data set, so `creature` rejects `--source` filters.
 
 Explicitly restart it with:
 

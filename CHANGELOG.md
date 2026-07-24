@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-07-24
+
+### Added
+
+- Seven growable mutation abilities with usage-driven points, deterministic random gains, and AI-free-day Withdrawal.
+- Twenty-one mutation talents across three unlock thresholds, plus level, temperament, mood, epithet, age, active streak, and collection counters.
+- Instability-driven rare-mutation odds that rise from 8% to a capped 20%.
+- Expanded bilingual creature output and machine-readable daily ability gains.
+
+### Changed
+
+- Existing v0.5 creature files migrate locally to the new ability schema without rescanning historical exact Token totals.
+- Agent Skill, `explain`, and both READMEs now document ability growth, talent unlocks, chance, and privacy boundaries.
+
+### Security
+
+- Creature state still excludes chats, paths, model names, exact Token totals, and per-request timestamps; only derived ability gains are added.
+
 ## [0.5.0] - 2026-07-24
 
 ### Added
@@ -74,6 +92,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[0.6.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.6.0
 [0.5.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.3.0

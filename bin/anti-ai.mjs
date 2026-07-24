@@ -180,6 +180,81 @@ const RARE_CREATURE_EVENTS = [
   },
 ];
 
+const CREATURE_ABILITY_KEYS = [
+  "appetite",
+  "memory",
+  "shell",
+  "mouths",
+  "glow",
+  "instability",
+  "withdrawal",
+];
+
+const CREATURE_BRANCH_ABILITIES = {
+  context: "memory",
+  cache: "shell",
+  frenzy: "mouths",
+  nuclear: "glow",
+};
+
+const CREATURE_TALENTS = {
+  appetite: [
+    { id: "bottomless_stomach", threshold: 5 },
+    { id: "throughput_singularity", threshold: 15 },
+    { id: "invoice_devourer", threshold: 30 },
+  ],
+  memory: [
+    { id: "appendix_gills", threshold: 5 },
+    { id: "recursive_cortex", threshold: 15 },
+    { id: "dossier_hive", threshold: 30 },
+  ],
+  shell: [
+    { id: "cache_scab", threshold: 5 },
+    { id: "fossil_carapace", threshold: 15 },
+    { id: "yesterday_immortal", threshold: 30 },
+  ],
+  mouths: [
+    { id: "reply_teeth", threshold: 5 },
+    { id: "parallel_dentition", threshold: 15 },
+    { id: "api_choir", threshold: 30 },
+  ],
+  glow: [
+    { id: "nightlight_thorax", threshold: 5 },
+    { id: "private_reactor", threshold: 15 },
+    { id: "meltdown_countdown", threshold: 30 },
+  ],
+  instability: [
+    { id: "dice_organ", threshold: 5 },
+    { id: "bad_luck_field", threshold: 15 },
+    { id: "probability_leak", threshold: 30 },
+  ],
+  withdrawal: [
+    { id: "cold_sweat", threshold: 5 },
+    { id: "offline_tinnitus", threshold: 15 },
+    { id: "ai_intolerance", threshold: 30 },
+  ],
+};
+
+const CREATURE_TEMPERAMENTS = {
+  appetite: "voracious",
+  memory: "ruminating",
+  shell: "fossilized",
+  mouths: "clamorous",
+  glow: "self_igniting",
+  instability: "dice_brained",
+  withdrawal: "withdrawing",
+};
+
+const CREATURE_EPITHETS = {
+  appetite: "token_sink",
+  memory: "appendix_hoarder",
+  shell: "cache_mummy",
+  mouths: "api_choir",
+  glow: "desk_reactor",
+  instability: "loaded_dice",
+  withdrawal: "offline_hallucinator",
+};
+
 const CREATURE_COPY = {
   stages: {
     contaminated_embryo: {
@@ -302,11 +377,79 @@ const CREATURE_COPY = {
       },
     },
   },
+  abilities: {
+    appetite: { zh: "吞噬欲", en: "TOKEN APPETITE" },
+    memory: { zh: "赘生脑回", en: "PARASITIC MEMORY" },
+    shell: { zh: "化石甲", en: "CACHE CARAPACE" },
+    mouths: { zh: "请求口器", en: "REQUEST MAWS" },
+    glow: { zh: "核素亮度", en: "CORE GLOW" },
+    instability: { zh: "失控指数", en: "INSTABILITY" },
+    withdrawal: { zh: "戒断反应", en: "WITHDRAWAL" },
+  },
+  talents: {
+    bottomless_stomach: { zh: "无底胃袋", en: "BOTTOMLESS STOMACH" },
+    throughput_singularity: { zh: "吞吐奇点", en: "THROUGHPUT SINGULARITY" },
+    invoice_devourer: { zh: "账单吞噬者", en: "INVOICE DEVOURER" },
+    appendix_gills: { zh: "附录鳃", en: "APPENDIX GILLS" },
+    recursive_cortex: { zh: "递归脑叶", en: "RECURSIVE CORTEX" },
+    dossier_hive: { zh: "卷宗蜂巢", en: "DOSSIER HIVE" },
+    cache_scab: { zh: "缓存结痂", en: "CACHE SCAB" },
+    fossil_carapace: { zh: "化石背甲", en: "FOSSIL CARAPACE" },
+    yesterday_immortal: { zh: "昨日永生", en: "YESTERDAY IMMORTAL" },
+    reply_teeth: { zh: "回复齿", en: "REPLY TEETH" },
+    parallel_dentition: { zh: "并发牙列", en: "PARALLEL DENTITION" },
+    api_choir: { zh: "API 合唱团", en: "API CHOIR" },
+    nightlight_thorax: { zh: "夜光胸腔", en: "NIGHTLIGHT THORAX" },
+    private_reactor: { zh: "私有反应堆", en: "PRIVATE REACTOR" },
+    meltdown_countdown: { zh: "熔毁倒计时", en: "MELTDOWN COUNTDOWN" },
+    dice_organ: { zh: "骰子器官", en: "DICE ORGAN" },
+    bad_luck_field: { zh: "坏运磁场", en: "BAD-LUCK FIELD" },
+    probability_leak: { zh: "概率泄漏", en: "PROBABILITY LEAK" },
+    cold_sweat: { zh: "戒断冷汗", en: "WITHDRAWAL SWEATS" },
+    offline_tinnitus: { zh: "离线耳鸣", en: "OFFLINE TINNITUS" },
+    ai_intolerance: { zh: "AI 不耐受", en: "AI INTOLERANCE" },
+  },
+  temperaments: {
+    voracious: { zh: "暴食型", en: "VORACIOUS" },
+    ruminating: { zh: "过度思考型", en: "RUMINATING" },
+    fossilized: { zh: "怀旧固化型", en: "FOSSILIZED" },
+    clamorous: { zh: "多嘴合唱型", en: "CLAMOROUS" },
+    self_igniting: { zh: "自燃型", en: "SELF-IGNITING" },
+    dice_brained: { zh: "骰脑型", en: "DICE-BRAINED" },
+    withdrawing: { zh: "戒断型", en: "WITHDRAWING" },
+  },
+  moods: {
+    unhatched: { zh: "尚未污染", en: "UNCONTAMINATED" },
+    token_chewing: { zh: "嚼 Token", en: "CHEWING TOKENS" },
+    critical_overfeed: { zh: "过量发光", en: "CRITICALLY OVERFED" },
+    mutation_high: { zh: "突变上头", en: "MUTATION HIGH" },
+    withdrawal_tremor: { zh: "戒断手抖", en: "WITHDRAWAL TREMOR" },
+    withdrawal_delirium: { zh: "离线幻听", en: "OFFLINE DELIRIUM" },
+  },
+  epithets: {
+    unlicensed_specimen: { zh: "无证污染物", en: "UNLICENSED SPECIMEN" },
+    token_sink: { zh: "Token 下水道", en: "TOKEN SINK" },
+    appendix_hoarder: { zh: "附录囤积犯", en: "APPENDIX HOARDER" },
+    cache_mummy: { zh: "缓存木乃伊", en: "CACHE MUMMY" },
+    api_choir: { zh: "API 唱诗班", en: "API CHOIR" },
+    desk_reactor: { zh: "桌面反应堆", en: "DESK REACTOR" },
+    loaded_dice: { zh: "灌铅骰子", en: "LOADED DICE" },
+    offline_hallucinator: { zh: "离线幻听者", en: "OFFLINE HALLUCINATOR" },
+  },
 };
 
-function creatureEvent(seed, date) {
+function emptyCreatureAbilities() {
+  return Object.fromEntries(CREATURE_ABILITY_KEYS.map((key) => [key, 0]));
+}
+
+function creatureRareChance(instability = 0) {
+  return Math.min(20, 8 + Math.floor(instability / 10));
+}
+
+function creatureEvent(seed, date, instability = 0) {
   const digest = createHash("sha256").update(`${seed}:${date}`).digest();
-  const rare = digest.readUInt32BE(0) % 100 < 8;
+  const rare =
+    digest.readUInt32BE(0) % 100 < creatureRareChance(instability);
   const pool = rare ? RARE_CREATURE_EVENTS : COMMON_CREATURE_EVENTS;
   const event = pool[digest.readUInt32BE(4) % pool.length];
   return {
@@ -351,6 +494,11 @@ function creatureArt(branch) {
     ],
   };
   return art[branch].map((line) => color("1;31", line)).join("\n");
+}
+
+function creatureAbilityBar(value) {
+  const filled = Math.min(10, Math.ceil(value / 10));
+  return `${"█".repeat(filled)}${"░".repeat(10 - filled)}`;
 }
 
 function roundCreature(value) {
@@ -410,6 +558,65 @@ function dailyCreatureRecord(report) {
   };
 }
 
+function dominantCreatureKey(values) {
+  return Object.entries(values).sort(
+    ([leftKey, left], [rightKey, right]) =>
+      right - left || leftKey.localeCompare(rightKey),
+  )[0][0];
+}
+
+function creatureAbilityGains(seed, date, day, event, hasHatched) {
+  const gains = emptyCreatureAbilities();
+  if (!day.active) {
+    if (hasHatched) gains.withdrawal = 1;
+    return gains;
+  }
+
+  const digest = createHash("sha256")
+    .update(`${seed}:${date}:ability`)
+    .digest();
+  const branch = dominantCreatureKey(day.traits);
+  const branchAbility = CREATURE_BRANCH_ABILITIES[branch];
+  const randomPool = ["memory", "shell", "mouths", "glow", "instability"];
+  const randomAbility = randomPool[digest.readUInt32BE(0) % randomPool.length];
+
+  gains.appetite = 1 + Math.floor(day.pollutionDose / 50);
+  gains[branchAbility] += 1 + Math.floor(day.traits[branch] / 30);
+  gains[randomAbility] += digest.readUInt8(4) % 5 === 0 ? 2 : 1;
+
+  if (event) {
+    const eventDefinition = [...COMMON_CREATURE_EVENTS, ...RARE_CREATURE_EVENTS]
+      .find((candidate) => candidate.id === event.id);
+    const eventAbility = CREATURE_BRANCH_ABILITIES[
+      event.trait ?? eventDefinition?.trait
+    ];
+    if (eventAbility) {
+      gains[eventAbility] += event.rarity === "rare" ? 2 : 1;
+    }
+    if (event.rarity === "rare") gains.instability += 3;
+  }
+
+  return gains;
+}
+
+function migrateCreatureState(state) {
+  let hasHatched = false;
+  for (const [date, day] of Object.entries(state.days).sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
+    day.abilityGains ??= creatureAbilityGains(
+      state.seed,
+      date,
+      day,
+      day.event,
+      hasHatched,
+    );
+    if (day.active) hasHatched = true;
+  }
+  state.schemaVersion = 2;
+  return state;
+}
+
 function creatureStatePath() {
   return path.join(os.homedir(), ".anti-ai", "creature.json");
 }
@@ -418,16 +625,16 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if (state?.schemaVersion === 1 && state.days) {
+    if ([1, 2].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
-      return state;
+      return migrateCreatureState(state);
     }
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},
@@ -445,6 +652,26 @@ async function saveCreatureState(state) {
   await rename(temporary, target);
 }
 
+function unlockedCreatureTalents(abilities) {
+  return CREATURE_ABILITY_KEYS.flatMap((ability) =>
+    CREATURE_TALENTS[ability]
+      .filter((talent) => abilities[ability] >= talent.threshold)
+      .map((talent) => talent.id),
+  );
+}
+
+function creatureMood(creature, today) {
+  if (creature.activeDays === 0) return "unhatched";
+  if (!today.active) {
+    return creature.quietStreakDays >= 3
+      ? "withdrawal_delirium"
+      : "withdrawal_tremor";
+  }
+  if (today.event?.rarity === "rare") return "mutation_high";
+  if (today.pollutionDose >= 75) return "critical_overfeed";
+  return "token_chewing";
+}
+
 function deriveCreature(state, date) {
   const entries = Object.entries(state.days)
     .filter(([entryDate]) => entryDate <= date)
@@ -455,28 +682,47 @@ function deriveCreature(state, date) {
     frenzy: 0,
     nuclear: 0,
   };
+  const abilities = emptyCreatureAbilities();
   let exposure = 0;
   let activeDays = 0;
+  let activeStreakDays = 0;
   let quietStreakDays = 0;
+  let ageDays = 0;
+  let mutationEvents = 0;
+  let rareMutations = 0;
 
   for (const [, day] of entries) {
     if (day.active) {
       exposure += day.pollutionDose;
       activeDays += 1;
+      activeStreakDays += 1;
       quietStreakDays = 0;
       for (const key of Object.keys(traits)) traits[key] += day.traits[key];
+      mutationEvents += 1;
+      if (day.event?.rarity === "rare") rareMutations += 1;
     } else if (activeDays > 0) {
       exposure = Math.max(0, exposure - 2);
+      activeStreakDays = 0;
       quietStreakDays += 1;
+    }
+    if (activeDays > 0) ageDays += 1;
+    for (const key of CREATURE_ABILITY_KEYS) {
+      abilities[key] = Math.min(
+        99,
+        abilities[key] + (day.abilityGains?.[key] ?? 0),
+      );
     }
   }
 
   for (const key of Object.keys(traits)) traits[key] = roundCreature(traits[key]);
-  const branch = Object.entries(traits).sort(
-    ([leftKey, left], [rightKey, right]) =>
-      right - left || leftKey.localeCompare(rightKey),
-  )[0][0];
+  const branch = dominantCreatureKey(traits);
   const resolvedBranch = activeDays === 0 ? "nuclear" : branch;
+  const dominantAbility = dominantCreatureKey(abilities);
+  const abilityPoints = Object.values(abilities).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const talents = unlockedCreatureTalents(abilities);
   const stageIndex = CREATURE_STAGES.findLastIndex(
     (stage) => exposure >= stage.threshold,
   );
@@ -500,9 +746,27 @@ function deriveCreature(state, date) {
     nextStageAt: stage.nextAt,
     progressPercent,
     quietStreakDays,
+    activeStreakDays,
+    ageDays,
     observedDays: entries.length,
     activeDays,
     traits,
+    level: Math.min(99, 1 + Math.floor(abilityPoints / 10)),
+    abilities,
+    abilityPoints,
+    dominantAbility,
+    temperament: CREATURE_TEMPERAMENTS[dominantAbility],
+    epithet:
+      activeDays === 0
+        ? "unlicensed_specimen"
+        : CREATURE_EPITHETS[dominantAbility],
+    talents,
+    rareChancePercent: creatureRareChance(abilities.instability),
+    collections: {
+      mutationEvents,
+      rareMutations,
+      talentsUnlocked: talents.length,
+    },
   };
 }
 
@@ -1615,9 +1879,17 @@ async function runCreature(options) {
   const reports = await reportsForDates(options, dates, timezone);
 
   for (const report of reports) {
+    const previousCreature = deriveCreature(
+      state,
+      shiftDate(report.date, -1),
+    );
     const record = dailyCreatureRecord(report);
     if (record.active) {
-      const event = creatureEvent(state.seed, report.date);
+      const event = creatureEvent(
+        state.seed,
+        report.date,
+        previousCreature.abilities.instability,
+      );
       record.traits[event.trait] = roundCreature(
         record.traits[event.trait] + event.delta,
       );
@@ -1628,19 +1900,33 @@ async function runCreature(options) {
     } else {
       record.event = null;
     }
+    record.abilityGains = creatureAbilityGains(
+      state.seed,
+      report.date,
+      record,
+      record.event,
+      previousCreature.activeDays > 0,
+    );
     state.days[report.date] = record;
   }
   await saveCreatureState(state);
 
   const creature = deriveCreature(state, date);
+  const previousCreature = deriveCreature(state, shiftDate(date, -1));
   const today = state.days[date];
+  const newTalents = creature.talents.filter(
+    (talent) => !previousCreature.talents.includes(talent),
+  );
   const result = {
     date,
     status: today.active ? "active" : "dormant",
     ...creature,
+    mood: creatureMood(creature, today),
     today: {
       pollutionDose: today.pollutionDose,
       event: today.event,
+      abilityGains: today.abilityGains,
+      newTalents,
     },
   };
 
@@ -1672,6 +1958,25 @@ async function runCreature(options) {
     : [
         `${localized(lang, "今日突变", "TODAY'S MUTATION")}  ${localized(lang, "无 · 今日未进食，污染 -2", "NONE · no feeding today, exposure -2")}`,
       ];
+  const abilityLines = CREATURE_ABILITY_KEYS.map(
+    (ability) =>
+      `  ${creatureLabel("abilities", ability, lang)}  ${creatureAbilityBar(result.abilities[ability])} ${String(result.abilities[ability]).padStart(2, " ")} / 99`,
+  );
+  const growth = CREATURE_ABILITY_KEYS.filter(
+    (ability) => today.abilityGains[ability] > 0,
+  )
+    .map(
+      (ability) =>
+        `${creatureLabel("abilities", ability, lang)} +${today.abilityGains[ability]}`,
+    )
+    .join(" · ");
+  const talentPreview = result.talents
+    .slice(-4)
+    .map((talent) => creatureLabel("talents", talent, lang))
+    .join(" · ");
+  const newTalentPreview = result.today.newTalents
+    .map((talent) => creatureLabel("talents", talent, lang))
+    .join(" · ");
 
   process.stdout.write(
     [
@@ -1684,14 +1989,24 @@ async function runCreature(options) {
       `${localized(lang, "阶段", "STAGE")}  ${creatureLabel("stages", result.stage, lang)} · ${result.progressPercent}%`,
       `${localized(lang, "进化分支", "EVOLUTION BRANCH")}  ${creatureLabel("branches", result.branch, lang)}`,
       `${localized(lang, "形态", "FORM")}  ${creatureLabel("forms", result.form, lang)}`,
+      `${localized(lang, "称号", "EPITHET")}  ${creatureLabel("epithets", result.epithet, lang)}`,
+      `${localized(lang, "性格", "TEMPERAMENT")}  ${creatureLabel("temperaments", result.temperament, lang)} · ${localized(lang, "心情", "MOOD")}  ${creatureLabel("moods", result.mood, lang)}`,
       `${localized(lang, "累积污染", "ACCUMULATED EXPOSURE")}  ${result.exposure}${result.nextStageAt === null ? "" : ` / ${result.nextStageAt}`}`,
+      `${localized(lang, "个体记录", "SPECIMEN LOG")}  ${localized(lang, `孵化 ${result.ageDays} 天 · 活跃连击 ${result.activeStreakDays} 天`, `age ${result.ageDays} days · active streak ${result.activeStreakDays} days`)}`,
+      "",
+      `${localized(lang, `能力值 · Lv.${result.level}`, `ABILITIES · LV.${result.level}`)}  (${result.abilityPoints} pts)`,
+      ...abilityLines,
+      `${localized(lang, "今日加点", "TODAY'S GROWTH")}  ${growth || localized(lang, "无", "NONE")}`,
+      `${localized(lang, "稀有突变率", "RARE MUTATION CHANCE")}  ${result.rareChancePercent}%`,
+      `${localized(lang, "畸变天赋", "MUTATION TALENTS")}  [${result.talents.length}] ${talentPreview || localized(lang, "尚未解锁", "LOCKED")}`,
+      `${localized(lang, "今日解锁", "TODAY'S UNLOCKS")}  ${newTalentPreview || localized(lang, "无", "NONE")}`,
       "",
       ...eventLines,
       "",
       localized(
         lang,
-        "隐私档案：只保存污染剂量、性状和事件；不保存对话、路径、模型名或精确 Token。",
-        "PRIVACY FILE: stores dose, traits, and events; stores no chats, paths, model names, or exact tokens.",
+        "隐私档案：只保存污染剂量、性状、能力加点和事件；不保存对话、路径、模型名或精确 Token。",
+        "PRIVACY FILE: stores dose, traits, ability gains, and events; stores no chats, paths, model names, or exact tokens.",
       ),
       "",
     ].join("\n"),
@@ -1811,12 +2126,19 @@ function runExplain(lang = "zh") {
       "    frenzy  += dose × min(1, requests ÷ 50)",
       "    nuclear += dose × (1 - 0.6 × max(context, cache, frenzy intensity))",
       "  Four stages begin at exposure 0, 50, 150, and 350.",
-      "  One event is selected with SHA-256(local seed + date); 8% are rare mutations.",
+      "  Seven abilities grow: TOKEN APPETITE, PARASITIC MEMORY, CACHE CARAPACE,",
+      "  REQUEST MAWS, CORE GLOW, INSTABILITY, and WITHDRAWAL.",
+      "  Every active day grants usage-driven points plus one deterministic random gain",
+      "  from SHA-256(local seed + date); rare events grant extra mutation points.",
+      "  INSTABILITY adds 1 percentage point to the rare-mutation chance per 10 points,",
+      "  starting at 8% rare mutation chance and capped at 20%.",
+      "  Ability values unlock mutation talents at 5, 15, and 30.",
+      "  One event is selected with SHA-256(local seed + date); a base 8% enters the rare pool.",
       "  A common event adds 8 to one trait; a rare event adds 20.",
       "  After the first active day, each AI-free day reduces exposure by 2",
-      "  without clearing historical traits.",
+      "  and adds 1 WITHDRAWAL without clearing historical traits.",
       "  State: ~/.anti-ai/creature.json",
-      "  It stores only dose, traits, events, and a local seed—not chats, paths,",
+      "  It stores only dose, traits, ability gains, events, and a local seed—not chats, paths,",
       "  model names, exact tokens, or per-request timestamps.",
       "  anti-ai creature reset explicitly destroys this file.",
       "",
@@ -1916,11 +2238,16 @@ function runExplain(lang = "zh") {
     "    请求   += 污染剂量 × min(1, 请求数 ÷ 50)",
     "    核食   += 污染剂量 × (1 - 0.6 × max(上下文、缓存、请求强度))",
     "  4 个阶段的累计污染阈值分别是 0、50、150、350。",
-    "  每日事件由 SHA-256（本地 seed + 日期）确定，其中 8% 进入稀有突变池。",
+    "  7 个能力值：吞噬欲、赘生脑回、化石甲、请求口器、核素亮度、失控指数、戒断反应。",
+    "  每天按使用特征加点，再用 SHA-256（本地 seed + 日期）进行一次确定性随机加点；",
+    "  稀有事件还会追加突变点数。",
+    "  失控指数每 10 点让稀有突变率增加 1 个百分点，基础 8%，上限 20%。",
+    "  能力值达到 5、15、30 时解锁对应的畸变天赋。",
+    "  每日事件由 SHA-256（本地 seed + 日期）确定，基础 8% 进入稀有突变池。",
     "  普通事件给一个性状 +8，稀有事件 +20。",
-    "  首个活跃日之后，每个 AI 清醒日污染 -2，但不会清除历史性状。",
+    "  首个活跃日之后，每个 AI 清醒日污染 -2、戒断反应 +1，但不会清除历史性状。",
     "  状态文件：~/.anti-ai/creature.json",
-    "  只保存污染剂量、性状、事件和本地 seed；不保存对话、路径、模型名、精确 Token 或逐请求时间。",
+    "  只保存污染剂量、性状、能力加点、事件和本地 seed；不保存对话、路径、模型名、精确 Token 或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",
     "",
     color("1", "生活化对照"),

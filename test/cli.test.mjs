@@ -522,6 +522,8 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
     nextStageAt: 50,
     progressPercent: 54,
     quietStreakDays: 0,
+    activeStreakDays: 1,
+    ageDays: 1,
     observedDays: 30,
     activeDays: 1,
     traits: {
@@ -530,12 +532,44 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
       frenzy: 1.08,
       nuclear: 22.68,
     },
+    level: 1,
+    abilities: {
+      appetite: 1,
+      memory: 0,
+      shell: 1,
+      mouths: 0,
+      glow: 2,
+      instability: 0,
+      withdrawal: 0,
+    },
+    abilityPoints: 4,
+    dominantAbility: "glow",
+    temperament: "self_igniting",
+    epithet: "desk_reactor",
+    talents: [],
+    rareChancePercent: 8,
+    collections: {
+      mutationEvents: 1,
+      rareMutations: 0,
+      talentsUnlocked: 0,
+    },
+    mood: "token_chewing",
     today: {
       pollutionDose: 27,
       event: {
         id: "cache_calcification",
         rarity: "common",
       },
+      abilityGains: {
+        appetite: 1,
+        memory: 0,
+        shell: 1,
+        mouths: 0,
+        glow: 2,
+        instability: 0,
+        withdrawal: 0,
+      },
+      newTalents: [],
     },
   });
 });
@@ -558,6 +592,127 @@ test("creature persists one deterministic mutation event per active day", (t) =>
     id: "cache_calcification",
     rarity: "common",
   });
+});
+
+test("creature grows deterministic random abilities and exposes playable state", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-abilities-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "ability-seed",
+  };
+
+  const first = runCli(["creature", "--date", "2026-07-23", "--json"], env);
+  const second = runCli(["creature", "--date", "2026-07-23", "--json"], env);
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(second.status, 0, second.stderr);
+  const report = JSON.parse(first.stdout);
+  assert.deepEqual(JSON.parse(second.stdout), report);
+  assert.deepEqual(Object.keys(report.abilities), [
+    "appetite",
+    "memory",
+    "shell",
+    "mouths",
+    "glow",
+    "instability",
+    "withdrawal",
+  ]);
+  assert.ok(
+    Object.values(report.abilities).every(
+      (value) => Number.isInteger(value) && value >= 0 && value <= 99,
+    ),
+  );
+  assert.ok(Object.values(report.today.abilityGains).some((value) => value > 0));
+  assert.ok(Object.hasOwn(report.abilities, report.dominantAbility));
+  assert.ok(report.level >= 1);
+  assert.ok(report.abilityPoints > 0);
+  assert.match(report.temperament, /^[a-z_]+$/);
+  assert.match(report.mood, /^[a-z_]+$/);
+  assert.ok(report.rareChancePercent >= 8);
+  assert.deepEqual(report.collections, {
+    mutationEvents: 1,
+    rareMutations: 0,
+    talentsUnlocked: report.talents.length,
+  });
+});
+
+test("creature abilities unlock talents and withdrawal grows on AI-free days", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-ability-growth-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  mkdirSync(home, { recursive: true });
+  const usage = [
+    {
+      input_tokens: 10_000,
+      cached_input_tokens: 0,
+      output_tokens: 1_000_000,
+      total_tokens: 1_010_000,
+    },
+  ];
+  for (let day = 1; day <= 12; day += 1) {
+    writeCodexUsage(root, usage, `2026-07-${String(day).padStart(2, "0")}`);
+  }
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "talent-seed",
+  };
+
+  const active = runCli(["creature", "--date", "2026-07-12", "--json"], env);
+  const quiet = runCli(["creature", "--date", "2026-07-13", "--json"], env);
+
+  assert.equal(active.status, 0, active.stderr);
+  assert.equal(quiet.status, 0, quiet.stderr);
+  const activeReport = JSON.parse(active.stdout);
+  const quietReport = JSON.parse(quiet.stdout);
+  assert.ok(activeReport.level > 1);
+  assert.ok(activeReport.talents.length > 0);
+  assert.ok(activeReport.today.newTalents.length > 0);
+  assert.equal(
+    quietReport.abilities.withdrawal,
+    activeReport.abilities.withdrawal + 1,
+  );
+  assert.equal(quietReport.today.abilityGains.withdrawal, 1);
+  assert.equal(quietReport.mood, "withdrawal_tremor");
+  assert.equal(
+    quietReport.collections.talentsUnlocked,
+    quietReport.talents.length,
+  );
+});
+
+test("grown Instability raises the future rare-mutation chance", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-instability-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const usage = [
+    {
+      input_tokens: 10_000,
+      cached_input_tokens: 0,
+      output_tokens: 1_000_000,
+      total_tokens: 1_010_000,
+    },
+  ];
+  for (let day = 1; day <= 30; day += 1) {
+    writeCodexUsage(
+      root,
+      usage,
+      `2026-06-${String(day).padStart(2, "0")}`,
+    );
+  }
+
+  const result = runCli(["creature", "--date", "2026-06-30", "--json"], {
+    HOME: path.join(workspace, "home"),
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "instability-0",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.abilities.instability, 25);
+  assert.equal(report.rareChancePercent, 10);
+  assert.equal(report.collections.rareMutations, 6);
 });
 
 test("creature can reach a rare mutation from its local deterministic seed", (t) => {
@@ -780,6 +935,13 @@ test("creature renders bilingual mutation files without leaking raw usage", (t) 
   assert.match(zh.stdout, /进化分支\s+核食系/);
   assert.match(zh.stdout, /形态\s+算力胚胎/);
   assert.match(zh.stdout, /今日突变\s+\[普通\] 缓存钙化/);
+  assert.match(zh.stdout, /能力值 · Lv\.\d+/);
+  assert.match(zh.stdout, /吞噬欲/);
+  assert.match(zh.stdout, /今日加点/);
+  assert.match(zh.stdout, /今日解锁/);
+  assert.match(zh.stdout, /畸变天赋/);
+  assert.match(zh.stdout, /性格\s+/);
+  assert.match(zh.stdout, /心情\s+/);
   assert.match(zh.stdout, /不保存对话、路径、模型名或精确 Token/);
   assert.doesNotMatch(zh.stdout, /180 tokens|gpt-test|Codex|\/Users\//);
 
@@ -789,6 +951,13 @@ test("creature renders bilingual mutation files without leaking raw usage", (t) 
   assert.match(en.stdout, /EVOLUTION BRANCH\s+NUCLEAR FEEDER/);
   assert.match(en.stdout, /FORM\s+COMPUTE EMBRYO/);
   assert.match(en.stdout, /TODAY'S MUTATION\s+\[COMMON\] CACHE CALCIFICATION/);
+  assert.match(en.stdout, /ABILITIES · LV\.\d+/);
+  assert.match(en.stdout, /APPETITE/);
+  assert.match(en.stdout, /TODAY'S GROWTH/);
+  assert.match(en.stdout, /TODAY'S UNLOCKS/);
+  assert.match(en.stdout, /MUTATION TALENTS/);
+  assert.match(en.stdout, /TEMPERAMENT\s+/);
+  assert.match(en.stdout, /MOOD\s+/);
   assert.match(en.stdout, /stores no chats, paths, model names, or exact tokens/);
   assert.doesNotMatch(en.stdout, /今日污染|阶段|进化分支|今日突变/);
 });
@@ -979,11 +1148,21 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   );
   assert.match(result.stdout, /4 个阶段.*50.*150.*350/s);
   assert.match(result.stdout, /SHA-256.*8%.*稀有突变/s);
+  assert.match(
+    result.stdout,
+    /7 个能力值.*吞噬欲.*赘生脑回.*化石甲.*请求口器.*核素亮度.*失控指数.*戒断反应/s,
+  );
+  assert.match(result.stdout, /每天.*确定性随机加点/s);
+  assert.match(
+    result.stdout,
+    /失控指数.*每 10 点.*稀有突变率.*1.*上限 20%/s,
+  );
+  assert.match(result.stdout, /能力值达到 5、15、30.*解锁.*畸变天赋/s);
   assert.match(result.stdout, /AI 清醒日.*污染 -2.*不会清除历史性状/s);
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /不保存对话、路径、模型名、精确 Token 或逐请求时间/s,
+    /能力加点.*不保存对话、路径、模型名、精确 Token 或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
@@ -1043,7 +1222,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 0.5.0\n");
+  assert.equal(result.stdout, "anti-ai 0.6.0\n");
   assert.equal(result.stderr, "");
 });
 

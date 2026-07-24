@@ -1,7 +1,7 @@
 {
   "name": "anti-ai",
-  "version": "0.5.0",
-  "description": "Turn local Codex and Claude Code token usage into a satirical resource receipt and token-fed mutation creature.",
+  "version": "0.6.0",
+  "description": "Turn local Codex and Claude Code token usage into a satirical resource receipt and growable mutation creature.",
   "type": "module",
   "bin": {
     "anti-ai": "bin/anti-ai.mjs"

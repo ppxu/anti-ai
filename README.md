@@ -185,11 +185,21 @@ It also grows seven deliberately unhealthy abilities:
 | Instability | Seeded random gains and rare events |
 | Withdrawal | AI-free days after hatching |
 
-Each active day grants usage-driven points, one deterministic random gain, and an event-related bonus. Values cap at `99`; reaching `5`, `15`, and `30` unlocks progressively worse mutation talents. Every 10 Instability points adds one percentage point to the rare-mutation chance, from a base `8%` up to `20%`. Level, temperament, mood, epithet, active streak, age, talent collection, and daily gains are shown in the terminal and in `creature --json`.
+Regular abilities cap at `999`. Each active day grants `1–2` Token Appetite, `1` point to the dominant usage ability, a deterministic random bonus with a `25%` chance, and `1` event-linked point. Even 400 consecutive heavy-use days retain growth headroom. Reaching `5`, `15`, `30`, `100`, `300`, and `700` unlocks 42 progressively worse mutation talents. Every 10 Instability points adds one percentage point to the rare-mutation chance, from a base `8%` up to `20%`.
+
+Six low-probability “chromatic abilities” can also awaken:
+
+| Rarity | Per active day | Abilities |
+|---|---:|---|
+| R (cyan) | `0.50%` | Deadline Scent, Phantom Cache, Rubber-Duck Necromancy |
+| SR (magenta) | `0.10%` | Prompt Telepathy, Hallucination Antibodies |
+| SSR (yellow) | `0.02%` | Token Transmutation |
+
+Chromatic awakenings are determined by the local seed and date. Drawing the same ability again grows it, up to level `9`. Level, temperament, mood, epithet, active streak, age, talent collection, chromatic collection, and daily gains are shown in the terminal and in `creature --json`. Color-capable terminals distinguish R / SR / SSR; set `NO_COLOR=1` to disable colors.
 
 Accumulated exposure crosses later stages at `50`, `150`, and `350`. A local seed plus the date selects one repeatable event per active day. After the first active day, every AI-free day reduces exposure by `2`, grows Withdrawal by `1`, and puts the creature to sleep without erasing historical traits.
 
-State lives at `~/.anti-ai/creature.json`. It contains pollution doses, traits, ability gains, event IDs, and a local seed—not prompts, responses, paths, model names, exact Token totals, or per-request timestamps. Existing v0.5 files are upgraded locally on first use. One mutation history always uses the complete Codex + Claude Code data set, so `creature` rejects `--source` filters.
+State lives at `~/.anti-ai/creature.json`. It contains pollution doses, traits, regular/chromatic ability gains, event IDs, and a local seed—not prompts, responses, paths, model names, exact Token totals, or per-request timestamps. Existing v0.5/v0.6 files are upgraded locally on first use without losing prior ability growth. One mutation history always uses the complete Codex + Claude Code data set, so `creature` rejects `--source` filters.
 
 Explicitly restart it with:
 

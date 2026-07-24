@@ -79,11 +79,11 @@ anti-ai creature --lang en
 anti-ai creature --json
 ```
 
-The creature backfills the latest 30 calendar days, turns daily Token totals into a capped pollution dose, and evolves through four deterministic branches. It also grows seven abilities from usage signals, AI-free days, repeatable seeded random gains, and events. Abilities unlock mutation talents at 5, 15, and 30; Instability raises the rare-event chance from 8% up to 20%. Describe this as a satirical growth system, not a resource measurement or productivity score.
+The creature backfills the latest 30 calendar days, turns daily Token totals into a capped pollution dose, and evolves through four deterministic branches. It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Regular abilities cap at 999 and unlock mutation talents at 5, 15, 30, 100, 300, and 700; Instability raises the rare-event chance from 8% up to 20%.
 
-When reporting a creature, summarize its form, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, and rare-mutation chance. Do not imply that a high level is productive, healthy, or environmentally measured.
+Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%. A repeated awakening grows the same chromatic ability up to level 9. When reporting a creature, summarize its form, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, and rare-mutation chance. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
 
-The creature state is stored at `~/.anti-ai/creature.json`. It contains only pollution doses, traits, ability gains, event IDs, and a local deterministic seed—never prompts, responses, paths, model names, or exact Token totals. Do not open or edit the state file directly.
+The creature state is stored at `~/.anti-ai/creature.json`. It contains only pollution doses, traits, regular/chromatic ability gains, event IDs, and a local deterministic seed—never prompts, responses, paths, model names, or exact Token totals. Do not open or edit the state file directly.
 
 Only destroy the mutation history when the user explicitly asks to reset or restart it:
 

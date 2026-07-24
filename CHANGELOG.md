@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-07-24
+
+### Added
+
+- Six low-probability chromatic abilities across color-coded R, SR, and SSR tiers; repeat awakenings grow the same ability up to level 9.
+- Twenty-one long-horizon talents at 100, 300, and 700 ability points, bringing the mutation talent collection to 42.
+- Machine-readable chromatic ability levels, daily awakenings, tier odds, and collection counts.
+
+### Changed
+
+- Regular ability caps rise from 99 to 999, with slower daily gains that retain headroom beyond 400 consecutive heavy-use days.
+- Chinese and English ability names, bars, and three-digit values now align by terminal display width.
+- Existing v0.5/v0.6 creature files migrate locally while retaining stored regular ability gains.
+
+### Security
+
+- Chromatic state stores only a deterministic ability ID, rarity, and derived point gain; no chats, paths, model names, exact Token totals, or request timestamps are added.
+
 ## [0.6.0] - 2026-07-24
 
 ### Added
@@ -92,6 +110,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[0.7.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.7.0
 [0.6.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.6.0
 [0.5.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.4.0

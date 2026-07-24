@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-07-24
+
+### Added
+
+- Installable `anti-ai` Agent Skill under `skills/anti-ai/SKILL.md`, compatible with the open `npx skills` installer.
+- `share` command that prints a bilingual, privacy-safe 1200×630 SVG receipt to stdout.
+- Share-card methodology and privacy disclosure in `explain`.
+
+### Changed
+
+- The npm package now includes the Agent Skill.
+- Help and both READMEs now document Agent installation and SVG sharing.
+
 ## [0.3.0] - 2026-07-23
 
 ### Added
@@ -44,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[0.4.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.1.0

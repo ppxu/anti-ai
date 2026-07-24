@@ -614,6 +614,92 @@ function renderReceipt(report, historicalReports = [], lang = "zh") {
   return lines.join("\n");
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function renderShareSvg(report, historicalReports = [], lang = "zh") {
+  const { date, totals } = report;
+  const resources = estimateResources(totals);
+  const comparisons = everydayComparisons(resources, lang);
+  const baseline =
+    historicalReports.length > 0 ? averageTotals(historicalReports) : emptyUsage();
+  const verdict = dailyVerdict(totals, baseline, date, lang);
+  const title = localized(
+    lang,
+    `今日罪名：${verdict.title}`,
+    `TODAY'S CHARGE: ${verdict.title}`,
+  );
+  const privacy = localized(
+    lang,
+    "隐私模式：未包含对话、路径、模型名和精确 Token",
+    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
+  );
+  const methodology = localized(
+    lang,
+    "公开代理跨度 · 置信度低 · 不是电表",
+    "Published proxy range · low confidence · not a power meter",
+  );
+  const tokenChange = formatChange(
+    totals.totalTokens,
+    baseline.totalTokens,
+    lang,
+  );
+  const requestChange = formatChange(
+    totals.requests,
+    baseline.requests,
+    lang,
+  );
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(`YOUR AI RECEIPT · ${date}`)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#0b0b0c"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#343438" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#ff4d4f"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #8c8c94; }
+    .body { fill: #f4f4f5; }
+    .accent { fill: #ff5c5e; }
+    .warn { fill: #f5b942; }
+  </style>
+  <text x="72" y="84" class="mono accent" font-size="34" font-weight="800">YOUR AI RECEIPT</text>
+  <text x="1128" y="84" class="mono muted" font-size="22" text-anchor="end">${escapeXml(date)}</text>
+  <line x1="72" y1="116" x2="1128" y2="116" stroke="#343438" stroke-width="2"/>
+
+  <text x="72" y="164" class="mono warn" font-size="19">${escapeXml(localized(lang, "公开代理跨度", "PUBLISHED PROXY RANGE"))}</text>
+  <text x="72" y="214" class="mono body" font-size="28">⚡ ${escapeXml(formatRange(resources.energyWh, "Wh"))}</text>
+  <text x="72" y="264" class="mono body" font-size="28">💧 ${escapeXml(formatRange(resources.waterMl, "mL"))}</text>
+  <text x="72" y="314" class="mono body" font-size="28">☁️ ${escapeXml(formatRange(resources.carbonGrams, "gCO₂e"))}</text>
+
+  <text x="620" y="164" class="mono warn" font-size="19">${escapeXml(localized(lang, "生活翻译", "EVERYDAY TRANSLATION"))}</text>
+  <text x="620" y="214" class="mono body" font-size="18">${escapeXml(`${comparisons.energy.icon} ${comparisons.energy.label}`)}</text>
+  <text x="1128" y="214" class="mono body" font-size="18" text-anchor="end">${escapeXml(comparisons.energy.value)}</text>
+  <text x="620" y="264" class="mono body" font-size="18">${escapeXml(`${comparisons.water.icon} ${comparisons.water.label}`)}</text>
+  <text x="1128" y="264" class="mono body" font-size="18" text-anchor="end">${escapeXml(comparisons.water.value)}</text>
+  <text x="620" y="314" class="mono body" font-size="18">${escapeXml(`${comparisons.driving.icon} ${comparisons.driving.label}`)}</text>
+  <text x="1128" y="314" class="mono body" font-size="18" text-anchor="end">${escapeXml(comparisons.driving.value)}</text>
+
+  <line x1="72" y1="354" x2="1128" y2="354" stroke="#343438" stroke-width="2"/>
+  <text x="72" y="404" class="mono accent" font-size="30" font-weight="800">${escapeXml(title)}</text>
+  <text x="72" y="448" class="mono body" font-size="20">${escapeXml(verdict.detail)}</text>
+  <text x="72" y="492" class="mono muted" font-size="19">${escapeXml(localized(lang, `相对 7 日基线：Token ${tokenChange} · 请求 ${requestChange}`, `VS 7-DAY BASELINE: tokens ${tokenChange} · requests ${requestChange}`))}</text>
+
+  <line x1="72" y1="526" x2="1128" y2="526" stroke="#343438" stroke-width="2"/>
+  <text x="72" y="556" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
+  <text x="72" y="580" class="mono muted" font-size="15">${escapeXml(methodology)}</text>
+  <text x="1128" y="600" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+  return svg;
+}
+
 function shiftDate(date, days) {
   const value = new Date(`${date}T12:00:00.000Z`);
   value.setUTCDate(value.getUTCDate() + days);
@@ -1027,6 +1113,18 @@ async function runMonth(options) {
   process.stdout.write(renderMonth(reports, options.lang));
 }
 
+async function runShare(options) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const date = options.date ?? localDate(new Date(), timezone);
+  const dates = Array.from({ length: 8 }, (_, index) =>
+    shiftDate(date, index - 7),
+  );
+  const reports = await reportsForDates(options, dates, timezone);
+  process.stdout.write(
+    renderShareSvg(reports.at(-1), reports.slice(0, -1), options.lang),
+  );
+}
+
 async function countJsonl(root) {
   let count = 0;
   for await (const _file of jsonlFiles(root)) count += 1;
@@ -1147,6 +1245,11 @@ function runExplain(lang = "zh") {
       "  reports sequestration time instead of claiming a number of trees cut down.",
       "  https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references",
       "",
+      color("1", "Share card"),
+      "  anti-ai share uses the same proxy formulas and fixed local verdict rules.",
+      "  It omits chats, paths, model names, and exact token counts.",
+      "  The SVG is written to stdout and is not uploaded anywhere.",
+      "",
       "These values are not statistical confidence intervals; they span public cases",
       "that are not directly comparable.",
       `Confidence: ${color("1;31", "LOW")}`,
@@ -1225,6 +1328,10 @@ function runExplain(lang = "zh") {
     "  树种、树龄和砍伐后的碳去向差异很大，因此不换算成“砍了几棵树”。",
     "  https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references",
     "",
+    color("1", "分享卡片"),
+    "  anti-ai share 使用相同的资源代理公式和本地固定判词。",
+    "  不包含对话、路径、模型名或精确 Token；SVG 只写入标准输出，不会上传。",
+    "",
     "这些值不是统计置信区间，只是不可直接比较的公开案例跨度。",
     `置信度：${color("1;31", "低")}`,
     "",
@@ -1244,6 +1351,7 @@ Commands:
   today    Print today's AI resource receipt
   week     Print the latest seven-day trend
   month    Print this month's usage heatmap through a selected date
+  share    Print a privacy-safe SVG share card
   doctor   Check local log sources
   explain  Explain resource proxy methodology
 
@@ -1266,6 +1374,7 @@ Commands:
   today    打印今天的 AI 资源账单
   week     打印最近 7 天趋势
   month    打印本月至指定日期的用量热力图
+  share    输出隐私安全的 SVG 分享卡片
   doctor   检查本地日志
   explain  解释资源代理口径
 
@@ -1325,13 +1434,15 @@ if (helpRequested) {
   await runWeek(options);
 } else if (options.command === "month") {
   await runMonth(options);
+} else if (options.command === "share") {
+  await runShare(options);
 } else if (options.command === "doctor") {
   await runDoctor(options);
 } else if (options.command === "explain") {
   runExplain(options.lang);
 } else {
   process.stderr.write(
-    `Usage: anti-ai <today|week|month|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude] [--lang zh|en] [--json]\n`,
+    `Usage: anti-ai <today|week|month|share|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude] [--lang zh|en] [--json]\n`,
   );
   process.exitCode = 1;
 }

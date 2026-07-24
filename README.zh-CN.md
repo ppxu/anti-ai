@@ -49,6 +49,24 @@ npm install -g anti-ai
 anti-ai doctor
 ```
 
+### 安装 Agent Skill
+
+先安装 CLI，再使用开放的 [`skills`](https://github.com/vercel-labs/skills) 安装器，让 Codex、Claude Code、Cursor 等 Agent 获得安全调用 anti-ai 的工作流：
+
+```bash
+npm install -g anti-ai
+npx skills add ppxu/anti-ai --skill anti-ai -g -y
+```
+
+也可以显式指定 Agent：
+
+```bash
+npx skills add ppxu/anti-ai --skill anti-ai -g -a codex -y
+npx skills add ppxu/anti-ai --skill anti-ai -g -a claude-code -y
+```
+
+Skill 会告诉 Agent 何时读取精确 JSON、何时展示人类账单、如何生成分享卡片，以及为什么不能直接读取原始会话日志。
+
 从源码运行：
 
 ```bash
@@ -78,6 +96,9 @@ anti-ai week --date 2026-07-23
 
 anti-ai month
 anti-ai month --date 2026-07-23
+
+anti-ai share > anti-ai-receipt.svg
+anti-ai share --lang en > anti-ai-receipt.svg
 
 anti-ai doctor
 anti-ai explain
@@ -112,6 +133,17 @@ anti-ai explain --lang en
 ### `month`
 
 打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日比例（例如 `7 天 / 23 天`）、最长清醒期、最重一天、模型账单和本月资源对照。
+
+### `share`
+
+向标准输出生成一张 1200×630 的 SVG 分享卡片。它沿用 `today` 的资源代理公式、个人基线和确定性判词，但默认不包含 Prompt、回复、路径、模型名、请求数或精确 Token。
+
+```bash
+anti-ai share > anti-ai-receipt.svg
+anti-ai share --date 2026-07-23 --lang en > anti-ai-receipt.svg
+```
+
+工具不会上传卡片，保存位置完全由你的命令行重定向决定。
 
 ### `doctor`
 
@@ -180,6 +212,7 @@ Codex 和 Claude Code 没有向本工具提供逐请求的实际电力、水耗�
 - 完全本地运行，不联网发送日志
 - 解析 JSONL 时只保留时间、消息 ID、模型和 usage 元数据
 - 不采集、不保存、不输出 Prompt、回复或工具调用正文
+- 默认分享卡片不包含路径、模型名、请求数或精确 Token
 - 不创建用量数据库或后台进程
 
 ## 测试

@@ -6,7 +6,7 @@ compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local Codex 
 
 # anti-ai
 
-Use the `anti-ai` CLI as the single source of truth for local token accounting and its satirical resource receipts. The CLI already handles log locations, Claude Code streaming deduplication, Codex model attribution, local time zones, and the distinction between exact usage and environmental proxies.
+Use the `anti-ai` CLI as the single source of truth for local token accounting and its satirical resource receipts. The CLI already handles log locations, Claude Code streaming deduplication, Codex model attribution, local time zones, and the distinction between exact usage and estimated resources.
 
 ## Preflight
 
@@ -101,7 +101,7 @@ When the user asks whether electricity, water, or carbon values are exact, run:
 anti-ai explain
 ```
 
-Describe environmental values as a **low-confidence proxy**, never as measured consumption. Do not recompute or tighten the ranges yourself.
+Describe environmental values as a **low-confidence estimate derived from public examples**, never as measured consumption. Do not recompute or tighten the ranges yourself.
 
 ## Privacy boundary
 
@@ -112,7 +112,7 @@ Describe environmental values as a **low-confidence proxy**, never as measured c
 
 ## Response style
 
-Lead with the requested result, then mention the period and source filters used. Keep exact token statistics separate from resource proxies. Preserve the tool's satirical tone when the user wants a receipt, but use neutral language for audits or machine-readable requests.
+Lead with the requested result, then mention the period and source filters used. Keep exact token statistics separate from resource estimates. Preserve the tool's satirical tone when the user wants a receipt, but use neutral language for audits or machine-readable requests.
 
 ## Skill installation reference
 

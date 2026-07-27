@@ -214,7 +214,7 @@ test("human-readable model names cannot inject terminal control characters", (t)
   assert.match(result.stdout, /Codex · gpt�\[31m/);
 });
 
-test("today prints a satirical receipt with transparent resource proxy ranges", () => {
+test("today prints a satirical receipt with transparent resource estimates", () => {
   const result = runCli(
     ["today", "--date", "2026-07-23"],
     {
@@ -236,6 +236,8 @@ test("today prints a satirical receipt with transparent resource proxy ranges", 
   assert.match(result.stdout, /⚡\s+0\.96–1\.36 Wh/);
   assert.match(result.stdout, /💧\s+1\.04–8\.44 mL/);
   assert.match(result.stdout, /☁️\s+0\.12–0\.21 gCO₂e/);
+  assert.match(result.stdout, /资源消耗估算（参考公开数据）/);
+  assert.doesNotMatch(result.stdout, /公开代理跨度/);
   assert.match(result.stdout, /置信度：低/);
   assert.match(result.stdout, /机器开了 4 张小票，地球只收到一段估算/);
 });
@@ -252,8 +254,12 @@ test("today supports a fully English human-readable receipt", () => {
   assert.match(result.stdout, /350 tokens · 4 model requests/);
   assert.match(result.stdout, /Model bill/);
   assert.match(result.stdout, /Codex · gpt-test\s+180 tokens · 2 requests/);
-  assert.match(result.stdout, /Published proxy range \(not a power meter\)/);
+  assert.match(result.stdout, /Estimated resource use \(from public data\)/);
+  assert.doesNotMatch(result.stdout, /Published proxy range/);
   assert.match(result.stdout, /Everyday translation/);
+  assert.match(result.stdout, /50W laptop\s+1\.15–1\.63 minutes/);
+  assert.match(result.stdout, /250mL cup of water\s+0\.42%–3\.38% of one cup/);
+  assert.match(result.stdout, /6L toilet flush\s+0\.02%–0\.14% of one flush/);
   assert.match(result.stdout, /Personal baseline \(prior 7 calendar days\)/);
   assert.match(result.stdout, /Today's charge: FIRST OFFENSE/);
   assert.match(result.stdout, /Confidence: LOW/);
@@ -322,6 +328,18 @@ test("today translates abstract resources into everyday comparisons", () => {
     result.stdout,
     /🌳\s+1 棵城市树\s+加班 1\.05–1\.87 分钟才能吸回来/,
   );
+  assert.match(
+    result.stdout,
+    /💻\s+50W 笔记本电脑\s+1\.15–1\.63 分钟/,
+  );
+  assert.match(
+    result.stdout,
+    /☕\s+250mL 水杯\s+一杯的 0\.42%–3\.38%/,
+  );
+  assert.match(
+    result.stdout,
+    /🚽\s+6L 节水马桶\s+一次冲水的 0\.02%–0\.14%/,
+  );
 });
 
 test("today compares usage with the prior seven days and prints one verdict", () => {
@@ -348,6 +366,79 @@ test("today rotates satirical copy deterministically by date", () => {
     result.stdout,
     /模型没有被频繁打扰，只是每次都收到一整本附件/,
   );
+});
+
+test("today does not accuse normal personal cache usage every day", (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), "anti-ai-cache-baseline-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (let day = 16; day <= 23; day += 1) {
+    writeCodexUsage(
+      root,
+      [
+        {
+          input_tokens: 100,
+          cached_input_tokens: 80,
+          output_tokens: 10,
+          total_tokens: 110,
+        },
+      ],
+      `2026-07-${day}`,
+    );
+  }
+
+  const result = runCli(["today", "--date", "2026-07-23", "--source", "codex"], {
+    ANTI_AI_CODEX_DIR: root,
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /今日罪名：缓存考古学家/);
+});
+
+test("today rotates cache offense titles when cache usage is unusually high", (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), "anti-ai-cache-titles-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (let day = 16; day <= 24; day += 1) {
+    writeCodexUsage(
+      root,
+      [
+        {
+          input_tokens: 100,
+          cached_input_tokens: day >= 23 ? 80 : 40,
+          output_tokens: 10,
+          total_tokens: 110,
+        },
+      ],
+      `2026-07-${day}`,
+    );
+  }
+
+  const first = runCli(
+    ["today", "--date", "2026-07-23", "--source", "codex"],
+    { ANTI_AI_CODEX_DIR: root },
+  );
+  const second = runCli(
+    ["today", "--date", "2026-07-24", "--source", "codex"],
+    { ANTI_AI_CODEX_DIR: root },
+  );
+  const english = runCli(
+    [
+      "today",
+      "--date",
+      "2026-07-23",
+      "--source",
+      "codex",
+      "--lang",
+      "en",
+    ],
+    { ANTI_AI_CODEX_DIR: root },
+  );
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(english.status, 0, english.stderr);
+  assert.match(first.stdout, /今日罪名：上下文遗址管理员/);
+  assert.match(second.stdout, /今日罪名：电子包浆鉴定师/);
+  assert.match(english.stdout, /Today's charge: CONTEXT RUINS CURATOR/);
 });
 
 test("today chooses human-scale comparisons for larger resource ranges", (t) => {
@@ -502,7 +593,8 @@ test("share supports a fully English privacy-safe SVG", () => {
   );
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /PUBLISHED PROXY RANGE/);
+  assert.match(result.stdout, /RESOURCE USE ESTIMATE/);
+  assert.doesNotMatch(result.stdout, /PUBLISHED PROXY RANGE/);
   assert.match(result.stdout, /EVERYDAY TRANSLATION/);
   assert.match(result.stdout, /TODAY&apos;S CHARGE: FIRST OFFENSE/);
   assert.match(
@@ -1308,11 +1400,12 @@ test("doctor confirms both local log sources without exposing conversation text"
   assert.match(result.stdout, /不采集、不保存、不输出会话正文/);
 });
 
-test("explain discloses every proxy factor, formula, source, and limitation", () => {
+test("explain discloses every estimate factor, formula, source, and limitation", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /公开代理跨度，不是测量值/);
+  assert.match(result.stdout, /资源消耗估算，不是实际测量值/);
+  assert.doesNotMatch(result.stdout, /公开代理跨度/);
   assert.match(result.stdout, /Google.*0\.24 Wh.*0\.26 mL.*0\.03 gCO₂e/s);
   assert.match(result.stdout, /OpenAI.*0\.34 Wh.*0\.32176 mL/s);
   assert.match(result.stdout, /Mistral.*400 输出 tokens.*45 mL.*1\.14 gCO₂e/s);
@@ -1328,9 +1421,12 @@ test("explain discloses the assumptions behind everyday comparisons", () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /10W LED 灯.*电力 Wh ÷ 10W/s);
+  assert.match(result.stdout, /50W 笔记本电脑.*电力 Wh ÷ 50W/s);
   assert.match(result.stdout, /15Wh 手机充电.*电力 Wh ÷ 15Wh/s);
   assert.match(result.stdout, /烧开 1L 水.*电力 Wh ÷ 100Wh/s);
+  assert.match(result.stdout, /250mL 水杯.*水耗 mL ÷ 250/s);
   assert.match(result.stdout, /550mL 矿泉水.*水耗 mL ÷ 550/s);
+  assert.match(result.stdout, /6L 节水马桶.*水耗 mL ÷ 6,000/s);
   assert.match(result.stdout, /8L\/min 淋浴.*水耗 mL ÷ 8,000/s);
   assert.match(
     result.stdout,
@@ -1360,7 +1456,11 @@ test("explain discloses the personal baseline and verdict rules", () => {
     /上下文囤积.*请求数不高于基线 1\.2 倍.*单次 Token 不低于 1\.8 倍/s,
   );
   assert.match(result.stdout, /请求连发.*请求数不低于基线 2 倍/s);
-  assert.match(result.stdout, /缓存考古学家.*缓存读取占输入至少 70%/s);
+  assert.match(
+    result.stdout,
+    /缓存类罪名.*缓存读取占输入至少 70%.*高出个人基线至少 10 个百分点/s,
+  );
+  assert.match(result.stdout, /同类罪名标题和文案按日期固定轮换/);
   assert.match(result.stdout, /判词由本地固定规则生成，不调用模型/);
   assert.match(result.stdout, /文案按日期固定轮换/);
 });
@@ -1437,7 +1537,8 @@ test("doctor, explain, and help support English output", () => {
   assert.doesNotMatch(doctor.stdout, /不采集/);
 
   assert.equal(explain.status, 0, explain.stderr);
-  assert.match(explain.stdout, /Published proxy range, not a measurement/);
+  assert.match(explain.stdout, /Estimated resource use, not a measurement/);
+  assert.doesNotMatch(explain.stdout, /Published proxy range/);
   assert.match(explain.stdout, /Model attribution/);
   assert.match(explain.stdout, /Verdicts are generated by fixed local rules/);
   assert.match(
@@ -1467,7 +1568,7 @@ test("--help documents the public commands and filters", () => {
   assert.match(result.stdout, /share\s+输出隐私安全的 SVG 分享卡片/);
   assert.match(result.stdout, /creature \[reset\]\s+查看或重置异变体档案/);
   assert.match(result.stdout, /doctor\s+检查本地日志/);
-  assert.match(result.stdout, /explain\s+解释资源代理口径/);
+  assert.match(result.stdout, /explain\s+解释资源估算口径/);
   assert.match(result.stdout, /--source <all\|codex\|claude>/);
   assert.match(result.stdout, /--json/);
   assert.match(result.stdout, /--lang <zh\|en>/);
@@ -1477,7 +1578,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 0.7.0\n");
+  assert.equal(result.stdout, "anti-ai 0.8.0\n");
   assert.equal(result.stderr, "");
 });
 

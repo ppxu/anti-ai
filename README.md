@@ -15,14 +15,17 @@ Turn local Codex and Claude Code token usage into a transparent, satirical AI re
 
   127,605,581 tokens · 1,058 model requests
 
-  Published proxy range — not a power meter
+  Estimated resource use — from public data
   ⚡  253.92–359.72 Wh
   💧  275.08–54,015.30 mL
   ☁️  31.74–1,368.39 gCO₂e
 
   Everyday translation
   📱  15Wh phone charge  16.93–23.98 charges
+  💻  50W laptop         5.08–7.19 hours
   🚿  8L/min shower      0.03–6.75 minutes
+  ☕  250mL cup of water 1.10–216.06 cups
+  🚽  6L toilet flush    0.05–9.00 flushes
   🚗  Average gas car    0.13–5.51 km
   🌳  One urban tree     0.19–8.32 days to absorb it
 
@@ -44,7 +47,7 @@ Token counts are measurable. The electricity, water, and carbon impact of propri
 `anti-ai` keeps those two facts separate:
 
 - exact local token and model statistics are available through `--json`;
-- environmental values are clearly labelled low-confidence proxy ranges;
+- environmental values are clearly labelled low-confidence estimates from public examples;
 - every assumption and source is visible through `anti-ai explain`;
 - no prompt or response text leaves your machine.
 
@@ -124,7 +127,9 @@ anti-ai explain --lang en
 
 ### `today`
 
-Print a daily receipt using your system timezone. It includes a token breakdown by source and model. The human-readable receipt compares usage with the prior seven calendar days and selects one verdict from an expanded satirical copy bank. The selected line is stable for a given date, and no model is called to generate it.
+Print a daily receipt using your system timezone. It includes a token breakdown by source and model. The human-readable receipt compares usage with the prior seven calendar days and selects one verdict from an expanded satirical copy bank. The selected title and line are stable for a given date, and no model is called to generate them.
+
+A cache offense no longer wins merely because cache use is normally high. It requires cached reads to reach at least `70%` of current input and exceed the personal seven-day cache baseline by at least `10` percentage points. Five same-category titles rotate deterministically by date.
 
 `--json` returns exact token data grouped by source and model. It deliberately excludes environmental proxies, baselines, and verdicts.
 
@@ -140,7 +145,7 @@ Print a terminal calendar heatmap from the first day of the month through the se
 
 ### `share`
 
-Print a 1200×630 SVG share card to stdout. It uses the same resource proxy formulas, personal baseline, and deterministic verdict as `today`, but omits prompts, responses, paths, model names, request counts, and exact token counts.
+Print a 1200×630 SVG share card to stdout. It uses the same resource estimate formulas, personal baseline, and deterministic verdict as `today`, but omits prompts, responses, paths, model names, request counts, and exact token counts.
 
 ```bash
 anti-ai share > anti-ai-receipt.svg
@@ -213,7 +218,7 @@ Check whether the default log directories exist and report how many JSONL files 
 
 ### `explain`
 
-Show every proxy factor, formula, source, and limitation.
+Show every estimate factor, formula, source, and limitation.
 
 ## Data sources and counting
 
@@ -238,19 +243,19 @@ If a log does not contain a model field, the usage is grouped under `unknown`. H
 
 ## Environmental methodology
 
-Codex and Claude Code do not provide this tool with measured per-request electricity, water, or carbon data. The receipt therefore shows the span between published examples—not a measured value or statistical confidence interval.
+Codex and Claude Code do not provide this tool with measured per-request electricity, water, or carbon data. The receipt therefore shows an estimate range derived from published examples—not a measured value or statistical confidence interval.
 
 - [Google: Measuring the environmental impact of delivering AI at Google Scale](https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf)
 - [OpenAI disclosure: The Gentle Singularity](https://blog.samaltman.com/the-gentle-singularity)
 - [Mistral: Our contribution to a global environmental standard for AI](https://mistral.ai/news/our-contribution-to-a-global-environmental-standard-for-ai/)
 
-Everyday comparisons adapt to the upper end of the displayed proxy range so that the output remains readable. They use:
+Everyday comparisons adapt to the upper end of the displayed estimate range so that the output remains readable. They use:
 
-- display assumptions of a 10W LED, 15Wh phone charge, 100Wh to boil 1L of water, a 550mL water bottle, and an 8L/min shower;
+- display assumptions of a 10W LED, 50W laptop, 15Wh phone charge, 100Wh to boil 1L of water, 250mL cup of water, 550mL water bottle, 6L toilet flush, and 8L/min shower;
 - [US EPA average gasoline passenger vehicle emissions](https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle);
 - [US EPA urban tree carbon sequestration methodology](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references).
 
-The household values are display assumptions, not environmental measurement standards. Run `anti-ai explain` to see each formula. The tool reports how long one urban tree would need to sequester the carbon proxy; it does not claim an equivalent number of trees cut down.
+The household values are display assumptions, not environmental measurement standards. Run `anti-ai explain` to see each formula. The tool reports how long one urban tree would need to sequester the carbon estimate; it does not claim an equivalent number of trees cut down.
 
 ## Privacy
 
@@ -273,6 +278,15 @@ node ./bin/anti-ai.mjs --help
 ```
 
 Tests exercise the public CLI through exit codes and stdout/stderr using synthetic JSONL fixtures.
+
+## Architecture
+
+- `bin/anti-ai.mjs`: minimal executable launcher
+- `src/cli.mjs`: argument validation, command orchestration, help, and methodology
+- `src/scanner.mjs`: Codex and Claude Code JSONL scanning and accounting
+- `src/reporting.mjs`: receipts, resource estimates, everyday comparisons, and verdicts
+- `src/creature.mjs`: mutation growth rules and local state
+- `src/shared.mjs`: shared language and empty-usage primitives
 
 ## Contributing
 

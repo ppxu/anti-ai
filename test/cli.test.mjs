@@ -1,10 +1,23 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import test from "node:test";
+
+import {
+  creatureAppearanceContentStats,
+  creatureAppearanceState,
+  creatureArt,
+  deriveCreatureAppearance,
+} from "../src/creature.mjs";
 
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 const projectDir = path.resolve(testDir, "..");
@@ -13,18 +26,24 @@ const fixtureDir = path.join(testDir, "fixtures");
 const baselineCodexDir = path.join(fixtureDir, "baseline", "codex");
 
 function runCli(args, env = {}) {
-  return spawnSync(process.execPath, [cliPath, ...args], {
+  const isolatedHome = env.HOME ?? mkdtempSync(
+    path.join(tmpdir(), "anti-ai-cli-home-"),
+  );
+  const result = spawnSync(process.execPath, [cliPath, ...args], {
     cwd: projectDir,
     encoding: "utf8",
     env: {
       ...process.env,
       TZ: "Asia/Shanghai",
       NO_COLOR: "1",
+      HOME: isolatedHome,
       ANTI_AI_CODEX_DIR: path.join(fixtureDir, "codex"),
       ANTI_AI_CLAUDE_DIR: path.join(fixtureDir, "missing-claude"),
       ...env,
     },
   });
+  if (!env.HOME) rmSync(isolatedHome, { recursive: true, force: true });
+  return result;
 }
 
 function writeCodexUsage(root, usages, date = "2026-07-23") {
@@ -441,6 +460,39 @@ test("today rotates cache offense titles when cache usage is unusually high", (t
   assert.match(english.stdout, /Today's charge: CONTEXT RUINS CURATOR/);
 });
 
+test("today settles one creature day and appends a concise mutation summary", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-today-creature-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "today-creature",
+  };
+
+  const today = runCli(["today", "--date", "2026-07-23"], env);
+  const creature = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    env,
+  );
+
+  assert.equal(today.status, 0, today.stderr);
+  assert.equal(creature.status, 0, creature.stderr);
+  assert.match(
+    today.stdout,
+    /异变体\s+污染性 \+1 · 仍为「熄火幼核」 · 今日成就 无/,
+  );
+  const report = JSON.parse(creature.stdout);
+  assert.equal(report.experienceDays, 1);
+  assert.deepEqual(report.ecology, {
+    pollution: 1,
+    clarity: 0,
+    pollutionRate: 1,
+    clarityRate: 0,
+    type: "unformed",
+    pendingType: "polluted",
+    pendingDays: 1,
+  });
+});
+
 test("today chooses human-scale comparisons for larger resource ranges", (t) => {
   const root = mkdtempSync(path.join(tmpdir(), "anti-ai-dynamic-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -625,11 +677,12 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
     branch: "nuclear",
     form: "compute_embryo",
     exposure: 27,
-    nextStageAt: 50,
-    progressPercent: 54,
+    nextStageAt: 7,
+    progressPercent: 14,
     quietStreakDays: 0,
     activeStreakDays: 1,
     ageDays: 1,
+    experienceDays: 1,
     observedDays: 30,
     activeDays: 1,
     traits: {
@@ -665,10 +718,61 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
       rareMutations: 0,
       talentsUnlocked: 0,
       rareAbilitiesUnlocked: 0,
+      achievementsUnlocked: 0,
+      formsUnlocked: 1,
+      appearancePartsUnlocked: 3,
+      specimensCollected: 1,
+    },
+    ecology: {
+      pollution: 1,
+      clarity: 0,
+      pollutionRate: 1,
+      clarityRate: 0,
+      type: "unformed",
+      pendingType: "polluted",
+      pendingDays: 1,
+    },
+    ecologyForm: "extinguished_core",
+    appearance: {
+      version: 1,
+      specimenId: "609f9f4b",
+      geneIds: {
+        body: "body_03",
+        eyes: "eyes_08",
+        mouth: "mouth_02",
+        core: "core_01",
+        limbs: "limbs_06",
+        tail: "tail_06",
+        pattern: "pattern_02",
+      },
+      partIds: ["body_03", "eyes_08", "mouth_02"],
+      fingerprint: "a78d962af277",
+      stageIndex: 0,
+      ecology: "unformed",
+      pathology: "nuclear",
+      formId: "extinguished_core",
+      achievementId: null,
+      achievementCategory: null,
+      rareAbilityId: null,
+    },
+    achievements: {
+      unlocked: [],
+      recent: [],
+      total: 24,
+    },
+    title: {
+      modifierId: "awaiting_shape",
+      coreId: "extinguished_core",
+      achievementId: null,
     },
     mood: "token_chewing",
     today: {
       pollutionDose: 27,
+      usageBand: "calibrating",
+      ecologyGains: {
+        pollution: 1,
+        clarity: 0,
+      },
       event: {
         id: "cache_calcification",
         rarity: "common",
@@ -683,6 +787,7 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
         withdrawal: 0,
       },
       rareAbilityGain: null,
+      achievementUnlockIds: [],
       newTalents: [],
     },
   });
@@ -706,6 +811,434 @@ test("creature persists one deterministic mutation event per active day", (t) =>
     id: "cache_calcification",
     rarity: "common",
   });
+});
+
+test("creature gives every settled day neutral experience and exposes ecology", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-ecology-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+
+  const result = runCli(["creature", "--date", "2026-07-23", "--json"], {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "ecology-seed",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.experienceDays, 1);
+  assert.deepEqual(report.ecology, {
+    pollution: 1,
+    clarity: 0,
+    pollutionRate: 1,
+    clarityRate: 0,
+    type: "unformed",
+    pendingType: "polluted",
+    pendingDays: 1,
+  });
+  assert.deepEqual(report.today.ecologyGains, {
+    pollution: 1,
+    clarity: 0,
+  });
+  assert.equal(report.today.usageBand, "calibrating");
+});
+
+test("creature uses the seven-day baseline for pollution and rewards quiet days equally", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-ecology-bands-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  const regularUsage = [
+    {
+      input_tokens: 900,
+      cached_input_tokens: 0,
+      output_tokens: 100,
+      total_tokens: 1_000,
+    },
+  ];
+  const heavyUsage = [
+    {
+      input_tokens: 1_800,
+      cached_input_tokens: 0,
+      output_tokens: 200,
+      total_tokens: 2_000,
+    },
+  ];
+  for (let day = 1; day <= 7; day += 1) {
+    writeCodexUsage(root, regularUsage, `2026-07-${String(day).padStart(2, "0")}`);
+  }
+  writeCodexUsage(root, heavyUsage, "2026-07-08");
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "ecology-bands",
+  };
+
+  const heavy = runCli(["creature", "--date", "2026-07-08", "--json"], env);
+  const quiet = runCli(["creature", "--date", "2026-07-09", "--json"], env);
+
+  assert.equal(heavy.status, 0, heavy.stderr);
+  assert.equal(quiet.status, 0, quiet.stderr);
+  const heavyReport = JSON.parse(heavy.stdout);
+  const quietReport = JSON.parse(quiet.stdout);
+  assert.equal(heavyReport.experienceDays, 8);
+  assert.equal(heavyReport.stage, "mutated_juvenile");
+  assert.equal(heavyReport.today.usageBand, "heavy");
+  assert.deepEqual(heavyReport.today.ecologyGains, {
+    pollution: 1,
+    clarity: 0,
+  });
+  assert.equal(quietReport.experienceDays, 9);
+  assert.equal(quietReport.stage, "mutated_juvenile");
+  assert.equal(quietReport.today.usageBand, "sober");
+  assert.deepEqual(quietReport.today.ecologyGains, {
+    pollution: 0,
+    clarity: 3,
+  });
+});
+
+test("creature renders a stable individualized ASCII specimen from its local genome", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-genome-art-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const firstEnv = {
+    HOME: path.join(workspace, "first"),
+    ANTI_AI_CREATURE_SEED: "genome-first",
+  };
+  const secondEnv = {
+    HOME: path.join(workspace, "second"),
+    ANTI_AI_CREATURE_SEED: "genome-second",
+  };
+
+  const firstJson = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    firstEnv,
+  );
+  const repeatedArt = runCli(
+    ["creature", "--date", "2026-07-23"],
+    firstEnv,
+  );
+  const firstArt = runCli(
+    ["creature", "--date", "2026-07-23"],
+    firstEnv,
+  );
+  const englishArt = runCli(
+    ["creature", "--date", "2026-07-23", "--lang", "en"],
+    firstEnv,
+  );
+  const coloredArt = runCli(["creature", "--date", "2026-07-23"], {
+    ...firstEnv,
+    FORCE_COLOR: "1",
+    NO_COLOR: "",
+  });
+  const secondJson = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    secondEnv,
+  );
+  const secondArt = runCli(
+    ["creature", "--date", "2026-07-23"],
+    secondEnv,
+  );
+
+  for (const result of [
+    firstJson,
+    repeatedArt,
+    firstArt,
+    englishArt,
+    coloredArt,
+    secondJson,
+    secondArt,
+  ]) {
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const firstReport = JSON.parse(firstJson.stdout);
+  const secondReport = JSON.parse(secondJson.stdout);
+  assert.match(firstReport.appearance.specimenId, /^[0-9a-f]{8}$/);
+  assert.equal(firstReport.appearance.version, 1);
+  assert.deepEqual(Object.keys(firstReport.appearance.geneIds), [
+    "body",
+    "eyes",
+    "mouth",
+    "core",
+    "limbs",
+    "tail",
+    "pattern",
+  ]);
+  assert.ok(firstReport.appearance.partIds.length >= 3);
+  assert.match(firstReport.appearance.fingerprint, /^[0-9a-f]{12}$/);
+  assert.notEqual(
+    firstReport.appearance.fingerprint,
+    secondReport.appearance.fingerprint,
+  );
+  assert.match(firstArt.stdout, new RegExp(`标本编号\\s+${firstReport.appearance.specimenId}`));
+  assert.equal(firstArt.stdout, repeatedArt.stdout);
+
+  const artLines = (output) => {
+    const lines = output.split("\n");
+    const specimenIndex = lines.findIndex(
+      (line) => line.includes("标本编号") || line.includes("SPECIMEN ID"),
+    );
+    return lines.slice(2, specimenIndex - 1);
+  };
+  const firstArtLines = artLines(firstArt.stdout);
+  const englishArtLines = artLines(englishArt.stdout);
+  const coloredArtLines = artLines(
+    coloredArt.stdout.replace(/\u001b\[[0-9;]*m/g, ""),
+  );
+  const secondArtLines = artLines(secondArt.stdout);
+  assert.deepEqual(firstArtLines, englishArtLines);
+  assert.deepEqual(firstArtLines, coloredArtLines);
+  assert.notDeepEqual(firstArtLines, secondArtLines);
+  assert.ok(firstArtLines.length >= 5);
+  assert.ok(firstArtLines.every((line) => terminalWidth(line) <= 39));
+  assert.ok(secondArtLines.every((line) => terminalWidth(line) <= 39));
+});
+
+test("complete-form ASCII keeps 10,000 seeded specimens diverse and bounded", () => {
+  const appearances = new Set();
+  for (let index = 0; index < 10_000; index += 1) {
+    const appearanceState = creatureAppearanceState(`collision-seed-${index}`);
+    const appearance = deriveCreatureAppearance(
+      appearanceState,
+      3,
+      "paradox",
+      "context",
+      [],
+      {},
+    );
+    const art = creatureArt({ appearance });
+    appearances.add(art);
+    assert.ok(
+      art.split("\n").every((line) => terminalWidth(line) <= 39),
+      `seed ${index} exceeded 39 columns`,
+    );
+  }
+
+  const collisionRate = (10_000 - appearances.size) / 10_000;
+  assert.ok(collisionRate <= 0.05, `collision rate was ${collisionRate}`);
+  assert.deepEqual(creatureAppearanceContentStats(), {
+    basePartIds: 54,
+    formFamilies: 16,
+    achievements: 24,
+  });
+});
+
+test("creature unlocks equally visible feeding and sobriety achievements", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-achievements-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  const usage = [
+    {
+      input_tokens: 900,
+      cached_input_tokens: 0,
+      output_tokens: 100,
+      total_tokens: 1_000,
+    },
+  ];
+  for (let day = 1; day <= 7; day += 1) {
+    writeCodexUsage(root, usage, `2026-07-${String(day).padStart(2, "0")}`);
+  }
+  writeCodexUsage(root, usage, "2026-07-11");
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "achievement-seed",
+  };
+
+  const active = runCli(["creature", "--date", "2026-07-07", "--json"], env);
+  const quiet = runCli(["creature", "--date", "2026-07-08", "--json"], env);
+  const human = runCli(["creature", "--date", "2026-07-08"], env);
+  const coloredHuman = runCli(["creature", "--date", "2026-07-08"], {
+    ...env,
+    FORCE_COLOR: "1",
+    NO_COLOR: "",
+  });
+  const paradoxHuman = runCli(["creature", "--date", "2026-07-11"], {
+    ...env,
+    FORCE_COLOR: "1",
+    NO_COLOR: "",
+  });
+
+  assert.equal(active.status, 0, active.stderr);
+  assert.equal(quiet.status, 0, quiet.stderr);
+  assert.equal(human.status, 0, human.stderr);
+  assert.equal(coloredHuman.status, 0, coloredHuman.stderr);
+  assert.equal(paradoxHuman.status, 0, paradoxHuman.stderr);
+  const activeReport = JSON.parse(active.stdout);
+  const quietReport = JSON.parse(quiet.stdout);
+  assert.ok(
+    activeReport.achievements.unlocked.some(
+      (achievement) => achievement.id === "seven_day_feeding",
+    ),
+  );
+  assert.ok(
+    quietReport.achievements.unlocked.some(
+      (achievement) => achievement.id === "first_supply_cut",
+    ),
+  );
+  assert.deepEqual(
+    quietReport.achievements.recent.map((achievement) => achievement.id),
+    ["first_supply_cut"],
+  );
+  assert.equal(
+    quietReport.collections.achievementsUnlocked,
+    quietReport.achievements.unlocked.length,
+  );
+  assert.match(quietReport.title.modifierId, /^[a-z_]+$/);
+  assert.equal(quietReport.title.coreId, quietReport.ecologyForm);
+  assert.match(human.stdout, /徽章\s+\[\d+\]/);
+  assert.match(human.stdout, /今日成就\s+第一次断供/);
+  assert.match(human.stdout, /称号\s+.*第一次断供/);
+  assert.ok(coloredHuman.stdout.includes("\u001b[1;31m七日连喂"));
+  assert.ok(coloredHuman.stdout.includes("\u001b[1;36m第一次断供"));
+  assert.ok(paradoxHuman.stdout.includes("\u001b[1;33m续杯戒断者"));
+});
+
+test("repeatable achievements grow through three non-token tiers", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-achievement-tier-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  const usage = [
+    {
+      input_tokens: 900,
+      cached_input_tokens: 0,
+      output_tokens: 100,
+      total_tokens: 1_000,
+    },
+  ];
+  for (let day = 1; day <= 30; day += 1) {
+    writeCodexUsage(root, usage, `2026-06-${String(day).padStart(2, "0")}`);
+  }
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "achievement-tier-seed",
+  };
+
+  const json = runCli(["creature", "--date", "2026-06-30", "--json"], env);
+  const human = runCli(["creature", "--date", "2026-06-30"], env);
+
+  assert.equal(json.status, 0, json.stderr);
+  assert.equal(human.status, 0, human.stderr);
+  const achievement = JSON.parse(json.stdout).achievements.unlocked.find(
+    (candidate) => candidate.id === "seven_day_feeding",
+  );
+  assert.deepEqual(achievement, {
+    id: "seven_day_feeding",
+    category: "offense",
+    rarity: "common",
+    tier: 2,
+    maxTier: 3,
+    progress: 30,
+    nextTierAt: 100,
+    unlockedAt: "2026-06-07",
+  });
+  assert.match(human.stdout, /七日连喂 \[定罪 30\/100\]/);
+});
+
+test("creature grows achievement-marked ASCII complexity without extra token experience", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-art-growth-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  writeCodexUsage(
+    root,
+    [
+      {
+        input_tokens: 900,
+        cached_input_tokens: 0,
+        output_tokens: 100,
+        total_tokens: 1_000,
+      },
+    ],
+    "2026-01-01",
+  );
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "art-growth",
+  };
+
+  const hatch = runCli(["creature", "--date", "2026-01-01", "--json"], env);
+  const grown = runCli(["creature", "--date", "2026-03-31", "--json"], env);
+
+  assert.equal(hatch.status, 0, hatch.stderr);
+  assert.equal(grown.status, 0, grown.stderr);
+  const hatchReport = JSON.parse(hatch.stdout);
+  const grownReport = JSON.parse(grown.stdout);
+  assert.equal(hatchReport.experienceDays, 1);
+  assert.equal(hatchReport.appearance.partIds.length, 3);
+  assert.equal(grownReport.experienceDays, 90);
+  assert.equal(grownReport.stage, "catastrophe_complete");
+  assert.equal(grownReport.ecology.type, "lucid");
+  assert.equal(grownReport.appearance.partIds.length, 9);
+  assert.ok(
+    grownReport.appearance.partIds.some((partId) =>
+      partId.startsWith("achievement_"),
+    ),
+  );
+  assert.notEqual(
+    grownReport.appearance.fingerprint,
+    hatchReport.appearance.fingerprint,
+  );
+});
+
+test("chromatic mutations visibly outrank achievement marks on complete forms", () => {
+  const appearanceState = creatureAppearanceState("chromatic-priority");
+  const achievements = [
+    {
+      id: "seven_day_feeding",
+      category: "offense",
+      rarity: "common",
+      tier: 1,
+      unlockedAt: "2026-01-07",
+    },
+  ];
+  const achievementOnly = deriveCreatureAppearance(
+    appearanceState,
+    3,
+    "polluted",
+    "frenzy",
+    achievements,
+    {},
+  );
+  const chromatic = deriveCreatureAppearance(
+    appearanceState,
+    3,
+    "polluted",
+    "frenzy",
+    achievements,
+    { deadline_scent: { rarity: "rare", level: 1 } },
+  );
+
+  assert.equal(chromatic.partIds.at(-1), "chromatic_deadline_scent");
+  assert.notEqual(chromatic.fingerprint, achievementOnly.fingerprint);
+  assert.notEqual(
+    creatureArt({ appearance: chromatic }),
+    creatureArt({ appearance: achievementOnly }),
+  );
+
+  const embryo = deriveCreatureAppearance(
+    appearanceState,
+    0,
+    "unformed",
+    "frenzy",
+    [],
+    {},
+  );
+  const chromaticEmbryo = deriveCreatureAppearance(
+    appearanceState,
+    0,
+    "unformed",
+    "frenzy",
+    [],
+    { deadline_scent: { rarity: "rare", level: 1 } },
+  );
+  assert.equal(chromaticEmbryo.partIds.length, 3);
+  assert.notEqual(chromaticEmbryo.fingerprint, embryo.fingerprint);
+  assert.notEqual(
+    creatureArt({ appearance: chromaticEmbryo }),
+    creatureArt({ appearance: embryo }),
+  );
 });
 
 test("creature grows deterministic random abilities and exposes playable state", (t) => {
@@ -749,6 +1282,10 @@ test("creature grows deterministic random abilities and exposes playable state",
     rareMutations: 0,
     talentsUnlocked: report.talents.length,
     rareAbilitiesUnlocked: 0,
+    achievementsUnlocked: report.achievements.unlocked.length,
+    formsUnlocked: 1,
+    appearancePartsUnlocked: report.appearance.partIds.length,
+    specimensCollected: 1,
   });
 });
 
@@ -1004,6 +1541,86 @@ test("v0.6 creature files migrate without losing stored ability growth", (t) => 
   assert.ok(report.collections.rareAbilitiesUnlocked >= 0);
 });
 
+test("schema v1-v3 creature files migrate idempotently to private ecology state", (t) => {
+  for (const schemaVersion of [1, 2, 3]) {
+    const home = mkdtempSync(
+      path.join(tmpdir(), `anti-ai-schema-${schemaVersion}-`),
+    );
+    t.after(() => rmSync(home, { recursive: true, force: true }));
+    mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+    writeFileSync(
+      path.join(home, ".anti-ai", "creature.json"),
+      `${JSON.stringify({
+        schemaVersion,
+        seed: `schema-${schemaVersion}`,
+        days: {
+          "2026-07-01": {
+            pollutionDose: 40,
+            active: true,
+            traits: {
+              context: 40,
+              cache: 0,
+              frenzy: 0,
+              nuclear: 0,
+            },
+            event: {
+              id: "misplaced_context",
+              rarity: "common",
+            },
+          },
+          "2026-07-02": {
+            pollutionDose: 0,
+            active: false,
+            traits: {
+              context: 0,
+              cache: 0,
+              frenzy: 0,
+              nuclear: 0,
+            },
+            event: null,
+          },
+        },
+      })}\n`,
+    );
+    const env = { HOME: home };
+
+    const first = runCli(
+      ["creature", "--date", "2026-07-02", "--json"],
+      env,
+    );
+    const second = runCli(
+      ["creature", "--date", "2026-07-02", "--json"],
+      env,
+    );
+
+    assert.equal(first.status, 0, first.stderr);
+    assert.equal(second.status, 0, second.stderr);
+    assert.deepEqual(JSON.parse(second.stdout), JSON.parse(first.stdout));
+    const report = JSON.parse(first.stdout);
+    assert.equal(report.experienceDays, 2);
+    assert.equal(report.ecology.pollution, 1);
+    assert.equal(report.ecology.clarity, 3);
+    const saved = JSON.parse(
+      readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+    );
+    assert.equal(saved.schemaVersion, 4);
+    assert.equal(saved.appearance.version, 1);
+    assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
+    assert.equal(saved.specimens.length, 1);
+    assert.match(saved.specimens[0].fingerprint, /^[0-9a-f]{12}$/);
+    assert.equal(saved.specimens[0].renderVersion, 1);
+    assert.equal(saved.specimens[0].recordedAt, "2026-07-02");
+    assert.deepEqual(saved.days["2026-07-02"].ecologyGains, {
+      pollution: 0,
+      clarity: 3,
+    });
+    assert.doesNotMatch(
+      JSON.stringify(saved),
+      /totalTokens|modelName|prompt|response|requestTimestamp/,
+    );
+  }
+});
+
 test("creature can reach a rare mutation from its local deterministic seed", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-rare-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));
@@ -1072,25 +1689,30 @@ test("creature evolves into four branches from distinct usage patterns", (t) => 
     actual[name] = {
       branch: report.branch,
       form: report.form,
+      ecologyForm: report.ecologyForm,
     };
   }
 
   assert.deepEqual(actual, {
     context: {
       branch: "context",
-      form: "context_sarcoma",
+      form: "context_polyp",
+      ecologyForm: "blank_dossier_embryo",
     },
     cache: {
       branch: "cache",
-      form: "cache_fossil_beast",
+      form: "cache_moss",
+      ecologyForm: "standby_moss",
     },
     frenzy: {
       branch: "frenzy",
-      form: "request_hydra",
+      form: "request_spore",
+      ecologyForm: "unsent_spore",
     },
     nuclear: {
       branch: "nuclear",
-      form: "reactor_hatchling",
+      form: "compute_embryo",
+      ecologyForm: "extinguished_core",
     },
   });
 });
@@ -1137,6 +1759,8 @@ test("creature evolves across active days and becomes dormant on AI-free days", 
         stage: report.stage,
         branch: report.branch,
         form: report.form,
+        experienceDays: report.experienceDays,
+        ecologyType: report.ecology.type,
         exposure: report.exposure,
         quietStreakDays: report.quietStreakDays,
         event: report.today.event,
@@ -1145,18 +1769,22 @@ test("creature evolves across active days and becomes dormant on AI-free days", 
     [
       {
         status: "dormant",
-        stage: "runaway_adult",
+        stage: "contaminated_embryo",
         branch: "context",
-        form: "memory_devourer",
+        form: "context_polyp",
+        experienceDays: 4,
+        ecologyType: "polluted",
         exposure: 238,
         quietStreakDays: 1,
         event: null,
       },
       {
         status: "dormant",
-        stage: "runaway_adult",
+        stage: "contaminated_embryo",
         branch: "context",
-        form: "memory_devourer",
+        form: "context_polyp",
+        experienceDays: 5,
+        ecologyType: "polluted",
         exposure: 236,
         quietStreakDays: 2,
         event: null,
@@ -1220,9 +1848,13 @@ test("creature renders bilingual mutation files without leaking raw usage", (t) 
   assert.equal(zh.status, 0, zh.stderr);
   assert.match(zh.stdout, /TOKEN MUTATION FILE · 2026-07-23/);
   assert.match(zh.stdout, /☢ 今日污染剂量\s+\+27/);
-  assert.match(zh.stdout, /阶段\s+污染胚体 I · 54%/);
+  assert.match(zh.stdout, /阶段\s+异常胚体 I · 14%/);
   assert.match(zh.stdout, /进化分支\s+核食系/);
-  assert.match(zh.stdout, /形态\s+算力胚胎/);
+  assert.match(zh.stdout, /生态人格\s+未定型/);
+  assert.match(zh.stdout, /形态\s+熄火幼核/);
+  assert.match(zh.stdout, /标本编号\s+[0-9a-f]{8}/);
+  assert.match(zh.stdout, /徽章\s+\[\d+\]/);
+  assert.match(zh.stdout, /今日成就/);
   assert.match(zh.stdout, /今日突变\s+\[普通\] 缓存钙化/);
   assert.match(zh.stdout, /能力值 · Lv\.\d+/);
   assert.match(zh.stdout, /吞噬欲/);
@@ -1236,9 +1868,13 @@ test("creature renders bilingual mutation files without leaking raw usage", (t) 
 
   assert.equal(en.status, 0, en.stderr);
   assert.match(en.stdout, /TODAY'S POLLUTION DOSE\s+\+27/);
-  assert.match(en.stdout, /STAGE\s+CONTAMINATED EMBRYO I · 54%/);
+  assert.match(en.stdout, /STAGE\s+ANOMALOUS EMBRYO I · 14%/);
   assert.match(en.stdout, /EVOLUTION BRANCH\s+NUCLEAR FEEDER/);
-  assert.match(en.stdout, /FORM\s+COMPUTE EMBRYO/);
+  assert.match(en.stdout, /ECOLOGY\s+UNFORMED/);
+  assert.match(en.stdout, /FORM\s+EXTINGUISHED CORE/);
+  assert.match(en.stdout, /SPECIMEN ID\s+[0-9a-f]{8}/);
+  assert.match(en.stdout, /BADGES\s+\[\d+\]/);
+  assert.match(en.stdout, /TODAY'S ACHIEVEMENTS/);
   assert.match(en.stdout, /TODAY'S MUTATION\s+\[COMMON\] CACHE CALCIFICATION/);
   assert.match(en.stdout, /ABILITIES · LV\.\d+/);
   assert.match(en.stdout, /APPETITE/);
@@ -1493,7 +2129,7 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
     result.stdout,
     /上下文病变.*非缓存输入.*缓存化石.*缓存读取占比.*请求增殖.*请求数.*核食.*兜底/s,
   );
-  assert.match(result.stdout, /4 个阶段.*50.*150.*350/s);
+  assert.match(result.stdout, /生命阶段.*1、7、30、90/s);
   assert.match(result.stdout, /SHA-256.*8%.*稀有突变/s);
   assert.match(
     result.stdout,
@@ -1517,9 +2153,33 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /能力与异色加点.*不保存对话、路径、模型名、精确 Token 或逐请求时间/s,
+    /schema v4.*用量带、派生生态点、基因\/部件 ID、成就.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
+});
+
+test("explain discloses ecology, individualized ASCII, achievements, and schema v4", () => {
+  const result = runCli(["explain"]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    result.stdout,
+    /阅历.*每个已结算自然日.*高 Token.*不能加速/s,
+  );
+  assert.match(
+    result.stdout,
+    /污染性.*清醒性.*未定型.*污染型.*清醒型.*矛盾型/s,
+  );
+  assert.match(result.stdout, /连续 3 个已结算日.*生态人格/);
+  assert.match(
+    result.stdout,
+    /稳定本地基因.*生命阶段.*使用病型.*成就部件.*异色突变/s,
+  );
+  assert.match(result.stdout, /罪证章.*戒断章.*悖论章/);
+  assert.match(
+    result.stdout,
+    /schema v4.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+  );
 });
 
 test("doctor, explain, and help support English output", () => {
@@ -1578,7 +2238,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 0.8.0\n");
+  assert.equal(result.stdout, "anti-ai 0.9.0\n");
   assert.equal(result.stderr, "");
 });
 

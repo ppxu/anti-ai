@@ -79,11 +79,15 @@ anti-ai creature --lang en
 anti-ai creature --json
 ```
 
-The creature backfills the latest 30 calendar days, turns daily Token totals into a capped pollution dose, and evolves through four deterministic branches. It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Regular abilities cap at 999 and unlock mutation talents at 5, 15, 30, 100, 300, and 700; Instability raises the rare-event chance from 8% up to 20%.
+The creature backfills the latest 30 calendar days. Every settled day after hatching adds exactly one experience day, so spending more Tokens cannot accelerate its four life stages. Relative to the prior seven-calendar-day baseline, high use adds Pollution, low use adds Clarity, and an AI-free day adds more Clarity. Those values produce Unformed, Polluted, Lucid, or Paradox ecology after a three-day confirmation window; four usage pathologies still describe how the Token work shapes its body.
 
-Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%. A repeated awakening grows the same chromatic ability up to level 9. When reporting a creature, summarize its form, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, and rare-mutation chance. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
+Its ASCII form is assembled deterministically from a stable local genome, life stage, usage pathology, ecology, achievement parts, and chromatic abilities. The first collection contains 16 form families and 24 achievements, split evenly across Offense, Sobriety, and Paradox. Repeatable achievements have three behavior-count tiers; meaningful appearance fingerprints are retained as private specimen records for a future codex. Do not describe high consumption as the primary or preferred upgrade route.
 
-The creature state is stored at `~/.anti-ai/creature.json`. It contains only pollution doses, traits, regular/chromatic ability gains, event IDs, and a local deterministic seed—never prompts, responses, paths, model names, or exact Token totals. Do not open or edit the state file directly.
+It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Regular abilities cap at 999 and unlock mutation talents at 5, 15, 30, 100, 300, and 700; Instability raises the rare-event chance from 8% up to 20%. Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%, and repeated awakenings grow up to level 9.
+
+When reporting a creature, summarize its specimen ID, life stage and experience, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, and rare-mutation chance. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
+
+The creature state is stored at `~/.anti-ai/creature.json` with schema v4. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1/v2/v3 files migrate locally and idempotently. Do not open or edit the state file directly.
 
 Only destroy the mutation history when the user explicitly asks to reset or restart it:
 

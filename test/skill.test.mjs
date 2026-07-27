@@ -22,6 +22,10 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /anti-ai creature/);
   assert.match(skill, /anti-ai creature reset/);
   assert.match(skill, /deterministic|确定性/i);
+  assert.match(skill, /Pollution.*Clarity.*three-day/s);
+  assert.match(skill, /Offense.*Sobriety.*Paradox/s);
+  assert.match(skill, /schema v4/);
+  assert.match(skill, /future codex/);
   assert.match(skill, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     skill,

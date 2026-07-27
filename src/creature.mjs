@@ -14,21 +14,21 @@ const CREATURE_STAGES = [
   {
     id: "contaminated_embryo",
     threshold: 0,
-    nextAt: 50,
+    nextAt: 7,
   },
   {
     id: "mutated_juvenile",
-    threshold: 50,
-    nextAt: 150,
+    threshold: 7,
+    nextAt: 30,
   },
   {
     id: "runaway_adult",
-    threshold: 150,
-    nextAt: 350,
+    threshold: 30,
+    nextAt: 90,
   },
   {
     id: "catastrophe_complete",
-    threshold: 350,
+    threshold: 90,
     nextAt: null,
   },
 ];
@@ -58,6 +58,194 @@ const CREATURE_FORMS = {
     "nuclear_feeder",
     "compute_meltdown",
   ],
+};
+
+const CREATURE_APPEARANCE_GENE_POOLS = {
+  body: ["body_01", "body_02", "body_03", "body_04", "body_05", "body_06"],
+  eyes: [
+    "eyes_01",
+    "eyes_02",
+    "eyes_03",
+    "eyes_04",
+    "eyes_05",
+    "eyes_06",
+    "eyes_07",
+    "eyes_08",
+  ],
+  mouth: [
+    "mouth_01",
+    "mouth_02",
+    "mouth_03",
+    "mouth_04",
+    "mouth_05",
+    "mouth_06",
+    "mouth_07",
+    "mouth_08",
+  ],
+  core: ["core_01", "core_02", "core_03", "core_04", "core_05", "core_06"],
+  limbs: [
+    "limbs_01",
+    "limbs_02",
+    "limbs_03",
+    "limbs_04",
+    "limbs_05",
+    "limbs_06",
+  ],
+  tail: ["tail_01", "tail_02", "tail_03", "tail_04", "tail_05", "tail_06"],
+  pattern: [
+    "pattern_01",
+    "pattern_02",
+    "pattern_03",
+    "pattern_04",
+    "pattern_05",
+    "pattern_06",
+  ],
+};
+const CREATURE_APPEARANCE_GLYPHS = {
+  body: {
+    body_01: { top: "_", left: "/", right: "\\", lower: "_" },
+    body_02: { top: "=", left: "{", right: "}", lower: "-" },
+    body_03: { top: "~", left: "(", right: ")", lower: "~" },
+    body_04: { top: "#", left: "[", right: "]", lower: "=" },
+    body_05: { top: ".", left: "<", right: ">", lower: "." },
+    body_06: { top: "-", left: "/", right: "\\", lower: "^" },
+  },
+  eyes: {
+    eyes_01: "o   o",
+    eyes_02: "O   O",
+    eyes_03: "@   @",
+    eyes_04: "x   x",
+    eyes_05: "+   +",
+    eyes_06: "* o *",
+    eyes_07: "0 0 0",
+    eyes_08: "#   #",
+  },
+  mouth: {
+    mouth_01: " ___ ",
+    mouth_02: " === ",
+    mouth_03: " ||| ",
+    mouth_04: " vvv ",
+    mouth_05: " www ",
+    mouth_06: " --- ",
+    mouth_07: " [_] ",
+    mouth_08: " }{ ",
+  },
+  core: {
+    core_01: "@",
+    core_02: "0",
+    core_03: "*",
+    core_04: "#",
+    core_05: "+",
+    core_06: "-",
+  },
+  limbs: {
+    limbs_01: "/|\\",
+    limbs_02: "/_\\",
+    limbs_03: "v v",
+    limbs_04: "|| ||",
+    limbs_05: "/Y\\",
+    limbs_06: "_/\\_",
+  },
+  tail: {
+    tail_01: "~>",
+    tail_02: "==",
+    tail_03: "~~",
+    tail_04: "->",
+    tail_05: "::",
+    tail_06: "##",
+  },
+  pattern: {
+    pattern_01: ". . .",
+    pattern_02: "x-x-x",
+    pattern_03: ":::::",
+    pattern_04: "+-+-+",
+    pattern_05: "[=*=]",
+    pattern_06: "o-o-o",
+  },
+};
+const CREATURE_BRANCH_PARTS = {
+  context: "organ_context_folio",
+  cache: "organ_cache_strata",
+  frenzy: "organ_request_buds",
+  nuclear: "organ_nuclear_fins",
+};
+const CREATURE_ECOLOGY_PARTS = {
+  unformed: "ecology_blank_membrane",
+  polluted: "ecology_pollution_thorns",
+  lucid: "ecology_clarity_seal",
+  paradox: "ecology_paradox_bindings",
+};
+const CREATURE_ECOLOGY_FORM_IDS = {
+  unformed: {
+    context: "blank_dossier_embryo",
+    cache: "standby_moss",
+    frenzy: "unsent_spore",
+    nuclear: "extinguished_core",
+  },
+  polluted: {
+    context: "dossier_devourer",
+    cache: "fossil_armor_tyrant",
+    frenzy: "request_hydra",
+    nuclear: "nuclear_calamity",
+  },
+  lucid: {
+    context: "sealed_page_sentinel",
+    cache: "empty_cache_monk",
+    frenzy: "sealed_mouth_abstainer",
+    nuclear: "cold_core_silent",
+  },
+  paradox: {
+    context: "self_bound_dossier_matrix",
+    cache: "cache_holy_remains",
+    frenzy: "sealed_request_hydra",
+    nuclear: "withdrawal_reactor",
+  },
+};
+const CREATURE_ACHIEVEMENT_DEFINITIONS = [
+  ["baseline_arsonist", "offense", "uncommon"],
+  ["context_hamster", "offense", "uncommon"],
+  ["cache_excavation_team", "offense", "uncommon"],
+  ["request_hydra", "offense", "uncommon"],
+  ["desk_reactor", "offense", "uncommon"],
+  ["seven_day_feeding", "offense", "common"],
+  ["one_day_calamity", "offense", "rare"],
+  ["stable_relapse", "offense", "rare"],
+  ["first_supply_cut", "sobriety", "common"],
+  ["three_day_seal", "sobriety", "common"],
+  ["seven_day_silence", "sobriety", "uncommon"],
+  ["below_baseline_survivor", "sobriety", "uncommon"],
+  ["half_price_brain", "sobriety", "uncommon"],
+  ["human_mode_reboot", "sobriety", "rare"],
+  ["fourteen_day_diet", "sobriety", "rare"],
+  ["sober_and_alive", "sobriety", "rare"],
+  ["refill_withdrawal", "paradox", "uncommon"],
+  ["calm_after_fire", "paradox", "rare"],
+  ["ecological_ping_pong", "paradox", "rare"],
+  ["cache_saint", "paradox", "rare"],
+  ["sealed_hydra", "paradox", "rare"],
+  ["withdrawal_reactor", "paradox", "rare"],
+  ["double_sided_record", "paradox", "rare"],
+  ["ecological_paradox", "paradox", "mythic"],
+].map(([id, category, rarity]) => ({ id, category, rarity }));
+const CREATURE_ACHIEVEMENT_BY_ID = Object.fromEntries(
+  CREATURE_ACHIEVEMENT_DEFINITIONS.map((achievement) => [
+    achievement.id,
+    achievement,
+  ]),
+);
+const CREATURE_ACHIEVEMENT_TIER_THRESHOLDS = {
+  baseline_arsonist: [3, 10, 30],
+  context_hamster: [5, 20, 60],
+  cache_excavation_team: [5, 20, 60],
+  request_hydra: [5, 20, 60],
+  desk_reactor: [5, 20, 60],
+  seven_day_feeding: [7, 30, 100],
+  three_day_seal: [3, 7, 30],
+  below_baseline_survivor: [5, 20, 60],
+  half_price_brain: [3, 10, 30],
+  human_mode_reboot: [3, 7, 14],
+  double_sided_record: [60, 120, 240],
+  ecological_paradox: [120, 240, 500],
 };
 
 const COMMON_CREATURE_EVENTS = [
@@ -232,20 +420,20 @@ const CREATURE_EPITHETS = {
 const CREATURE_COPY = {
   stages: {
     contaminated_embryo: {
-      zh: "污染胚体 I",
-      en: "CONTAMINATED EMBRYO I",
+      zh: "异常胚体 I",
+      en: "ANOMALOUS EMBRYO I",
     },
     mutated_juvenile: {
-      zh: "病变幼体 II",
-      en: "MUTATED JUVENILE II",
+      zh: "分化幼体 II",
+      en: "DIFFERENTIATING JUVENILE II",
     },
     runaway_adult: {
-      zh: "失控成体 III",
-      en: "RUNAWAY ADULT III",
+      zh: "定型成体 III",
+      en: "FORMED ADULT III",
     },
     catastrophe_complete: {
-      zh: "灾变完全体 IV",
-      en: "CATASTROPHE COMPLETE IV",
+      zh: "生态完全体 IV",
+      en: "ECOLOGICAL COMPLETE IV",
     },
   },
   branches: {
@@ -483,6 +671,101 @@ const CREATURE_COPY = {
     loaded_dice: { zh: "灌铅骰子", en: "LOADED DICE" },
     offline_hallucinator: { zh: "离线幻听者", en: "OFFLINE HALLUCINATOR" },
   },
+  ecologies: {
+    unformed: { zh: "未定型", en: "UNFORMED" },
+    polluted: { zh: "污染型", en: "POLLUTED" },
+    lucid: { zh: "清醒型", en: "LUCID" },
+    paradox: { zh: "矛盾型", en: "PARADOX" },
+  },
+  ecologyForms: {
+    blank_dossier_embryo: { zh: "空白卷宗胚", en: "BLANK DOSSIER EMBRYO" },
+    standby_moss: { zh: "待机苔藓", en: "STANDBY MOSS" },
+    unsent_spore: { zh: "未发送孢子", en: "UNSENT SPORE" },
+    extinguished_core: { zh: "熄火幼核", en: "EXTINGUISHED CORE" },
+    dossier_devourer: { zh: "卷宗吞噬兽", en: "DOSSIER DEVOURER" },
+    fossil_armor_tyrant: {
+      zh: "化石甲暴君",
+      en: "FOSSIL ARMOR TYRANT",
+    },
+    request_hydra: { zh: "请求九头虫", en: "REQUEST HYDRA" },
+    nuclear_calamity: { zh: "核食灾兽", en: "NUCLEAR CALAMITY" },
+    sealed_page_sentinel: {
+      zh: "封页守望兽",
+      en: "SEALED-PAGE SENTINEL",
+    },
+    empty_cache_monk: { zh: "空缓存修士", en: "EMPTY-CACHE MONK" },
+    sealed_mouth_abstainer: {
+      zh: "缄口节制兽",
+      en: "SEALED-MOUTH ABSTAINER",
+    },
+    cold_core_silent: { zh: "冷核静默体", en: "COLD-CORE SILENT" },
+    self_bound_dossier_matrix: {
+      zh: "自缚卷宗母体",
+      en: "SELF-BOUND DOSSIER MATRIX",
+    },
+    cache_holy_remains: { zh: "缓存圣骸", en: "CACHE HOLY REMAINS" },
+    sealed_request_hydra: {
+      zh: "闭口九头兽",
+      en: "SEALED REQUEST HYDRA",
+    },
+    withdrawal_reactor: { zh: "戒断反应堆", en: "WITHDRAWAL REACTOR" },
+  },
+  titleModifiers: {
+    awaiting_shape: { zh: "等待被工作塑形的", en: "AWAITING WORK-SHAPED" },
+    scheduled_relapse: { zh: "每晚准时复发的", en: "NIGHTLY RELAPSING" },
+    practicing_restraint: { zh: "认真戒断的", en: "PRACTICING RESTRAINT" },
+    silent_for_seven_days: {
+      zh: "七日未开口的",
+      en: "SILENT FOR SEVEN DAYS",
+    },
+    withdrawing_while_refilling: {
+      zh: "一边戒断一边续杯的",
+      en: "WITHDRAWING WHILE REFILLING",
+    },
+  },
+  achievements: {
+    baseline_arsonist: { zh: "基线纵火犯", en: "BASELINE ARSONIST" },
+    context_hamster: { zh: "上下文仓鼠", en: "CONTEXT HAMSTER" },
+    cache_excavation_team: {
+      zh: "缓存考古队",
+      en: "CACHE EXCAVATION TEAM",
+    },
+    request_hydra: { zh: "请求九头蛇", en: "REQUEST HYDRA" },
+    desk_reactor: { zh: "桌面反应堆", en: "DESK REACTOR" },
+    seven_day_feeding: { zh: "七日连喂", en: "SEVEN-DAY FEEDING" },
+    one_day_calamity: { zh: "单日灾变", en: "ONE-DAY CALAMITY" },
+    stable_relapse: { zh: "稳定复发", en: "STABLE RELAPSE" },
+    first_supply_cut: { zh: "第一次断供", en: "FIRST SUPPLY CUT" },
+    three_day_seal: { zh: "三日封口", en: "THREE-DAY SEAL" },
+    seven_day_silence: { zh: "七日未开口", en: "SEVEN-DAY SILENCE" },
+    below_baseline_survivor: {
+      zh: "基线以下生存者",
+      en: "BELOW-BASELINE SURVIVOR",
+    },
+    half_price_brain: { zh: "半价大脑", en: "HALF-PRICE BRAIN" },
+    human_mode_reboot: { zh: "人类模式复健", en: "HUMAN-MODE REBOOT" },
+    fourteen_day_diet: { zh: "十四日节食", en: "FOURTEEN-DAY DIET" },
+    sober_and_alive: { zh: "清醒而未死", en: "SOBER AND ALIVE" },
+    refill_withdrawal: { zh: "续杯戒断者", en: "REFILL WITHDRAWAL" },
+    calm_after_fire: { zh: "浴火冷静", en: "CALM AFTER FIRE" },
+    ecological_ping_pong: { zh: "生态横跳", en: "ECOLOGICAL PING-PONG" },
+    cache_saint: { zh: "缓存圣徒", en: "CACHE SAINT" },
+    sealed_hydra: { zh: "闭口九头兽", en: "SEALED HYDRA" },
+    withdrawal_reactor: { zh: "戒断反应堆", en: "WITHDRAWAL REACTOR" },
+    double_sided_record: { zh: "双面病历", en: "DOUBLE-SIDED RECORD" },
+    ecological_paradox: { zh: "生态悖论", en: "ECOLOGICAL PARADOX" },
+  },
+  achievementTiers: {
+    offense_1: { zh: "记录", en: "RECORDED" },
+    offense_2: { zh: "定罪", en: "CONVICTED" },
+    offense_3: { zh: "惯犯", en: "HABITUAL OFFENDER" },
+    sobriety_1: { zh: "迹象", en: "SIGN" },
+    sobriety_2: { zh: "自律", en: "DISCIPLINE" },
+    sobriety_3: { zh: "圣徒", en: "SAINT" },
+    paradox_1: { zh: "异常", en: "ANOMALY" },
+    paradox_2: { zh: "矛盾", en: "CONTRADICTION" },
+    paradox_3: { zh: "不可解释", en: "INEXPLICABLE" },
+  },
 };
 
 function emptyCreatureAbilities() {
@@ -532,38 +815,106 @@ function creatureLabel(group, id, lang) {
   return CREATURE_COPY[group][id][lang];
 }
 
-function creatureArt(branch) {
-  const art = {
-    context: [
-      "          _________",
-      "      ___/  ◉   ◉  \\___",
-      "    <[[[     ∞      ]]]>",
-      "       \\___|||||___/",
-      "          /_/ \\_\\",
-    ],
-    cache: [
-      "        .#########.",
-      "      _/ []  []  []\\_",
-      "     /___  ◉__◉  ___\\",
-      "         \\_||||_/",
-      "          /_||_\\",
-    ],
-    frenzy: [
-      "       (◉) (◉) (◉)",
-      "        \\___|___/",
-      "     (◉)-{|||||}-(◉)",
-      "          / | \\",
-      "         /_/ \\_\\",
-    ],
-    nuclear: [
-      "          /\\  /\\",
-      "      ___/  \\/  \\___",
-      "     /   ◉   ☢   ◉   \\",
-      "    <       ___       >",
-      "     \\__/_/   \\_\\__/",
-    ],
+function creatureTitle(creature, lang) {
+  const modifier = creatureLabel(
+    "titleModifiers",
+    creature.title.modifierId,
+    lang,
+  );
+  const core = creatureLabel("ecologyForms", creature.title.coreId, lang);
+  const achievement = creature.title.achievementId
+    ? creatureLabel("achievements", creature.title.achievementId, lang)
+    : null;
+  const base = lang === "zh" ? `${modifier}${core}` : `${modifier} ${core}`;
+  return achievement ? `${base} · ${achievement}` : base;
+}
+
+function centeredCreatureText(value, width) {
+  const left = Math.max(0, Math.floor((width - value.length) / 2));
+  return `${" ".repeat(left)}${value}`;
+}
+
+function creatureArt(creature) {
+  const { appearance } = creature;
+  const geneIds = appearance.geneIds;
+  const body = CREATURE_APPEARANCE_GLYPHS.body[geneIds.body];
+  const stageWidths = [23, 27, 33, 39];
+  const width = stageWidths[appearance.stageIndex];
+  const insideWidth = width - 2;
+  const branchCrests = {
+    context: "[[[...]]]",
+    cache: "###=###",
+    frenzy: "(o)(o)(o)",
+    nuclear: "/\\/\\/\\",
   };
-  return art[branch].map((line) => color("1;31", line)).join("\n");
+  const ecologyMarks = {
+    unformed: ".....",
+    polluted: "!!~!!",
+    lucid: "--X--",
+    paradox: "!X!X!",
+  };
+  const centerInside = (value) => {
+    const padding = Math.max(0, insideWidth - value.length);
+    const left = Math.floor(padding / 2);
+    return `${" ".repeat(left)}${value}${" ".repeat(padding - left)}`;
+  };
+  const mouthAndCore =
+    appearance.stageIndex >= 2
+      ? `${CREATURE_APPEARANCE_GLYPHS.mouth[geneIds.mouth]}  ${CREATURE_APPEARANCE_GLYPHS.core[geneIds.core]}`
+      : CREATURE_APPEARANCE_GLYPHS.mouth[geneIds.mouth];
+  const rarePattern = appearance.rareAbilityId
+    ? {
+        rare: "@R@R@",
+        epic: "@S@S@",
+        mythic: "@X@X@",
+      }[CREATURE_RARE_ABILITY_DEFINITIONS[appearance.rareAbilityId].rarity]
+    : null;
+  const pattern =
+    rarePattern ??
+    (appearance.stageIndex >= 3
+      ? appearance.achievementCategory === "offense"
+        ? "!!x!!"
+        : appearance.achievementCategory === "sobriety"
+          ? "--X--"
+          : appearance.achievementCategory === "paradox"
+            ? "!X?X!"
+            : CREATURE_APPEARANCE_GLYPHS.pattern[geneIds.pattern]
+      : ecologyMarks[appearance.ecology]);
+  const limbs =
+    appearance.stageIndex >= 1
+      ? CREATURE_APPEARANCE_GLYPHS.limbs[geneIds.limbs]
+      : "/\\";
+  const tail =
+    appearance.stageIndex >= 3
+      ? ` ${CREATURE_APPEARANCE_GLYPHS.tail[geneIds.tail]}`
+      : "";
+  const lines = [
+    centeredCreatureText(
+      appearance.stageIndex >= 1
+        ? branchCrests[appearance.pathology]
+        : ecologyMarks[appearance.ecology],
+      width,
+    ),
+    `${body.left}${body.top.repeat(insideWidth)}${body.right}`,
+    `${body.left}${centerInside(
+      CREATURE_APPEARANCE_GLYPHS.eyes[geneIds.eyes],
+    )}${body.right}`,
+    `${body.left}${centerInside(mouthAndCore)}${body.right}`,
+    `${body.left}${centerInside(pattern)}${body.right}`,
+    `${body.right}${body.lower.repeat(insideWidth)}${body.left}`,
+    centeredCreatureText(`${limbs}${tail}`, width),
+  ];
+  const colorCode = appearance.rareAbilityId
+    ? CREATURE_RARE_ABILITY_RANKS[
+        CREATURE_RARE_ABILITY_DEFINITIONS[appearance.rareAbilityId].rarity
+      ].color
+    : {
+        unformed: "2",
+        polluted: "1;31",
+        lucid: "1;36",
+        paradox: "1;35",
+      }[appearance.ecology];
+  return lines.map((line) => color(colorCode, line)).join("\n");
 }
 
 function creatureAbilityBar(value, maximum = CREATURE_ABILITY_MAX) {
@@ -576,18 +927,130 @@ function roundCreature(value) {
   return Number(value.toFixed(2));
 }
 
+function creatureAppearanceState(seed) {
+  const digest = createHash("sha256")
+    .update(`${seed}:appearance-v1`)
+    .digest();
+  const genes = Object.fromEntries(
+    Object.entries(CREATURE_APPEARANCE_GENE_POOLS).map(
+      ([gene, pool], index) => [
+        gene,
+        pool[digest.readUInt8(index) % pool.length],
+      ],
+    ),
+  );
+  return {
+    version: 1,
+    specimenId: createHash("sha256")
+      .update(`${seed}:public-specimen`)
+      .digest("hex")
+      .slice(0, 8),
+    genes,
+    unlockedPartIds: [],
+  };
+}
+
+function deriveCreatureAppearance(
+  appearanceState,
+  stageIndex,
+  ecology,
+  pathology,
+  achievements,
+  rareAbilities,
+) {
+  const partIds = [
+    appearanceState.genes.body,
+    appearanceState.genes.eyes,
+    appearanceState.genes.mouth,
+  ];
+  if (stageIndex >= 1) {
+    partIds.push(
+      CREATURE_BRANCH_PARTS[pathology],
+      CREATURE_ECOLOGY_PARTS[ecology],
+    );
+  }
+  if (stageIndex >= 2) {
+    partIds.push(appearanceState.genes.core, appearanceState.genes.limbs);
+  }
+  const latestAchievement = [...achievements].sort(
+    (left, right) =>
+      left.tier - right.tier ||
+      left.unlockedAt.localeCompare(right.unlockedAt) ||
+      left.id.localeCompare(right.id),
+  ).at(-1);
+  const latestRareAbilityId = Object.keys(rareAbilities).at(-1);
+  if (stageIndex >= 3) {
+    partIds.push(
+      appearanceState.genes.tail,
+      latestRareAbilityId
+        ? `chromatic_${latestRareAbilityId}`
+        : latestAchievement
+          ? `achievement_${latestAchievement.id}`
+          : appearanceState.genes.pattern,
+    );
+  }
+  const fingerprint = createHash("sha256")
+    .update(
+      JSON.stringify({
+        version: appearanceState.version,
+        genes: appearanceState.genes,
+        stageIndex,
+        ecology,
+        pathology,
+        partIds,
+        rareAbilityId: latestRareAbilityId,
+      }),
+    )
+    .digest("hex")
+    .slice(0, 12);
+  return {
+    version: appearanceState.version,
+    specimenId: appearanceState.specimenId,
+    geneIds: { ...appearanceState.genes },
+    partIds,
+    fingerprint,
+    stageIndex,
+    ecology,
+    pathology,
+    formId: CREATURE_ECOLOGY_FORM_IDS[ecology][pathology],
+    achievementId: latestAchievement?.id ?? null,
+    achievementCategory: latestAchievement?.category ?? null,
+    rareAbilityId: latestRareAbilityId ?? null,
+  };
+}
+
+function creatureAppearanceContentStats() {
+  return {
+    basePartIds: new Set([
+      ...Object.values(CREATURE_APPEARANCE_GENE_POOLS).flat(),
+      ...Object.values(CREATURE_BRANCH_PARTS),
+      ...Object.values(CREATURE_ECOLOGY_PARTS),
+    ]).size,
+    formFamilies: Object.values(CREATURE_ECOLOGY_FORM_IDS).reduce(
+      (total, forms) => total + Object.keys(forms).length,
+      0,
+    ),
+    achievements: CREATURE_ACHIEVEMENT_DEFINITIONS.length,
+  };
+}
+
 function pollutionDose(totalTokens) {
   if (totalTokens <= 0) return 0;
   return Math.min(100, Math.max(1, Math.round(Math.log10(totalTokens + 1) * 12)));
 }
 
-function dailyCreatureRecord(report) {
+function dailyCreatureRecord(report, historicalReports = []) {
   const { totals } = report;
   const dose = pollutionDose(totals.totalTokens);
   if (dose === 0) {
     return {
       pollutionDose: 0,
       active: false,
+      usageBand: "sober",
+      ecologyGains: {
+        pollution: 0,
+        clarity: 3,
+      },
       traits: {
         context: 0,
         cache: 0,
@@ -616,10 +1079,35 @@ function dailyCreatureRecord(report) {
     cacheIntensity,
     frenzyIntensity,
   );
+  const baselineTokens =
+    historicalReports.length === 0
+      ? 0
+      : historicalReports.reduce(
+          (sum, historicalReport) =>
+            sum + historicalReport.totals.totalTokens,
+          0,
+        ) / historicalReports.length;
+  const ratio = baselineTokens === 0 ? null : totals.totalTokens / baselineTokens;
+  const [usageBand, ecologyGains] =
+    ratio === null
+      ? ["calibrating", { pollution: 1, clarity: 0 }]
+      : ratio <= 0.3
+        ? ["restrained", { pollution: 0, clarity: 2 }]
+        : ratio <= 0.7
+          ? ["light", { pollution: 0, clarity: 1 }]
+          : ratio <= 1.5
+            ? ["habitual", { pollution: 0, clarity: 0 }]
+            : ratio <= 3
+              ? ["heavy", { pollution: 1, clarity: 0 }]
+              : ratio <= 6
+                ? ["binge", { pollution: 2, clarity: 0 }]
+                : ["meltdown", { pollution: 3, clarity: 0 }];
 
   return {
     pollutionDose: dose,
     active: true,
+    usageBand,
+    ecologyGains,
     traits: {
       context: roundCreature(dose * contextIntensity),
       cache: roundCreature(dose * cacheIntensity),
@@ -670,11 +1158,308 @@ function creatureAbilityGains(seed, date, day, event, hasHatched) {
   return gains;
 }
 
+function deriveCreatureAchievements(state, date) {
+  const entries = Object.entries(state.days)
+    .filter(([entryDate]) => entryDate <= date)
+    .sort(([left], [right]) => left.localeCompare(right));
+  const unlocked = new Map();
+  const unlock = (id, unlockedAt, progress = null) => {
+    const definition = CREATURE_ACHIEVEMENT_BY_ID[id];
+    const thresholds = CREATURE_ACHIEVEMENT_TIER_THRESHOLDS[id] ?? null;
+    const existing = unlocked.get(id);
+    const bestProgress =
+      progress === null
+        ? null
+        : Math.max(existing?.progress ?? 0, progress);
+    const tier =
+      thresholds === null
+        ? 1
+        : thresholds.filter((threshold) => bestProgress >= threshold).length;
+    unlocked.set(id, {
+      id,
+      category: definition.category,
+      rarity: definition.rarity,
+      tier,
+      maxTier: thresholds?.length ?? 1,
+      progress: bestProgress,
+      nextTierAt: thresholds?.[tier] ?? null,
+      unlockedAt: existing?.unlockedAt ?? unlockedAt,
+    });
+  };
+  const branchCounts = { context: 0, cache: 0, frenzy: 0, nuclear: 0 };
+  const branchStreaks = { context: 0, cache: 0, frenzy: 0, nuclear: 0 };
+  const cumulativeTraits = { context: 0, cache: 0, frenzy: 0, nuclear: 0 };
+  const recentDirections = [];
+  let hasHatched = false;
+  let experienceDays = 0;
+  let activeStreak = 0;
+  let quietStreak = 0;
+  let heavyDays = 0;
+  let restrainedDays = 0;
+  let pollutionDays = 0;
+  let clarityDays = 0;
+  let ecologyPollution = 0;
+  let ecologyClarity = 0;
+  let ecologyType = "unformed";
+  let pendingEcologyType = null;
+  let pendingEcologyDays = 0;
+  let clarityAfterHeavy = 0;
+  let previousUsageBand = null;
+
+  for (const [entryDate, day] of entries) {
+    const priorQuietStreak = quietStreak;
+    if (!hasHatched && !day.active) continue;
+    if (day.active) hasHatched = true;
+    experienceDays += 1;
+
+    if (day.active) {
+      activeStreak += 1;
+      quietStreak = 0;
+      if (priorQuietStreak >= 3) unlock("refill_withdrawal", entryDate);
+      const branch = dominantCreatureKey(day.traits);
+      for (const key of Object.keys(branchStreaks)) {
+        branchStreaks[key] = key === branch ? branchStreaks[key] + 1 : 0;
+      }
+      branchCounts[branch] += 1;
+      for (const key of Object.keys(cumulativeTraits)) {
+        cumulativeTraits[key] += day.traits[key];
+      }
+    } else {
+      activeStreak = 0;
+      quietStreak += 1;
+      if (quietStreak === 1) unlock("first_supply_cut", entryDate);
+    }
+
+    const pollutionGain = day.ecologyGains?.pollution ?? 0;
+    const clarityGain = day.ecologyGains?.clarity ?? 0;
+    ecologyPollution += pollutionGain;
+    ecologyClarity += clarityGain;
+    if (pollutionGain > 0) pollutionDays += 1;
+    if (clarityGain > 0) clarityDays += 1;
+    recentDirections.push(
+      pollutionGain > 0 ? "pollution" : clarityGain > 0 ? "clarity" : "neutral",
+    );
+    if (recentDirections.length > 14) recentDirections.shift();
+
+    const candidateEcologyType = classifyCreatureEcology(
+      ecologyPollution,
+      ecologyClarity,
+      experienceDays,
+    );
+    if (candidateEcologyType === ecologyType) {
+      pendingEcologyType = null;
+      pendingEcologyDays = 0;
+    } else {
+      if (candidateEcologyType === pendingEcologyType) {
+        pendingEcologyDays += 1;
+      } else {
+        pendingEcologyType = candidateEcologyType;
+        pendingEcologyDays = 1;
+      }
+      if (pendingEcologyDays >= 3) {
+        ecologyType = candidateEcologyType;
+        pendingEcologyType = null;
+        pendingEcologyDays = 0;
+      }
+    }
+
+    if (["heavy", "binge", "meltdown"].includes(day.usageBand)) {
+      heavyDays += 1;
+      clarityAfterHeavy = 0;
+    } else if (clarityGain > 0 && heavyDays > 0) {
+      clarityAfterHeavy += 1;
+    } else if (pollutionGain > 0) {
+      clarityAfterHeavy = 0;
+    }
+    if (day.usageBand === "restrained") restrainedDays += 1;
+
+    if (heavyDays >= 3) {
+      unlock("baseline_arsonist", entryDate, heavyDays);
+    }
+    if (branchStreaks.context >= 5) {
+      unlock("context_hamster", entryDate, branchStreaks.context);
+    }
+    if (branchCounts.cache >= 5) {
+      unlock("cache_excavation_team", entryDate, branchCounts.cache);
+    }
+    if (branchCounts.frenzy >= 5) {
+      unlock("request_hydra", entryDate, branchCounts.frenzy);
+    }
+    if (branchCounts.nuclear >= 5) {
+      unlock("desk_reactor", entryDate, branchCounts.nuclear);
+    }
+    if (activeStreak >= 7) {
+      unlock("seven_day_feeding", entryDate, activeStreak);
+    }
+    if (pollutionGain >= 3) unlock("one_day_calamity", entryDate);
+    if (
+      recentDirections.length === 14 &&
+      recentDirections.filter((direction) => direction === "pollution").length >=
+        10
+    ) {
+      unlock("stable_relapse", entryDate);
+    }
+
+    if (quietStreak >= 3) {
+      unlock("three_day_seal", entryDate, quietStreak);
+    }
+    if (quietStreak >= 7) unlock("seven_day_silence", entryDate);
+    if (clarityDays >= 5) {
+      unlock("below_baseline_survivor", entryDate, clarityDays);
+    }
+    if (restrainedDays >= 3) {
+      unlock("half_price_brain", entryDate, restrainedDays);
+    }
+    if (clarityAfterHeavy >= 3) {
+      unlock("human_mode_reboot", entryDate, clarityAfterHeavy);
+    }
+    if (
+      recentDirections.length === 14 &&
+      recentDirections.filter((direction) => direction === "clarity").length >=
+        10
+    ) {
+      unlock("fourteen_day_diet", entryDate);
+    }
+    if (experienceDays >= 90 && ecologyType === "lucid") {
+      unlock("sober_and_alive", entryDate);
+    }
+
+    if (previousUsageBand === "meltdown" && day.usageBand === "sober") {
+      unlock("calm_after_fire", entryDate);
+    }
+    const lastTenDirections = recentDirections
+      .slice(-10)
+      .filter((direction) => direction !== "neutral");
+    const directionChanges = lastTenDirections
+      .slice(1)
+      .filter(
+        (direction, index) => direction !== lastTenDirections[index],
+      ).length;
+    if (directionChanges >= 6) unlock("ecological_ping_pong", entryDate);
+
+    const cumulativeBranch = dominantCreatureKey(cumulativeTraits);
+    if (cumulativeBranch === "cache" && ecologyType === "lucid") {
+      unlock("cache_saint", entryDate);
+    }
+    if (cumulativeBranch === "frenzy" && quietStreak >= 7) {
+      unlock("sealed_hydra", entryDate);
+    }
+    if (
+      cumulativeBranch === "nuclear" &&
+      ecologyPollution > 0 &&
+      ecologyClarity >= ecologyPollution
+    ) {
+      unlock("withdrawal_reactor", entryDate);
+    }
+    if (ecologyPollution >= 60 && ecologyClarity >= 60) {
+      unlock(
+        "double_sided_record",
+        entryDate,
+        Math.min(ecologyPollution, ecologyClarity),
+      );
+    }
+    if (
+      ecologyPollution >= 120 &&
+      ecologyClarity >= 120 &&
+      Math.abs(ecologyPollution - ecologyClarity) <= 10
+    ) {
+      unlock(
+        "ecological_paradox",
+        entryDate,
+        Math.min(ecologyPollution, ecologyClarity),
+      );
+    }
+    previousUsageBand = day.usageBand;
+  }
+
+  const records = [...unlocked.values()].sort(
+    (left, right) =>
+      left.unlockedAt.localeCompare(right.unlockedAt) ||
+      left.id.localeCompare(right.id),
+  );
+  return {
+    unlocked: records,
+    recent: records.filter((achievement) => achievement.unlockedAt === date),
+    total: CREATURE_ACHIEVEMENT_DEFINITIONS.length,
+  };
+}
+
+function syncCreatureAchievements(state, date) {
+  const achievements = deriveCreatureAchievements(state, date);
+  state.achievements = Object.fromEntries(
+    achievements.unlocked.map((achievement) => [
+      achievement.id,
+      achievement,
+    ]),
+  );
+  for (const day of Object.values(state.days)) {
+    day.achievementUnlockIds = [];
+  }
+  for (const achievement of achievements.unlocked) {
+    state.days[achievement.unlockedAt]?.achievementUnlockIds.push(
+      achievement.id,
+    );
+  }
+  state.appearance.unlockedPartIds = [
+    ...new Set([
+      ...state.appearance.unlockedPartIds,
+      ...achievements.unlocked.map(
+        (achievement) => `achievement_${achievement.id}`,
+      ),
+    ]),
+  ];
+  return achievements;
+}
+
+function syncCreatureSpecimen(state, creature, date) {
+  state.specimens ??= [];
+  if (
+    state.specimens.some(
+      (specimen) => specimen.fingerprint === creature.appearance.fingerprint,
+    )
+  ) {
+    return false;
+  }
+  const previous = state.specimens.at(-1);
+  const appearanceChanged =
+    previous === undefined ||
+    previous.stageId !== creature.stage ||
+    previous.ecologyId !== creature.ecology.type ||
+    previous.achievementId !== creature.appearance.achievementId ||
+    (creature.appearance.rareAbilityId !== null &&
+      previous.rareAbilityId !== creature.appearance.rareAbilityId);
+  if (!appearanceChanged) return false;
+  state.specimens.push({
+    fingerprint: creature.appearance.fingerprint,
+    renderVersion: creature.appearance.version,
+    recordedAt: date,
+    experienceDays: creature.experienceDays,
+    stageId: creature.stage,
+    ecologyId: creature.ecology.type,
+    pathologyId: creature.branch,
+    achievementId: creature.appearance.achievementId,
+    rareAbilityId: creature.appearance.rareAbilityId,
+    partIds: [...creature.appearance.partIds],
+  });
+  return true;
+}
+
 function migrateCreatureState(state) {
+  state.appearance ??= creatureAppearanceState(state.seed);
+  state.appearance.unlockedPartIds ??= [];
+  state.achievements ??= {};
+  state.specimens ??= [];
   let hasHatched = false;
   for (const [date, day] of Object.entries(state.days).sort(([left], [right]) =>
     left.localeCompare(right),
   )) {
+    day.usageBand ??= day.active ? "calibrating" : "sober";
+    day.ecologyGains ??= day.active
+      ? { pollution: 1, clarity: 0 }
+      : {
+          pollution: 0,
+          clarity: hasHatched ? 3 : 0,
+        };
     day.abilityGains ??= creatureAbilityGains(
       state.seed,
       date,
@@ -689,7 +1474,7 @@ function migrateCreatureState(state) {
     );
     if (day.active) hasHatched = true;
   }
-  state.schemaVersion = 3;
+  state.schemaVersion = 4;
   return state;
 }
 
@@ -701,7 +1486,7 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if ([1, 2, 3].includes(state?.schemaVersion) && state.days) {
+    if ([1, 2, 3, 4].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
       return migrateCreatureState(state);
@@ -709,12 +1494,12 @@ async function loadCreatureState() {
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
-  return {
-    schemaVersion: 3,
+  return migrateCreatureState({
+    schemaVersion: 4,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},
-  };
+  });
 }
 
 async function saveCreatureState(state) {
@@ -748,6 +1533,16 @@ function creatureMood(creature, today) {
   return "token_chewing";
 }
 
+function classifyCreatureEcology(pollution, clarity, experienceDays) {
+  if (experienceDays === 0) return "unformed";
+  const pollutionRate = pollution / experienceDays;
+  const clarityRate = clarity / experienceDays;
+  if (pollutionRate >= 0.6 && clarityRate >= 0.6) return "paradox";
+  if (pollutionRate >= 0.6) return "polluted";
+  if (clarityRate >= 0.6) return "lucid";
+  return "unformed";
+}
+
 function deriveCreature(state, date) {
   const entries = Object.entries(state.days)
     .filter(([entryDate]) => entryDate <= date)
@@ -767,6 +1562,11 @@ function deriveCreature(state, date) {
   let ageDays = 0;
   let mutationEvents = 0;
   let rareMutations = 0;
+  let ecologyPollution = 0;
+  let ecologyClarity = 0;
+  let ecologyType = "unformed";
+  let pendingEcologyType = null;
+  let pendingEcologyDays = 0;
 
   for (const [, day] of entries) {
     if (day.active) {
@@ -783,6 +1583,31 @@ function deriveCreature(state, date) {
       quietStreakDays += 1;
     }
     if (activeDays > 0) ageDays += 1;
+    if (activeDays > 0) {
+      ecologyPollution += day.ecologyGains?.pollution ?? 0;
+      ecologyClarity += day.ecologyGains?.clarity ?? 0;
+      const candidateEcologyType = classifyCreatureEcology(
+        ecologyPollution,
+        ecologyClarity,
+        ageDays,
+      );
+      if (candidateEcologyType === ecologyType) {
+        pendingEcologyType = null;
+        pendingEcologyDays = 0;
+      } else {
+        if (candidateEcologyType === pendingEcologyType) {
+          pendingEcologyDays += 1;
+        } else {
+          pendingEcologyType = candidateEcologyType;
+          pendingEcologyDays = 1;
+        }
+        if (pendingEcologyDays >= 3) {
+          ecologyType = candidateEcologyType;
+          pendingEcologyType = null;
+          pendingEcologyDays = 0;
+        }
+      }
+    }
     for (const key of CREATURE_ABILITY_KEYS) {
       abilities[key] = Math.min(
         CREATURE_ABILITY_MAX,
@@ -819,19 +1644,42 @@ function deriveCreature(state, date) {
       ]),
   );
   const stageIndex = CREATURE_STAGES.findLastIndex(
-    (stage) => exposure >= stage.threshold,
+    (stage) => ageDays >= stage.threshold,
   );
   const stage = CREATURE_STAGES[stageIndex];
+  const pollutionRate = roundCreature(
+    ecologyPollution / Math.max(1, ageDays),
+  );
+  const clarityRate = roundCreature(ecologyClarity / Math.max(1, ageDays));
   const progressPercent =
     stage.nextAt === null
       ? 100
       : Math.min(
           100,
           Math.round(
-            ((exposure - stage.threshold) / (stage.nextAt - stage.threshold)) *
+            ((ageDays - stage.threshold) / (stage.nextAt - stage.threshold)) *
               100,
           ),
         );
+  const achievements = deriveCreatureAchievements(state, date);
+  const appearance = deriveCreatureAppearance(
+    state.appearance,
+    stageIndex,
+    ecologyType,
+    resolvedBranch,
+    achievements.unlocked,
+    rareAbilities,
+  );
+  const titleModifierId =
+    ecologyType === "polluted"
+      ? "scheduled_relapse"
+      : ecologyType === "lucid"
+        ? quietStreakDays >= 7
+          ? "silent_for_seven_days"
+          : "practicing_restraint"
+        : ecologyType === "paradox"
+          ? "withdrawing_while_refilling"
+          : "awaiting_shape";
 
   return {
     stage: stage.id,
@@ -843,6 +1691,7 @@ function deriveCreature(state, date) {
     quietStreakDays,
     activeStreakDays,
     ageDays,
+    experienceDays: ageDays,
     observedDays: entries.length,
     activeDays,
     traits,
@@ -864,6 +1713,38 @@ function deriveCreature(state, date) {
       rareMutations,
       talentsUnlocked: talents.length,
       rareAbilitiesUnlocked: Object.keys(rareAbilities).length,
+      achievementsUnlocked: achievements.unlocked.length,
+      formsUnlocked: new Set([
+        appearance.formId,
+        ...(state.specimens ?? []).map(
+          (specimen) =>
+            CREATURE_ECOLOGY_FORM_IDS[specimen.ecologyId]?.[
+              specimen.pathologyId
+            ],
+        ),
+      ]).size,
+      appearancePartsUnlocked: new Set([
+        ...appearance.partIds,
+        ...state.appearance.unlockedPartIds,
+      ]).size,
+      specimensCollected: state.specimens?.length ?? 0,
+    },
+    ecology: {
+      pollution: ecologyPollution,
+      clarity: ecologyClarity,
+      pollutionRate,
+      clarityRate,
+      type: ecologyType,
+      pendingType: pendingEcologyType,
+      pendingDays: pendingEcologyDays,
+    },
+    ecologyForm: appearance.formId,
+    appearance,
+    achievements,
+    title: {
+      modifierId: titleModifierId,
+      coreId: appearance.formId,
+      achievementId: appearance.achievementId,
     },
   };
 }
@@ -877,15 +1758,21 @@ export {
   CREATURE_RARE_ABILITY_RANKS,
   creatureAbilityBar,
   creatureAbilityGains,
+  creatureAppearanceContentStats,
+  creatureAppearanceState,
   creatureArt,
   creatureEvent,
   creatureLabel,
   creatureMood,
   creatureRareAbilityGain,
   creatureStatePath,
+  creatureTitle,
   dailyCreatureRecord,
+  deriveCreatureAppearance,
   deriveCreature,
   loadCreatureState,
   roundCreature,
   saveCreatureState,
+  syncCreatureAchievements,
+  syncCreatureSpecimen,
 };

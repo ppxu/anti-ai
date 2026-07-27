@@ -16,11 +16,14 @@ import {
   creatureMood,
   creatureRareAbilityGain,
   creatureStatePath,
+  creatureTitle,
   dailyCreatureRecord,
   deriveCreature,
   loadCreatureState,
   roundCreature,
   saveCreatureState,
+  syncCreatureAchievements,
+  syncCreatureSpecimen,
 } from "./creature.mjs";
 import {
   color,
@@ -45,6 +48,30 @@ import { localized } from "./shared.mjs";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json");
+const ACHIEVEMENT_CATEGORY_COLORS = {
+  offense: "1;31",
+  sobriety: "1;36",
+  paradox: "1;33",
+};
+
+function achievementLabel(achievement, lang) {
+  const tierProgress =
+    achievement.maxTier > 1
+      ? ` [${creatureLabel(
+          "achievementTiers",
+          `${achievement.category}_${achievement.tier}`,
+          lang,
+        )} ${
+          achievement.nextTierAt === null
+            ? "MAX"
+            : `${achievement.progress}/${achievement.nextTierAt}`
+        }]`
+      : "";
+  return color(
+    ACHIEVEMENT_CATEGORY_COLORS[achievement.category],
+    `${creatureLabel("achievements", achievement.id, lang)}${tierProgress}`,
+  );
+}
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -95,6 +122,24 @@ function parseArgs(argv) {
   return options;
 }
 
+function renderCreatureTodaySummary(creature, lang) {
+  const gains = [
+    creature.today.ecologyGains.pollution > 0
+      ? `${localized(lang, "污染性", "pollution")} +${creature.today.ecologyGains.pollution}`
+      : null,
+    creature.today.ecologyGains.clarity > 0
+      ? `${localized(lang, "清醒性", "clarity")} +${creature.today.ecologyGains.clarity}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const achievements = creature.achievements.recent
+    .map((achievement) => achievementLabel(achievement, lang))
+    .join(" · ");
+  const form = creatureLabel("ecologyForms", creature.ecologyForm, lang);
+  return `${localized(lang, "异变体", "MUTATION")}  ${gains || localized(lang, "惯常波动", "habitual drift")} · ${localized(lang, `仍为「${form}」`, `still “${form}”`)} · ${localized(lang, "今日成就", "today's achievements")} ${achievements || localized(lang, "无", "none")}\n`;
+}
+
 async function runToday(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const date = options.date ?? localDate(new Date(), timezone);
@@ -107,8 +152,25 @@ async function runToday(options) {
       shiftDate(date, index - 7),
     );
     const reports = await reportsForDates(options, dates, timezone);
+    const receipt = renderReceipt(
+      reports.at(-1),
+      reports.slice(0, -1),
+      options.lang,
+    );
+    const creature =
+      options.source === "all"
+        ? await runCreature(
+            {
+              ...options,
+              action: undefined,
+              command: "creature",
+              json: false,
+            },
+            "result",
+          )
+        : null;
     process.stdout.write(
-      renderReceipt(reports.at(-1), reports.slice(0, -1), options.lang),
+      `${receipt}${creature ? `\n${renderCreatureTodaySummary(creature, options.lang)}` : ""}`,
     );
   }
 }
@@ -146,7 +208,7 @@ async function runShare(options) {
   );
 }
 
-async function runCreature(options) {
+async function runCreature(options, mode = "render") {
   if (options.action === "reset") {
     await rm(creatureStatePath(), { force: true });
     if (options.json) {
@@ -165,6 +227,7 @@ async function runCreature(options) {
   try {
     state = await loadCreatureState();
   } catch {
+    if (mode === "result") return null;
     process.stderr.write(
       `${localized(options.lang, "异变体档案无法读取。运行 anti-ai creature reset 后可重新孵化。", "The mutation file cannot be read. Run anti-ai creature reset to hatch again.")}\n`,
     );
@@ -183,14 +246,22 @@ async function runCreature(options) {
       ? shiftDate(latestObservedDate, 1)
       : defaultStart;
   const dates = inclusiveDateRange(startDate, date);
-  const reports = await reportsForDates(options, dates, timezone);
+  const scanDates = inclusiveDateRange(shiftDate(startDate, -7), date);
+  const scannedReports = await reportsForDates(options, scanDates, timezone);
+  const reportsByDate = new Map(
+    scannedReports.map((report) => [report.date, report]),
+  );
+  const reports = dates.map((entryDate) => reportsByDate.get(entryDate));
 
   for (const report of reports) {
     const previousCreature = deriveCreature(
       state,
       shiftDate(report.date, -1),
     );
-    const record = dailyCreatureRecord(report);
+    const historicalReports = Array.from({ length: 7 }, (_, index) =>
+      reportsByDate.get(shiftDate(report.date, index - 7)),
+    );
+    const record = dailyCreatureRecord(report, historicalReports);
     if (record.active) {
       const event = creatureEvent(
         state.seed,
@@ -221,9 +292,13 @@ async function runCreature(options) {
     );
     state.days[report.date] = record;
   }
+  syncCreatureAchievements(state, date);
+  let creature = deriveCreature(state, date);
+  if (syncCreatureSpecimen(state, creature, date)) {
+    creature = deriveCreature(state, date);
+  }
   await saveCreatureState(state);
 
-  const creature = deriveCreature(state, date);
   const previousCreature = deriveCreature(state, shiftDate(date, -1));
   const today = state.days[date];
   const newTalents = creature.talents.filter(
@@ -236,13 +311,17 @@ async function runCreature(options) {
     mood: creatureMood(creature, today),
     today: {
       pollutionDose: today.pollutionDose,
+      usageBand: today.usageBand,
+      ecologyGains: today.ecologyGains,
       event: today.event,
       abilityGains: today.abilityGains,
       rareAbilityGain: today.rareAbilityGain,
+      achievementUnlockIds: today.achievementUnlockIds,
       newTalents,
     },
   };
 
+  if (mode === "result") return result;
   if (options.json) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
@@ -337,22 +416,45 @@ async function runCreature(options) {
       return color(rank.color, `${rank.badge} ${chance.toFixed(2)}%`);
     })
     .join(" · ");
+  const achievementPreview = result.achievements.unlocked
+    .slice(-4)
+    .map((achievement) => achievementLabel(achievement, lang))
+    .join(" · ");
+  const recentAchievementPreview = result.achievements.recent
+    .map((achievement) => achievementLabel(achievement, lang))
+    .join(" · ");
+  const ecologyGain = [
+    today.ecologyGains.pollution > 0
+      ? `${localized(lang, "污染性", "POLLUTION")} +${today.ecologyGains.pollution}`
+      : null,
+    today.ecologyGains.clarity > 0
+      ? `${localized(lang, "清醒性", "CLARITY")} +${today.ecologyGains.clarity}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   process.stdout.write(
     [
       `TOKEN MUTATION FILE · ${date}`,
       "",
-      creatureArt(result.branch),
+      creatureArt(result),
       "",
+      `${localized(lang, "标本编号", "SPECIMEN ID")}  ${result.appearance.specimenId}`,
       `☢ ${localized(lang, "今日污染剂量", "TODAY'S POLLUTION DOSE")}  +${today.pollutionDose}`,
       statusLine,
       `${localized(lang, "阶段", "STAGE")}  ${creatureLabel("stages", result.stage, lang)} · ${result.progressPercent}%`,
       `${localized(lang, "进化分支", "EVOLUTION BRANCH")}  ${creatureLabel("branches", result.branch, lang)}`,
-      `${localized(lang, "形态", "FORM")}  ${creatureLabel("forms", result.form, lang)}`,
-      `${localized(lang, "称号", "EPITHET")}  ${creatureLabel("epithets", result.epithet, lang)}`,
+      `${localized(lang, "生态人格", "ECOLOGY")}  ${creatureLabel("ecologies", result.ecology.type, lang)} · ${localized(lang, `污染 ${result.ecology.pollution} / 清醒 ${result.ecology.clarity}`, `pollution ${result.ecology.pollution} / clarity ${result.ecology.clarity}`)}`,
+      `${localized(lang, "今日生态", "TODAY'S ECOLOGY")}  ${ecologyGain || localized(lang, "惯常波动", "HABITUAL DRIFT")}`,
+      `${localized(lang, "形态", "FORM")}  ${creatureLabel("ecologyForms", result.ecologyForm, lang)}`,
+      `${localized(lang, "称号", "EPITHET")}  ${creatureTitle(result, lang)}`,
       `${localized(lang, "性格", "TEMPERAMENT")}  ${creatureLabel("temperaments", result.temperament, lang)} · ${localized(lang, "心情", "MOOD")}  ${creatureLabel("moods", result.mood, lang)}`,
-      `${localized(lang, "累积污染", "ACCUMULATED EXPOSURE")}  ${result.exposure}${result.nextStageAt === null ? "" : ` / ${result.nextStageAt}`}`,
+      `${localized(lang, "阅历", "EXPERIENCE")}  ${result.experienceDays}${result.nextStageAt === null ? localized(lang, " 天", " days") : localized(lang, ` / ${result.nextStageAt} 天`, ` / ${result.nextStageAt} days`)}`,
+      `${localized(lang, "累积污染", "ACCUMULATED EXPOSURE")}  ${result.exposure}`,
       `${localized(lang, "个体记录", "SPECIMEN LOG")}  ${localized(lang, `孵化 ${result.ageDays} 天 · 活跃连击 ${result.activeStreakDays} 天`, `age ${result.ageDays} days · active streak ${result.activeStreakDays} days`)}`,
+      `${localized(lang, "徽章", "BADGES")}  [${result.achievements.unlocked.length}] ${achievementPreview || localized(lang, "尚未解锁", "LOCKED")}`,
+      `${localized(lang, "今日成就", "TODAY'S ACHIEVEMENTS")}  ${recentAchievementPreview || localized(lang, "无", "NONE")}`,
       "",
       `${localized(lang, `能力值 · Lv.${result.level}`, `ABILITIES · LV.${result.level}`)}  (${result.abilityPoints} pts)`,
       ...abilityLines,
@@ -370,8 +472,8 @@ async function runCreature(options) {
       "",
       localized(
         lang,
-        "隐私档案：只保存污染剂量、性状、能力与异色加点和事件；不保存对话、路径、模型名或精确 Token。",
-        "PRIVACY FILE: stores dose, traits, ability/chromatic gains, and events; stores no chats, paths, model names, or exact tokens.",
+        "隐私档案：只保存用量带、派生生态点、基因/部件 ID、成就、污染剂量、性状、能力与事件；不保存对话、路径、模型名或精确 Token。",
+        "PRIVACY FILE: stores usage bands, derived ecology, gene/part IDs, achievements, dose, traits, ability gains, and events; stores no chats, paths, model names, or exact tokens.",
       ),
       "",
     ].join("\n"),
@@ -485,6 +587,13 @@ function runExplain(lang = "zh") {
       "  Later runs fill the entire date gap since the previous visit.",
       "  Daily pollution dose = min(100, max(1, round(log10(daily tokens + 1) × 12))).",
       "  Days with no tokens have dose 0.",
+      "  Experience grows by 1 for every settled calendar day; high Token use cannot",
+      "  accelerate life stages. Stages begin at 1, 7, 30, and 90 experience days.",
+      "  Relative to the prior seven-day baseline, high use adds 1–3 POLLUTION;",
+      "  low use adds 1–2 CLARITY; an AI-free day adds 3 CLARITY.",
+      "  POLLUTION and CLARITY are retained separately, forming UNFORMED, POLLUTED,",
+      "  LUCID, or PARADOX ecology. A candidate must persist for 3 settled days",
+      "  before the visible ecology changes.",
       "  Branch traits: CONTEXT uses uncached input per request; CACHE uses the",
       "  cached-read share of input; FRENZY uses request count; NUCLEAR is the",
       "  fallback when no specialized trait dominates.",
@@ -492,7 +601,12 @@ function runExplain(lang = "zh") {
       "    cache   += dose × min(1, cached reads ÷ total input)",
       "    frenzy  += dose × min(1, requests ÷ 50)",
       "    nuclear += dose × (1 - 0.6 × max(context, cache, frenzy intensity))",
-      "  Four stages begin at exposure 0, 50, 150, and 350.",
+      "  ASCII appearance combines a stable local genome, life stage, usage pathology,",
+      "  ecology, achievement parts, and chromatic mutations. The same file is stable;",
+      "  different local seeds produce different specimens.",
+      "  Twenty-four achievements are split evenly across OFFENSE, SOBRIETY, and PARADOX badges;",
+      "  repeatable badges grow through three behavior-based tiers without exact Token totals.",
+      "  Appearance fingerprints are stored idempotently as private specimen records for a future codex.",
       "  Seven abilities grow: TOKEN APPETITE, PARASITIC MEMORY, CACHE CARAPACE,",
       "  REQUEST MAWS, CORE GLOW, INSTABILITY, and WITHDRAWAL.",
       "  Ability values cap at 999: active days add 1–2 APPETITE, 1 point to the",
@@ -506,8 +620,9 @@ function runExplain(lang = "zh") {
       "  A common event adds 8 to one trait; a rare event adds 20.",
       "  After the first active day, each AI-free day reduces exposure by 2",
       "  and adds 1 WITHDRAWAL without clearing historical traits.",
-      "  State: ~/.anti-ai/creature.json",
-      "  It stores only dose, traits, ability/chromatic gains, events, and a local seed—not chats, paths,",
+      "  State: ~/.anti-ai/creature.json (schema v4)",
+      "  It stores only usage bands, derived ecology points, genes/part IDs, achievements,",
+      "  dose, traits, ability/chromatic gains, events, and a local seed—not chats, paths,",
       "  model names, exact tokens, or per-request timestamps.",
       "  anti-ai creature reset explicitly destroys this file.",
       "",
@@ -603,13 +718,22 @@ function runExplain(lang = "zh") {
     "  后续运行会补齐两次查看之间的全部日期空档。",
     "  污染剂量 = min(100, max(1, round(log10(当日 Token + 1) × 12)))，每日上限 100。",
     "  当日没有 Token 时污染剂量为 0。",
+    "  阅历：每个已结算自然日 +1；高 Token 消耗不能加速生命阶段。",
+    "  生命阶段从第 1、7、30、90 个阅历日开始。",
+    "  相对过去 7 日基线，高用量增加 1–3 点污染性，低用量增加 1–2 点清醒性，",
+    "  AI 清醒日增加 3 点清醒性。",
+    "  污染性和清醒性分别保留，形成未定型、污染型、清醒型、矛盾型；",
+    "  候选状态需连续 3 个已结算日成立，才会正式改变生态人格。",
     "  上下文病变：非缓存输入的单次平均量；缓存化石：缓存读取占比；",
     "  请求增殖：请求数；核食：没有专门性状占优时的高剂量兜底。",
     "    上下文 += 污染剂量 × min(1, 非缓存输入 ÷ 请求数 ÷ 100,000)",
     "    缓存   += 污染剂量 × min(1, 缓存读取 ÷ 总输入)",
     "    请求   += 污染剂量 × min(1, 请求数 ÷ 50)",
     "    核食   += 污染剂量 × (1 - 0.6 × max(上下文、缓存、请求强度))",
-    "  4 个阶段的累计污染阈值分别是 0、50、150、350。",
+    "  ASCII 外观由稳定本地基因、生命阶段、使用病型、生态人格、成就部件和异色突变共同拼装。",
+    "  同一档案稳定生成同一标本，不同本地 seed 尽量生成不同个体。",
+    "  首批 24 项成就平均分为罪证章、戒断章、悖论章三类；可重复成就按行为次数成长为三级，",
+    "  不使用精确 Token 作为等级条件。外观指纹会幂等保存为个人标本，为未来图鉴预留数据。",
     "  7 个能力值：吞噬欲、赘生脑回、化石甲、请求口器、核素亮度、失控指数、戒断反应。",
     "  能力上限 999：活跃日获得 1–2 点吞噬欲、1 点主使用能力、25% 确定性随机加点和 1 点事件关联能力。",
     "  失控指数每 10 点让稀有突变率增加 1 个百分点，基础 8%，上限 20%。",
@@ -618,8 +742,9 @@ function runExplain(lang = "zh") {
     "  每日事件由 SHA-256（本地 seed + 日期）确定，基础 8% 进入稀有突变池。",
     "  普通事件给一个性状 +8，稀有事件 +20。",
     "  首个活跃日之后，每个 AI 清醒日污染 -2、戒断反应 +1，但不会清除历史性状。",
-    "  状态文件：~/.anti-ai/creature.json",
-    "  只保存污染剂量、性状、能力与异色加点、事件和本地 seed；不保存对话、路径、模型名、精确 Token 或逐请求时间。",
+    "  状态文件：~/.anti-ai/creature.json（schema v4）",
+    "  只保存用量带、派生生态点、基因/部件 ID、成就、污染剂量、性状、能力与异色加点、事件和本地 seed；",
+    "  不保存精确 Token、模型名、路径、对话或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",
     "",
     color("1", "生活化对照"),

@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-07-27
+
+### Added
+
+- A fair ecology model: every settled day adds one experience day, while high use adds Pollution and low-use or AI-free days add Clarity.
+- Four ecology personalities with a three-day transition window and 16 ecology/pathology form families.
+- Stable genome-driven ASCII specimens assembled from 54 base parts, with private specimen fingerprints ready for a future codex.
+- Twenty-four bilingual achievements split evenly across color-coded Offense, Sobriety, and Paradox badges; repeatable achievements have three behavior-based tiers.
+- Ecology-aware titles, daily ecology gains, achievement feedback, and a concise creature update appended to the default human-readable `today` receipt.
+
+### Changed
+
+- Life stages now begin at 1, 7, 30, and 90 settled experience days instead of being accelerated by accumulated Token exposure.
+- `creature --json` adds ecology, appearance, achievement, title, specimen-collection, and experience fields while retaining the existing mutation fields.
+- The Agent Skill, `explain`, and both READMEs now document fair growth, dynamic ASCII generation, badge tiers, migration, and codex-ready state.
+
+### Security
+
+- Creature state moves to schema v4 and stores only discrete usage bands, derived ecology, stable content IDs, fingerprints, and existing derived growth data.
+- Schema v1/v2/v3 files migrate locally and idempotently without adding exact Token totals, model names, paths, prompts, responses, personal-baseline values, or request timestamps.
+
 ## [0.8.0] - 2026-07-27
 
 ### Added
@@ -124,6 +145,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[0.9.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.9.0
 [0.8.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.8.0
 [0.7.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.7.0
 [0.6.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.6.0

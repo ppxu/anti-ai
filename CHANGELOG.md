@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-07-27
+
+### Added
+
+- Three additional everyday comparisons: 50W laptop runtime, 250mL cups of water, and 6L toilet flushes.
+- Five rotating cache-offense titles in both Chinese and English.
+
+### Changed
+
+- The 2,600-line executable is split into CLI orchestration, log scanning, reporting, creature, and shared modules; the public bin is now a three-line launcher.
+- “Published proxy range” is renamed to the plainer “Estimated resource use (from public data)” throughout receipts, share cards, documentation, and methodology output.
+- Cache offenses now require cached input to be at least 70% of current input and at least 10 percentage points above the personal seven-day baseline, preventing normal high-cache use from receiving the same charge every day.
+- `explain` documents the new comparisons, cache baseline rule, and deterministic title rotation.
+
 ## [0.7.0] - 2026-07-24
 
 ### Added
@@ -110,6 +124,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[0.8.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.8.0
 [0.7.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.7.0
 [0.6.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.6.0
 [0.5.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.5.0

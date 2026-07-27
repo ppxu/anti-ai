@@ -14,14 +14,17 @@
   Codex       127,492,619
   Claude Code 112,962
 
-  公开代理跨度（不是电表）
+  资源消耗估算（参考公开数据）
   ⚡  253.92–359.72 Wh
   💧  275.08–54,015.30 mL
   ☁️  31.74–1,368.39 gCO₂e
 
   生活翻译（终于像人话了）
   📱  15Wh 手机充电    16.93–23.98 次
+  💻  50W 笔记本电脑   5.08–7.19 小时
   🚿  8L/min 淋浴      0.03–6.75 分钟
+  ☕  250mL 水杯       1.10–216.06 杯
+  🚽  6L 节水马桶      0.05–9.00 次冲水
   🚗  平均燃油车        0.13–5.51 公里
   🌳  1 棵城市树        加班 0.19–8.32 天才能吸回来
 
@@ -125,7 +128,9 @@ anti-ai explain --lang en
 
 ### `today`
 
-打印指定自然日的 Token 用量、来源/模型拆分和公开资源代理跨度。日期按系统本地时区计算。人类可读账单会与此前 7 个自然日比较，并从扩充后的讽刺文案库中给出一条“今日罪名”。同一天的文案固定不变，这个过程不会调用模型。
+打印指定自然日的 Token 用量、来源/模型拆分和参考公开数据得到的资源消耗估算。日期按系统本地时区计算。人类可读账单会与此前 7 个自然日比较，并从扩充后的讽刺文案库中给出一条“今日罪名”。同一天的标题和文案固定不变，这个过程不会调用模型。
+
+缓存类罪名不会再因为日常高缓存率而长期霸榜：只有当日缓存读取占输入至少 `70%`，并且高出个人 7 日基线至少 `10` 个百分点时才会触发；命中后会在 5 个同类罪名间按日期轮换。
 
 `--json` 按来源和具体模型输出可精确核对的 Token 统计，不把低置信度资源估算、个人基线或吐槽混入机器数据。
 
@@ -141,7 +146,7 @@ anti-ai explain --lang en
 
 ### `share`
 
-向标准输出生成一张 1200×630 的 SVG 分享卡片。它沿用 `today` 的资源代理公式、个人基线和确定性判词，但默认不包含 Prompt、回复、路径、模型名、请求数或精确 Token。
+向标准输出生成一张 1200×630 的 SVG 分享卡片。它沿用 `today` 的资源估算公式、个人基线和确定性判词，但默认不包含 Prompt、回复、路径、模型名、请求数或精确 Token。
 
 ```bash
 anti-ai share > anti-ai-receipt.svg
@@ -249,7 +254,7 @@ Claude Code：
 
 ## 资源账单口径
 
-Codex 和 Claude Code 没有向本工具提供逐请求的实际电力、水耗和碳排数据。因此，资源部分是不同厂商公开案例的跨度，不是测量值，也不是统计置信区间：
+Codex 和 Claude Code 没有向本工具提供逐请求的实际电力、水耗和碳排数据。因此，资源部分是参考不同厂商公开案例得到的估算范围，不是测量值，也不是统计置信区间：
 
 - Google：Gemini Apps 中位文本请求为 `0.24 Wh`、`0.26 mL` 水、`0.03 gCO₂e`。[来源](https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf)
 - OpenAI：平均 ChatGPT 查询为 `0.34 Wh`、`0.000085` 美制加仑水（换算为 `0.32176 mL`），但未披露完整测量边界。[来源](https://blog.samaltman.com/the-gentle-singularity)
@@ -259,11 +264,14 @@ Codex 和 Claude Code 没有向本工具提供逐请求的实际电力、水耗�
 
 ## 生活化对照口径
 
-- 工具根据资源代理区间的上界动态选择更适合当前数量级的对照物
+- 工具根据资源估算范围的上界动态选择更适合当前数量级的对照物
 - 点灯时间：按 10W LED 灯计算，`电力 Wh ÷ 10W`
+- 笔记本电脑：按 50W 计算，`电力 Wh ÷ 50W`
 - 手机充电：按一次 15Wh 计算，`电力 Wh ÷ 15Wh`
 - 烧水：按烧开 1L 水消耗 100Wh 计算，`电力 Wh ÷ 100Wh`
+- 水杯：按每杯 250mL 计算，`水耗 mL ÷ 250`
 - 瓶装水：按每瓶 550mL 计算，`水耗 mL ÷ 550`
+- 节水马桶：按每次冲水 6L 计算，`水耗 mL ÷ 6,000`
 - 淋浴时间：按 8L/min 计算，`水耗 mL ÷ 8,000`
 - 驾车距离：美国 EPA 的平均燃油乘用车约排放 `400 g CO₂/英里`，换算为 `248.55 g CO₂/公里`。[来源](https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle)
 - 树木吸碳：美国 EPA 对城市树木的估算约为 `60 kg CO₂/年`。[来源](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references)
@@ -285,6 +293,15 @@ npm test
 ```
 
 测试使用脱敏的合成 JSONL，不读取真实会话内容。
+
+## 代码结构
+
+- `bin/anti-ai.mjs`：最小可执行入口
+- `src/cli.mjs`：参数校验、命令编排与帮助/口径输出
+- `src/scanner.mjs`：Codex、Claude Code JSONL 扫描和统计
+- `src/reporting.mjs`：账单、资源换算、生活对照与每日罪名
+- `src/creature.mjs`：异变体成长规则和本地档案
+- `src/shared.mjs`：共享的语言和空统计结构
 
 ## 参与贡献
 

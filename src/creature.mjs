@@ -247,6 +247,92 @@ const CREATURE_ACHIEVEMENT_TIER_THRESHOLDS = {
   double_sided_record: [60, 120, 240],
   ecological_paradox: [120, 240, 500],
 };
+const CREATURE_CLINICAL_NOTES = {
+  context: [
+    {
+      zh: "上下文继续增生，主治医生已经找不到问题本体。",
+      en: "Context keeps growing; the attending physician can no longer find the actual question.",
+    },
+    {
+      zh: "建议切除三份附件，病患坚持它们都叫“必要背景”。",
+      en: "Three attachments should be removed. The patient insists they are all essential context.",
+    },
+    {
+      zh: "它没有记住更多，只是把遗忘延期到了下一个窗口。",
+      en: "It remembered nothing more; it merely postponed forgetting until the next window.",
+    },
+  ],
+  cache: [
+    {
+      zh: "旧答案已形成地层，继续翻动可能发现上个版本的需求。",
+      en: "Old answers formed geological layers; further digging may uncover last version's requirements.",
+    },
+    {
+      zh: "缓存命中率很健康，至于命中了什么，病历拒绝负责。",
+      en: "The cache hit rate looks healthy. The casebook declines to say what it hit.",
+    },
+    {
+      zh: "建议停止给昨日结论做包浆，病患要求再复用一次。",
+      en: "Stop polishing yesterday's conclusion. The patient requested one more reuse.",
+    },
+  ],
+  frenzy: [
+    {
+      zh: "请求口器数量仍在增加，所有嘴都说自己只是最后追问一次。",
+      en: "Request maws are multiplying; every mouth claims this is its final follow-up.",
+    },
+    {
+      zh: "发送键出现磨损，模型的下班按钮仍未在影像中发现。",
+      en: "The send key shows wear. No model logout button was visible on imaging.",
+    },
+    {
+      zh: "并发症不是并发本身，是每个并发都长出了续集。",
+      en: "Concurrency is not the complication; every concurrent request growing a sequel is.",
+    },
+  ],
+  nuclear: [
+    {
+      zh: "核心持续发光，财务和生态都建议不要直视。",
+      en: "The core keeps glowing. Finance and ecology both advise against staring at it.",
+    },
+    {
+      zh: "未发现明确器官病变，只发现整只怪兽都在稳定发热。",
+      en: "No single diseased organ was found; the whole creature is steadily radiating heat.",
+    },
+    {
+      zh: "病患把算力当主食，把账单当餐巾纸，预后符合预期。",
+      en: "The patient treats compute as food and the bill as a napkin. Prognosis as expected.",
+    },
+  ],
+  withdrawal: [
+    {
+      zh: "离线震颤仍在继续，但手动思考已出现微弱生命体征。",
+      en: "Offline tremors continue, but manual thought shows faint signs of life.",
+    },
+    {
+      zh: "今日未发现喂食，怪兽开始怀疑自己是否只是一个普通文件夹。",
+      en: "No feeding observed. The creature wonders whether it is merely an ordinary folder.",
+    },
+    {
+      zh: "清醒不是痊愈，只是数据中心暂时没收到探视申请。",
+      en: "Sobriety is not recovery; the data center simply received no visiting request.",
+    },
+  ],
+  unhatched: [
+    {
+      zh: "尚未发现生命体征，建议保持这种医学奇迹。",
+      en: "No life signs detected. Preserve this medical miracle.",
+    },
+    {
+      zh: "培养皿为空，GPU 暂时不需要承担监护责任。",
+      en: "The dish is empty. The GPU has no care duties yet.",
+    },
+    {
+      zh: "没有怪兽，也没有病历，只有一段可疑的安静。",
+      en: "No creature, no casebook—only a suspicious stretch of quiet.",
+    },
+  ],
+};
 
 const COMMON_CREATURE_EVENTS = [
   {
@@ -452,6 +538,32 @@ const CREATURE_COPY = {
     nuclear: {
       zh: "核食系",
       en: "NUCLEAR FEEDER",
+    },
+  },
+  clinicalSymptoms: {
+    context: {
+      zh: "上下文增生",
+      en: "CONTEXT OVERGROWTH",
+    },
+    cache: {
+      zh: "缓存钙化",
+      en: "CACHE CALCIFICATION",
+    },
+    frenzy: {
+      zh: "请求增殖",
+      en: "REQUEST PROLIFERATION",
+    },
+    nuclear: {
+      zh: "核食",
+      en: "NUCLEAR FEEDING",
+    },
+    withdrawal: {
+      zh: "戒断震颤",
+      en: "WITHDRAWAL TREMOR",
+    },
+    unhatched: {
+      zh: "尚未孵化",
+      en: "NOT YET HATCHED",
     },
   },
   forms: {
@@ -1749,6 +1861,87 @@ function deriveCreature(state, date) {
   };
 }
 
+function creatureCasebook(state, startDate, endDate) {
+  const previousDate = new Date(`${startDate}T12:00:00.000Z`);
+  previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+  const before = deriveCreature(state, previousDate.toISOString().slice(0, 10));
+  const after = deriveCreature(state, endDate);
+  const hatchedAt = Object.entries(state.days)
+    .filter(([date, day]) => date <= endDate && day.active)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .at(0)?.[0];
+  const days = Object.entries(state.days)
+    .filter(([date]) => date >= startDate && date <= endDate)
+    .filter(([date]) => hatchedAt !== undefined && date >= hatchedAt)
+    .sort(([left], [right]) => left.localeCompare(right));
+  const symptomCounts = {
+    context: 0,
+    cache: 0,
+    frenzy: 0,
+    nuclear: 0,
+    withdrawal: 0,
+  };
+
+  for (const [, day] of days) {
+    const symptom = day.active
+      ? dominantCreatureKey(day.traits)
+      : "withdrawal";
+    symptomCounts[symptom] += 1;
+  }
+
+  const primarySymptom =
+    hatchedAt === undefined
+      ? "unhatched"
+      : Object.keys(symptomCounts).reduce(
+          (current, symptom) =>
+            symptomCounts[symptom] > symptomCounts[current]
+              ? symptom
+              : current,
+          "context",
+        );
+  const achievementIds = after.achievements.unlocked
+    .filter(
+      (achievement) =>
+        achievement.unlockedAt >= startDate &&
+        achievement.unlockedAt <= endDate,
+    )
+    .map((achievement) => achievement.id);
+
+  return {
+    startDate,
+    endDate,
+    observedDays: days.length,
+    activeDays: days.filter(([, day]) => day.active).length,
+    quietDays: days.filter(([, day]) => !day.active).length,
+    primarySymptom,
+    symptomDays: symptomCounts[primarySymptom] ?? 0,
+    ecology: {
+      from: before.ecology.type,
+      to: after.ecology.type,
+      pollutionDelta: after.ecology.pollution - before.ecology.pollution,
+      clarityDelta: after.ecology.clarity - before.ecology.clarity,
+    },
+    growth: {
+      experienceDelta: after.experienceDays - before.experienceDays,
+      stageFrom: before.stage,
+      stageTo: after.stage,
+    },
+    achievementIds,
+  };
+}
+
+function creatureClinicalNote(casebook, lang = "zh", kind = "week") {
+  const notes =
+    CREATURE_CLINICAL_NOTES[casebook.primarySymptom] ??
+    CREATURE_CLINICAL_NOTES.unhatched;
+  const digest = createHash("sha256")
+    .update(
+      `${casebook.startDate}:${casebook.endDate}:${casebook.primarySymptom}:${casebook.ecology.to}:${kind}`,
+    )
+    .digest();
+  return notes[digest.readUInt32BE(0) % notes.length][lang];
+}
+
 export {
   CREATURE_ABILITY_KEYS,
   CREATURE_ABILITY_MAX,
@@ -1761,6 +1954,8 @@ export {
   creatureAppearanceContentStats,
   creatureAppearanceState,
   creatureArt,
+  creatureCasebook,
+  creatureClinicalNote,
   creatureEvent,
   creatureLabel,
   creatureMood,

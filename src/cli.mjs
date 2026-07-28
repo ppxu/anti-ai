@@ -11,6 +11,8 @@ import {
   creatureAbilityBar,
   creatureAbilityGains,
   creatureArt,
+  creatureCasebook,
+  creatureClinicalNote,
   creatureEvent,
   creatureLabel,
   creatureMood,
@@ -32,6 +34,7 @@ import {
   isValidDate,
   padTerminal,
   renderMonth,
+  renderPathologyShareSvg,
   renderReceipt,
   renderShareSvg,
   renderWeek,
@@ -81,6 +84,7 @@ function parseArgs(argv) {
     source: "all",
     lang: "zh",
     json: false,
+    card: undefined,
     action: undefined,
     unknown: [],
     missing: undefined,
@@ -107,6 +111,12 @@ function parseArgs(argv) {
         options.missing ??= arg;
       } else {
         options.lang = rest[++index];
+      }
+    } else if (arg === "--card") {
+      if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
+        options.missing ??= arg;
+      } else {
+        options.card = rest[++index];
       }
     } else if (
       command === "creature" &&
@@ -138,6 +148,47 @@ function renderCreatureTodaySummary(creature, lang) {
     .join(" · ");
   const form = creatureLabel("ecologyForms", creature.ecologyForm, lang);
   return `${localized(lang, "异变体", "MUTATION")}  ${gains || localized(lang, "惯常波动", "habitual drift")} · ${localized(lang, `仍为「${form}」`, `still “${form}”`)} · ${localized(lang, "今日成就", "today's achievements")} ${achievements || localized(lang, "无", "none")}\n`;
+}
+
+function renderCreatureCasebook(casebook, lang) {
+  const achievements = casebook.achievementIds
+    .map((id) => creatureLabel("achievements", id, lang))
+    .join(" · ");
+  return [
+    localized(
+      lang,
+      `活体病历 · ${casebook.startDate.slice(5)} → ${casebook.endDate.slice(5)}`,
+      `LIVING CASEBOOK · ${casebook.startDate.slice(5)} → ${casebook.endDate.slice(5)}`,
+    ),
+    `${localized(lang, "本周主症状", "PRIMARY SYMPTOM")}  ${creatureLabel("clinicalSymptoms", casebook.primarySymptom, lang)} · ${casebook.symptomDays} ${localized(lang, "天", casebook.symptomDays === 1 ? "day" : "days")}`,
+    `${localized(lang, "生态变化", "ECOLOGY CHANGE")}  ${localized(lang, `污染 +${casebook.ecology.pollutionDelta} · 清醒 +${casebook.ecology.clarityDelta}`, `pollution +${casebook.ecology.pollutionDelta} · clarity +${casebook.ecology.clarityDelta}`)}`,
+    `${localized(lang, "成长记录", "GROWTH RECORD")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
+    `${localized(lang, "新增徽章", "NEW BADGES")}  ${achievements || localized(lang, "无", "NONE")}`,
+    `${localized(lang, "主治意见", "ATTENDING NOTE")}  ${creatureClinicalNote(casebook, lang, "week")}`,
+    "",
+  ].join("\n");
+}
+
+function renderCreatureAutopsy(casebook, lang) {
+  const achievements = casebook.achievementIds
+    .map((id) => creatureLabel("achievements", id, lang))
+    .join(" · ");
+  const dayUnit = (count) =>
+    localized(lang, `${count} 天`, `${count} ${count === 1 ? "day" : "days"}`);
+  return [
+    localized(
+      lang,
+      `月度尸检 · ${casebook.endDate.slice(0, 7)}`,
+      `MONTHLY AUTOPSY · ${casebook.endDate.slice(0, 7)}`,
+    ),
+    `${localized(lang, "有效观察", "VALID OBSERVATION")}  ${dayUnit(casebook.observedDays)} · ${localized(lang, `${casebook.activeDays} 天活跃`, `${casebook.activeDays} active`)} · ${localized(lang, `${casebook.quietDays} 天清醒`, `${casebook.quietDays} AI-free`)}`,
+    `${localized(lang, "主症状", "PRIMARY SYMPTOM")}  ${creatureLabel("clinicalSymptoms", casebook.primarySymptom, lang)} · ${dayUnit(casebook.symptomDays)}`,
+    `${localized(lang, "生态人格", "ECOLOGY")}  ${creatureLabel("ecologies", casebook.ecology.from, lang)} → ${creatureLabel("ecologies", casebook.ecology.to, lang)} · ${localized(lang, `污染 +${casebook.ecology.pollutionDelta} · 清醒 +${casebook.ecology.clarityDelta}`, `pollution +${casebook.ecology.pollutionDelta} · clarity +${casebook.ecology.clarityDelta}`)}`,
+    `${localized(lang, "成长回顾", "GROWTH REVIEW")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
+    `${localized(lang, "成就回顾", "ACHIEVEMENT REVIEW")}  [${casebook.achievementIds.length}] ${achievements || localized(lang, "无", "NONE")}`,
+    `${localized(lang, "尸检结论", "AUTOPSY CONCLUSION")}  ${creatureClinicalNote(casebook, lang, "month")}`,
+    "",
+  ].join("\n");
 }
 
 async function runToday(options) {
@@ -182,7 +233,24 @@ async function runWeek(options) {
     shiftDate(endDate, index - 6),
   );
   const reports = await reportsForDates(options, dates, timezone);
-  process.stdout.write(renderWeek(reports, options.lang));
+  const creatureContext =
+    options.source === "all"
+      ? await runCreature(
+          {
+            ...options,
+            action: undefined,
+            command: "creature",
+            json: false,
+          },
+          "context",
+        )
+      : null;
+  const casebook = creatureContext
+    ? creatureCasebook(creatureContext.state, dates[0], endDate)
+    : null;
+  process.stdout.write(
+    `${renderWeek(reports, options.lang)}${casebook ? `\n${renderCreatureCasebook(casebook, options.lang)}` : ""}`,
+  );
 }
 
 async function runMonth(options) {
@@ -193,10 +261,93 @@ async function runMonth(options) {
     `${endDate.slice(0, 8)}${String(index + 1).padStart(2, "0")}`,
   );
   const reports = await reportsForDates(options, dates, timezone);
-  process.stdout.write(renderMonth(reports, options.lang));
+  const creatureContext =
+    options.source === "all"
+      ? await runCreature(
+          {
+            ...options,
+            action: undefined,
+            command: "creature",
+            json: false,
+          },
+          "context",
+        )
+      : null;
+  const autopsy = creatureContext
+    ? creatureCasebook(creatureContext.state, dates[0], endDate)
+    : null;
+  process.stdout.write(
+    `${renderMonth(reports, options.lang)}${autopsy ? `\n${renderCreatureAutopsy(autopsy, options.lang)}` : ""}`,
+  );
 }
 
 async function runShare(options) {
+  if (options.card === "pathology") {
+    const creature = await runCreature(
+      {
+        ...options,
+        action: undefined,
+        command: "creature",
+        json: false,
+      },
+      "result",
+    );
+    if (!creature) {
+      process.stderr.write(
+        `${localized(options.lang, "病理报告无法读取异变体档案。运行 anti-ai creature reset 后可重新孵化。", "The pathology card cannot read the mutation file. Run anti-ai creature reset to hatch again.")}\n`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    const ecologyGain = [
+      creature.today.ecologyGains.pollution > 0
+        ? localized(
+            options.lang,
+            `污染 +${creature.today.ecologyGains.pollution}`,
+            `pollution +${creature.today.ecologyGains.pollution}`,
+          )
+        : null,
+      creature.today.ecologyGains.clarity > 0
+        ? localized(
+            options.lang,
+            `清醒 +${creature.today.ecologyGains.clarity}`,
+            `clarity +${creature.today.ecologyGains.clarity}`,
+          )
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    process.stdout.write(
+      renderPathologyShareSvg(
+        {
+          date: creature.date,
+          specimenId: creature.appearance.specimenId,
+          art: creatureArt(creature),
+          ecology: creatureLabel(
+            "ecologies",
+            creature.ecology.type,
+            options.lang,
+          ),
+          form: creatureLabel(
+            "ecologyForms",
+            creature.ecologyForm,
+            options.lang,
+          ),
+          stage: creatureLabel("stages", creature.stage, options.lang),
+          experience: localized(
+            options.lang,
+            `阅历 ${creature.experienceDays} 天`,
+            `${creature.experienceDays} experience days`,
+          ),
+          epithet: creatureTitle(creature, options.lang),
+          ecologyGain:
+            ecologyGain || localized(options.lang, "惯常波动", "habitual drift"),
+        },
+        options.lang,
+      ),
+    );
+    return;
+  }
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const date = options.date ?? localDate(new Date(), timezone);
   const dates = Array.from({ length: 8 }, (_, index) =>
@@ -321,6 +472,7 @@ async function runCreature(options, mode = "render") {
     },
   };
 
+  if (mode === "context") return { result, state };
   if (mode === "result") return result;
   if (options.json) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -581,6 +733,9 @@ function runExplain(lang = "zh") {
       "  Otherwise show STEADY BURN; zero usage and missing history have dedicated verdicts.",
       "  Verdicts are generated by fixed local rules; same-category titles and copy",
       "  rotate deterministically by date.",
+      "  Each category combines 7 charge titles with 5 detail lines, producing",
+      "  35 deterministic combinations before an identical pair repeats.",
+      "  Rotation continues across month boundaries and does not reset on day one.",
       "",
       color("1", "Mutation system"),
       "  The first anti-ai creature run backfills the latest 30 calendar days.",
@@ -626,6 +781,13 @@ function runExplain(lang = "zh") {
       "  model names, exact tokens, or per-request timestamps.",
       "  anti-ai creature reset explicitly destroys this file.",
       "",
+      color("1", "Living casebook"),
+      "  Complete-source human week reports settle creature history and append the",
+      "  primary symptom, Ecology change, stage growth, new badges, and an attending note.",
+      "  Complete-source human month reports append a monthly autopsy with post-hatch",
+      "  observation totals, Ecology transition, growth, achievements, and a conclusion.",
+      "  Source-filtered week/month reports stay usage-only and do not alter creature history.",
+      "",
       color("1", "Everyday comparisons"),
       "  10W LED light: electricity Wh ÷ 10W = hours lit",
       "  50W laptop: electricity Wh ÷ 50W = hours running",
@@ -651,7 +813,9 @@ function runExplain(lang = "zh") {
       "",
       color("1", "Share card"),
       "  anti-ai share uses the same estimate formulas and fixed local verdict rules.",
-      "  It omits chats, paths, model names, and exact token counts.",
+      "  anti-ai share --card pathology creates a complete-source mutation pathology card.",
+      "  The share card omits chats, paths, model names, and exact token counts.",
+      "  Both card types also omit source names and request counts.",
       "  The SVG is written to stdout and is not uploaded anywhere.",
       "",
       "These values are not statistical confidence intervals; they span public cases",
@@ -712,6 +876,8 @@ function runExplain(lang = "zh") {
     "  算力暴食：Token 总量不低于基线 1.5 倍",
     "  其余情况显示“稳定消耗”；无请求或无历史时使用专用判词。",
     "  判词由本地固定规则生成，不调用模型；同类罪名标题和文案按日期固定轮换。",
+    "  每类判词由 7 个罪名标题与 5 条详情组合，完整组合至少有 35 种后才会原样重复。",
+    "  跨月轮换不会重置，会连续进入下一组组合。",
     "",
     color("1", "污染进化系统"),
     "  首次运行回看最近 30 个自然日。",
@@ -747,6 +913,11 @@ function runExplain(lang = "zh") {
     "  不保存精确 Token、模型名、路径、对话或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",
     "",
+    color("1", "活体病历"),
+    "  完整来源的 week 会结算成长史，追加主症状、生态变化、阶段成长、新徽章和主治意见。",
+    "  完整来源的 month 会追加月度尸检，汇总孵化后的有效观察、生态迁移、成长、成就和结论。",
+    "  带来源过滤的 week/month 只展示用量，不改动完整成长史。",
+    "",
     color("1", "生活化对照"),
     "  10W LED 灯：电力 Wh ÷ 10W = 点灯小时数",
     "  50W 笔记本电脑：电力 Wh ÷ 50W = 使用小时数",
@@ -771,7 +942,8 @@ function runExplain(lang = "zh") {
     "",
     color("1", "分享卡片"),
     "  anti-ai share 使用相同的资源估算公式和本地固定判词。",
-    "  不包含对话、路径、模型名或精确 Token；SVG 只写入标准输出，不会上传。",
+    "  anti-ai share --card pathology 使用完整成长史生成异变体病理报告。",
+    "  两类卡片都不包含对话、路径、模型名或精确 Token，也不会包含来源名和请求数；SVG 只写入标准输出，不会上传。",
     "",
     "这些值不是统计置信区间，只是不可直接比较的公开案例跨度。",
     `置信度：${color("1;31", "低")}`,
@@ -801,6 +973,7 @@ Options:
   --date <YYYY-MM-DD>             Select today date or week/month end date
   --source <all|codex|claude>     Filter log source (default: all)
   --lang <zh|en>                  Select human-readable output language (default: zh)
+  --card <receipt|pathology>      Select the share card type (default: receipt)
   --json                          Print machine-readable today or creature data
   -v, --version                   Show version
   -h, --help                      Show help
@@ -825,6 +998,7 @@ Options:
   --date <YYYY-MM-DD>             指定 today 日期，或 week/month 结束日期
   --source <all|codex|claude>     过滤日志来源（默认 all）
   --lang <zh|en>                  选择人类可读输出语言（默认 zh）
+  --card <receipt|pathology>      选择分享卡类型（默认 receipt）
   --json                          today 或 creature 输出机器可读数据
   -v, --version                   显示版本
   -h, --help                      显示帮助
@@ -864,6 +1038,24 @@ if (helpRequested) {
 } else if (!["all", "codex", "claude"].includes(options.source)) {
   process.stderr.write(
     `${localized(options.lang, `不支持的数据源：${options.source}`, `Unsupported data source: ${options.source}`)}\n`,
+  );
+  process.exitCode = 2;
+} else if (
+  options.card !== undefined &&
+  (options.command !== "share" ||
+    !["receipt", "pathology"].includes(options.card))
+) {
+  process.stderr.write(
+    `${localized(options.lang, `不支持的分享卡：${options.card}`, `Unsupported share card: ${options.card}`)}\n`,
+  );
+  process.exitCode = 2;
+} else if (
+  options.command === "share" &&
+  options.card === "pathology" &&
+  options.source !== "all"
+) {
+  process.stderr.write(
+    `${localized(options.lang, "病理报告必须使用完整数据源；请移除 --source 过滤。", "Pathology cards require the complete data set; remove the --source filter.")}\n`,
   );
   process.exitCode = 2;
 } else if (options.command === "creature" && options.source !== "all") {

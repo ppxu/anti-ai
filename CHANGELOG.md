@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-28
+
+### Added
+
+- Command-specific help for every public command, including focused `creature evolve` and `creature reset` help.
+- Local usage adapters for OpenCode, OpenClaw, Hermes, and Pi, alongside Codex and Claude Code.
+- Read-only SQLite accounting for OpenCode and Hermes, including OpenCode schema compatibility and Hermes per-model auxiliary usage.
+- Exact JSONL deduplication for OpenClaw reset history and Pi copied/forked entries; Pi compaction and branch-summary requests are included.
+- Five period-specific everyday comparisons: small activities for `today`, medium activities for `week`, and large activities for `month`.
+- Deterministic bilingual copy pools with 143 charge combinations per verdict category, 14 footers per report period, 12 share-card methodology lines, 20 creature events, and six clinical notes per symptom.
+- Focused methodology topics: `resources`, `comparisons`, `sources`, `creature`, and `privacy`.
+
+### Changed
+
+- Resource output now calculates named public cases independently and shows the highest case for each resource instead of combining incompatible disclosures into a range.
+- `doctor` reports all six source paths, storage availability, and accounting precision. Hermes is explicitly labelled session-level approximate.
+- Today, week, and month mutation sections now share one framed visual hierarchy; the monthly section is called a follow-up rather than an autopsy.
+- Month calendar cells align with weekday headings, Codex rarity labels use terminal colors, and `creature` uses a compact two-column layout on wide terminals with `--full` for the complete casebook.
+- Receipt source totals are dynamic, so filtered OpenCode, OpenClaw, Hermes, and Pi reports identify the correct source.
+- Creature event variety expands within the existing pathology trait, preserving growth semantics while adding new event copy.
+- CI now installs the locked runtime dependency set before verifying Node.js 20, 22, and 24.
+
+### Fixed
+
+- `doctor` now treats missing SQLite parent directories as unavailable sources instead of crashing.
+- Empty-period comparisons render zero values instead of infinite gaps.
+
+### Removed
+
+- The misleading confidence line and the old synthetic public-case range.
+- Stale comparison assumptions such as a 15Wh phone, 8L/min shower, and one-size-fits-all period list.
+
 ## [1.2.0] - 2026-07-28
 
 ### Added

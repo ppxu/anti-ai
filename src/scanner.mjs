@@ -1,8 +1,9 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
+import Database from "better-sqlite3";
 
 import { addModelUsage, addUsage } from "./reporting.mjs";
 import { emptyUsage } from "./shared.mjs";
@@ -17,6 +18,14 @@ function localDate(timestamp, timezone) {
 }
 
 async function* jsonlFiles(root, modifiedSince = undefined) {
+  yield* matchingFiles(
+    root,
+    (name) => name.endsWith(".jsonl"),
+    modifiedSince,
+  );
+}
+
+async function* matchingFiles(root, matches, modifiedSince = undefined) {
   let entries;
   try {
     entries = await readdir(root, { withFileTypes: true });
@@ -28,8 +37,8 @@ async function* jsonlFiles(root, modifiedSince = undefined) {
   for (const entry of entries) {
     const entryPath = path.join(root, entry.name);
     if (entry.isDirectory()) {
-      yield* jsonlFiles(entryPath, modifiedSince);
-    } else if (entry.isFile() && entry.name.endsWith(".jsonl")) {
+      yield* matchingFiles(entryPath, matches, modifiedSince);
+    } else if (entry.isFile() && matches(entry.name)) {
       if (modifiedSince !== undefined) {
         let fileStat;
         try {
@@ -42,6 +51,70 @@ async function* jsonlFiles(root, modifiedSince = undefined) {
       }
       yield entryPath;
     }
+  }
+}
+
+function openReadonlyDatabase(databasePath) {
+  if (!existsSync(databasePath)) return null;
+  try {
+    return new Database(databasePath, {
+      readonly: true,
+      fileMustExist: true,
+    });
+  } catch (error) {
+    if (error.code === "SQLITE_CANTOPEN" || error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function safeNumber(value) {
+  const number = Number(value ?? 0);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function usageFromFields({
+  input,
+  output,
+  cacheRead,
+  cacheWrite,
+  reasoning,
+  total,
+  requests = 1,
+}) {
+  const cachedInputTokens = safeNumber(cacheRead);
+  const cacheWriteInputTokens = safeNumber(cacheWrite);
+  const inputTokens =
+    safeNumber(input) + cachedInputTokens + cacheWriteInputTokens;
+  const outputTokens = safeNumber(output);
+  return {
+    requests: Math.max(1, safeNumber(requests)),
+    inputTokens,
+    cachedInputTokens,
+    cacheWriteInputTokens,
+    outputTokens,
+    reasoningOutputTokens: safeNumber(reasoning),
+    totalTokens: safeNumber(total) || inputTokens + outputTokens,
+  };
+}
+
+function addSnapshotResults(results, snapshots, timezone) {
+  for (const snapshot of snapshots.values()) {
+    const result = results.get(localDate(snapshot.timestamp, timezone));
+    if (!result) continue;
+    addUsage(result.usage, snapshot.usage);
+    addModelUsage(result.models, snapshot.model, snapshot.usage);
+  }
+}
+
+function preferSnapshot(snapshots, id, snapshot) {
+  const previous = snapshots.get(id);
+  if (
+    !previous ||
+    snapshot.usage.totalTokens > previous.usage.totalTokens ||
+    (snapshot.usage.totalTokens === previous.usage.totalTokens &&
+      snapshot.timestamp > previous.timestamp)
+  ) {
+    snapshots.set(id, snapshot);
   }
 }
 
@@ -161,28 +234,302 @@ async function scanClaude(root, dates, timezone) {
           totalTokens: inputTokens + outputTokens,
         },
       };
-      const previous = snapshots.get(messageId);
-
-      if (
-        !previous ||
-        snapshot.usage.totalTokens > previous.usage.totalTokens ||
-        (snapshot.usage.totalTokens === previous.usage.totalTokens &&
-          snapshot.timestamp > previous.timestamp)
-      ) {
-        snapshots.set(messageId, snapshot);
-      }
+      preferSnapshot(snapshots, messageId, snapshot);
     }
   }
 
   const results = sourceUsageByDate(dates);
-  for (const snapshot of snapshots.values()) {
-    const result = results.get(localDate(snapshot.timestamp, timezone));
-    if (result) {
-      addUsage(result.usage, snapshot.usage);
-      addModelUsage(result.models, snapshot.model, snapshot.usage);
+  addSnapshotResults(results, snapshots, timezone);
+  return results;
+}
+
+async function scanOpenCode(databasePath, dates, timezone) {
+  const results = sourceUsageByDate(dates);
+  const database = openReadonlyDatabase(databasePath);
+  if (!database) return results;
+
+  try {
+    const availableTables = new Set(
+      database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('message', 'session_message')",
+        )
+        .all()
+        .map((table) => table.name),
+    );
+    if (availableTables.size === 0) return results;
+
+    const lowerBound = earliestLocalMidnight(dates) - 86_400_000;
+    const upperBound =
+      new Date(`${dates.at(-1)}T23:59:59.999`).getTime() + 86_400_000;
+    const snapshots = new Map();
+    for (const tableName of ["message", "session_message"]) {
+      if (!availableTables.has(tableName)) continue;
+      const rows = database
+        .prepare(
+          `SELECT id, time_created, data FROM ${tableName} WHERE time_created BETWEEN ? AND ?`,
+        )
+        .all(lowerBound, upperBound);
+
+      for (const row of rows) {
+        let message;
+        try {
+          message = JSON.parse(row.data);
+        } catch {
+          continue;
+        }
+        if (message?.role !== "assistant" || !message.tokens) continue;
+        const timestamp = safeNumber(message?.time?.created) || row.time_created;
+        preferSnapshot(snapshots, row.id, {
+          timestamp,
+          model: message.modelID,
+          usage: usageFromFields({
+            input: message.tokens.input,
+            output: message.tokens.output,
+            cacheRead: message.tokens.cache?.read,
+            cacheWrite: message.tokens.cache?.write,
+            reasoning: message.tokens.reasoning,
+            total: message.tokens.total,
+          }),
+        });
+      }
+    }
+    addSnapshotResults(results, snapshots, timezone);
+  } finally {
+    database.close();
+  }
+
+  return results;
+}
+
+function openClawFile(name) {
+  return (
+    !name.includes(".trajectory.") &&
+    !name.endsWith(".trajectory.jsonl") &&
+    /\.jsonl(?:\.reset\..+)?$/.test(name)
+  );
+}
+
+async function scanOpenClaw(root, dates, timezone) {
+  const snapshots = new Map();
+
+  for await (const file of matchingFiles(
+    root,
+    openClawFile,
+    earliestLocalMidnight(dates),
+  )) {
+    const lines = readline.createInterface({
+      input: createReadStream(file),
+      crlfDelay: Infinity,
+    });
+    for await (const line of lines) {
+      if (!line.includes('"role":"assistant"') || !line.includes('"usage"')) {
+        continue;
+      }
+      let record;
+      try {
+        record = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const message = record?.message;
+      if (
+        record?.type !== "message" ||
+        message?.role !== "assistant" ||
+        !message.usage
+      ) {
+        continue;
+      }
+      const id = record.id ?? message.id;
+      if (!id) continue;
+      preferSnapshot(snapshots, id, {
+        timestamp: message.timestamp ?? record.timestamp,
+        model: message.model,
+        usage: usageFromFields({
+          input: message.usage.input,
+          output: message.usage.output,
+          cacheRead: message.usage.cacheRead,
+          cacheWrite: message.usage.cacheWrite,
+          reasoning: message.usage.reasoningTokens,
+          total: message.usage.totalTokens,
+        }),
+      });
     }
   }
+
+  const results = sourceUsageByDate(dates);
+  addSnapshotResults(results, snapshots, timezone);
   return results;
+}
+
+async function scanPi(root, dates, timezone) {
+  const snapshots = new Map();
+
+  for await (const file of jsonlFiles(root, earliestLocalMidnight(dates))) {
+    let currentModel = "unknown";
+    const lines = readline.createInterface({
+      input: createReadStream(file),
+      crlfDelay: Infinity,
+    });
+    for await (const line of lines) {
+      if (!line.includes('"type"')) continue;
+      let record;
+      try {
+        record = JSON.parse(line);
+      } catch {
+        continue;
+      }
+
+      if (record?.type === "model_change") {
+        currentModel = record.modelId ?? currentModel;
+        continue;
+      }
+
+      let usage;
+      let model = currentModel;
+      let timestamp = record.timestamp;
+      if (
+        record?.type === "message" &&
+        record?.message?.role === "assistant"
+      ) {
+        usage = record.message.usage;
+        model = record.message.model ?? model;
+        currentModel = model;
+        timestamp = record.message.timestamp ?? timestamp;
+      } else if (
+        ["compaction", "branch_summary"].includes(record?.type) &&
+        record.usage
+      ) {
+        usage = record.usage;
+      }
+      if (!record?.id || !usage) continue;
+
+      preferSnapshot(snapshots, record.id, {
+        timestamp,
+        model,
+        usage: usageFromFields({
+          input: usage.input,
+          output: usage.output,
+          cacheRead: usage.cacheRead,
+          cacheWrite: usage.cacheWrite,
+          reasoning: usage.reasoningTokens,
+          total: usage.totalTokens,
+        }),
+      });
+    }
+  }
+
+  const results = sourceUsageByDate(dates);
+  addSnapshotResults(results, snapshots, timezone);
+  return results;
+}
+
+function epochMilliseconds(value) {
+  if (typeof value === "string" && !/^\d+(?:\.\d+)?$/.test(value)) {
+    return Date.parse(value);
+  }
+  const number = Number(value);
+  if (!Number.isFinite(number)) return Number.NaN;
+  return number < 1_000_000_000_000 ? number * 1000 : number;
+}
+
+function databaseHasTable(database, tableName) {
+  return Boolean(
+    database
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      )
+      .get(tableName),
+  );
+}
+
+async function scanHermes(databasePath, dates, timezone) {
+  const results = sourceUsageByDate(dates);
+  const database = openReadonlyDatabase(databasePath);
+  if (!database) return results;
+
+  try {
+    if (!databaseHasTable(database, "sessions")) return results;
+    const useModelUsage = databaseHasTable(database, "session_model_usage");
+    const tableName = useModelUsage ? "session_model_usage" : "sessions";
+    const columns = new Set(
+      database
+        .prepare(`PRAGMA table_info(${tableName})`)
+        .all()
+        .map((column) => column.name),
+    );
+    const required = useModelUsage
+      ? ["session_id", "model"]
+      : ["id", "started_at"];
+    if (required.some((column) => !columns.has(column))) return results;
+    const optional = (column, fallback = "0") =>
+      columns.has(column) ? column : `${fallback} AS ${column}`;
+    const rows = database
+      .prepare(`
+        SELECT
+          ${useModelUsage ? "session_id AS id" : "id"},
+          ${optional("model", "'unknown'")},
+          ${optional("started_at", "NULL")},
+          ${optional("ended_at", "NULL")},
+          ${optional("first_seen", "NULL")},
+          ${optional("last_seen", "NULL")},
+          ${optional("input_tokens")},
+          ${optional("output_tokens")},
+          ${optional("cache_read_tokens")},
+          ${optional("cache_write_tokens")},
+          ${optional("reasoning_tokens")},
+          ${optional("api_call_count", "1")}
+        FROM ${tableName}
+      `)
+      .all();
+
+    for (const row of rows) {
+      const timestamp = epochMilliseconds(
+        row.last_seen ?? row.first_seen ?? row.ended_at ?? row.started_at,
+      );
+      if (!Number.isFinite(timestamp)) continue;
+      const result = results.get(localDate(timestamp, timezone));
+      if (!result) continue;
+      const usage = usageFromFields({
+        input: row.input_tokens,
+        output: row.output_tokens,
+        cacheRead: row.cache_read_tokens,
+        cacheWrite: row.cache_write_tokens,
+        reasoning: row.reasoning_tokens,
+        requests: row.api_call_count,
+      });
+      addUsage(result.usage, usage);
+      addModelUsage(result.models, row.model, usage);
+    }
+  } finally {
+    database.close();
+  }
+
+  return results;
+}
+
+async function countMatchingFiles(root, matches) {
+  let count = 0;
+  for await (const _file of matchingFiles(root, matches)) count += 1;
+  return count;
+}
+
+function inspectDatabase(databasePath, tableName) {
+  const database = openReadonlyDatabase(databasePath);
+  if (!database) return false;
+  try {
+    return Boolean(
+      database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        )
+        .get(tableName),
+    );
+  } catch {
+    return false;
+  } finally {
+    database.close();
+  }
 }
 
 function sourceRoots() {
@@ -193,7 +540,89 @@ function sourceRoots() {
     claude:
       process.env.ANTI_AI_CLAUDE_DIR ??
       path.join(os.homedir(), ".claude", "projects"),
+    opencode:
+      process.env.ANTI_AI_OPENCODE_DB ??
+      path.join(os.homedir(), ".local", "share", "opencode", "opencode.db"),
+    openclaw:
+      process.env.ANTI_AI_OPENCLAW_DIR ??
+      path.join(os.homedir(), ".openclaw", "agents"),
+    hermes:
+      process.env.ANTI_AI_HERMES_DB ??
+      path.join(os.homedir(), ".hermes", "state.db"),
+    pi:
+      process.env.ANTI_AI_PI_DIR ??
+      path.join(os.homedir(), ".pi", "agent", "sessions"),
   };
+}
+
+async function inspectLocalSources(source = "all") {
+  const roots = sourceRoots();
+  const definitions = [
+    {
+      id: "codex",
+      label: "Codex",
+      root: roots.codex,
+      kind: "jsonl",
+      precision: { zh: "逐消息精确", en: "message exact" },
+      count: () => countMatchingFiles(roots.codex, (name) => name.endsWith(".jsonl")),
+    },
+    {
+      id: "claude",
+      label: "Claude Code",
+      root: roots.claude,
+      kind: "jsonl",
+      precision: { zh: "逐消息精确", en: "message exact" },
+      count: () =>
+        countMatchingFiles(roots.claude, (name) => name.endsWith(".jsonl")),
+    },
+    {
+      id: "opencode",
+      label: "OpenCode",
+      root: roots.opencode,
+      kind: "sqlite",
+      precision: { zh: "逐消息精确", en: "message exact" },
+      available: () =>
+        inspectDatabase(roots.opencode, "message") ||
+        inspectDatabase(roots.opencode, "session_message"),
+    },
+    {
+      id: "openclaw",
+      label: "OpenClaw",
+      root: roots.openclaw,
+      kind: "jsonl",
+      precision: { zh: "逐消息精确", en: "message exact" },
+      count: () => countMatchingFiles(roots.openclaw, openClawFile),
+    },
+    {
+      id: "hermes",
+      label: "Hermes",
+      root: roots.hermes,
+      kind: "sqlite",
+      precision: { zh: "会话级近似", en: "session approximate" },
+      available: () => inspectDatabase(roots.hermes, "sessions"),
+    },
+    {
+      id: "pi",
+      label: "Pi",
+      root: roots.pi,
+      kind: "jsonl",
+      precision: { zh: "逐条目精确", en: "entry exact" },
+      count: () => countMatchingFiles(roots.pi, (name) => name.endsWith(".jsonl")),
+    },
+  ];
+  const selected = definitions.filter(
+    (definition) => source === "all" || definition.id === source,
+  );
+  return Promise.all(
+    selected.map(async (definition) => {
+      if (definition.kind === "sqlite") {
+        const available = definition.available();
+        return { ...definition, available };
+      }
+      const count = await definition.count();
+      return { ...definition, available: count > 0, count };
+    }),
+  );
 }
 
 async function reportsForDates(options, dates, timezone) {
@@ -205,6 +634,26 @@ async function reportsForDates(options, dates, timezone) {
   }
   if (options.source === "all" || options.source === "claude") {
     sourceResults.claude = await scanClaude(roots.claude, dates, timezone);
+  }
+  if (options.source === "all" || options.source === "opencode") {
+    sourceResults.opencode = await scanOpenCode(
+      roots.opencode,
+      dates,
+      timezone,
+    );
+  }
+  if (options.source === "all" || options.source === "openclaw") {
+    sourceResults.openclaw = await scanOpenClaw(
+      roots.openclaw,
+      dates,
+      timezone,
+    );
+  }
+  if (options.source === "all" || options.source === "hermes") {
+    sourceResults.hermes = await scanHermes(roots.hermes, dates, timezone);
+  }
+  if (options.source === "all" || options.source === "pi") {
+    sourceResults.pi = await scanPi(roots.pi, dates, timezone);
   }
 
   return dates.map((date) => {
@@ -221,4 +670,12 @@ async function reportsForDates(options, dates, timezone) {
   });
 }
 
-export { jsonlFiles, localDate, reportsForDates, sourceRoots };
+export {
+  jsonlFiles,
+  inspectLocalSources,
+  localDate,
+  matchingFiles,
+  openClawFile,
+  reportsForDates,
+  sourceRoots,
+};

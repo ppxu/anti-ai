@@ -11,11 +11,14 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import test from "node:test";
+import Database from "better-sqlite3";
 
 import {
   creatureAppearanceContentStats,
   creatureAppearanceState,
   creatureArt,
+  creatureClinicalNote,
+  creatureEvent,
   deriveCreatureAppearance,
 } from "../src/creature.mjs";
 
@@ -39,6 +42,10 @@ function runCli(args, env = {}) {
       HOME: isolatedHome,
       ANTI_AI_CODEX_DIR: path.join(fixtureDir, "codex"),
       ANTI_AI_CLAUDE_DIR: path.join(fixtureDir, "missing-claude"),
+      ANTI_AI_OPENCODE_DB: path.join(fixtureDir, "missing-opencode.db"),
+      ANTI_AI_OPENCLAW_DIR: path.join(fixtureDir, "missing-openclaw"),
+      ANTI_AI_HERMES_DB: path.join(fixtureDir, "missing-hermes.db"),
+      ANTI_AI_PI_DIR: path.join(fixtureDir, "missing-pi"),
       ...env,
     },
   });
@@ -73,6 +80,133 @@ function writeCodexUsage(root, usages, date = "2026-07-23") {
   );
 }
 
+function writeOpenCodeDb(dbPath, messages) {
+  mkdirSync(path.dirname(dbPath), { recursive: true });
+  const database = new Database(dbPath);
+  database.exec(`
+    CREATE TABLE message (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      time_created INTEGER NOT NULL,
+      time_updated INTEGER NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+  const insert = database.prepare(
+    "INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?)",
+  );
+  for (const message of messages) {
+    insert.run(
+      message.id,
+      message.sessionId ?? "session-test",
+      message.timeCreated,
+      message.timeUpdated ?? message.timeCreated,
+      JSON.stringify(message.data),
+    );
+  }
+  database.close();
+}
+
+function writeOpenCodeSessionMessageDb(dbPath, messages) {
+  mkdirSync(path.dirname(dbPath), { recursive: true });
+  const database = new Database(dbPath);
+  database.exec(`
+    CREATE TABLE session_message (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      seq INTEGER NOT NULL,
+      time_created INTEGER NOT NULL,
+      time_updated INTEGER NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+  const insert = database.prepare(
+    "INSERT INTO session_message (id, session_id, type, seq, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  );
+  messages.forEach((message, index) => {
+    insert.run(
+      message.id,
+      message.sessionId ?? "session-test",
+      message.type ?? "assistant",
+      index,
+      message.timeCreated,
+      message.timeUpdated ?? message.timeCreated,
+      JSON.stringify(message.data),
+    );
+  });
+  database.close();
+}
+
+function writeHermesDb(dbPath, sessions) {
+  mkdirSync(path.dirname(dbPath), { recursive: true });
+  const database = new Database(dbPath);
+  database.exec(`
+    CREATE TABLE sessions (
+      id TEXT PRIMARY KEY,
+      model TEXT,
+      started_at REAL NOT NULL,
+      ended_at REAL,
+      input_tokens INTEGER DEFAULT 0,
+      output_tokens INTEGER DEFAULT 0,
+      cache_read_tokens INTEGER DEFAULT 0,
+      cache_write_tokens INTEGER DEFAULT 0,
+      reasoning_tokens INTEGER DEFAULT 0,
+      api_call_count INTEGER DEFAULT 0
+    )
+  `);
+  const insert = database.prepare(`
+    INSERT INTO sessions (
+      id, model, started_at, ended_at, input_tokens, output_tokens,
+      cache_read_tokens, cache_write_tokens, reasoning_tokens, api_call_count
+    ) VALUES (
+      @id, @model, @started_at, @ended_at, @input_tokens, @output_tokens,
+      @cache_read_tokens, @cache_write_tokens, @reasoning_tokens, @api_call_count
+    )
+  `);
+  for (const session of sessions) insert.run(session);
+  database.close();
+}
+
+function writeHermesModelUsage(dbPath, rows) {
+  const database = new Database(dbPath);
+  database.exec(`
+    CREATE TABLE session_model_usage (
+      session_id TEXT NOT NULL,
+      model TEXT NOT NULL,
+      task TEXT NOT NULL DEFAULT '',
+      api_call_count INTEGER NOT NULL DEFAULT 0,
+      input_tokens INTEGER NOT NULL DEFAULT 0,
+      output_tokens INTEGER NOT NULL DEFAULT 0,
+      cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+      cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+      reasoning_tokens INTEGER NOT NULL DEFAULT 0,
+      first_seen REAL,
+      last_seen REAL,
+      PRIMARY KEY (session_id, model, task)
+    )
+  `);
+  const insert = database.prepare(`
+    INSERT INTO session_model_usage (
+      session_id, model, task, api_call_count, input_tokens, output_tokens,
+      cache_read_tokens, cache_write_tokens, reasoning_tokens, first_seen, last_seen
+    ) VALUES (
+      @session_id, @model, @task, @api_call_count, @input_tokens, @output_tokens,
+      @cache_read_tokens, @cache_write_tokens, @reasoning_tokens, @first_seen, @last_seen
+    )
+  `);
+  for (const row of rows) insert.run(row);
+  database.close();
+}
+
+function writeJsonl(filePath, records) {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(
+    filePath,
+    `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
+  );
+}
+
 function shiftTestDate(date, days) {
   const shifted = new Date(`${date}T12:00:00.000Z`);
   shifted.setUTCDate(shifted.getUTCDate() + days);
@@ -86,6 +220,24 @@ function terminalWidth(value) {
       width + (/\p{Script=Han}/u.test(character) ? 2 : 1),
     0,
   );
+}
+
+function everydayComparisonLines(output) {
+  const lines = output.split("\n");
+  const start = lines.findIndex((line) =>
+    /生活翻译|Everyday translation/.test(line),
+  );
+  if (start === -1) return [];
+  const end = lines.findIndex(
+    (line, index) => index > start && line.trim() === "",
+  );
+  return lines.slice(start + 1, end === -1 ? undefined : end);
+}
+
+function framedFooter(output) {
+  const lines = output.trimEnd().split("\n");
+  const border = lines.findLastIndex((line) => line.includes("└"));
+  return border > 0 ? lines[border - 1].trim() : "";
 }
 
 test("today --json counts Codex request usage on the requested local date", () => {
@@ -195,6 +347,428 @@ test("today --json deduplicates Claude Code streaming usage by message id", () =
   });
 });
 
+test("today --json counts OpenCode SQLite assistant usage by message date", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-opencode-"));
+  const databasePath = path.join(workspace, "opencode.db");
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const timestamp = new Date("2026-07-23T09:30:00+08:00").getTime();
+  writeOpenCodeDb(databasePath, [
+    {
+      id: "message-assistant",
+      timeCreated: timestamp,
+      data: {
+        role: "assistant",
+        modelID: "opencode-test",
+        providerID: "test-provider",
+        time: { created: timestamp },
+        tokens: {
+          input: 10,
+          output: 7,
+          reasoning: 3,
+          cache: { read: 20, write: 5 },
+        },
+      },
+    },
+    {
+      id: "message-user",
+      timeCreated: timestamp,
+      data: {
+        role: "user",
+        tokens: { input: 999, output: 999 },
+      },
+    },
+  ]);
+
+  const result = runCli(
+    [
+      "today",
+      "--date",
+      "2026-07-23",
+      "--source",
+      "opencode",
+      "--json",
+    ],
+    { ANTI_AI_OPENCODE_DB: databasePath },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    date: "2026-07-23",
+    timezone: "Asia/Shanghai",
+    sources: {
+      opencode: {
+        requests: 1,
+        inputTokens: 35,
+        cachedInputTokens: 20,
+        cacheWriteInputTokens: 5,
+        outputTokens: 7,
+        reasoningOutputTokens: 3,
+        totalTokens: 42,
+      },
+    },
+    models: {
+      opencode: {
+        "opencode-test": {
+          requests: 1,
+          inputTokens: 35,
+          cachedInputTokens: 20,
+          cacheWriteInputTokens: 5,
+          outputTokens: 7,
+          reasoningOutputTokens: 3,
+          totalTokens: 42,
+        },
+      },
+    },
+    totals: {
+      requests: 1,
+      inputTokens: 35,
+      cachedInputTokens: 20,
+      cacheWriteInputTokens: 5,
+      outputTokens: 7,
+      reasoningOutputTokens: 3,
+      totalTokens: 42,
+    },
+  });
+
+  const human = runCli(
+    ["today", "--date", "2026-07-23", "--source", "opencode"],
+    { ANTI_AI_OPENCODE_DB: databasePath },
+  );
+  assert.equal(human.status, 0, human.stderr);
+  assert.match(human.stdout, /OpenCode\s+42/);
+  assert.match(human.stdout, /OpenCode · opencode-test\s+42 tokens/);
+  assert.doesNotMatch(human.stdout, /^\s+Codex\s+0$/m);
+});
+
+test("today --json supports OpenCode's session_message schema", (t) => {
+  const workspace = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-opencode-modern-"),
+  );
+  const databasePath = path.join(workspace, "opencode.db");
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const timestamp = new Date("2026-07-23T10:00:00+08:00").getTime();
+  writeOpenCodeSessionMessageDb(databasePath, [
+    {
+      id: "modern-assistant",
+      timeCreated: timestamp,
+      data: {
+        role: "assistant",
+        modelID: "opencode-modern",
+        time: { created: timestamp },
+        tokens: {
+          input: 4,
+          output: 2,
+          reasoning: 1,
+          cache: { read: 6, write: 0 },
+        },
+      },
+    },
+  ]);
+
+  const result = runCli(
+    [
+      "today",
+      "--date",
+      "2026-07-23",
+      "--source",
+      "opencode",
+      "--json",
+    ],
+    { ANTI_AI_OPENCODE_DB: databasePath },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sources.opencode, {
+    requests: 1,
+    inputTokens: 10,
+    cachedInputTokens: 6,
+    cacheWriteInputTokens: 0,
+    outputTokens: 2,
+    reasoningOutputTokens: 1,
+    totalTokens: 12,
+  });
+});
+
+test("today --json deduplicates OpenClaw reset logs and ignores trajectory files", (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), "anti-ai-openclaw-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const assistantRecord = {
+    type: "message",
+    id: "openclaw-1",
+    timestamp: "2026-07-23T01:00:00.000Z",
+    message: {
+      role: "assistant",
+      provider: "test-provider",
+      model: "openclaw-test",
+      timestamp: Date.parse("2026-07-23T01:00:00.000Z"),
+      usage: {
+        input: 10,
+        output: 4,
+        cacheRead: 20,
+        cacheWrite: 5,
+        reasoningTokens: 2,
+        totalTokens: 39,
+      },
+    },
+  };
+  writeJsonl(path.join(root, "active.jsonl"), [assistantRecord]);
+  writeJsonl(path.join(root, "active.jsonl.reset.20260723"), [
+    assistantRecord,
+    {
+      ...assistantRecord,
+      id: "openclaw-2",
+      timestamp: "2026-07-23T02:00:00.000Z",
+      message: {
+        ...assistantRecord.message,
+        timestamp: Date.parse("2026-07-23T02:00:00.000Z"),
+        usage: {
+          input: 3,
+          output: 2,
+          cacheRead: 0,
+          cacheWrite: 0,
+          reasoningTokens: 0,
+          totalTokens: 5,
+        },
+      },
+    },
+  ]);
+  writeJsonl(path.join(root, "active.trajectory.jsonl"), [
+    {
+      ...assistantRecord,
+      id: "trajectory-only",
+      message: {
+        ...assistantRecord.message,
+        usage: { input: 1000, output: 1000, totalTokens: 2000 },
+      },
+    },
+  ]);
+
+  const result = runCli(
+    [
+      "today",
+      "--date",
+      "2026-07-23",
+      "--source",
+      "openclaw",
+      "--json",
+    ],
+    { ANTI_AI_OPENCLAW_DIR: root },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sources.openclaw, {
+    requests: 2,
+    inputTokens: 38,
+    cachedInputTokens: 20,
+    cacheWriteInputTokens: 5,
+    outputTokens: 6,
+    reasoningOutputTokens: 2,
+    totalTokens: 44,
+  });
+  assert.deepEqual(Object.keys(JSON.parse(result.stdout).models.openclaw), [
+    "openclaw-test",
+  ]);
+});
+
+test("today --json counts Pi summaries and deduplicates cloned entry IDs", (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), "anti-ai-pi-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const assistant = {
+    type: "message",
+    id: "pi-assistant",
+    parentId: "pi-user",
+    timestamp: "2026-07-23T01:00:00.000Z",
+    message: {
+      role: "assistant",
+      provider: "test-provider",
+      model: "pi-test",
+      timestamp: Date.parse("2026-07-23T01:00:00.000Z"),
+      usage: {
+        input: 11,
+        output: 5,
+        cacheRead: 2,
+        cacheWrite: 3,
+        totalTokens: 21,
+      },
+    },
+  };
+  const modelChange = {
+    type: "model_change",
+    id: "pi-model",
+    parentId: "pi-assistant",
+    timestamp: "2026-07-23T01:01:00.000Z",
+    provider: "test-provider",
+    modelId: "pi-test",
+  };
+  const compaction = {
+    type: "compaction",
+    id: "pi-compaction",
+    parentId: "pi-model",
+    timestamp: "2026-07-23T01:02:00.000Z",
+    usage: {
+      input: 7,
+      output: 2,
+      cacheRead: 1,
+      cacheWrite: 0,
+      totalTokens: 10,
+    },
+  };
+  writeJsonl(path.join(root, "project", "original.jsonl"), [
+    { type: "session", version: 3, id: "pi-session-1" },
+    assistant,
+    modelChange,
+    compaction,
+  ]);
+  writeJsonl(path.join(root, "project", "clone.jsonl"), [
+    { type: "session", version: 3, id: "pi-session-2" },
+    assistant,
+    modelChange,
+    compaction,
+  ]);
+
+  const result = runCli(
+    ["today", "--date", "2026-07-23", "--source", "pi", "--json"],
+    { ANTI_AI_PI_DIR: root },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sources.pi, {
+    requests: 2,
+    inputTokens: 24,
+    cachedInputTokens: 3,
+    cacheWriteInputTokens: 3,
+    outputTokens: 7,
+    reasoningOutputTokens: 0,
+    totalTokens: 31,
+  });
+  assert.deepEqual(JSON.parse(result.stdout).models.pi["pi-test"], {
+    requests: 2,
+    inputTokens: 24,
+    cachedInputTokens: 3,
+    cacheWriteInputTokens: 3,
+    outputTokens: 7,
+    reasoningOutputTokens: 0,
+    totalTokens: 31,
+  });
+});
+
+test("today --json counts Hermes session totals on the session end date", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-hermes-"));
+  const databasePath = path.join(workspace, "state.db");
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  writeHermesDb(databasePath, [
+    {
+      id: "hermes-session",
+      model: "hermes-test",
+      started_at: Date.parse("2026-07-22T23:55:00.000Z") / 1000,
+      ended_at: Date.parse("2026-07-23T01:05:00.000Z") / 1000,
+      input_tokens: 9,
+      output_tokens: 4,
+      cache_read_tokens: 20,
+      cache_write_tokens: 5,
+      reasoning_tokens: 2,
+      api_call_count: 3,
+    },
+  ]);
+
+  const result = runCli(
+    ["today", "--date", "2026-07-23", "--source", "hermes", "--json"],
+    { ANTI_AI_HERMES_DB: databasePath },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sources.hermes, {
+    requests: 3,
+    inputTokens: 34,
+    cachedInputTokens: 20,
+    cacheWriteInputTokens: 5,
+    outputTokens: 4,
+    reasoningOutputTokens: 2,
+    totalTokens: 38,
+  });
+  assert.deepEqual(JSON.parse(result.stdout).models.hermes["hermes-test"], {
+    requests: 3,
+    inputTokens: 34,
+    cachedInputTokens: 20,
+    cacheWriteInputTokens: 5,
+    outputTokens: 4,
+    reasoningOutputTokens: 2,
+    totalTokens: 38,
+  });
+});
+
+test("today --json prefers Hermes per-model usage including auxiliary calls", (t) => {
+  const workspace = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-hermes-models-"),
+  );
+  const databasePath = path.join(workspace, "state.db");
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const timestamp = Date.parse("2026-07-23T01:05:00.000Z") / 1000;
+  writeHermesDb(databasePath, [
+    {
+      id: "hermes-session",
+      model: "stale-session-model",
+      started_at: timestamp - 60,
+      ended_at: timestamp,
+      input_tokens: 999,
+      output_tokens: 999,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+      reasoning_tokens: 0,
+      api_call_count: 99,
+    },
+  ]);
+  writeHermesModelUsage(databasePath, [
+    {
+      session_id: "hermes-session",
+      model: "hermes-main",
+      task: "",
+      api_call_count: 2,
+      input_tokens: 5,
+      output_tokens: 3,
+      cache_read_tokens: 7,
+      cache_write_tokens: 0,
+      reasoning_tokens: 1,
+      first_seen: timestamp - 30,
+      last_seen: timestamp,
+    },
+    {
+      session_id: "hermes-session",
+      model: "hermes-aux",
+      task: "compression",
+      api_call_count: 1,
+      input_tokens: 2,
+      output_tokens: 1,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+      reasoning_tokens: 0,
+      first_seen: timestamp,
+      last_seen: timestamp,
+    },
+  ]);
+
+  const result = runCli(
+    ["today", "--date", "2026-07-23", "--source", "hermes", "--json"],
+    { ANTI_AI_HERMES_DB: databasePath },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.sources.hermes, {
+    requests: 3,
+    inputTokens: 14,
+    cachedInputTokens: 7,
+    cacheWriteInputTokens: 0,
+    outputTokens: 4,
+    reasoningOutputTokens: 1,
+    totalTokens: 18,
+  });
+  assert.deepEqual(Object.keys(report.models.hermes).sort(), [
+    "hermes-aux",
+    "hermes-main",
+  ]);
+});
+
 test("human-readable model names cannot inject terminal control characters", (t) => {
   const root = mkdtempSync(path.join(tmpdir(), "anti-ai-model-name-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -253,13 +827,14 @@ test("today prints a satirical receipt with transparent resource estimates", () 
     result.stdout,
     /Claude Code · claude-test\s+170 tokens · 2 次/,
   );
-  assert.match(result.stdout, /⚡\s+0\.96–1\.36 Wh/);
-  assert.match(result.stdout, /💧\s+1\.04–8\.44 mL/);
-  assert.match(result.stdout, /☁️\s+0\.12–0\.21 gCO₂e/);
+  assert.match(result.stdout, /⚡\s+1\.36 Wh.*OpenAI/s);
+  assert.match(result.stdout, /💧\s+8\.44 mL.*Mistral/s);
+  assert.match(result.stdout, /☁️\s+0\.21 gCO₂e.*Mistral/s);
   assert.match(result.stdout, /资源消耗估算（参考公开数据）/);
   assert.doesNotMatch(result.stdout, /公开代理跨度/);
-  assert.match(result.stdout, /置信度：低/);
-  assert.match(result.stdout, /机器开了 4 张小票，地球只收到一段估算/);
+  assert.doesNotMatch(result.stdout, /置信度/);
+  assert.match(result.stdout, /anti-ai explain resources/);
+  assert.ok(framedFooter(result.stdout));
 });
 
 test("today supports a fully English human-readable receipt", () => {
@@ -277,12 +852,12 @@ test("today supports a fully English human-readable receipt", () => {
   assert.match(result.stdout, /Estimated resource use \(from public data\)/);
   assert.doesNotMatch(result.stdout, /Published proxy range/);
   assert.match(result.stdout, /Everyday translation/);
-  assert.match(result.stdout, /50W laptop\s+1\.15–1\.63 minutes/);
-  assert.match(result.stdout, /250mL cup of water\s+0\.42%–3\.38% of one cup/);
-  assert.match(result.stdout, /6L toilet flush\s+0\.02%–0\.14% of one flush/);
+  assert.match(result.stdout, /10W LED light\s+8\.16 minutes/);
+  assert.match(result.stdout, /19Wh phone charge\s+0\.07 charges/);
+  assert.match(result.stdout, /550mL drinking water\s+1\.53% of 1 bottle/);
   assert.match(result.stdout, /Personal baseline \(prior 7 calendar days\)/);
-  assert.match(result.stdout, /Today's charge: FIRST OFFENSE/);
-  assert.match(result.stdout, /Confidence: LOW/);
+  assert.match(result.stdout, /Today's charge: [A-Z][A-Z -]+/);
+  assert.doesNotMatch(result.stdout, /Confidence:/);
   assert.doesNotMatch(result.stdout, /次模型请求|模型账单|今日罪名|置信度/);
 });
 
@@ -295,11 +870,8 @@ test("English verdicts keep the same local rule and date rotation", () => {
   );
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Today's charge: CONTEXT HOARDING/);
-  assert.match(
-    result.stdout,
-    /Requests stayed flat while tokens per request inflated to 3\.00×/,
-  );
+  assert.match(result.stdout, /Today's charge: [A-Z][A-Z -]+/);
+  assert.match(result.stdout, /3\.00× normal/);
   assert.doesNotMatch(result.stdout, /上下文囤积|请求没多/);
 });
 
@@ -338,28 +910,89 @@ test("today translates abstract resources into everyday comparisons", () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /生活翻译（终于像人话了）/);
-  assert.match(result.stdout, /💡\s+10W LED 灯\s+5\.76–8\.16 分钟/);
+  assert.match(result.stdout, /💡\s+10W LED 灯\s+8\.16 分钟/);
   assert.match(
     result.stdout,
-    /🚰\s+550mL 矿泉水\s+一瓶的 0\.19%–1\.53%/,
+    /🥤\s+550mL 饮用水\s+相当于 1 瓶的 1\.53%/,
   );
-  assert.match(result.stdout, /🚗\s+平均燃油车\s+0\.48–0\.86 米/);
+  assert.match(result.stdout, /🚗\s+平均燃油车\s+0\.88 米/);
   assert.match(
     result.stdout,
-    /🌳\s+1 棵城市树\s+加班 1\.05–1\.87 分钟才能吸回来/,
-  );
-  assert.match(
-    result.stdout,
-    /💻\s+50W 笔记本电脑\s+1\.15–1\.63 分钟/,
+    /📱\s+19Wh 手机充电\s+0\.07 次/,
   );
   assert.match(
     result.stdout,
-    /☕\s+250mL 水杯\s+一杯的 0\.42%–3\.38%/,
+    /💧\s+一滴水\s+168\.75 滴/,
   );
-  assert.match(
-    result.stdout,
-    /🚽\s+6L 节水马桶\s+一次冲水的 0\.02%–0\.14%/,
+});
+
+test("today names one high-side public reference and prints exactly five small comparisons", () => {
+  const result = runCli(
+    ["today", "--date", "2026-07-23"],
+    {
+      ANTI_AI_CLAUDE_DIR: path.join(fixtureDir, "claude"),
+    },
   );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /公开高位参照/);
+  assert.match(result.stdout, /⚡\s+1\.36 Wh.*OpenAI.*请求级/);
+  assert.match(result.stdout, /💧\s+8\.44 mL.*Mistral.*生命周期/);
+  assert.match(result.stdout, /☁️\s+0\.21 gCO₂e.*Mistral.*生命周期/);
+  assert.doesNotMatch(result.stdout, /置信度：低|Confidence: LOW/);
+
+  const comparisons = everydayComparisonLines(result.stdout);
+  assert.equal(comparisons.length, 5, result.stdout);
+  assert.match(comparisons.join("\n"), /10W LED 灯/);
+  assert.match(comparisons.join("\n"), /19Wh 手机充电/);
+  assert.match(comparisons.join("\n"), /550mL 饮用水/);
+  assert.match(comparisons.join("\n"), /一滴水/);
+  assert.match(comparisons.join("\n"), /平均燃油车/);
+});
+
+test("week prints exactly five medium everyday activities", () => {
+  const result = runCli(
+    ["week", "--date", "2026-07-23"],
+    {
+      ANTI_AI_CLAUDE_DIR: path.join(fixtureDir, "claude"),
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const comparisons = everydayComparisonLines(result.stdout);
+  assert.equal(comparisons.length, 5, result.stdout);
+  assert.match(comparisons.join("\n"), /烧开 1L 水/);
+  assert.match(comparisons.join("\n"), /50W 笔记本电脑/);
+  assert.match(comparisons.join("\n"), /1kW 微波炉/);
+  assert.match(comparisons.join("\n"), /WaterSense 淋浴/);
+  assert.match(comparisons.join("\n"), /ENERGY STAR 洗碗机/);
+});
+
+test("month prints exactly five large comparisons without rounding tiny shares to zero", () => {
+  const result = runCli(["month", "--date", "2026-07-23", "--source", "codex"], {
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const comparisons = everydayComparisonLines(result.stdout);
+  assert.equal(comparisons.length, 5, result.stdout);
+  assert.match(comparisons.join("\n"), /平均燃油车/);
+  assert.match(comparisons.join("\n"), /1 棵城市树/);
+  assert.match(comparisons.join("\n"), /标准泳池/);
+  assert.match(comparisons.join("\n"), /美国家庭日均用电/);
+  assert.match(comparisons.join("\n"), /一缸洗澡水/);
+  assert.match(comparisons.join("\n"), /还差 [\d,.]+ 倍/);
+  assert.doesNotMatch(comparisons.join("\n"), /\b0\.00\b/);
+});
+
+test("empty period comparisons render zero instead of infinite gaps", () => {
+  const week = runCli(["week", "--date", "2026-01-07"]);
+  const month = runCli(["month", "--date", "2026-01-31"]);
+
+  assert.equal(week.status, 0, week.stderr);
+  assert.equal(month.status, 0, month.stderr);
+  assert.doesNotMatch(week.stdout, /∞|Infinity/);
+  assert.doesNotMatch(month.stdout, /∞|Infinity/);
 });
 
 test("today compares usage with the prior seven days and prints one verdict", () => {
@@ -371,29 +1004,90 @@ test("today compares usage with the prior seven days and prints one verdict", ()
   assert.match(result.stdout, /个人基线（过去 7 个自然日）/);
   assert.match(result.stdout, /Token\s+\+200\.00%/);
   assert.match(result.stdout, /请求\s+0\.00%/);
-  assert.match(result.stdout, /今日罪名：上下文囤积/);
-  assert.match(result.stdout, /请求没多，单次 Token 用量却膨胀到 3\.00 倍/);
+  assert.match(result.stdout, /今日罪名：\S+/);
+  assert.match(result.stdout, /3\.00 倍/);
 });
 
 test("today rotates satirical copy deterministically by date", () => {
-  const result = runCli(["today", "--date", "2026-07-24", "--source", "codex"], {
-    ANTI_AI_CODEX_DIR: baselineCodexDir,
-  });
-
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /今日罪名：窗口违建户/);
-  assert.match(
-    result.stdout,
-    /模型没有被频繁打扰，只是每次都收到一整本附件/,
+  const first = runCli(
+    ["today", "--date", "2026-07-23", "--source", "codex"],
+    { ANTI_AI_CODEX_DIR: baselineCodexDir },
   );
+  const repeated = runCli(
+    ["today", "--date", "2026-07-23", "--source", "codex"],
+    { ANTI_AI_CODEX_DIR: baselineCodexDir },
+  );
+  const next = runCli(
+    ["today", "--date", "2026-07-24", "--source", "codex"],
+    { ANTI_AI_CODEX_DIR: baselineCodexDir },
+  );
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  assert.equal(next.status, 0, next.stderr);
+  const firstCharge = first.stdout.match(/今日罪名：(.+)\n\s+(.+)/)?.[0];
+  const repeatedCharge = repeated.stdout.match(/今日罪名：(.+)\n\s+(.+)/)?.[0];
+  const nextCharge = next.stdout.match(/今日罪名：(.+)\n\s+(.+)/)?.[0];
+  assert.ok(firstCharge);
+  assert.equal(repeatedCharge, firstCharge);
+  assert.notEqual(nextCharge, firstCharge);
 });
 
-test("today composes at least thirty non-repeating charges for one symptom", (t) => {
+test("period footers and share methodology rotate through richer bilingual pools", () => {
+  const weekFooters = new Set();
+  const monthFooters = new Set();
+  const shareMethodology = new Set();
+
+  for (let day = 1; day <= 14; day += 1) {
+    const date = `2026-09-${String(day).padStart(2, "0")}`;
+    const week = runCli(["week", "--date", date, "--source", "codex"]);
+    const month = runCli(["month", "--date", date, "--source", "codex"]);
+    const share = runCli([
+      "share",
+      "--date",
+      date,
+      "--source",
+      "codex",
+    ]);
+
+    assert.equal(week.status, 0, week.stderr);
+    assert.equal(month.status, 0, month.stderr);
+    assert.equal(share.status, 0, share.stderr);
+    weekFooters.add(framedFooter(week.stdout));
+    monthFooters.add(framedFooter(month.stdout));
+    const methodology = share.stdout.match(
+      /<text x="72" y="580"[^>]*>([^<]+)<\/text>/,
+    )?.[1];
+    assert.ok(methodology);
+    shareMethodology.add(methodology);
+  }
+
+  assert.ok(weekFooters.size >= 12, `week footers: ${weekFooters.size}`);
+  assert.ok(monthFooters.size >= 12, `month footers: ${monthFooters.size}`);
+  assert.ok(
+    shareMethodology.size >= 10,
+    `share methodology lines: ${shareMethodology.size}`,
+  );
+
+  const english = runCli([
+    "week",
+    "--date",
+    "2026-09-14",
+    "--source",
+    "codex",
+    "--lang",
+    "en",
+  ]);
+  assert.equal(english.status, 0, english.stderr);
+  assert.doesNotMatch(framedFooter(english.stdout), /[\p{Script=Han}]/u);
+});
+
+test("today composes at least sixty non-repeating charges for one symptom", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-charge-pool-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
   const charges = [];
 
-  for (let index = 0; index < 30; index += 1) {
+  for (let index = 0; index < 60; index += 1) {
     const date = shiftTestDate("2026-06-01", index);
     const root = path.join(workspace, String(index));
     for (let baselineDay = -7; baselineDay < 0; baselineDay += 1) {
@@ -430,7 +1124,7 @@ test("today composes at least thirty non-repeating charges for one symptom", (t)
     charges.push(`${charge[1]} · ${charge[2]}`);
   }
 
-  assert.equal(new Set(charges).size, 30);
+  assert.equal(new Set(charges).size, 60);
 });
 
 test("today does not accuse normal personal cache usage every day", (t) => {
@@ -501,9 +1195,14 @@ test("today rotates cache offense titles when cache usage is unusually high", (t
   assert.equal(first.status, 0, first.stderr);
   assert.equal(second.status, 0, second.stderr);
   assert.equal(english.status, 0, english.stderr);
-  assert.match(first.stdout, /今日罪名：上下文遗址管理员/);
-  assert.match(second.stdout, /今日罪名：电子包浆鉴定师/);
-  assert.match(english.stdout, /Today's charge: CONTEXT RUINS CURATOR/);
+  const firstTitle = first.stdout.match(/今日罪名：(.+)/)?.[1];
+  const secondTitle = second.stdout.match(/今日罪名：(.+)/)?.[1];
+  assert.ok(firstTitle);
+  assert.ok(secondTitle);
+  assert.notEqual(firstTitle, secondTitle);
+  assert.match(first.stdout, /缓存占比|缓存占到|旧上下文|旧答案|缓存命中/);
+  assert.match(english.stdout, /Today's charge: [A-Z][A-Z -]+/);
+  assert.match(english.stdout, /cache/i);
 });
 
 test("today settles one creature day and appends a concise mutation summary", (t) => {
@@ -524,7 +1223,7 @@ test("today settles one creature day and appends a concise mutation summary", (t
   assert.equal(creature.status, 0, creature.stderr);
   assert.match(
     today.stdout,
-    /异变体\s+污染性 \+1 · 仍为「熄火幼核」 · 今日成就 无/,
+    /今日异变体[\s\S]*生态切片\s+污染性 \+1 · 仍为「熄火幼核」[\s\S]*今日成就\s+无/,
   );
   const report = JSON.parse(creature.stdout);
   assert.equal(report.experienceDays, 1);
@@ -539,7 +1238,29 @@ test("today settles one creature day and appends a concise mutation summary", (t
   });
 });
 
-test("today chooses human-scale comparisons for larger resource ranges", (t) => {
+test("today keeps the mutation section inside the receipt after the daily charge", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-today-layout-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const result = runCli(["today", "--date", "2026-07-23"], {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "today-layout",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const chargeIndex = result.stdout.indexOf("今日罪名：");
+  const mutationIndex = result.stdout.indexOf("今日异变体");
+  const closingIndex = result.stdout.lastIndexOf("└");
+  assert.ok(chargeIndex >= 0, result.stdout);
+  assert.ok(mutationIndex > chargeIndex, result.stdout);
+  assert.ok(closingIndex > mutationIndex, result.stdout);
+  assert.match(
+    result.stdout,
+    /今日异变体[\s\S]*查看完整档案\s+anti-ai creature[\s\S]*查看图鉴\s+anti-ai codex/,
+  );
+  assert.equal(result.stdout.trimEnd().split("\n").at(-1).startsWith("└"), true);
+});
+
+test("today keeps small-category comparisons readable for larger values", (t) => {
   const root = mkdtempSync(path.join(tmpdir(), "anti-ai-dynamic-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const records = Array.from({ length: 100 }, (_, index) =>
@@ -569,10 +1290,11 @@ test("today chooses human-scale comparisons for larger resource ranges", (t) => 
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /📱\s+15Wh 手机充电\s+1\.60–2\.27 次/);
-  assert.match(result.stdout, /🚿\s+8L\/min 淋浴\s+0\.00–1\.41 分钟/);
-  assert.doesNotMatch(result.stdout, /10W LED 灯/);
-  assert.doesNotMatch(result.stdout, /550mL 矿泉水/);
+  assert.match(result.stdout, /💡\s+10W LED 灯\s+3\.40 小时/);
+  assert.match(result.stdout, /📱\s+19Wh 手机充电\s+1\.79 次/);
+  assert.match(result.stdout, /🥤\s+550mL 饮用水\s+20\.45 瓶/);
+  assert.match(result.stdout, /🚗\s+平均燃油车\s+1\.17 公里/);
+  assert.doesNotMatch(result.stdout, /淋浴|洗碗机|标准泳池/);
 });
 
 test("week prints the seven-day token trend ending on the requested date", () => {
@@ -597,11 +1319,11 @@ test("week prints the seven-day token trend ending on the requested date", () =>
     /Claude Code · claude-test\s+170 tokens · 2 次/,
   );
   assert.match(result.stdout, /7 日资源账单/);
-  assert.match(result.stdout, /⚡\s+0\.96–1\.36 Wh/);
-  assert.match(result.stdout, /💧\s+1\.04–8\.44 mL/);
-  assert.match(result.stdout, /☁️\s+0\.12–0\.21 gCO₂e/);
-  assert.match(result.stdout, /💡\s+10W LED 灯\s+5\.76–8\.16 分钟/);
-  assert.match(result.stdout, /代码也许能跑，账单肯定能/);
+  assert.match(result.stdout, /⚡\s+1\.36 Wh/);
+  assert.match(result.stdout, /💧\s+8\.44 mL/);
+  assert.match(result.stdout, /☁️\s+0\.21 gCO₂e/);
+  assert.match(result.stdout, /🫖\s+烧开 1L 水\s+0\.01 壶/);
+  assert.ok(framedFooter(result.stdout));
 });
 
 test("week appends a bilingual living casebook from the complete creature history", (t) => {
@@ -621,7 +1343,7 @@ test("week appends a bilingual living casebook from the complete creature histor
 
   assert.equal(chinese.status, 0, chinese.stderr);
   assert.equal(english.status, 0, english.stderr);
-  assert.match(chinese.stdout, /活体病历 · 07-17 → 07-23/);
+  assert.match(chinese.stdout, /异变体周报 · 07-17 → 07-23/);
   assert.match(chinese.stdout, /本周主症状\s+核食/);
   assert.match(chinese.stdout, /生态变化\s+污染 \+8 · 清醒 \+0/);
   assert.match(
@@ -630,11 +1352,30 @@ test("week appends a bilingual living casebook from the complete creature histor
   );
   assert.match(chinese.stdout, /新增徽章.*基线纵火犯/);
   assert.match(chinese.stdout, /主治意见\s+\S+/);
-  assert.match(english.stdout, /LIVING CASEBOOK · 07-17 → 07-23/);
+  assert.match(english.stdout, /MUTATION WEEKLY · 07-17 → 07-23/);
   assert.match(english.stdout, /PRIMARY SYMPTOM\s+NUCLEAR FEEDING/);
   assert.match(english.stdout, /ECOLOGY CHANGE\s+pollution \+8 · clarity \+0/);
   assert.match(english.stdout, /ATTENDING NOTE\s+\S+/);
-  assert.doesNotMatch(english.stdout, /活体病历|本周主症状|生态变化|成长记录/);
+  assert.doesNotMatch(english.stdout, /异变体周报|本周主症状|生态变化|成长记录/);
+});
+
+test("week renders its mutation follow-up after everyday translation inside one frame", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-week-layout-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const result = runCli(["week", "--date", "2026-07-23"], {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "week-layout",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const translationIndex = result.stdout.indexOf("生活翻译");
+  const mutationIndex = result.stdout.indexOf("异变体周报");
+  const closingIndex = result.stdout.lastIndexOf("└");
+  assert.ok(mutationIndex > translationIndex, result.stdout);
+  assert.ok(closingIndex > mutationIndex, result.stdout);
+  assert.match(result.stdout, /异变体周报[\s\S]*查看完整档案\s+anti-ai creature/);
+  assert.equal(result.stdout.trimEnd().split("\n").at(-1).startsWith("└"), true);
 });
 
 test("month prints a calendar heatmap and monthly usage summary", () => {
@@ -658,10 +1399,10 @@ test("month prints a calendar heatmap and monthly usage summary", () => {
     /Codex · gpt-baseline\s+1,000 tokens · 8 次/,
   );
   assert.match(result.stdout, /本月资源账单/);
-  assert.match(result.stdout, /⚡\s+1\.92–2\.72 Wh/);
-  assert.match(result.stdout, /💧\s+2\.08–21\.38 mL/);
-  assert.match(result.stdout, /☁️\s+0\.24–0\.54 gCO₂e/);
-  assert.match(result.stdout, /💡\s+10W LED 灯\s+11\.52–16\.32 分钟/);
+  assert.match(result.stdout, /⚡\s+2\.72 Wh/);
+  assert.match(result.stdout, /💧\s+21\.38 mL/);
+  assert.match(result.stdout, /☁️\s+0\.54 gCO₂e/);
+  assert.match(result.stdout, /🚗\s+平均燃油车\s+2\.22 米/);
 });
 
 test("month appends a bilingual autopsy without diagnosing pre-hatch days", (t) => {
@@ -681,7 +1422,7 @@ test("month appends a bilingual autopsy without diagnosing pre-hatch days", (t) 
 
   assert.equal(chinese.status, 0, chinese.stderr);
   assert.equal(english.status, 0, english.stderr);
-  assert.match(chinese.stdout, /月度尸检 · 2026-07/);
+  assert.match(chinese.stdout, /月度复诊 · 2026-07/);
   assert.match(chinese.stdout, /有效观察\s+8 天 · 8 天活跃 · 0 天清醒/);
   assert.match(chinese.stdout, /主症状\s+核食/);
   assert.match(
@@ -689,12 +1430,42 @@ test("month appends a bilingual autopsy without diagnosing pre-hatch days", (t) 
     /生态人格\s+未定型 → 污染型 · 污染 \+9 · 清醒 \+0/,
   );
   assert.match(chinese.stdout, /成就回顾\s+\[4\].*基线纵火犯/);
-  assert.match(chinese.stdout, /尸检结论\s+\S+/);
-  assert.match(english.stdout, /MONTHLY AUTOPSY · 2026-07/);
+  assert.match(chinese.stdout, /复诊意见\s+\S+/);
+  assert.match(english.stdout, /MONTHLY FOLLOW-UP · 2026-07/);
   assert.match(english.stdout, /VALID OBSERVATION\s+8 days · 8 active · 0 AI-free/);
   assert.match(english.stdout, /ECOLOGY\s+UNFORMED → POLLUTED/);
-  assert.match(english.stdout, /AUTOPSY CONCLUSION\s+\S+/);
-  assert.doesNotMatch(english.stdout, /月度尸检|有效观察|主症状|生态人格/);
+  assert.match(english.stdout, /FOLLOW-UP NOTE\s+\S+/);
+  assert.doesNotMatch(english.stdout, /月度复诊|有效观察|主症状|生态人格/);
+});
+
+test("month aligns calendar cells and renders a monthly follow-up inside the frame", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-month-layout-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const result = runCli(["month", "--date", "2026-07-23"], {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "month-layout",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const lines = result.stdout.split("\n");
+  const header = lines.find((line) => /一.*二.*三.*四.*五.*六.*日/.test(line));
+  const firstWeek = lines.find((line) => /01[·░▒▓█]/.test(line));
+  assert.ok(header, result.stdout);
+  assert.ok(firstWeek, result.stdout);
+  const headerWednesday = terminalWidth(header.slice(0, header.indexOf("三")));
+  const dayOne = terminalWidth(firstWeek.slice(0, firstWeek.indexOf("01")));
+  assert.equal(dayOne, headerWednesday);
+
+  const translationIndex = result.stdout.indexOf("生活翻译");
+  const followUpIndex = result.stdout.indexOf("月度复诊");
+  const closingIndex = result.stdout.lastIndexOf("└");
+  assert.ok(followUpIndex > translationIndex, result.stdout);
+  assert.ok(closingIndex > followUpIndex, result.stdout);
+  assert.match(result.stdout, /复诊意见\s+\S+/);
+  assert.match(result.stdout, /查看完整档案\s+anti-ai creature/);
+  assert.doesNotMatch(result.stdout, /尸检|AUTOPSY/);
+  assert.equal(result.stdout.trimEnd().split("\n").at(-1).startsWith("└"), true);
 });
 
 test("week and month support English summaries", () => {
@@ -714,8 +1485,8 @@ test("week and month support English summaries", () => {
   assert.equal(week.status, 0, week.stderr);
   assert.match(week.stdout, /7-day total\s+350 tokens · 4 model requests/);
   assert.match(week.stdout, /7-day resource bill/);
-  assert.match(week.stdout, /Seven days passed/);
-  assert.doesNotMatch(week.stdout, /7 日合计|资源账单|七天过去了/);
+  assert.ok(framedFooter(week.stdout));
+  assert.doesNotMatch(week.stdout, /7 日合计|资源账单|[\p{Script=Han}]/u);
 
   assert.equal(month.status, 0, month.stderr);
   assert.match(month.stdout, /Mon\s+Tue\s+Wed\s+Thu\s+Fri\s+Sat\s+Sun/);
@@ -738,10 +1509,10 @@ test("share prints a privacy-safe SVG without exact tokens or model names", () =
   assert.match(result.stdout, /^<svg\b/);
   assert.match(result.stdout, /YOUR AI RECEIPT/);
   assert.match(result.stdout, /2026-07-23/);
-  assert.match(result.stdout, /0\.96–1\.36 Wh/);
-  assert.match(result.stdout, /1\.04–8\.44 mL/);
-  assert.match(result.stdout, /0\.12–0\.21 gCO₂e/);
-  assert.match(result.stdout, /今日罪名：初犯记录/);
+  assert.match(result.stdout, /1\.36 Wh/);
+  assert.match(result.stdout, /8\.44 mL/);
+  assert.match(result.stdout, /0\.21 gCO₂e/);
+  assert.match(result.stdout, /今日罪名：[^<]+/);
   assert.match(result.stdout, /隐私模式：未包含对话、路径、模型名和精确 Token/);
   assert.match(result.stdout, /<\/svg>\n$/);
   assert.doesNotMatch(result.stdout, /350 tokens|gpt-test|claude-test/);
@@ -760,7 +1531,7 @@ test("share supports a fully English privacy-safe SVG", () => {
   assert.match(result.stdout, /RESOURCE USE ESTIMATE/);
   assert.doesNotMatch(result.stdout, /PUBLISHED PROXY RANGE/);
   assert.match(result.stdout, /EVERYDAY TRANSLATION/);
-  assert.match(result.stdout, /TODAY&apos;S CHARGE: FIRST OFFENSE/);
+  assert.match(result.stdout, /TODAY&apos;S CHARGE: [A-Z][A-Z -]+/);
   assert.match(
     result.stdout,
     /PRIVACY MODE: no chats, paths, model names, or exact tokens/,
@@ -1076,6 +1847,35 @@ test("codex renders bilingual locked and discovered collections", (t) => {
   );
 });
 
+test("codex colors discovered rarity labels without making color the only signal", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-codex-rarity-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "codex-rarity",
+    NO_COLOR: "",
+    FORCE_COLOR: "1",
+  };
+
+  const colored = runCli(["codex", "--date", "2026-07-23"], env);
+  const plain = runCli(["codex", "--date", "2026-07-23"], {
+    ...env,
+    NO_COLOR: "1",
+    FORCE_COLOR: "",
+  });
+
+  assert.equal(colored.status, 0, colored.stderr);
+  assert.match(colored.stdout, /\u001b\[37m.*COMMON.*\u001b\[0m/);
+  assert.match(colored.stdout, /\u001b\[36m.*UNCOMMON.*\u001b\[0m/);
+  assert.match(colored.stdout, /\u001b\[35m.*RARE.*\u001b\[0m/);
+  assert.equal(plain.status, 0, plain.stderr);
+  assert.doesNotMatch(plain.stdout, /\u001b/);
+  assert.match(plain.stdout, /COMMON/);
+  assert.match(plain.stdout, /UNCOMMON/);
+  assert.match(plain.stdout, /RARE/);
+});
+
 test("today week and month surface collection discoveries", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-codex-feedback-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));
@@ -1277,6 +2077,47 @@ test("creature persists one deterministic mutation event per active day", (t) =>
     id: "cache_calcification",
     rarity: "common",
   });
+});
+
+test("creature events and clinical notes have enough deterministic variety", () => {
+  const events = new Set();
+  for (let day = 0; day < 800; day += 1) {
+    events.add(
+      creatureEvent(
+        "content-richness",
+        shiftTestDate("2026-01-01", day),
+        999,
+      ).id,
+    );
+  }
+  assert.ok(events.size >= 18, `creature events: ${events.size}`);
+
+  for (const symptom of [
+    "context",
+    "cache",
+    "frenzy",
+    "nuclear",
+    "withdrawal",
+    "unhatched",
+  ]) {
+    const notes = new Set();
+    for (let day = 0; day < 120; day += 1) {
+      const startDate = shiftTestDate("2026-01-01", day);
+      notes.add(
+        creatureClinicalNote(
+          {
+            startDate,
+            endDate: shiftTestDate(startDate, 6),
+            primarySymptom: symptom,
+            ecology: { to: day % 2 === 0 ? "polluted" : "lucid" },
+          },
+          "zh",
+          day % 2 === 0 ? "week" : "month",
+        ),
+      );
+    }
+    assert.ok(notes.size >= 5, `${symptom} clinical notes: ${notes.size}`);
+  }
 });
 
 test("creature gives every settled day neutral experience and exposes ecology", (t) => {
@@ -2868,6 +3709,51 @@ test("creature renders bilingual mutation files without leaking raw usage", (t) 
   assert.doesNotMatch(en.stdout, /今日污染|阶段|进化分支|今日突变/);
 });
 
+test("creature uses horizontal space for a compact default and keeps full detail on demand", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-layout-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "creature-layout",
+    COLUMNS: "120",
+  };
+  const compact = runCli(["creature", "--date", "2026-07-23"], env);
+  const full = runCli(["creature", "--date", "2026-07-23", "--full"], env);
+
+  assert.equal(compact.status, 0, compact.stderr);
+  assert.equal(full.status, 0, full.stderr);
+  const compactLines = compact.stdout.trimEnd().split("\n");
+  const fullLines = full.stdout.trimEnd().split("\n");
+  assert.ok(compactLines.length <= 34, compact.stdout);
+  assert.ok(fullLines.length > compactLines.length, full.stdout);
+  assert.match(compact.stdout, /│/);
+  assert.match(compact.stdout, /完整病历\s+anti-ai creature --full/);
+  assert.match(full.stdout, /永久化石[\s\S]*每日觉醒率/);
+  assert.ok(compactLines.every((line) => terminalWidth(line) <= 120));
+});
+
+test("creature compact fallback does not overflow an 80-column terminal", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-narrow-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const result = runCli(["creature", "--date", "2026-07-23"], {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "creature-narrow",
+    COLUMNS: "80",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(
+    result.stdout
+      .trimEnd()
+      .split("\n")
+      .every((line) => terminalWidth(line) <= 80),
+    result.stdout,
+  );
+  assert.match(result.stdout, /完整病历\s+anti-ai creature --full/);
+});
+
 test("creature ability bars and numeric values align in both languages", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-alignment-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
@@ -3003,7 +3889,7 @@ test("creature reports a recoverable error for a corrupted mutation file", (t) =
   assert.doesNotMatch(result.stderr, /\/Users\/|SyntaxError|at runCreature/);
 });
 
-test("doctor confirms both local log sources without exposing conversation text", () => {
+test("doctor reports all supported sources and their accounting precision", () => {
   const result = runCli(
     ["doctor"],
     {
@@ -3012,9 +3898,31 @@ test("doctor confirms both local log sources without exposing conversation text"
   );
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Codex\s+✓\s+1 个 JSONL 文件/);
-  assert.match(result.stdout, /Claude Code\s+✓\s+1 个 JSONL 文件/);
+  assert.match(result.stdout, /Codex\s+✓\s+1 个 JSONL 文件\s+·\s+逐消息精确/);
+  assert.match(
+    result.stdout,
+    /Claude Code\s+✓\s+1 个 JSONL 文件\s+·\s+逐消息精确/,
+  );
+  assert.match(result.stdout, /OpenCode\s+✗\s+未找到 SQLite\s+·\s+逐消息精确/);
+  assert.match(result.stdout, /OpenClaw\s+✗\s+0 个 JSONL 文件\s+·\s+逐消息精确/);
+  assert.match(result.stdout, /Hermes\s+✗\s+未找到 SQLite\s+·\s+会话级近似/);
+  assert.match(result.stdout, /Pi\s+✗\s+0 个 JSONL 文件\s+·\s+逐条目精确/);
   assert.match(result.stdout, /不采集、不保存、不输出会话正文/);
+});
+
+test("doctor treats missing SQLite parent directories as unavailable", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-doctor-empty-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+
+  const result = runCli(["doctor"], {
+    HOME: home,
+    ANTI_AI_OPENCODE_DB: path.join(home, "missing", "opencode", "opencode.db"),
+    ANTI_AI_HERMES_DB: path.join(home, "missing", "hermes", "state.db"),
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /OpenCode\s+✗\s+未找到 SQLite/);
+  assert.match(result.stdout, /Hermes\s+✗\s+未找到 SQLite/);
 });
 
 test("explain discloses every estimate factor, formula, source, and limitation", () => {
@@ -3026,11 +3934,43 @@ test("explain discloses every estimate factor, formula, source, and limitation",
   assert.match(result.stdout, /Google.*0\.24 Wh.*0\.26 mL.*0\.03 gCO₂e/s);
   assert.match(result.stdout, /OpenAI.*0\.34 Wh.*0\.32176 mL/s);
   assert.match(result.stdout, /Mistral.*400 输出 tokens.*45 mL.*1\.14 gCO₂e/s);
-  assert.match(result.stdout, /Codex 和 Claude Code 没有公开逐请求资源账单/);
-  assert.match(result.stdout, /置信度：低/);
+  assert.match(result.stdout, /受支持的本地 Agent 都没有公开逐请求资源账单/);
+  assert.match(result.stdout, /每项资源只展示数值最高的案例/);
+  assert.doesNotMatch(result.stdout, /置信度|跨度|min\/max/);
   assert.match(result.stdout, /https:\/\/services\.google\.com\//);
   assert.match(result.stdout, /https:\/\/blog\.samaltman\.com\//);
   assert.match(result.stdout, /https:\/\/mistral\.ai\//);
+});
+
+test("explain supports focused resource and comparison topics", () => {
+  const resources = runCli(["explain", "resources"]);
+  const comparisons = runCli(["explain", "comparisons", "--lang", "en"]);
+  const creature = runCli(["explain", "creature"]);
+
+  assert.equal(resources.status, 0, resources.stderr);
+  assert.match(resources.stdout, /公开高位参照/);
+  assert.match(resources.stdout, /Google.*请求级生产测量.*0\.24 Wh/s);
+  assert.match(resources.stdout, /OpenAI.*请求级公开平均.*0\.34 Wh/s);
+  assert.match(resources.stdout, /Mistral.*生命周期高位.*400 输出 tokens/s);
+  assert.match(resources.stdout, /分别计算.*只展示数值最高的具名案例/s);
+  assert.doesNotMatch(resources.stdout, /污染进化系统|置信度/);
+
+  assert.equal(comparisons.status, 0, comparisons.stderr);
+  assert.match(comparisons.stdout, /19Wh phone charge/);
+  assert.match(comparisons.stdout, /244\.2 gCO₂e\/km/);
+  assert.match(comparisons.stdout, /7\.6L\/min WaterSense shower/);
+  assert.match(comparisons.stdout, /12\.1L ENERGY STAR dishwasher/);
+  assert.match(comparisons.stdout, /2\.5ML competition pool/);
+  assert.match(comparisons.stdout, /12,194kWh\/year.*33\.4kWh\/day/s);
+  assert.match(comparisons.stdout, /epa\.gov\/watersense\/showerheads/);
+  assert.match(comparisons.stdout, /energystar\.gov\/products\/dishwashers/);
+  assert.doesNotMatch(comparisons.stdout, /Mutation system/);
+
+  assert.equal(creature.status, 0, creature.stderr);
+  assert.match(creature.stdout, /异变体成长/);
+  assert.match(creature.stdout, /能力上限 999/);
+  assert.match(creature.stdout, /AI 清醒日.*清醒性/);
+  assert.doesNotMatch(creature.stdout, /Google|OpenAI|Mistral/);
 });
 
 test("explain discloses the assumptions behind everyday comparisons", () => {
@@ -3039,27 +3979,18 @@ test("explain discloses the assumptions behind everyday comparisons", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /10W LED 灯.*电力 Wh ÷ 10W/s);
   assert.match(result.stdout, /50W 笔记本电脑.*电力 Wh ÷ 50W/s);
-  assert.match(result.stdout, /15Wh 手机充电.*电力 Wh ÷ 15Wh/s);
+  assert.match(result.stdout, /19Wh 手机充电.*电力 Wh ÷ 19Wh/s);
   assert.match(result.stdout, /烧开 1L 水.*电力 Wh ÷ 100Wh/s);
-  assert.match(result.stdout, /250mL 水杯.*水耗 mL ÷ 250/s);
-  assert.match(result.stdout, /550mL 矿泉水.*水耗 mL ÷ 550/s);
-  assert.match(result.stdout, /6L 节水马桶.*水耗 mL ÷ 6,000/s);
-  assert.match(result.stdout, /8L\/min 淋浴.*水耗 mL ÷ 8,000/s);
-  assert.match(
-    result.stdout,
-    /电力对照按区间上界选择.*< 15 Wh.*< 1,500 Wh/s,
-  );
-  assert.match(
-    result.stdout,
-    /水耗对照按区间上界选择.*< 550 mL.*< 8,000 mL/s,
-  );
-  assert.match(
-    result.stdout,
-    /平均燃油车.*400 g CO₂\/英里.*248\.55 g CO₂\/公里/s,
-  );
+  assert.match(result.stdout, /0\.05mL 一滴水.*550mL 饮用水/s);
+  assert.match(result.stdout, /1kW 微波炉.*1,000W/s);
+  assert.match(result.stdout, /WaterSense 淋浴.*7,600mL\/min/s);
+  assert.match(result.stdout, /ENERGY STAR 洗碗机.*12,100mL/s);
+  assert.match(result.stdout, /250 万升泳池.*33\.4kWh.*150L/s);
+  assert.match(result.stdout, /12,194kWh\/年.*33\.4kWh\/天/s);
+  assert.match(result.stdout, /不足 0\.01 次.*还差多少倍.*0\.00/s);
+  assert.match(result.stdout, /平均燃油车.*244\.2 g CO₂e\/公里/s);
   assert.match(result.stdout, /城市树.*60 kg CO₂\/年/s);
   assert.match(result.stdout, /不换算成“砍了几棵树”/);
-  assert.match(result.stdout, /https:\/\/www\.epa\.gov\/greenvehicles\//);
   assert.match(result.stdout, /https:\/\/www\.epa\.gov\/energy\//);
 });
 
@@ -3080,7 +4011,7 @@ test("explain discloses the personal baseline and verdict rules", () => {
   assert.match(result.stdout, /同类罪名标题和文案按日期固定轮换/);
   assert.match(result.stdout, /判词由本地固定规则生成，不调用模型/);
   assert.match(result.stdout, /文案按日期固定轮换/);
-  assert.match(result.stdout, /7 个罪名标题.*5 条详情.*35 种/s);
+  assert.match(result.stdout, /11 个罪名标题.*13 条详情.*143 种/s);
   assert.match(result.stdout, /跨月.*不会重置/s);
 });
 
@@ -3091,13 +4022,17 @@ test("explain discloses how model usage is attributed", () => {
   assert.match(result.stdout, /模型统计/);
   assert.match(result.stdout, /Codex.*turn_context.*model/s);
   assert.match(result.stdout, /Claude Code.*message\.model/s);
+  assert.match(result.stdout, /OpenCode.*session_message/s);
+  assert.match(result.stdout, /OpenClaw.*reset JSONL/s);
+  assert.match(result.stdout, /Hermes.*会话级近似/s);
+  assert.match(result.stdout, /Pi.*compaction.*branch_summary/s);
   assert.match(result.stdout, /缺少模型字段.*unknown/s);
   assert.match(
     result.stdout,
     /分享卡片.*不包含对话、路径、模型名或精确 Token/s,
   );
   assert.match(result.stdout, /anti-ai share --card pathology/);
-  assert.match(result.stdout, /活体病历.*月度尸检/s);
+  assert.match(result.stdout, /活体病历.*月度复诊/s);
 });
 
 test("explain discloses creature growth, chance, recovery, and state privacy", () => {
@@ -3205,38 +4140,89 @@ test("doctor, explain, and help support English output", () => {
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /Turn local AI tokens into an uncomfortable resource bill/);
   assert.match(help.stdout, /share\s+Print a privacy-safe SVG share card/);
-  assert.match(help.stdout, /creature \[reset\|evolve\]\s+Inspect, evolve, or reset your mutation file/);
+  assert.match(help.stdout, /creature\s+Inspect and manage the mutation file/);
   assert.match(help.stdout, /--lang <zh\|en>/);
   assert.doesNotMatch(help.stdout, /打印今天/);
 });
 
-test("--help documents the public commands and filters", () => {
+test("--help documents public commands and routes command-specific options", () => {
   const result = runCli(["--help"]);
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Usage: anti-ai <command> \[options\]/);
-  assert.match(result.stdout, /today\s+打印今天的 AI 资源账单/);
-  assert.match(result.stdout, /week\s+打印最近 7 天趋势/);
-  assert.match(result.stdout, /month\s+打印本月至指定日期的用量热力图/);
+  assert.match(result.stdout, /today\s+打印指定日期的 AI 资源账单/);
+  assert.match(result.stdout, /week\s+打印截至指定日期的 7 天趋势/);
+  assert.match(result.stdout, /month\s+打印本月至指定日期的用量日历/);
   assert.match(result.stdout, /codex\s+查看本地病理图鉴/);
-  assert.match(result.stdout, /share\s+输出隐私安全的 SVG 分享卡片/);
-  assert.match(result.stdout, /creature \[reset\|evolve\]\s+查看、进化或重置异变体档案/);
-  assert.match(result.stdout, /doctor\s+检查本地日志/);
-  assert.match(result.stdout, /explain\s+解释资源估算口径/);
-  assert.match(result.stdout, /--source <all\|codex\|claude>/);
-  assert.match(result.stdout, /--json/);
+  assert.match(result.stdout, /share\s+输出隐私安全的 SVG 分享卡/);
+  assert.match(result.stdout, /creature\s+查看和管理异变体档案/);
+  assert.match(result.stdout, /doctor\s+检查本地记录来源/);
+  assert.match(result.stdout, /explain\s+解释统计、资源换算和隐私边界/);
   assert.match(result.stdout, /--lang <zh\|en>/);
+  assert.match(result.stdout, /anti-ai help <command>/);
+  assert.doesNotMatch(result.stdout, /--source|--json|--card/);
+});
+
+test("command help documents only the selected command contract", () => {
+  const today = runCli(["today", "--help"]);
+  const englishMonth = runCli(["help", "month", "--lang", "en"]);
+  const explain = runCli(["explain", "--help"]);
+
+  assert.equal(today.status, 0, today.stderr);
+  assert.match(today.stdout, /Usage: anti-ai today \[options\]/);
+  assert.match(today.stdout, /--date <YYYY-MM-DD>/);
   assert.match(
-    result.stdout,
-    /--card <receipt\|pathology\|specimen\|wanted\|fossil>/,
+    today.stdout,
+    /--source <all\|codex\|claude\|opencode\|openclaw\|hermes\|pi>/,
   );
+  assert.match(today.stdout, /--json/);
+  assert.match(today.stdout, /相关命令.*week.*month.*explain/s);
+  assert.doesNotMatch(today.stdout, /--card/);
+  assert.doesNotMatch(today.stdout, /creature \[reset\|evolve\]/);
+
+  assert.equal(englishMonth.status, 0, englishMonth.stderr);
+  assert.match(englishMonth.stdout, /Usage: anti-ai month \[options\]/);
+  assert.match(englishMonth.stdout, /calendar heatmap/i);
+  assert.match(englishMonth.stdout, /Related commands.*week.*creature/s);
+  assert.doesNotMatch(englishMonth.stdout, /打印本月/);
+
+  assert.equal(explain.status, 0, explain.stderr);
+  assert.match(explain.stdout, /--lang <zh\|en>/);
+  assert.match(explain.stdout, /-h, --help/);
+});
+
+test("nested creature actions expose focused help", () => {
+  const evolve = runCli(["creature", "evolve", "--help"]);
+  const reset = runCli(["help", "creature", "reset", "--lang", "en"]);
+
+  assert.equal(evolve.status, 0, evolve.stderr);
+  assert.match(evolve.stdout, /Usage: anti-ai creature evolve <1\|2\|3>/);
+  assert.match(evolve.stdout, /显式封存本代进化选择/);
+  assert.doesNotMatch(evolve.stdout, /--source/);
+
+  assert.equal(reset.status, 0, reset.stderr);
+  assert.match(reset.stdout, /Usage: anti-ai creature reset/);
+  assert.match(reset.stdout, /permanently deletes/i);
+});
+
+test("top-level help keeps only global options and points to command help", () => {
+  const result = runCli(["--help"]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /anti-ai help <command>/);
+  assert.match(result.stdout, /--lang <zh\|en>/);
+  assert.match(result.stdout, /--version/);
+  assert.doesNotMatch(result.stdout, /--date <YYYY-MM-DD>/);
+  assert.doesNotMatch(result.stdout, /--source <all\|codex\|claude>/);
+  assert.doesNotMatch(result.stdout, /--card <receipt/);
+  assert.doesNotMatch(result.stdout, /--json/);
 });
 
 test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 1.2.0\n");
+  assert.equal(result.stdout, "anti-ai 1.3.0\n");
   assert.equal(result.stderr, "");
 });
 

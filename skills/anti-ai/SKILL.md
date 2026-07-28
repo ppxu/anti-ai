@@ -1,12 +1,12 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, or fossil share card, or asks about their token-fed mutation creature, private codex, collections, generations, fossils, evolution choices, and living casebook—even when they do not mention anti-ai by name.
-compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local Codex and Claude Code usage metadata.
+description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, or fossil share card, or asks about their token-fed mutation creature, private codex, collections, generations, fossils, evolution choices, and living casebook—even when they do not mention anti-ai by name.
+compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local usage metadata from supported Agent JSONL or SQLite stores.
 ---
 
 # anti-ai
 
-Use the `anti-ai` CLI as the single source of truth for local token accounting and its satirical resource receipts. The CLI already handles log locations, Claude Code streaming deduplication, Codex model attribution, local time zones, and the distinction between exact usage and estimated resources.
+Use the `anti-ai` CLI as the single source of truth for local token accounting and its satirical resource receipts. The CLI already handles source locations, JSONL/SQLite formats, deduplication, model attribution, local time zones, and the distinction between local usage accounting and named public resource references.
 
 ## Preflight
 
@@ -44,7 +44,7 @@ anti-ai today --json
 anti-ai today --date YYYY-MM-DD --source all --json
 ```
 
-Treat `totals`, `sources`, and `models` as exact local log statistics. Keep the JSON field names unchanged; `--lang` affects only human-readable output.
+Treat `totals`, `sources`, and `models` as local usage accounting. Codex, Claude Code, OpenCode, OpenClaw, and Pi use message/entry dates; Hermes aggregates may span a session and are assigned to its last active day, so call Hermes date attribution approximate. Keep the JSON field names unchanged; `--lang` affects only human-readable output.
 
 ### Human-readable receipt
 
@@ -56,11 +56,11 @@ anti-ai week
 anti-ai month
 ```
 
-Add `--date YYYY-MM-DD`, `--source codex|claude`, or `--lang zh|en` only when the user requests that scope. Do not run all three reports when one answers the question.
+Add `--date YYYY-MM-DD`, `--source codex|claude|opencode|openclaw|hermes|pi`, or `--lang zh|en` only when the user requests that scope. Do not run all three reports when one answers the question. Use `anti-ai help <command>` before guessing a command-specific option.
 
-The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage and generation growth, newly sealed fossils, new badges, collection discoveries, and a deterministic attending note. The complete-source human `month` report appends a monthly autopsy with post-hatch observation totals, Ecology transition, generation growth, fossils, achievements, collection discoveries, and a deterministic conclusion. Complete-source `today` also surfaces that day's collection discoveries. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
+The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage and generation growth, newly sealed fossils, new badges, collection discoveries, and a deterministic attending note. The complete-source human `month` report appends a monthly follow-up with post-hatch observation totals, Ecology transition, generation growth, fossils, achievements, collection discoveries, and a deterministic conclusion. Complete-source `today` also surfaces that day's collection discoveries. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
 
-Daily verdicts are fixed local content, not model output. Each symptom combines seven charge titles with five detail lines, producing at least 35 deterministic combinations before an identical pair repeats; rotation continues across month boundaries.
+Daily verdicts are fixed local content, not model output. Each symptom combines eleven charge titles with thirteen detail lines, producing 143 deterministic combinations; rotation continues across month boundaries.
 
 ### Privacy-safe SVG share card
 
@@ -92,7 +92,7 @@ anti-ai codex --json
 
 The codex derives 50 fixed collection entries from the existing schema v5 state: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens and permanent fossils. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
 
-Do not pass `--source` to `codex`. It settles the same complete Codex + Claude Code creature history as `creature`. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, and explicit choices all create independent collection routes.
+Do not pass `--source` to `codex`. It settles the same complete supported-source creature history as `creature`. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, and explicit choices all create independent collection routes.
 
 ### Token mutation creature
 
@@ -135,21 +135,21 @@ Only destroy the mutation history when the user explicitly asks to reset or rest
 anti-ai creature reset
 ```
 
-Do not pass `--source` to `creature`; one evolution history always uses the complete Codex and Claude Code data set.
+Do not pass `--source` to `creature`; one evolution history always uses the complete supported-source data set.
 
 ### Methodology questions
 
 When the user asks whether electricity, water, or carbon values are exact, run:
 
 ```bash
-anti-ai explain
+anti-ai explain resources
 ```
 
-Describe environmental values as a **low-confidence estimate derived from public examples**, never as measured consumption. Do not recompute or tighten the ranges yourself.
+Describe environmental values as **named public high-side references**, never as measured local consumption or a statistical range. Do not recompute, average, or combine the vendor cases yourself.
 
 ## Privacy boundary
 
-- Use the CLI instead of opening `~/.codex/sessions` or `~/.claude/projects` directly.
+- Use the CLI instead of opening any supported Agent JSONL or SQLite store directly.
 - Do not read raw logs, prompts, responses, tool calls, or project paths.
 - Do not upload local usage data or generated cards without explicit user approval.
 - Do not interpret token volume as productivity, code quality, or employee performance.

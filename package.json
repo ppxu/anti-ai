@@ -1,20 +1,23 @@
 {
   "name": "anti-ai",
-  "version": "1.2.0",
-  "description": "Turn local Codex and Claude Code token usage into a satirical resource receipt and growable mutation creature.",
+  "version": "1.3.0",
+  "description": "Turn local coding-agent token usage into a satirical resource receipt and growable mutation creature.",
   "type": "module",
   "bin": {
     "anti-ai": "bin/anti-ai.mjs"
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check bin/anti-ai.mjs && node --check src/cli.mjs && node --check src/creature.mjs && node --check src/reporting.mjs && node --check src/scanner.mjs && node --check src/shared.mjs",
+    "check": "node --check bin/anti-ai.mjs && node --check src/cli.mjs && node --check src/comparisons.mjs && node --check src/content.mjs && node --check src/creature.mjs && node --check src/help.mjs && node --check src/methodology.mjs && node --check src/reporting.mjs && node --check src/scanner.mjs && node --check src/shared.mjs",
     "verify": "npm run check && npm test",
     "prepublishOnly": "npm run verify",
     "start": "node ./bin/anti-ai.mjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1"
   },
   "files": [
     "bin",
@@ -41,6 +44,10 @@
     "token",
     "codex",
     "claude-code",
+    "opencode",
+    "openclaw",
+    "hermes-agent",
+    "pi-coding-agent",
     "agent-skills",
     "cli",
     "svg",

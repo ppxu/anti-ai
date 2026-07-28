@@ -261,6 +261,18 @@ const CREATURE_CLINICAL_NOTES = {
       zh: "它没有记住更多，只是把遗忘延期到了下一个窗口。",
       en: "It remembered nothing more; it merely postponed forgetting until the next window.",
     },
+    {
+      zh: "影像显示上下文已压迫主问题，主问题要求转为门诊观察。",
+      en: "Imaging shows context compressing the actual question, which requested outpatient care.",
+    },
+    {
+      zh: "病患吞下了全部仓库，只为回答一个原本可以搜索的问题。",
+      en: "The patient swallowed a repository to answer something search could have found.",
+    },
+    {
+      zh: "上下文窗口仍在扩建，消防通道已改名为附录。",
+      en: "The context window keeps expanding; the fire exit is now called an appendix.",
+    },
   ],
   cache: [
     {
@@ -274,6 +286,18 @@ const CREATURE_CLINICAL_NOTES = {
     {
       zh: "建议停止给昨日结论做包浆，病患要求再复用一次。",
       en: "Stop polishing yesterday's conclusion. The patient requested one more reuse.",
+    },
+    {
+      zh: "旧 Token 已产生年轮，初步判断它比当前需求更了解项目。",
+      en: "Old tokens developed tree rings and may understand the project better than the current brief.",
+    },
+    {
+      zh: "缓存没有失效，只是开始以祖传答案的身份参与决策。",
+      en: "The cache did not expire; it joined the decision as an ancestral answer.",
+    },
+    {
+      zh: "复诊发现昨日上下文仍在值班，且拒绝领取加班费。",
+      en: "Follow-up found yesterday's context still on shift and refusing overtime pay.",
     },
   ],
   frenzy: [
@@ -289,6 +313,18 @@ const CREATURE_CLINICAL_NOTES = {
       zh: "并发症不是并发本身，是每个并发都长出了续集。",
       en: "Concurrency is not the complication; every concurrent request growing a sequel is.",
     },
+    {
+      zh: "所有请求均声称自己紧急，急诊室怀疑它们共享同一个快捷键。",
+      en: "Every request claims urgency; triage suspects they share one shortcut.",
+    },
+    {
+      zh: "模型尚未回答，追问已经完成了三代繁殖。",
+      en: "Before the model answered, follow-ups completed three generations of breeding.",
+    },
+    {
+      zh: "请求口器出现合唱倾向，但没有一张嘴愿意负责收尾。",
+      en: "The request maws formed a choir; none volunteered to conclude.",
+    },
   ],
   nuclear: [
     {
@@ -302,6 +338,18 @@ const CREATURE_CLINICAL_NOTES = {
     {
       zh: "病患把算力当主食，把账单当餐巾纸，预后符合预期。",
       en: "The patient treats compute as food and the bill as a napkin. Prognosis as expected.",
+    },
+    {
+      zh: "核心温度稳定上升，病患将其解释为职业热情。",
+      en: "Core temperature rises steadily. The patient calls it professional enthusiasm.",
+    },
+    {
+      zh: "散热片已学会叹气，暂未发现可报销的治疗方案。",
+      en: "The heatsink learned to sigh. No reimbursable treatment was found.",
+    },
+    {
+      zh: "它要求加一份算力，理由是上一份只够产生更多需求。",
+      en: "It ordered more compute because the previous serving only generated more requirements.",
     },
   ],
   withdrawal: [
@@ -317,6 +365,18 @@ const CREATURE_CLINICAL_NOTES = {
       zh: "清醒不是痊愈，只是数据中心暂时没收到探视申请。",
       en: "Sobriety is not recovery; the data center simply received no visiting request.",
     },
+    {
+      zh: "病患尝试手动补全一句话，过程漫长但未出现致命症状。",
+      en: "The patient manually completed a sentence. Slow, but not fatal.",
+    },
+    {
+      zh: "离线满一天后，它开始把普通思考误认为稀有能力。",
+      en: "After a day offline, it mistook ordinary thought for a rare ability.",
+    },
+    {
+      zh: "未检测到请求脉搏，建议不要立刻用一句“就问一下”进行抢救。",
+      en: "No request pulse detected. Do not resuscitate with 'just one quick question.'",
+    },
   ],
   unhatched: [
     {
@@ -330,6 +390,18 @@ const CREATURE_CLINICAL_NOTES = {
     {
       zh: "没有怪兽，也没有病历，只有一段可疑的安静。",
       en: "No creature, no casebook—only a suspicious stretch of quiet.",
+    },
+    {
+      zh: "培养皿保持空白，科研人员对此表现出不合时宜的欣慰。",
+      en: "The dish remains blank. Researchers display inappropriate relief.",
+    },
+    {
+      zh: "尚无污染样本，建议在需求评审前撤离孵化区。",
+      en: "No contaminated specimen yet. Evacuate the hatchery before planning.",
+    },
+    {
+      zh: "生命体征为零，项目排期则显示它很快会醒。",
+      en: "Life signs are zero. The roadmap says it will wake soon.",
     },
   ],
 };
@@ -355,6 +427,46 @@ const COMMON_CREATURE_EVENTS = [
     trait: "nuclear",
     delta: 8,
   },
+  {
+    id: "context_afterimage",
+    trait: "context",
+    delta: 8,
+  },
+  {
+    id: "prompt_molting",
+    trait: "context",
+    delta: 8,
+  },
+  {
+    id: "cache_sediment",
+    trait: "cache",
+    delta: 8,
+  },
+  {
+    id: "stale_answer_echo",
+    trait: "cache",
+    delta: 8,
+  },
+  {
+    id: "retry_teeth",
+    trait: "frenzy",
+    delta: 8,
+  },
+  {
+    id: "queue_hiccup",
+    trait: "frenzy",
+    delta: 8,
+  },
+  {
+    id: "watt_hiccups",
+    trait: "nuclear",
+    delta: 8,
+  },
+  {
+    id: "cooling_sneeze",
+    trait: "nuclear",
+    delta: 8,
+  },
 ];
 
 const RARE_CREATURE_EVENTS = [
@@ -375,6 +487,26 @@ const RARE_CREATURE_EVENTS = [
   },
   {
     id: "black_core",
+    trait: "nuclear",
+    delta: 20,
+  },
+  {
+    id: "recursive_stomach",
+    trait: "context",
+    delta: 20,
+  },
+  {
+    id: "archive_halo",
+    trait: "cache",
+    delta: 20,
+  },
+  {
+    id: "chorus_throat",
+    trait: "frenzy",
+    delta: 20,
+  },
+  {
+    id: "borrowed_sun",
     trait: "nuclear",
     delta: 20,
   },
@@ -679,6 +811,62 @@ const CREATURE_COPY = {
         en: "Nobody admits where the glow came from, but it is brighter tonight.",
       },
     },
+    context_afterimage: {
+      name: { zh: "上下文残像", en: "CONTEXT AFTERIMAGE" },
+      body: {
+        zh: "问题已经回答，视网膜上仍残留三页必要背景。",
+        en: "The question was answered; three pages of essential context remain burned into view.",
+      },
+    },
+    prompt_molting: {
+      name: { zh: "提示词蜕皮", en: "PROMPT MOLTING" },
+      body: {
+        zh: "它脱下一层旧提示词，里面那层仍然写着“简短回答”。",
+        en: "It shed an old prompt; the layer beneath still says 'be concise.'",
+      },
+    },
+    cache_sediment: {
+      name: { zh: "缓存沉积", en: "CACHE SEDIMENT" },
+      body: {
+        zh: "昨日答案沉到腹底，逐渐形成可以回滚的地质层。",
+        en: "Yesterday's answer sank into a rollback-ready geological layer.",
+      },
+    },
+    stale_answer_echo: {
+      name: { zh: "旧答案回声", en: "STALE ANSWER ECHO" },
+      body: {
+        zh: "它张嘴回答新问题，喉咙里先传出了上个版本的结论。",
+        en: "It opened for a new question; last version's conclusion echoed first.",
+      },
+    },
+    retry_teeth: {
+      name: { zh: "重试乳牙", en: "RETRY TEETH" },
+      body: {
+        zh: "一排小牙悄悄长出，每颗都只会咬一次“再试试”。",
+        en: "A row of tiny teeth emerged, each able to bite 'retry' once.",
+      },
+    },
+    queue_hiccup: {
+      name: { zh: "队列打嗝", en: "QUEUE HICCUP" },
+      body: {
+        zh: "它打了个嗝，吐出两个没人承认发送过的排队请求。",
+        en: "It hiccupped up two queued requests nobody admits sending.",
+      },
+    },
+    watt_hiccups: {
+      name: { zh: "瓦时呃逆", en: "WATT-HOUR HICCUPS" },
+      body: {
+        zh: "核心每亮一下就打一个嗝，电表负责记录节拍。",
+        en: "Its core hiccups with every flash; the meter keeps tempo.",
+      },
+    },
+    cooling_sneeze: {
+      name: { zh: "散热喷嚏", en: "COOLING SNEEZE" },
+      body: {
+        zh: "散热鳃突然打喷嚏，把一小团职业热情吹进了机房。",
+        en: "Its cooling gills sneezed a puff of professional enthusiasm into the server room.",
+      },
+    },
     infinite_appendix: {
       name: { zh: "无限附录", en: "INFINITE APPENDIX" },
       body: {
@@ -705,6 +893,34 @@ const CREATURE_COPY = {
       body: {
         zh: "稀有突变：胸腔里出现一个不在任何资源账单上的小型核心。",
         en: "Rare mutation: a small unmetered core appeared in its chest.",
+      },
+    },
+    recursive_stomach: {
+      name: { zh: "递归胃袋", en: "RECURSIVE STOMACH" },
+      body: {
+        zh: "稀有突变：胃里长出另一个胃，并要求补充同一份上下文。",
+        en: "Rare mutation: a stomach grew another stomach and requested the same context.",
+      },
+    },
+    archive_halo: {
+      name: { zh: "档案光环", en: "ARCHIVE HALO" },
+      body: {
+        zh: "稀有突变：旧答案悬浮成光环，神圣得让人不敢清缓存。",
+        en: "Rare mutation: old answers formed a halo too sacred to clear.",
+      },
+    },
+    chorus_throat: {
+      name: { zh: "合唱喉管", en: "CHORUS THROAT" },
+      body: {
+        zh: "稀有突变：一条喉管能同时发出四个互相追问的声音。",
+        en: "Rare mutation: one throat now voices four follow-ups at once.",
+      },
+    },
+    borrowed_sun: {
+      name: { zh: "借来的太阳", en: "BORROWED SUN" },
+      body: {
+        zh: "稀有突变：胸腔借来一颗小太阳，归还日期写着“下个版本”。",
+        en: "Rare mutation: its chest borrowed a small sun due back next release.",
       },
     },
   },
@@ -982,7 +1198,10 @@ function creatureEvent(seed, date, instability = 0, rareChanceBonus = 0) {
     digest.readUInt32BE(0) % 100 <
     creatureRareChance(instability, rareChanceBonus);
   const pool = rare ? RARE_CREATURE_EVENTS : COMMON_CREATURE_EVENTS;
-  const event = pool[digest.readUInt32BE(4) % pool.length];
+  const traits = ["context", "cache", "frenzy", "nuclear"];
+  const trait = traits[digest.readUInt32BE(4) % traits.length];
+  const variants = pool.filter((event) => event.trait === trait);
+  const event = variants[digest.readUInt32BE(8) % variants.length];
   return {
     ...event,
     rarity: rare ? "rare" : "common",

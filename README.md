@@ -101,6 +101,7 @@ anti-ai month --date 2026-07-23
 
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
+anti-ai share --card pathology > anti-ai-pathology.svg
 
 anti-ai creature
 anti-ai creature --json
@@ -129,7 +130,9 @@ anti-ai explain --lang en
 
 Print a daily receipt using your system timezone. It includes a token breakdown by source and model. The human-readable receipt compares usage with the prior seven calendar days and selects one verdict from an expanded satirical copy bank. The selected title and line are stable for a given date, and no model is called to generate them.
 
-A cache offense no longer wins merely because cache use is normally high. It requires cached reads to reach at least `70%` of current input and exceed the personal seven-day cache baseline by at least `10` percentage points. Five same-category titles rotate deterministically by date.
+A cache offense no longer wins merely because cache use is normally high. It requires cached reads to reach at least `70%` of current input and exceed the personal seven-day cache baseline by at least `10` percentage points.
+
+Every verdict category combines seven charge titles with five detail lines. The pair is deterministic for a date and does not reset at month boundaries, so one continuously triggered symptom has at least 35 exact combinations before repeating.
 
 `--json` returns exact token data grouped by source and model. It deliberately excludes environmental proxies, baselines, and verdicts.
 
@@ -139,11 +142,13 @@ The human-readable receipt scans the comparison window directly and may take sev
 
 ### `week`
 
-Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. The current release scans recent logs directly and does not create an index.
+Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. A complete-source human report also settles the creature and appends a living casebook with the primary symptom, Pollution/Clarity change, stage growth, newly unlocked badges, and a deterministic attending note. Source-filtered reports remain usage-only. The current release scans recent logs directly and does not create an index.
 
 ### `month`
 
 Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, and monthly resource comparisons.
+
+A complete-source human report also appends a monthly autopsy. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews growth and achievements without treating pre-hatch empty days as Withdrawal.
 
 ### `share`
 
@@ -152,9 +157,13 @@ Print a 1200×630 SVG share card to stdout. It uses the same resource estimate f
 ```bash
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --date 2026-07-23 --lang en > anti-ai-receipt.svg
+anti-ai share --card pathology > anti-ai-pathology.svg
+anti-ai share --card pathology --lang en > anti-ai-pathology.svg
 ```
 
-Nothing is uploaded. The destination file is controlled entirely by your shell.
+`--card pathology` generates a second privacy-safe format from the complete creature history. It includes the specimen's ASCII form, Ecology, life stage, epithet, and daily Ecology change, while omitting exact Token totals, requests, source/model names, paths, and conversation content.
+
+Nothing is uploaded. The destination file is controlled entirely by your shell. Pathology cards require the complete data set and therefore reject `--source` filters.
 
 ### `creature`
 

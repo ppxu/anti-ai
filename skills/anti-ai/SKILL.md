@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe share card, or asks about their token-fed mutation creature—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource or creature pathology share card, or asks about their token-fed mutation creature and its living casebook—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local Codex and Claude Code usage metadata.
 ---
 
@@ -58,6 +58,10 @@ anti-ai month
 
 Add `--date YYYY-MM-DD`, `--source codex|claude`, or `--lang zh|en` only when the user requests that scope. Do not run all three reports when one answers the question.
 
+The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage growth, new badges, and a deterministic attending note. The complete-source human `month` report appends a monthly autopsy with post-hatch observation totals, Ecology transition, growth, achievements, and a deterministic conclusion. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
+
+Daily verdicts are fixed local content, not model output. Each symptom combines seven charge titles with five detail lines, producing at least 35 deterministic combinations before an identical pair repeats; rotation continues across month boundaries.
+
 ### Privacy-safe SVG share card
 
 Generate a share card as pure SVG on stdout:
@@ -65,9 +69,13 @@ Generate a share card as pure SVG on stdout:
 ```bash
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --date YYYY-MM-DD --lang en > anti-ai-receipt.svg
+anti-ai share --card pathology > anti-ai-pathology.svg
+anti-ai share --card pathology --date YYYY-MM-DD --lang en > anti-ai-pathology.svg
 ```
 
-The share card intentionally omits prompts, responses, paths, model names, and exact token counts. Tell the user where the file was saved. Do not add sensitive details back into the card.
+The default card is a resource receipt. `--card pathology` uses the complete creature history and shows its stable specimen ID and ASCII, Ecology, form, life stage, epithet, and daily Ecology change. It rejects `--source` filters because a partial source must not reshape the creature.
+
+Both card types intentionally omit prompts, responses, paths, model/source names, request counts, and exact token counts. Tell the user where the file was saved. Do not add sensitive details back into the card.
 
 ### Token mutation creature
 

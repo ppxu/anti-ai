@@ -324,8 +324,10 @@ function averageTotals(reports) {
 }
 
 function rotatingCopy(date, choices) {
-  const day = Number(date.slice(-2));
-  return choices[(day - 1) % choices.length];
+  const day = Math.floor(
+    new Date(`${date}T00:00:00.000Z`).getTime() / 86_400_000,
+  );
+  return choices[((day % choices.length) + choices.length) % choices.length];
 }
 
 function rotatingLocalizedCopy(date, lang, zhChoices, enChoices) {
@@ -335,7 +337,28 @@ function rotatingLocalizedCopy(date, lang, zhChoices, enChoices) {
 function dailyVerdict(totals, baseline, date, lang = "zh") {
   if (totals.requests === 0) {
     return {
-      title: localized(lang, "拒绝营业", "NO SERVICE"),
+      title: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "算力断供",
+          "拒绝营业",
+          "GPU 放假单",
+          "硅基失联",
+          "自动补全停尸间",
+          "零请求证人",
+          "手动思考嫌疑",
+        ],
+        [
+          "COMPUTE CUTOFF",
+          "NO SERVICE",
+          "GPU LEAVE FORM",
+          "SILICON MISSING",
+          "AUTOCOMPLETE MORGUE",
+          "ZERO-REQUEST WITNESS",
+          "MANUAL-THOUGHT SUSPECT",
+        ],
+      ),
       detail: rotatingLocalizedCopy(
         date,
         lang,
@@ -358,7 +381,28 @@ function dailyVerdict(totals, baseline, date, lang = "zh") {
   }
   if (baseline.requests === 0 || baseline.totalTokens === 0) {
     return {
-      title: localized(lang, "初犯记录", "FIRST OFFENSE"),
+      title: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "初犯记录",
+          "GPU 开张罪",
+          "首次留痕",
+          "基线失踪人口",
+          "机房新客户",
+          "算力破戒",
+          "Token 开业犯",
+        ],
+        [
+          "FIRST OFFENSE",
+          "GPU OPENING OFFENSE",
+          "FIRST TRACE",
+          "BASELINE MISSING PERSON",
+          "NEW DATACENTER CLIENT",
+          "COMPUTE RELAPSE",
+          "TOKEN GRAND OPENING",
+        ],
+      ),
       detail: rotatingLocalizedCopy(
         date,
         lang,
@@ -395,7 +439,28 @@ function dailyVerdict(totals, baseline, date, lang = "zh") {
 
   if (requestRatio <= 1.2 && tokensPerRequestRatio >= 1.8) {
     return {
-      title: localized(lang, "上下文囤积", "CONTEXT HOARDING"),
+      title: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "上下文囤积",
+          "窗口违建户",
+          "附录走私犯",
+          "Prompt 填埋工",
+          "语料超载者",
+          "附件饲养员",
+          "长文本窝藏犯",
+        ],
+        [
+          "CONTEXT HOARDING",
+          "WINDOW CODE VIOLATION",
+          "APPENDIX SMUGGLER",
+          "PROMPT LANDFILLER",
+          "CORPUS OVERLOADER",
+          "ATTACHMENT FEEDER",
+          "LONG-TEXT HARBORING",
+        ],
+      ),
       detail: rotatingLocalizedCopy(
         date,
         lang,
@@ -418,7 +483,28 @@ function dailyVerdict(totals, baseline, date, lang = "zh") {
   }
   if (requestRatio >= 2) {
     return {
-      title: localized(lang, "请求连发", "REQUEST BARRAGE"),
+      title: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "API 骚扰",
+          "请求连发",
+          "发送键纵火",
+          "追问增殖",
+          "模型传唤",
+          "对话轰炸",
+          "并发口器",
+        ],
+        [
+          "API HARASSMENT",
+          "REQUEST BARRAGE",
+          "SEND-BUTTON ARSON",
+          "FOLLOW-UP PROLIFERATION",
+          "MODEL SUMMONING",
+          "CHAT BOMBARDMENT",
+          "CONCURRENT MAWS",
+        ],
+      ),
       detail: rotatingLocalizedCopy(
         date,
         lang,
@@ -445,18 +531,22 @@ function dailyVerdict(totals, baseline, date, lang = "zh") {
         date,
         lang,
         [
-          "缓存考古学家",
-          "旧 Token 翻炒师",
           "上下文遗址管理员",
           "电子包浆鉴定师",
+          "缓存考古学家",
+          "旧 Token 翻炒师",
           "会话回收站站长",
+          "缓存木乃伊美容师",
+          "昨日答案守灵人",
         ],
         [
-          "CACHE ARCHAEOLOGIST",
-          "TOKEN REHEAT CHEF",
           "CONTEXT RUINS CURATOR",
           "DIGITAL PATINA INSPECTOR",
+          "CACHE ARCHAEOLOGIST",
+          "TOKEN REHEAT CHEF",
           "CHAT LANDFILL WARDEN",
+          "CACHE MUMMY BEAUTICIAN",
+          "YESTERDAY ANSWER VIGIL",
         ],
       ),
       detail: rotatingLocalizedCopy(
@@ -481,7 +571,28 @@ function dailyVerdict(totals, baseline, date, lang = "zh") {
   }
   if (totals.totalTokens <= baseline.totalTokens * 0.3) {
     return {
-      title: localized(lang, "电子戒断", "DIGITAL DETOX"),
+      title: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "算力节食",
+          "电子戒断",
+          "GPU 冷落",
+          "补全断奶",
+          "Prompt 禁食",
+          "硅基疏远",
+          "手动思考复健",
+        ],
+        [
+          "COMPUTE DIET",
+          "DIGITAL DETOX",
+          "GPU NEGLECT",
+          "AUTOCOMPLETE WEANING",
+          "PROMPT FASTING",
+          "SILICON DISTANCING",
+          "MANUAL-THOUGHT REHAB",
+        ],
+      ),
       detail: rotatingLocalizedCopy(
         date,
         lang,
@@ -505,7 +616,28 @@ function dailyVerdict(totals, baseline, date, lang = "zh") {
   if (totals.totalTokens >= baseline.totalTokens * 1.5) {
     const totalRatio = totals.totalTokens / baseline.totalTokens;
     return {
-      title: localized(lang, "算力暴食", "COMPUTE BINGE"),
+      title: rotatingLocalizedCopy(
+        date,
+        lang,
+        [
+          "Token 自助餐",
+          "算力暴食",
+          "GPU 加餐",
+          "机房催吐",
+          "上下文续杯",
+          "算力夜宵",
+          "电表喂养",
+        ],
+        [
+          "TOKEN BUFFET",
+          "COMPUTE BINGE",
+          "GPU SECOND HELPING",
+          "DATACENTER PURGE",
+          "CONTEXT REFILL",
+          "COMPUTE MIDNIGHT SNACK",
+          "METER FEEDING",
+        ],
+      ),
       detail: rotatingLocalizedCopy(
         date,
         lang,
@@ -527,7 +659,28 @@ function dailyVerdict(totals, baseline, date, lang = "zh") {
     };
   }
   return {
-    title: localized(lang, "稳定消耗", "STEADY BURN"),
+    title: rotatingLocalizedCopy(
+      date,
+      lang,
+      [
+        "慢性补全",
+        "稳定消耗",
+        "日常发热",
+        "算力通勤",
+        "电子低烧",
+        "Token 例行公事",
+        "机房匀速跑步",
+      ],
+      [
+        "CHRONIC AUTOCOMPLETE",
+        "STEADY BURN",
+        "ROUTINE HEATING",
+        "COMPUTE COMMUTE",
+        "DIGITAL LOW-GRADE FEVER",
+        "TOKEN BUSINESS AS USUAL",
+        "DATACENTER JOGGING",
+      ],
+    ),
     detail: rotatingLocalizedCopy(
       date,
       lang,
@@ -693,6 +846,59 @@ function renderShareSvg(report, historicalReports = [], lang = "zh") {
 </svg>
 `;
   return svg;
+}
+
+function renderPathologyShareSvg(view, lang = "zh") {
+  const privacy = localized(
+    lang,
+    "隐私模式：无对话、路径、模型名或精确 Token",
+    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
+  );
+  const artLines = view.art
+    .replaceAll(/\u001B\[[0-9;]*m/g, "")
+    .split("\n")
+    .filter(Boolean)
+    .map(
+      (line, index) =>
+        `<tspan x="74" dy="${index === 0 ? 0 : 31}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(localized(lang, "异变体病理报告", "MUTATION PATHOLOGY REPORT"))}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#090d0c"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#27433a" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#43d19e"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #78958b; }
+    .body { fill: #ecf7f3; }
+    .accent { fill: #43d19e; }
+    .warn { fill: #f3c969; }
+  </style>
+  <text x="72" y="82" class="mono accent" font-size="32" font-weight="800">${escapeXml(localized(lang, "异变体病理报告", "MUTATION PATHOLOGY REPORT"))}</text>
+  <text x="1128" y="82" class="mono muted" font-size="20" text-anchor="end">${escapeXml(view.date)}</text>
+  <line x1="72" y1="114" x2="1128" y2="114" stroke="#27433a" stroke-width="2"/>
+
+  <text x="72" y="154" class="mono warn" font-size="18">${escapeXml(localized(lang, `标本编号 ${view.specimenId}`, `SPECIMEN ID ${view.specimenId}`))}</text>
+  <text x="74" y="202" class="mono body" font-size="22" xml:space="preserve">${artLines}</text>
+
+  <text x="610" y="164" class="mono muted" font-size="16">${escapeXml(localized(lang, "生态人格", "ECOLOGY"))}</text>
+  <text x="610" y="198" class="mono body" font-size="24">${escapeXml(view.ecology)}</text>
+  <text x="610" y="244" class="mono muted" font-size="16">${escapeXml(localized(lang, "当前形态", "CURRENT FORM"))}</text>
+  <text x="610" y="278" class="mono body" font-size="24">${escapeXml(view.form)}</text>
+  <text x="610" y="324" class="mono muted" font-size="16">${escapeXml(localized(lang, "生命阶段", "LIFE STAGE"))}</text>
+  <text x="610" y="358" class="mono body" font-size="21">${escapeXml(`${view.stage} · ${view.experience}`)}</text>
+  <text x="610" y="404" class="mono muted" font-size="16">${escapeXml(localized(lang, "病历称号", "CASEBOOK EPITHET"))}</text>
+  <text x="610" y="438" class="mono warn" font-size="19">${escapeXml(view.epithet)}</text>
+  <text x="610" y="484" class="mono muted" font-size="16">${escapeXml(localized(lang, "今日生态切片", "TODAY'S ECOLOGY SLICE"))}</text>
+  <text x="610" y="516" class="mono body" font-size="18">${escapeXml(view.ecologyGain)}</text>
+
+  <line x1="72" y1="544" x2="1128" y2="544" stroke="#27433a" stroke-width="2"/>
+  <text x="72" y="574" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
+  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
 }
 
 function shiftDate(date, days) {
@@ -876,6 +1082,7 @@ export {
   isValidDate,
   padTerminal,
   renderMonth,
+  renderPathologyShareSvg,
   renderReceipt,
   renderShareSvg,
   renderWeek,

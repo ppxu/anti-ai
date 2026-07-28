@@ -380,11 +380,56 @@ test("today rotates satirical copy deterministically by date", () => {
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /今日罪名：上下文囤积/);
+  assert.match(result.stdout, /今日罪名：窗口违建户/);
   assert.match(
     result.stdout,
     /模型没有被频繁打扰，只是每次都收到一整本附件/,
   );
+});
+
+test("today composes at least thirty non-repeating charges for one symptom", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-charge-pool-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const charges = [];
+
+  for (let index = 0; index < 30; index += 1) {
+    const date = shiftTestDate("2026-06-01", index);
+    const root = path.join(workspace, String(index));
+    for (let baselineDay = -7; baselineDay < 0; baselineDay += 1) {
+      writeCodexUsage(
+        root,
+        [
+          {
+            input_tokens: 90,
+            output_tokens: 10,
+            total_tokens: 100,
+          },
+        ],
+        shiftTestDate(date, baselineDay),
+      );
+    }
+    writeCodexUsage(
+      root,
+      [
+        {
+          input_tokens: 290,
+          output_tokens: 10,
+          total_tokens: 300,
+        },
+      ],
+      date,
+    );
+
+    const result = runCli(["today", "--date", date, "--source", "codex"], {
+      ANTI_AI_CODEX_DIR: root,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const charge = result.stdout.match(/今日罪名：(.+)\n\s+(.+)/);
+    assert.ok(charge, `missing charge on ${date}`);
+    charges.push(`${charge[1]} · ${charge[2]}`);
+  }
+
+  assert.equal(new Set(charges).size, 30);
 });
 
 test("today does not accuse normal personal cache usage every day", (t) => {
@@ -558,6 +603,39 @@ test("week prints the seven-day token trend ending on the requested date", () =>
   assert.match(result.stdout, /代码也许能跑，账单肯定能/);
 });
 
+test("week appends a bilingual living casebook from the complete creature history", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-week-casebook-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "week-casebook",
+  };
+
+  const chinese = runCli(["week", "--date", "2026-07-23"], env);
+  const english = runCli(
+    ["week", "--date", "2026-07-23", "--lang", "en"],
+    env,
+  );
+
+  assert.equal(chinese.status, 0, chinese.stderr);
+  assert.equal(english.status, 0, english.stderr);
+  assert.match(chinese.stdout, /活体病历 · 07-17 → 07-23/);
+  assert.match(chinese.stdout, /本周主症状\s+核食/);
+  assert.match(chinese.stdout, /生态变化\s+污染 \+8 · 清醒 \+0/);
+  assert.match(
+    chinese.stdout,
+    /成长记录\s+阅历 \+7 · 异常胚体 I → 分化幼体 II/,
+  );
+  assert.match(chinese.stdout, /新增徽章.*基线纵火犯/);
+  assert.match(chinese.stdout, /主治意见\s+\S+/);
+  assert.match(english.stdout, /LIVING CASEBOOK · 07-17 → 07-23/);
+  assert.match(english.stdout, /PRIMARY SYMPTOM\s+NUCLEAR FEEDING/);
+  assert.match(english.stdout, /ECOLOGY CHANGE\s+pollution \+8 · clarity \+0/);
+  assert.match(english.stdout, /ATTENDING NOTE\s+\S+/);
+  assert.doesNotMatch(english.stdout, /活体病历|本周主症状|生态变化|成长记录/);
+});
+
 test("month prints a calendar heatmap and monthly usage summary", () => {
   const result = runCli(["month", "--date", "2026-07-23", "--source", "codex"], {
     ANTI_AI_CODEX_DIR: baselineCodexDir,
@@ -583,6 +661,39 @@ test("month prints a calendar heatmap and monthly usage summary", () => {
   assert.match(result.stdout, /💧\s+2\.08–21\.38 mL/);
   assert.match(result.stdout, /☁️\s+0\.24–0\.54 gCO₂e/);
   assert.match(result.stdout, /💡\s+10W LED 灯\s+11\.52–16\.32 分钟/);
+});
+
+test("month appends a bilingual autopsy without diagnosing pre-hatch days", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-month-autopsy-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "month-autopsy",
+  };
+
+  const chinese = runCli(["month", "--date", "2026-07-23"], env);
+  const english = runCli(
+    ["month", "--date", "2026-07-23", "--lang", "en"],
+    env,
+  );
+
+  assert.equal(chinese.status, 0, chinese.stderr);
+  assert.equal(english.status, 0, english.stderr);
+  assert.match(chinese.stdout, /月度尸检 · 2026-07/);
+  assert.match(chinese.stdout, /有效观察\s+8 天 · 8 天活跃 · 0 天清醒/);
+  assert.match(chinese.stdout, /主症状\s+核食/);
+  assert.match(
+    chinese.stdout,
+    /生态人格\s+未定型 → 污染型 · 污染 \+9 · 清醒 \+0/,
+  );
+  assert.match(chinese.stdout, /成就回顾\s+\[4\].*基线纵火犯/);
+  assert.match(chinese.stdout, /尸检结论\s+\S+/);
+  assert.match(english.stdout, /MONTHLY AUTOPSY · 2026-07/);
+  assert.match(english.stdout, /VALID OBSERVATION\s+8 days · 8 active · 0 AI-free/);
+  assert.match(english.stdout, /ECOLOGY\s+UNFORMED → POLLUTED/);
+  assert.match(english.stdout, /AUTOPSY CONCLUSION\s+\S+/);
+  assert.doesNotMatch(english.stdout, /月度尸检|有效观察|主症状|生态人格/);
 });
 
 test("week and month support English summaries", () => {
@@ -654,6 +765,73 @@ test("share supports a fully English privacy-safe SVG", () => {
     /PRIVACY MODE: no chats, paths, model names, or exact tokens/,
   );
   assert.doesNotMatch(result.stdout, /今日罪名|隐私模式|生活翻译/);
+});
+
+test("share --card pathology prints a bilingual privacy-safe creature autopsy", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-pathology-card-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "pathology-card",
+    ANTI_AI_CLAUDE_DIR: path.join(fixtureDir, "claude"),
+  };
+
+  const chinese = runCli(
+    ["share", "--card", "pathology", "--date", "2026-07-23"],
+    env,
+  );
+  const english = runCli(
+    [
+      "share",
+      "--card",
+      "pathology",
+      "--date",
+      "2026-07-23",
+      "--lang",
+      "en",
+    ],
+    env,
+  );
+
+  for (const result of [chinese, english]) {
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^<svg\b/);
+    assert.match(result.stdout, /[0-9a-f]{8}/);
+    assert.doesNotMatch(result.stdout, /350 tokens|gpt-test|claude-test/);
+    assert.doesNotMatch(result.stdout, /Codex|Claude Code|\/Users\//);
+  }
+  assert.match(chinese.stdout, /异变体病理报告/);
+  assert.match(chinese.stdout, /标本编号/);
+  assert.match(chinese.stdout, /生态人格/);
+  assert.match(chinese.stdout, /隐私模式：无对话、路径、模型名或精确 Token/);
+  assert.match(english.stdout, /MUTATION PATHOLOGY REPORT/);
+  assert.match(english.stdout, /SPECIMEN ID/);
+  assert.match(english.stdout, /ECOLOGY/);
+  assert.match(
+    english.stdout,
+    /PRIVACY MODE: no chats, paths, model names, or exact tokens/,
+  );
+  assert.doesNotMatch(english.stdout, /异变体病理报告|标本编号|生态人格/);
+});
+
+test("share --card pathology reports a recoverable corrupted creature file", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-pathology-corrupt-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(path.join(home, ".anti-ai", "creature.json"), "{not-json\n");
+
+  const result = runCli(
+    ["share", "--card", "pathology", "--date", "2026-07-23"],
+    { HOME: home },
+  );
+
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, "");
+  assert.equal(
+    result.stderr,
+    "病理报告无法读取异变体档案。运行 anti-ai creature reset 后可重新孵化。\n",
+  );
+  assert.doesNotMatch(result.stderr, /\/Users\/|SyntaxError|at runCreature/);
 });
 
 test("creature --json turns the latest 30 days into an initial mutation file", (t) => {
@@ -2099,6 +2277,8 @@ test("explain discloses the personal baseline and verdict rules", () => {
   assert.match(result.stdout, /同类罪名标题和文案按日期固定轮换/);
   assert.match(result.stdout, /判词由本地固定规则生成，不调用模型/);
   assert.match(result.stdout, /文案按日期固定轮换/);
+  assert.match(result.stdout, /7 个罪名标题.*5 条详情.*35 种/s);
+  assert.match(result.stdout, /跨月.*不会重置/s);
 });
 
 test("explain discloses how model usage is attributed", () => {
@@ -2113,6 +2293,8 @@ test("explain discloses how model usage is attributed", () => {
     result.stdout,
     /分享卡片.*不包含对话、路径、模型名或精确 Token/s,
   );
+  assert.match(result.stdout, /anti-ai share --card pathology/);
+  assert.match(result.stdout, /活体病历.*月度尸检/s);
 });
 
 test("explain discloses creature growth, chance, recovery, and state privacy", () => {
@@ -2238,7 +2420,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 0.9.0\n");
+  assert.equal(result.stdout, "anti-ai 1.0.0\n");
   assert.equal(result.stderr, "");
 });
 

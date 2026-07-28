@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-07-28
+
+### Added
+
+- A bilingual living casebook appended to complete-source `week` reports, with the dominant symptom, Ecology change, stage growth, new badges, and a deterministic attending note.
+- A bilingual monthly autopsy appended to complete-source `month` reports, with post-hatch observation totals, Ecology transition, growth review, achievement review, and a deterministic conclusion.
+- A privacy-safe mutation pathology SVG available through `share --card pathology`.
+- Symptom-specific local clinical-note pools for Context, Cache, Request, Nuclear, Withdrawal, and not-yet-hatched states.
+
+### Changed
+
+- Every verdict category now combines seven rotating charge titles with five rotating details, providing at least 35 deterministic combinations before an identical pair repeats.
+- Verdict rotation is continuous across month boundaries instead of resetting on the first day of each month.
+- Complete-source human `week` and `month` reports now settle creature history; source-filtered reports remain usage-only and do not alter the complete growth history.
+
+### Security
+
+- Living casebooks and pathology cards are derived from the existing schema v4 state and add no stored prompts, responses, paths, model names, precise Token totals, baseline values, or request timestamps.
+- Pathology cards omit exact Token totals, request counts, model names, source names, paths, and conversation content.
+
 ## [0.9.0] - 2026-07-27
 
 ### Added
@@ -145,6 +165,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[1.0.0]: https://github.com/ppxu/anti-ai/releases/tag/v1.0.0
 [0.9.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.9.0
 [0.8.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.8.0
 [0.7.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.7.0

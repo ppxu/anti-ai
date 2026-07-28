@@ -31,8 +31,8 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /Pollution.*Clarity.*three-day/s);
   assert.match(skill, /Offense.*Sobriety.*Paradox/s);
   assert.match(skill, /living casebook/i);
-  assert.match(skill, /monthly autopsy/i);
-  assert.match(skill, /35 deterministic combinations/i);
+  assert.match(skill, /monthly follow-up/i);
+  assert.match(skill, /143 deterministic combinations/i);
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
@@ -43,7 +43,7 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     skill,
-    /low-confidence estimate derived from public examples|参考公开案例的低置信度估算/i,
+    /named public high-side references|具名公开高位参考/i,
   );
   assert.match(skill, /do not read raw logs|不要读取原始日志/i);
   assert.match(

@@ -2,7 +2,7 @@
 
 [English](./README.md) | 简体中文
 
-把 Codex 和 Claude Code 的本地 Token 记录，变成一张不太令人愉快的 AI 资源账单，以及一只被算力废料喂大的异变体。
+把 Codex、Claude Code、OpenCode、OpenClaw、Hermes 和 Pi 的本地 Token 记录，变成一张不太令人愉快的 AI 资源账单，以及一只被算力废料喂大的异变体。
 
 ```text
 ┌──────────────────────────────────────────────┐
@@ -14,35 +14,31 @@
   Codex       127,492,619
   Claude Code 112,962
 
-  资源消耗估算（参考公开数据）
-  ⚡  253.92–359.72 Wh
-  💧  275.08–54,015.30 mL
-  ☁️  31.74–1,368.39 gCO₂e
+  资源消耗估算 · 公开高位参照
+  ⚡  359.72 Wh · OpenAI 请求级公开平均
+  💧  54,015.30 mL · Mistral 生命周期高位
+  ☁️  1,368.39 gCO₂e · Mistral 生命周期高位
 
   生活翻译（终于像人话了）
-  📱  15Wh 手机充电    16.93–23.98 次
-  💻  50W 笔记本电脑   5.08–7.19 小时
-  🚿  8L/min 淋浴      0.03–6.75 分钟
-  ☕  250mL 水杯       1.10–216.06 杯
-  🚽  6L 节水马桶      0.05–9.00 次冲水
-  🚗  平均燃油车        0.13–5.51 公里
-  🌳  1 棵城市树        加班 0.19–8.32 天才能吸回来
+  💡  10W LED 灯         1.50 天
+  📱  19Wh 手机充电      18.93 次
+  🥤  550mL 饮用水       98.21 瓶
+  💧  一滴水             1,080,306 滴
+  🚗  平均燃油车         5.60 公里
 
   个人基线（过去 7 个自然日）
   Token +62.00% · 请求 -18.00%
 
-  今日罪名：上下文囤积
+  今日罪名：必要附件收藏家
 
-  置信度：低 · 运行 anti-ai explain 查看口径
-
-  机器开了 1058 张小票，地球只收到一段估算。
+  运行 anti-ai explain resources 查看参照边界
 └──────────────────────────────────────────────┘
 ```
 
 ## 环境要求
 
 - Node.js 20 或更高版本
-- 已在本机使用过 Codex、Claude Code，至少存在一类本地 JSONL 日志
+- 已在本机使用过至少一个受支持的 Agent，存在 JSONL 或 SQLite 本地记录
 - 当前已在 macOS 验证
 
 ## 安装
@@ -91,6 +87,10 @@ anti-ai today
 anti-ai today --date 2026-07-23
 anti-ai today --source codex
 anti-ai today --source claude
+anti-ai today --source opencode
+anti-ai today --source openclaw
+anti-ai today --source hermes
+anti-ai today --source pi
 anti-ai today --lang en
 anti-ai today --json
 
@@ -118,6 +118,9 @@ anti-ai creature reset
 
 anti-ai doctor
 anti-ai explain
+anti-ai explain resources
+anti-ai help today
+anti-ai creature --help
 anti-ai --version
 anti-ai --help
 ```
@@ -141,9 +144,9 @@ anti-ai explain --lang en
 
 缓存类罪名不会再因为日常高缓存率而长期霸榜：只有当日缓存读取占输入至少 `70%`，并且高出个人 7 日基线至少 `10` 个百分点时才会触发。
 
-每类判词现在由 7 个罪名标题和 5 条详情组合；同一天结果固定，跨月不会重新从第一条开始。同一种症状连续触发时，至少有 35 种完整组合后才会原样重复。
+每类判词现在由 11 个罪名标题和 13 条详情组合；同一天结果固定，跨月不会重新从第一条开始。同一种症状连续触发时，有 143 种完整组合后才会原样重复。
 
-`--json` 按来源和具体模型输出可精确核对的 Token 统计，不把低置信度资源估算、个人基线或吐槽混入机器数据。
+`--json` 按来源和具体模型输出可核对的 Token 统计，不把资源参照、个人基线或吐槽混入机器数据。Hermes 的日期归档是明确标注的会话级近似。
 
 默认的完整来源人类账单会在末尾结算当天异变体，并追加生态变化、当前形态、今日成就、新封存化石、待选择进化和当日图鉴入库反馈；`today --json` 与带 `--source` 的账单不会改动这条完整成长史。
 
@@ -157,7 +160,7 @@ anti-ai explain --lang en
 
 打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日比例（例如 `7 天 / 23 天`）、最长清醒期、最重一天、模型账单和本月资源对照。
 
-完整来源的人类可读报告还会追加“月度尸检”，汇总孵化后的有效观察期、主症状、生态人格迁移、阶段与世代成长、本月化石、成就和新增收藏；孵化前的空白日不会被误诊为戒断。
+完整来源的人类可读报告还会追加“月度复诊”，汇总孵化后的有效观察期、主症状、生态人格迁移、阶段与世代成长、本月化石、成就和新增收藏；孵化前的空白日不会被误诊为戒断。
 
 ### `codex`
 
@@ -171,7 +174,7 @@ anti-ai codex --json
 
 固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹和永久化石则不设人为上限。
 
-`codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的 Codex + Claude Code 成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
+`codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
 
 ### `share`
 
@@ -270,7 +273,7 @@ ASCII 外观不是固定模板，而是由稳定本地基因、生命阶段、�
 
 每天仍会根据本地随机种子和日期触发一个可复现事件。首个活跃日之后，每个 AI 清醒日还会让旧的累计污染减少 `2`、戒断反应增加 `1`，但历史性状不会被清空。
 
-档案保存在 `~/.anti-ai/creature.json`，当前为 schema v5。文件只保存离散用量带、派生生态点、稳定基因/部件 ID、成就、外观指纹、污染剂量、性状、普通/异色能力加点、事件 ID、永久化石、已封存进化选择和本地随机种子，不包含 Prompt、回复、路径、模型名、精确 Token、个人基线数值或逐请求时间。schema v1/v2/v3/v4 会在本地幂等迁移并保留已有成长；`anti-ai codex` 直接从这份现有状态派生固定与动态收藏，不增加新迁移。成长档案固定使用 Codex + Claude Code 完整数据，因此 `creature` 和 `codex` 都不能配合 `--source` 过滤。
+档案保存在 `~/.anti-ai/creature.json`，当前为 schema v5。文件只保存离散用量带、派生生态点、稳定基因/部件 ID、成就、外观指纹、污染剂量、性状、普通/异色能力加点、事件 ID、永久化石、已封存进化选择和本地随机种子，不包含 Prompt、回复、路径、模型名、精确 Token、个人基线数值或逐请求时间。schema v1/v2/v3/v4 会在本地幂等迁移并保留已有成长；`anti-ai codex` 直接从这份现有状态派生固定与动态收藏，不增加新迁移。成长档案固定使用全部受支持来源，因此 `creature` 和 `codex` 都不能配合 `--source` 过滤。
 
 显式重开：
 
@@ -280,11 +283,11 @@ anti-ai creature reset
 
 ### `doctor`
 
-检查默认日志目录是否存在，以及发现了多少 JSONL 文件。
+检查六个默认来源的路径、可用性、存储类型和统计精度。检查全部来源时，缺少未安装的 Agent 不会报错；显式检查一个缺失来源时会返回失败状态。
 
 ### `explain`
 
-展示所有资源换算系数、公式、来源和限制。
+展示所有资源换算系数、公式、来源和限制。可使用 `anti-ai explain resources|comparisons|sources|creature|privacy` 聚焦查看。
 
 ## Token 统计口径
 
@@ -292,12 +295,20 @@ anti-ai creature reset
 
 - Codex：`~/.codex/sessions`
 - Claude Code：`~/.claude/projects`
+- OpenCode：`~/.local/share/opencode/opencode.db`
+- OpenClaw：`~/.openclaw/agents`
+- Hermes：`~/.hermes/state.db`
+- Pi：`~/.pi/agent/sessions`
 
 可通过环境变量覆盖，便于测试或使用自定义目录：
 
 ```bash
 ANTI_AI_CODEX_DIR=/path/to/codex/sessions \
 ANTI_AI_CLAUDE_DIR=/path/to/claude/projects \
+ANTI_AI_OPENCODE_DB=/path/to/opencode.db \
+ANTI_AI_OPENCLAW_DIR=/path/to/openclaw/agents \
+ANTI_AI_HERMES_DB=/path/to/hermes/state.db \
+ANTI_AI_PI_DIR=/path/to/pi/sessions \
 anti-ai today
 ```
 
@@ -315,38 +326,43 @@ Claude Code：
 - 从 `message.model` 读取具体模型
 - 输入总量包含普通输入、缓存读取和缓存写入
 
+OpenCode 从 SQLite 的 `message` 或 `session_message` 表读取 assistant usage。OpenClaw 跨活动日志与 `.reset.*` 历史文件按消息 ID 去重，并排除 trajectory 导出。Pi 统计 assistant、compaction 和 branch_summary 的模型用量，对复制或分叉会话中的同一 entry ID 做全局去重。
+
+Hermes 是有意保留的精度例外：优先读取包含辅助调用的 `session_model_usage`，否则回退到 `sessions` 汇总。汇总可能跨越多个自然日，工具按最后活动日归档，因此 `doctor` 会明确标为“会话级近似”。
+
 日志没有模型字段时会归入 `unknown`。终端账单最多展示 Token 用量最高的 5 个“来源 + 模型”组合，`today --json` 保留完整模型明细。
 
 ## 资源账单口径
 
-Codex 和 Claude Code 没有向本工具提供逐请求的实际电力、水耗和碳排数据。因此，资源部分是参考不同厂商公开案例得到的估算范围，不是测量值，也不是统计置信区间：
+受支持的 Agent 都没有向本工具提供逐请求的实际电力、水耗和碳排数据。工具分别计算具名公开案例，每项资源只展示数值最高的案例，不把不可直接比较的口径拼成假区间；结果不是本地测量值，也不是统计置信区间：
 
 - Google：Gemini Apps 中位文本请求为 `0.24 Wh`、`0.26 mL` 水、`0.03 gCO₂e`。[来源](https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf)
 - OpenAI：平均 ChatGPT 查询为 `0.34 Wh`、`0.000085` 美制加仑水（换算为 `0.32176 mL`），但未披露完整测量边界。[来源](https://blog.samaltman.com/the-gentle-singularity)
 - Mistral：Le Chat / Large 2 的 400 输出 Token 生命周期评估为 `45 mL` 水、`1.14 gCO₂e`。[来源](https://mistral.ai/news/our-contribution-to-a-global-environmental-standard-for-ai/)
 
-实际 Codex、Claude Code 请求可能因模型、上下文长度、推理深度、硬件、批处理、数据中心和能源结构产生数量级差异，所以固定显示“置信度：低”。
+实际请求可能因模型、上下文长度、推理深度、硬件、批处理、数据中心和能源结构产生数量级差异，因此账单始终显示对应的具名参照，不声称模型级实测。
 
 ## 生活化对照口径
 
-- 工具根据资源估算范围的上界动态选择更适合当前数量级的对照物
+- today、week、month 固定展示 5 条，分别对应小、中、大尺度活动；不足 `0.01` 个大事务时显示“还差多少倍”
 - 点灯时间：按 10W LED 灯计算，`电力 Wh ÷ 10W`
 - 笔记本电脑：按 50W 计算，`电力 Wh ÷ 50W`
-- 手机充电：按一次 15Wh 计算，`电力 Wh ÷ 15Wh`
+- 手机充电：按一次 19Wh 计算，`电力 Wh ÷ 19Wh`
 - 烧水：按烧开 1L 水消耗 100Wh 计算，`电力 Wh ÷ 100Wh`
-- 水杯：按每杯 250mL 计算，`水耗 mL ÷ 250`
 - 瓶装水：按每瓶 550mL 计算，`水耗 mL ÷ 550`
-- 节水马桶：按每次冲水 6L 计算，`水耗 mL ÷ 6,000`
-- 淋浴时间：按 8L/min 计算，`水耗 mL ÷ 8,000`
-- 驾车距离：美国 EPA 的平均燃油乘用车约排放 `400 g CO₂/英里`，换算为 `248.55 g CO₂/公里`。[来源](https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle)
+- 一滴水按 `0.05mL`，微波炉按 `1kW`，泳池按 `250 万升`，一缸洗澡水按 `150L`
+- 淋浴采用 [EPA WaterSense](https://www.epa.gov/watersense/showerheads) 的 `7.6L/min`，洗碗机采用 [ENERGY STAR](https://www.energystar.gov/products/dishwashers/key_product_criteria) 的 `12.1L/次`
+- 驾车距离：使用美国 EPA 等效换算因子 `244.2 g CO₂e/公里`。[来源](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references)
 - 树木吸碳：美国 EPA 对城市树木的估算约为 `60 kg CO₂/年`。[来源](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references)
 
-生活用品的功率、容量和流量都是用于展示的假设，不是环境测量标准。树种、树龄和砍伐后的处理方式会显著影响碳排，因此工具不显示缺乏依据的“砍了几棵树”，而是显示“一棵城市树需要多久才能吸收对应碳排”。
+WaterSense 淋浴采用 EPA 的 `2.0 gal/min` 上限（约 `7.6L/min`），标准 ENERGY STAR 洗碗机采用 `3.2 gal/cycle` 上限（约 `12.1L/次`）；美国家庭日均用电以 EPA 的 `12,194kWh/年 ÷ 365 ≈ 33.4kWh/天` 计算。[WaterSense](https://www.epa.gov/watersense/showerheads) · [ENERGY STAR](https://www.energystar.gov/products/dishwashers/key_product_criteria) · [EPA 等效换算](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references)
+
+其余生活用品的整值功率和容量是用于展示的假设，不是环境测量标准。树种、树龄和砍伐后的处理方式会显著影响碳排，因此工具不显示缺乏依据的“砍了几棵树”，而是显示“一棵城市树需要多久才能吸收对应碳排”。
 
 ## 隐私
 
 - 完全本地运行，不联网发送日志
-- 解析 JSONL 时只保留时间、消息 ID、模型和 usage 元数据
+- 扫描 JSONL/SQLite 时只处理时间、消息 ID、模型和 usage 元数据
 - 不采集、不保存、不输出 Prompt、回复或工具调用正文
 - 默认分享卡片不包含路径、模型名、请求数或精确 Token
 - 不创建用量数据库或后台进程；`creature` 只维护一个不含精确用量的本地成长档案
@@ -357,20 +373,24 @@ Codex 和 Claude Code 没有向本工具提供逐请求的实际电力、水耗�
 npm test
 ```
 
-测试使用脱敏的合成 JSONL，不读取真实会话内容。
+测试使用脱敏的合成 JSONL 和 SQLite，不读取真实会话内容。
 
 ## 代码结构
 
 - `bin/anti-ai.mjs`：最小可执行入口
-- `src/cli.mjs`：参数校验、命令编排与帮助/口径输出
-- `src/scanner.mjs`：Codex、Claude Code JSONL 扫描和统计
-- `src/reporting.mjs`：账单、资源换算、生活对照与每日罪名
+- `src/cli.mjs`：参数校验与命令编排
+- `src/help.mjs`：全局与分命令帮助
+- `src/scanner.mjs`：六来源 JSONL/SQLite 扫描和统计
+- `src/methodology.mjs`：具名公开案例与高位选择
+- `src/comparisons.mjs`：按周期分级的生活对照
+- `src/content.mjs`：确定性中英文尾句与分享文案池
+- `src/reporting.mjs`：账单、日历、卡片与每日罪名
 - `src/creature.mjs`：异变体成长规则和本地档案
 - `src/shared.mjs`：共享的语言和空统计结构
 
 ## 参与贡献
 
-请参阅 [CONTRIBUTING.md](./CONTRIBUTING.md) 和 [SECURITY.md](./SECURITY.md)。提交问题时请勿附带真实 Codex 或 Claude Code 日志。
+请参阅 [CONTRIBUTING.md](./CONTRIBUTING.md) 和 [SECURITY.md](./SECURITY.md)。提交问题时请勿附带真实 Agent 日志或 SQLite 数据库。
 
 ## 许可证
 

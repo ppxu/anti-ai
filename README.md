@@ -6,7 +6,7 @@
 
 English | [简体中文](./README.zh-CN.md)
 
-Turn local Codex and Claude Code token usage into a transparent, satirical AI resource receipt—and a mutation creature fed on compute waste.
+Turn local Codex, Claude Code, OpenCode, OpenClaw, Hermes, and Pi usage into a transparent, satirical AI resource receipt—and a mutation creature fed on compute waste.
 
 ```text
 ┌──────────────────────────────────────────────┐
@@ -15,26 +15,24 @@ Turn local Codex and Claude Code token usage into a transparent, satirical AI re
 
   127,605,581 tokens · 1,058 model requests
 
-  Estimated resource use — from public data
-  ⚡  253.92–359.72 Wh
-  💧  275.08–54,015.30 mL
-  ☁️  31.74–1,368.39 gCO₂e
+  Estimated resource use · named public high-side reference
+  ⚡  359.72 Wh · OpenAI published request-level average
+  💧  54,015.30 mL · Mistral lifecycle high-side case
+  ☁️  1,368.39 gCO₂e · Mistral lifecycle high-side case
 
   Everyday translation
-  📱  15Wh phone charge  16.93–23.98 charges
-  💻  50W laptop         5.08–7.19 hours
-  🚿  8L/min shower      0.03–6.75 minutes
-  ☕  250mL cup of water 1.10–216.06 cups
-  🚽  6L toilet flush    0.05–9.00 flushes
-  🚗  Average gas car    0.13–5.51 km
-  🌳  One urban tree     0.19–8.32 days to absorb it
+  💡  10W LED light       1.50 days
+  📱  19Wh phone charge   18.93 charges
+  🥤  550mL drinking water 98.21 bottles
+  💧  One drop of water   1,080,306 drops
+  🚗  Average gas car     5.60 km
 
   Personal baseline · prior 7 calendar days
   Tokens +62.00% · requests -18.00%
 
-  Today's charge: CONTEXT HOARDING
+  Today's charge: ESSENTIAL ATTACHMENT COLLECTOR
 
-  Confidence: LOW · run anti-ai explain
+  Run anti-ai explain resources for reference boundaries
 └──────────────────────────────────────────────┘
 ```
 
@@ -47,14 +45,14 @@ Token counts are measurable. The electricity, water, and carbon impact of propri
 `anti-ai` keeps those two facts separate:
 
 - exact local token and model statistics are available through `--json`;
-- environmental values are clearly labelled low-confidence estimates from public examples;
+- environmental values are clearly labelled named public high-side references, not local measurements;
 - every assumption and source is visible through `anti-ai explain`;
 - no prompt or response text leaves your machine.
 
 ## Requirements
 
 - Node.js 20 or newer
-- Local Codex or Claude Code JSONL logs
+- Local records from at least one supported Agent (JSONL or SQLite)
 - Verified on macOS; the implementation uses cross-platform Node.js paths and APIs
 
 ## Install
@@ -90,6 +88,10 @@ anti-ai today
 anti-ai today --date 2026-07-23
 anti-ai today --source codex
 anti-ai today --source claude
+anti-ai today --source opencode
+anti-ai today --source openclaw
+anti-ai today --source hermes
+anti-ai today --source pi
 anti-ai today --lang en
 anti-ai today --json
 
@@ -117,6 +119,9 @@ anti-ai creature reset
 
 anti-ai doctor
 anti-ai explain
+anti-ai explain resources
+anti-ai help today
+anti-ai creature --help
 anti-ai --version
 anti-ai --help
 ```
@@ -140,7 +145,7 @@ Print a daily receipt using your system timezone. It includes a token breakdown 
 
 A cache offense no longer wins merely because cache use is normally high. It requires cached reads to reach at least `70%` of current input and exceed the personal seven-day cache baseline by at least `10` percentage points.
 
-Every verdict category combines seven charge titles with five detail lines. The pair is deterministic for a date and does not reset at month boundaries, so one continuously triggered symptom has at least 35 exact combinations before repeating.
+Every verdict category combines 11 charge titles with 13 detail lines. The pair is deterministic for a date and does not reset at month boundaries, so one continuously triggered symptom has 143 exact combinations before repeating.
 
 `--json` returns exact token data grouped by source and model. It deliberately excludes environmental proxies, baselines, and verdicts.
 
@@ -156,7 +161,7 @@ Print a seven-day token trend ending on the selected date, followed by model and
 
 Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, and monthly resource comparisons.
 
-A complete-source human report also appends a monthly autopsy. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews stage/generation growth, fossils, achievements, and collection discoveries without treating pre-hatch empty days as Withdrawal.
+A complete-source human report also appends a monthly follow-up. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews stage/generation growth, fossils, achievements, and collection discoveries without treating pre-hatch empty days as Withdrawal.
 
 ### `codex`
 
@@ -170,7 +175,7 @@ anti-ai codex --json
 
 The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints and permanent fossils are collected without an artificial upper limit.
 
-`codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete Codex + Claude Code growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
+`codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
 ### `share`
 
@@ -269,7 +274,7 @@ The first 24 achievements are split evenly across red Offense, cyan Sobriety, an
 
 A local seed plus the date still selects one repeatable event per active day. After the first active day, every AI-free day also reduces legacy accumulated exposure by `2` and grows Withdrawal by `1` without erasing historical traits.
 
-State lives at `~/.anti-ai/creature.json` and currently uses schema v5. It stores only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils, sealed evolution choices, and a local seed—not prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps. Schema v1/v2/v3/v4 files migrate locally and idempotently without losing existing growth. `anti-ai codex` derives its fixed and dynamic collections from this existing state without a new migration. One mutation history always uses the complete Codex + Claude Code data set, so `creature` and `codex` reject `--source` filters.
+State lives at `~/.anti-ai/creature.json` and currently uses schema v5. It stores only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils, sealed evolution choices, and a local seed—not prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps. Schema v1/v2/v3/v4 files migrate locally and idempotently without losing existing growth. `anti-ai codex` derives its fixed and dynamic collections from this existing state without a new migration. One mutation history always uses the complete supported data set, so `creature` and `codex` reject `--source` filters.
 
 Explicitly restart it with:
 
@@ -279,11 +284,11 @@ anti-ai creature reset
 
 ### `doctor`
 
-Check whether the default log directories exist and report how many JSONL files were found.
+Check all six default sources, their local paths, availability, storage type, and accounting precision. Missing sources do not fail an all-source check; checking one explicitly missing source does.
 
 ### `explain`
 
-Show every estimate factor, formula, source, and limitation.
+Show every estimate factor, formula, source, and limitation. Use `anti-ai explain resources|comparisons|sources|creature|privacy` for a focused explanation.
 
 ## Data sources and counting
 
@@ -291,12 +296,20 @@ Default locations:
 
 - Codex: `~/.codex/sessions`
 - Claude Code: `~/.claude/projects`
+- OpenCode: `~/.local/share/opencode/opencode.db`
+- OpenClaw: `~/.openclaw/agents`
+- Hermes: `~/.hermes/state.db`
+- Pi: `~/.pi/agent/sessions`
 
 Override them when needed:
 
 ```bash
 ANTI_AI_CODEX_DIR=/path/to/codex/sessions \
 ANTI_AI_CLAUDE_DIR=/path/to/claude/projects \
+ANTI_AI_OPENCODE_DB=/path/to/opencode.db \
+ANTI_AI_OPENCLAW_DIR=/path/to/openclaw/agents \
+ANTI_AI_HERMES_DB=/path/to/hermes/state.db \
+ANTI_AI_PI_DIR=/path/to/pi/sessions \
 anti-ai today
 ```
 
@@ -304,23 +317,29 @@ Codex records are counted from `token_count.info.last_token_usage`. Each record 
 
 Claude Code may write multiple snapshots for one streamed assistant response. `anti-ai` deduplicates them by `message.id`, keeps the most complete usage snapshot, and reads its model from `message.model`.
 
+OpenCode usage is read from assistant rows in its SQLite `message` or `session_message` table. OpenClaw assistant messages are deduplicated across active and `.reset.*` JSONL files; trajectory exports are excluded. Pi assistant, compaction, and branch-summary usage is deduplicated globally by entry ID, including copied or forked sessions.
+
+Hermes is the intentional precision exception: `anti-ai` prefers `session_model_usage`, including auxiliary calls, and falls back to aggregate `sessions` rows. Those totals span a session and are assigned to its last active day, so `doctor` labels Hermes as `session approximate`.
+
 If a log does not contain a model field, the usage is grouped under `unknown`. Human-readable reports show the five highest-token source/model combinations; JSON keeps the complete breakdown.
 
 ## Environmental methodology
 
-Codex and Claude Code do not provide this tool with measured per-request electricity, water, or carbon data. The receipt therefore shows an estimate range derived from published examples—not a measured value or statistical confidence interval.
+Supported Agents do not provide measured per-request electricity, water, or carbon data. `anti-ai` calculates each named public case separately and shows the highest case for each resource. It does not combine incompatible cases into a fake range, and the result is neither a local measurement nor a statistical confidence interval.
 
 - [Google: Measuring the environmental impact of delivering AI at Google Scale](https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf)
 - [OpenAI disclosure: The Gentle Singularity](https://blog.samaltman.com/the-gentle-singularity)
 - [Mistral: Our contribution to a global environmental standard for AI](https://mistral.ai/news/our-contribution-to-a-global-environmental-standard-for-ai/)
 
-Everyday comparisons adapt to the upper end of the displayed estimate range so that the output remains readable. They use:
+Every report prints five comparisons at an appropriate scale: small daily activities, medium weekly activities, and large monthly activities. Values below `0.01` of a large activity are shown as “times short” rather than `0.00`. The calculations use:
 
-- display assumptions of a 10W LED, 50W laptop, 15Wh phone charge, 100Wh to boil 1L of water, 250mL cup of water, 550mL water bottle, 6L toilet flush, and 8L/min shower;
-- [US EPA average gasoline passenger vehicle emissions](https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle);
-- [US EPA urban tree carbon sequestration methodology](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references).
+- rounded display assumptions of a 10W LED, 19Wh phone charge, 0.05mL water drop, 550mL bottle, 100Wh to boil 1L of water, 50W laptop, 1kW microwave, 2.5ML pool, and 150L bath;
+- [EPA WaterSense shower flow](https://www.epa.gov/watersense/showerheads) and [ENERGY STAR dishwasher water criteria](https://www.energystar.gov/products/dishwashers/key_product_criteria);
+- [US EPA gasoline vehicle, urban-tree, and household-electricity factors](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references).
 
-The household values are display assumptions, not environmental measurement standards. Run `anti-ai explain` to see each formula. The tool reports how long one urban tree would need to sequester the carbon estimate; it does not claim an equivalent number of trees cut down.
+WaterSense shower flow uses the EPA maximum of 2.0 gal/min (about 7.6L/min), and a standard ENERGY STAR dishwasher uses at most 3.2 gal/cycle (about 12.1L). The U.S. household electricity comparison divides EPA's 12,194kWh annual figure by 365, or about 33.4kWh/day. [WaterSense](https://www.epa.gov/watersense/showerheads) · [ENERGY STAR](https://www.energystar.gov/products/dishwashers/key_product_criteria) · [EPA equivalencies](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references)
+
+The remaining rounded consumer-item values are display assumptions, not environmental measurement standards. Run `anti-ai explain comparisons` to see each formula. The tool reports how long one urban tree would need to sequester the carbon estimate; it does not claim an equivalent number of trees cut down.
 
 ## Privacy
 
@@ -330,7 +349,7 @@ The household values are display assumptions, not environmental measurement stan
 - The default share card omits paths, model names, request counts, and exact token counts
 - Creates no usage database and starts no background process; `creature` maintains one local growth file without exact usage
 
-Do not attach real Codex or Claude Code logs to public issues. Use a minimal, redacted fixture instead.
+Do not attach real Agent logs or SQLite databases to public issues. Use a minimal, redacted fixture instead.
 
 ## Development
 
@@ -342,14 +361,18 @@ npm run check
 node ./bin/anti-ai.mjs --help
 ```
 
-Tests exercise the public CLI through exit codes and stdout/stderr using synthetic JSONL fixtures.
+Tests exercise the public CLI through exit codes and stdout/stderr using synthetic JSONL and SQLite fixtures.
 
 ## Architecture
 
 - `bin/anti-ai.mjs`: minimal executable launcher
-- `src/cli.mjs`: argument validation, command orchestration, help, and methodology
-- `src/scanner.mjs`: Codex and Claude Code JSONL scanning and accounting
-- `src/reporting.mjs`: receipts, resource estimates, everyday comparisons, and verdicts
+- `src/cli.mjs`: argument validation and command orchestration
+- `src/help.mjs`: global and command-specific help
+- `src/scanner.mjs`: six-source JSONL/SQLite scanning and accounting
+- `src/methodology.mjs`: named public resource cases and high-side selection
+- `src/comparisons.mjs`: period-specific everyday comparisons
+- `src/content.mjs`: deterministic bilingual footer and share-copy pools
+- `src/reporting.mjs`: receipts, calendars, cards, and verdicts
 - `src/creature.mjs`: mutation growth rules and local state
 - `src/shared.mjs`: shared language and empty-usage primitives
 

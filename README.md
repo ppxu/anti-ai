@@ -99,9 +99,15 @@ anti-ai week --date 2026-07-23
 anti-ai month
 anti-ai month --date 2026-07-23
 
+anti-ai codex
+anti-ai codex --json
+
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
+anti-ai share --card specimen > anti-ai-specimen.svg
+anti-ai share --card wanted > anti-ai-wanted.svg
+anti-ai share --card fossil > anti-ai-fossil.svg
 
 anti-ai creature
 anti-ai creature --json
@@ -126,7 +132,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json` and `creature --json` ignore presentation language and keep stable machine-readable keys.
+`today --json`, `codex --json`, and `creature --json` ignore presentation language and keep stable machine-readable keys.
 
 ### `today`
 
@@ -138,19 +144,33 @@ Every verdict category combines seven charge titles with five detail lines. The 
 
 `--json` returns exact token data grouped by source and model. It deliberately excludes environmental proxies, baselines, and verdicts.
 
-The default all-source human receipt also settles that creature day and appends one concise line with ecology gain, current form, today's achievements, newly sealed fossils, and any pending evolution choice. `today --json` and source-filtered receipts do not mutate the complete growth history.
+The default all-source human receipt also settles that creature day and appends a concise mutation update with ecology gain, current form, today's achievements, newly sealed fossils, pending evolution choices, and anything newly added to the codex. `today --json` and source-filtered receipts do not mutate the complete growth history.
 
 The human-readable receipt scans the comparison window directly and may take several seconds when local logs are large. The tool deliberately avoids a persistent usage index in this release.
 
 ### `week`
 
-Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. A complete-source human report also settles the creature and appends a living casebook with the primary symptom, Pollution/Clarity change, stage and generation growth, fossils sealed during the period, newly unlocked badges, and a deterministic attending note. Source-filtered reports remain usage-only. The current release scans recent logs directly and does not create an index.
+Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. A complete-source human report also settles the creature and appends a living casebook with the primary symptom, Pollution/Clarity change, stage and generation growth, fossils sealed during the period, newly unlocked badges, collection discoveries, and a deterministic attending note. Source-filtered reports remain usage-only. The current release scans recent logs directly and does not create an index.
 
 ### `month`
 
 Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, and monthly resource comparisons.
 
-A complete-source human report also appends a monthly autopsy. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews stage/generation growth, fossils, and achievements without treating pre-hatch empty days as Withdrawal.
+A complete-source human report also appends a monthly autopsy. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews stage/generation growth, fossils, achievements, and collection discoveries without treating pre-hatch empty days as Withdrawal.
+
+### `codex`
+
+Inspect the private pathology collection derived from the existing creature history:
+
+```bash
+anti-ai codex
+anti-ai codex --date 2026-07-23 --lang en
+anti-ai codex --json
+```
+
+The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints and permanent fossils are collected without an artificial upper limit.
+
+`codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete Codex + Claude Code growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
 ### `share`
 
@@ -161,11 +181,14 @@ anti-ai share > anti-ai-receipt.svg
 anti-ai share --date 2026-07-23 --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
 anti-ai share --card pathology --lang en > anti-ai-pathology.svg
+anti-ai share --card specimen > anti-ai-specimen.svg
+anti-ai share --card wanted > anti-ai-wanted.svg
+anti-ai share --card fossil > anti-ai-fossil.svg
 ```
 
-`--card pathology` generates a second privacy-safe format from the complete creature history. It includes the specimen's ASCII form, Ecology, life stage, epithet, and daily Ecology change, while omitting exact Token totals, requests, source/model names, paths, and conversation content.
+Creature history now supports four privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, and `fossil` for the latest sealed generation. A fossil certificate becomes available after experience day 90.
 
-Nothing is uploaded. The destination file is controlled entirely by your shell. Pathology cards require the complete data set and therefore reject `--source` filters.
+Nothing is uploaded. Every card omits exact Token totals, requests, source/model names, paths, and conversation content; the destination file is controlled entirely by your shell. Creature cards require the complete data set and therefore reject `--source` filters.
 
 ### `creature`
 
@@ -246,7 +269,7 @@ The first 24 achievements are split evenly across red Offense, cyan Sobriety, an
 
 A local seed plus the date still selects one repeatable event per active day. After the first active day, every AI-free day also reduces legacy accumulated exposure by `2` and grows Withdrawal by `1` without erasing historical traits.
 
-State lives at `~/.anti-ai/creature.json` and currently uses schema v5. It stores only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils, sealed evolution choices, and a local seed—not prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps. Schema v1/v2/v3/v4 files migrate locally and idempotently without losing existing growth. Meaningful appearances are stored once as private specimen records for a future `anti-ai codex`. One mutation history always uses the complete Codex + Claude Code data set, so `creature` rejects `--source` filters.
+State lives at `~/.anti-ai/creature.json` and currently uses schema v5. It stores only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils, sealed evolution choices, and a local seed—not prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps. Schema v1/v2/v3/v4 files migrate locally and idempotently without losing existing growth. `anti-ai codex` derives its fixed and dynamic collections from this existing state without a new migration. One mutation history always uses the complete Codex + Claude Code data set, so `creature` and `codex` reject `--source` filters.
 
 Explicitly restart it with:
 

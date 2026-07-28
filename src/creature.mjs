@@ -1658,6 +1658,175 @@ function syncCreatureSpecimen(state, creature, date) {
   return true;
 }
 
+function creatureCodex(state, date) {
+  const creature = deriveCreature(state, date);
+  const specimens = (state.specimens ?? [])
+    .filter((specimen) => specimen.recordedAt <= date)
+    .map((specimen) => ({
+      id: specimen.fingerprint,
+      discoveredAt: specimen.recordedAt,
+      experienceDays: specimen.experienceDays,
+      stageId: specimen.stageId,
+      ecologyId: specimen.ecologyId,
+      pathologyId: specimen.pathologyId,
+      formId:
+        CREATURE_ECOLOGY_FORM_IDS[specimen.ecologyId]?.[
+          specimen.pathologyId
+        ] ?? null,
+      achievementId: specimen.achievementId,
+      rareAbilityId: specimen.rareAbilityId,
+    }));
+  const formDiscoveries = new Map();
+  for (const specimen of specimens) {
+    if (
+      specimen.formId &&
+      (!formDiscoveries.has(specimen.formId) ||
+        specimen.discoveredAt < formDiscoveries.get(specimen.formId))
+    ) {
+      formDiscoveries.set(specimen.formId, specimen.discoveredAt);
+    }
+  }
+  const forms = Object.entries(CREATURE_ECOLOGY_FORM_IDS).flatMap(
+    ([ecologyId, pathologies]) =>
+      Object.entries(pathologies).map(([pathologyId, id]) => ({
+        id,
+        ecologyId,
+        pathologyId,
+        discovered: formDiscoveries.has(id),
+        discoveredAt: formDiscoveries.get(id) ?? null,
+      })),
+  );
+
+  const unlockedAchievements = new Map(
+    creature.achievements.unlocked.map((achievement) => [
+      achievement.id,
+      achievement,
+    ]),
+  );
+  const achievements = CREATURE_ACHIEVEMENT_DEFINITIONS.map((definition) => {
+    const unlocked = unlockedAchievements.get(definition.id);
+    return {
+      id: definition.id,
+      category: definition.category,
+      rarity: definition.rarity,
+      discovered: unlocked !== undefined,
+      discoveredAt: unlocked?.unlockedAt ?? null,
+    };
+  });
+
+  const rareAbilityDiscoveries = new Map();
+  for (const [entryDate, day] of Object.entries(state.days)
+    .filter(([entryDate]) => entryDate <= date)
+    .sort(([left], [right]) => left.localeCompare(right))) {
+    const abilityId = day.rareAbilityGain?.id;
+    if (abilityId && !rareAbilityDiscoveries.has(abilityId)) {
+      rareAbilityDiscoveries.set(abilityId, entryDate);
+    }
+  }
+  const chromaticAbilities = Object.entries(
+    CREATURE_RARE_ABILITY_DEFINITIONS,
+  ).map(([id, definition]) => ({
+    id,
+    rarity: definition.rarity,
+    discovered: creature.rareAbilities[id] !== undefined,
+    discoveredAt: rareAbilityDiscoveries.get(id) ?? null,
+    level: creature.rareAbilities[id]?.level ?? 0,
+  }));
+
+  const fossils = creature.fossils.map((fossil) => ({
+    ...fossil,
+    discoveredAt: fossil.sealedAt,
+  }));
+  const scarDiscoveries = new Map();
+  for (const fossil of fossils) {
+    if (
+      !scarDiscoveries.has(fossil.scarId) ||
+      fossil.discoveredAt < scarDiscoveries.get(fossil.scarId)
+    ) {
+      scarDiscoveries.set(fossil.scarId, fossil.discoveredAt);
+    }
+  }
+  const scars = Object.values(CREATURE_SCARS).map((id) => ({
+    id,
+    discovered: scarDiscoveries.has(id),
+    discoveredAt: scarDiscoveries.get(id) ?? null,
+  }));
+  const fixedCollections = [
+    ...forms,
+    ...achievements,
+    ...chromaticAbilities,
+    ...scars,
+  ];
+  const fixedDiscovered = fixedCollections.filter(
+    (entry) => entry.discovered,
+  ).length;
+  const recent = [
+    ...forms.map((entry) => ({ type: "form", ...entry })),
+    ...achievements.map((entry) => ({ type: "achievement", ...entry })),
+    ...chromaticAbilities.map((entry) => ({
+      type: "chromaticAbility",
+      ...entry,
+    })),
+    ...scars.map((entry) => ({ type: "scar", ...entry })),
+    ...specimens.map((entry) => ({
+      type: "specimen",
+      id: entry.id,
+      discovered: true,
+      discoveredAt: entry.discoveredAt,
+    })),
+    ...fossils.map((entry) => ({
+      type: "fossil",
+      id: entry.id,
+      discovered: true,
+      discoveredAt: entry.discoveredAt,
+    })),
+  ]
+    .filter((entry) => entry.discovered && entry.discoveredAt === date)
+    .map(({ type, id, discoveredAt }) => ({ type, id, discoveredAt }));
+
+  return {
+    date,
+    specimenId: creature.appearance.specimenId,
+    summary: {
+      fixed: {
+        discovered: fixedDiscovered,
+        total: fixedCollections.length,
+        percent: Math.round(
+          (fixedDiscovered / fixedCollections.length) * 100,
+        ),
+      },
+      forms: {
+        discovered: forms.filter((entry) => entry.discovered).length,
+        total: forms.length,
+      },
+      achievements: {
+        discovered: achievements.filter((entry) => entry.discovered).length,
+        total: achievements.length,
+      },
+      chromaticAbilities: {
+        discovered: chromaticAbilities.filter((entry) => entry.discovered)
+          .length,
+        total: chromaticAbilities.length,
+      },
+      scars: {
+        discovered: scars.filter((entry) => entry.discovered).length,
+        total: scars.length,
+      },
+      specimens: { discovered: specimens.length },
+      fossils: { discovered: fossils.length },
+    },
+    sections: {
+      forms,
+      achievements,
+      chromaticAbilities,
+      scars,
+      specimens,
+      fossils,
+    },
+    recent,
+  };
+}
+
 function creatureGenerationNumber(experienceDays) {
   return experienceDays === 0
     ? 0
@@ -2326,6 +2495,33 @@ function creatureCasebook(state, startDate, endDate) {
         achievement.unlockedAt <= endDate,
     )
     .map((achievement) => achievement.id);
+  const codex = creatureCodex(state, endDate);
+  const discoveries = {
+    forms: codex.sections.forms.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    achievements: codex.sections.achievements.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    chromatics: codex.sections.chromaticAbilities.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    scars: codex.sections.scars.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    specimens: codex.sections.specimens.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    fossils: codex.sections.fossils.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+  };
 
   return {
     startDate,
@@ -2353,6 +2549,13 @@ function creatureCasebook(state, startDate, endDate) {
       ).length,
     },
     achievementIds,
+    discoveries: {
+      ...discoveries,
+      total: Object.values(discoveries).reduce(
+        (sum, count) => sum + count,
+        0,
+      ),
+    },
   };
 }
 
@@ -2381,6 +2584,7 @@ export {
   creatureAppearanceState,
   creatureArt,
   creatureCasebook,
+  creatureCodex,
   creatureClinicalNote,
   creatureEvent,
   creatureEvolutionEffect,

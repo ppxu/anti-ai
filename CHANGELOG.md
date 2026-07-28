@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-28
+
+### Added
+
+- A bilingual private pathology codex with 50 fixed collection entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars.
+- Unlimited dynamic specimen and permanent-fossil collections derived from existing schema v5 history.
+- Stable `codex --json` IDs, discovery states and dates, collection summaries, and date-scoped recent discoveries.
+- Collection feedback in complete-source `today`, `week`, and `month` reports.
+- Three privacy-safe 1200×630 collection cards: current specimen, satirical wanted poster, and permanent fossil certificate.
+
+### Changed
+
+- Locked human-readable codex entries remain `???` until discovered.
+- The installable Agent Skill now routes collection, codex, specimen-card, wanted-card, and fossil-certificate requests.
+- Help, methodology output, and both READMEs document collection workflows and their complete-source boundary.
+
+### Security
+
+- The codex derives collections from the existing schema v5 state and adds no migration or new stored personal data.
+- Every collection card omits prompts, responses, paths, source/model names, request counts, and exact Token totals.
+
 ## [1.1.0] - 2026-07-28
 
 ### Added

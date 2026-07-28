@@ -392,6 +392,8 @@ const CREATURE_ABILITY_KEYS = [
 
 const CREATURE_ABILITY_MAX = 999;
 const CREATURE_RARE_ABILITY_MAX = 9;
+const CREATURE_GENERATION_LENGTH = 90;
+const CREATURE_INHERITANCE_BONUS = 5;
 const CREATURE_RARE_ABILITY_CHANCES = {
   rare: 0.5,
   epic: 0.1,
@@ -422,6 +424,61 @@ const CREATURE_BRANCH_ABILITIES = {
   cache: "shell",
   frenzy: "mouths",
   nuclear: "glow",
+};
+
+const CREATURE_EVOLUTION_DEFINITIONS = {
+  bottomless_graft: {
+    category: "pollution",
+    abilityId: "appetite",
+    benefitId: "extra_growth",
+    costId: "pollution_spill",
+  },
+  recursive_lobe: {
+    category: "pollution",
+    abilityId: "memory",
+    benefitId: "extra_growth",
+    costId: "pollution_spill",
+  },
+  chorus_jaw: {
+    category: "pollution",
+    abilityId: "mouths",
+    benefitId: "extra_growth",
+    costId: "pollution_spill",
+  },
+  reactor_bladder: {
+    category: "pollution",
+    abilityId: "glow",
+    benefitId: "extra_growth",
+    costId: "pollution_spill",
+  },
+  abstinence_sac: {
+    category: "clarity",
+    abilityId: "withdrawal",
+    benefitId: "clarity_surge",
+    costId: "slower_detox",
+  },
+  loaded_nerve: {
+    category: "paradox",
+    abilityId: "instability",
+    benefitId: "rare_event_leak",
+    costId: "pollution_spill",
+  },
+};
+const CREATURE_EVOLUTION_POOLS = {
+  pollution: [
+    "bottomless_graft",
+    "recursive_lobe",
+    "chorus_jaw",
+    "reactor_bladder",
+  ],
+  clarity: ["abstinence_sac"],
+  paradox: ["loaded_nerve"],
+};
+const CREATURE_SCARS = {
+  unformed: "blank_suture",
+  polluted: "carbonized_spine",
+  lucid: "sterile_halo",
+  paradox: "split_shadow",
 };
 
 const CREATURE_TALENTS = {
@@ -835,6 +892,34 @@ const CREATURE_COPY = {
       en: "WITHDRAWING WHILE REFILLING",
     },
   },
+  scars: {
+    blank_suture: { zh: "空白缝合线", en: "BLANK SUTURE" },
+    carbonized_spine: { zh: "碳化脊柱", en: "CARBONIZED SPINE" },
+    sterile_halo: { zh: "无菌光环", en: "STERILE HALO" },
+    split_shadow: { zh: "分裂影子", en: "SPLIT SHADOW" },
+  },
+  evolutionCategories: {
+    pollution: { zh: "污染", en: "POLLUTION" },
+    clarity: { zh: "清醒", en: "CLARITY" },
+    paradox: { zh: "悖论", en: "PARADOX" },
+  },
+  evolutions: {
+    bottomless_graft: { zh: "无底胃嫁接", en: "BOTTOMLESS GRAFT" },
+    recursive_lobe: { zh: "递归脑叶", en: "RECURSIVE LOBE" },
+    chorus_jaw: { zh: "合唱颌", en: "CHORUS JAW" },
+    reactor_bladder: { zh: "反应堆膀胱", en: "REACTOR BLADDER" },
+    abstinence_sac: { zh: "戒断囊", en: "ABSTINENCE SAC" },
+    loaded_nerve: { zh: "灌铅神经", en: "LOADED NERVE" },
+  },
+  evolutionBenefits: {
+    extra_growth: { zh: "额外能力成长", en: "EXTRA ABILITY GROWTH" },
+    clarity_surge: { zh: "清醒性增生", en: "CLARITY SURGE" },
+    rare_event_leak: { zh: "稀有事件泄漏", en: "RARE EVENT LEAK" },
+  },
+  evolutionCosts: {
+    pollution_spill: { zh: "污染回流", en: "POLLUTION SPILL" },
+    slower_detox: { zh: "污染衰减放缓", en: "SLOWER DETOX" },
+  },
   achievements: {
     baseline_arsonist: { zh: "基线纵火犯", en: "BASELINE ARSONIST" },
     context_hamster: { zh: "上下文仓鼠", en: "CONTEXT HAMSTER" },
@@ -884,14 +969,18 @@ function emptyCreatureAbilities() {
   return Object.fromEntries(CREATURE_ABILITY_KEYS.map((key) => [key, 0]));
 }
 
-function creatureRareChance(instability = 0) {
-  return Math.min(20, 8 + Math.floor(instability / 10));
+function creatureRareChance(instability = 0, bonus = 0) {
+  return Math.min(
+    30,
+    Math.min(20, 8 + Math.floor(instability / 10)) + bonus,
+  );
 }
 
-function creatureEvent(seed, date, instability = 0) {
+function creatureEvent(seed, date, instability = 0, rareChanceBonus = 0) {
   const digest = createHash("sha256").update(`${seed}:${date}`).digest();
   const rare =
-    digest.readUInt32BE(0) % 100 < creatureRareChance(instability);
+    digest.readUInt32BE(0) % 100 <
+    creatureRareChance(instability, rareChanceBonus);
   const pool = rare ? RARE_CREATURE_EVENTS : COMMON_CREATURE_EVENTS;
   const event = pool[digest.readUInt32BE(4) % pool.length];
   return {
@@ -965,6 +1054,12 @@ function creatureArt(creature) {
     lucid: "--X--",
     paradox: "!X!X!",
   };
+  const scarMarks = {
+    blank_suture: "--//--",
+    carbonized_spine: "##/##",
+    sterile_halo: "oo/oo",
+    split_shadow: "//\\\\//",
+  };
   const centerInside = (value) => {
     const padding = Math.max(0, insideWidth - value.length);
     const left = Math.floor(padding / 2);
@@ -990,8 +1085,9 @@ function creatureArt(creature) {
           ? "--X--"
           : appearance.achievementCategory === "paradox"
             ? "!X?X!"
-            : CREATURE_APPEARANCE_GLYPHS.pattern[geneIds.pattern]
-      : ecologyMarks[appearance.ecology]);
+            : scarMarks[appearance.scarId] ??
+              CREATURE_APPEARANCE_GLYPHS.pattern[geneIds.pattern]
+      : scarMarks[appearance.scarId] ?? ecologyMarks[appearance.ecology]);
   const limbs =
     appearance.stageIndex >= 1
       ? CREATURE_APPEARANCE_GLYPHS.limbs[geneIds.limbs]
@@ -1069,6 +1165,7 @@ function deriveCreatureAppearance(
   pathology,
   achievements,
   rareAbilities,
+  scarId = null,
 ) {
   const partIds = [
     appearanceState.genes.body,
@@ -1083,6 +1180,9 @@ function deriveCreatureAppearance(
   }
   if (stageIndex >= 2) {
     partIds.push(appearanceState.genes.core, appearanceState.genes.limbs);
+  }
+  if (scarId) {
+    partIds.push(`scar_${scarId}`);
   }
   const latestAchievement = [...achievements].sort(
     (left, right) =>
@@ -1111,6 +1211,7 @@ function deriveCreatureAppearance(
         pathology,
         partIds,
         rareAbilityId: latestRareAbilityId,
+        ...(scarId ? { scarId } : {}),
       }),
     )
     .digest("hex")
@@ -1128,6 +1229,7 @@ function deriveCreatureAppearance(
     achievementId: latestAchievement?.id ?? null,
     achievementCategory: latestAchievement?.category ?? null,
     rareAbilityId: latestRareAbilityId ?? null,
+    scarId,
   };
 }
 
@@ -1556,11 +1658,174 @@ function syncCreatureSpecimen(state, creature, date) {
   return true;
 }
 
+function creatureGenerationNumber(experienceDays) {
+  return experienceDays === 0
+    ? 0
+    : Math.floor((experienceDays - 1) / CREATURE_GENERATION_LENGTH) + 1;
+}
+
+function creatureEvolutionOptionIds(seed, generation) {
+  const digest = createHash("sha256")
+    .update(`${seed}:generation:${generation}:evolution-options`)
+    .digest();
+  return [
+    CREATURE_EVOLUTION_POOLS.pollution[
+      digest.readUInt8(0) % CREATURE_EVOLUTION_POOLS.pollution.length
+    ],
+    CREATURE_EVOLUTION_POOLS.clarity[
+      digest.readUInt8(1) % CREATURE_EVOLUTION_POOLS.clarity.length
+    ],
+    CREATURE_EVOLUTION_POOLS.paradox[
+      digest.readUInt8(2) % CREATURE_EVOLUTION_POOLS.paradox.length
+    ],
+  ];
+}
+
+function effectiveCreatureEntries(state, date) {
+  const entries = Object.entries(state.days)
+    .filter(([entryDate]) => entryDate <= date)
+    .sort(([left], [right]) => left.localeCompare(right));
+  const hatchIndex = entries.findIndex(([, day]) => day.active);
+  return hatchIndex === -1 ? [] : entries.slice(hatchIndex);
+}
+
+function syncCreatureGenerations(state, date) {
+  state.generations ??= { fossils: [], evolutions: {} };
+  state.generations.fossils ??= [];
+  state.generations.evolutions ??= {};
+  const entries = effectiveCreatureEntries(state, date);
+  const completedGenerations = Math.floor(
+    entries.length / CREATURE_GENERATION_LENGTH,
+  );
+
+  for (let generation = 1; generation <= completedGenerations; generation += 1) {
+    if (
+      state.generations.fossils.some(
+        (fossil) => fossil.generation === generation,
+      )
+    ) {
+      continue;
+    }
+    const sealedAt =
+      entries[generation * CREATURE_GENERATION_LENGTH - 1][0];
+    const creature = deriveCreature(state, sealedAt);
+    state.generations.fossils.push({
+      id: createHash("sha256")
+        .update(`${state.seed}:generation:${generation}:fossil`)
+        .digest("hex")
+        .slice(0, 8),
+      generation,
+      sealedAt,
+      ecologyId: creature.ecology.type,
+      pathologyId: creature.branch,
+      inheritanceAbilityId: creature.dominantAbility,
+      scarId: CREATURE_SCARS[creature.ecology.type],
+      appearanceFingerprint: creature.appearance.fingerprint,
+      evolutionId:
+        state.generations.evolutions[String(generation)]?.selectedId ?? null,
+    });
+    const nextGeneration = generation + 1;
+    state.generations.evolutions[String(nextGeneration)] ??= {
+      generation: nextGeneration,
+      offeredAt: sealedAt,
+      optionIds: creatureEvolutionOptionIds(state.seed, nextGeneration),
+      selectedId: null,
+      selectedAt: null,
+      status: "pending",
+    };
+  }
+  state.generations.fossils.sort(
+    (left, right) => left.generation - right.generation,
+  );
+
+  const currentGeneration = creatureGenerationNumber(entries.length);
+  for (const evolution of Object.values(state.generations.evolutions)) {
+    if (
+      evolution.generation < currentGeneration &&
+      evolution.selectedId === null
+    ) {
+      evolution.status = "missed";
+    }
+  }
+  return state.generations;
+}
+
+function currentCreatureEvolutionState(state, date) {
+  const generation = creatureGenerationNumber(
+    effectiveCreatureEntries(state, date).length,
+  );
+  return Object.values(state.generations?.evolutions ?? {})
+    .filter(
+      (evolution) =>
+        evolution.offeredAt <= date &&
+        (evolution.generation === generation ||
+          evolution.generation === generation + 1),
+    )
+    .sort((left, right) => left.generation - right.generation)
+    .at(0);
+}
+
+function creatureEvolutionSummary(state, date) {
+  const evolution = currentCreatureEvolutionState(state, date);
+  if (!evolution) return null;
+  const options = evolution.optionIds.map((id, index) => ({
+    slot: index + 1,
+    id,
+    ...CREATURE_EVOLUTION_DEFINITIONS[id],
+  }));
+  const status =
+    evolution.selectedAt !== null && evolution.selectedAt <= date
+      ? "selected"
+      : evolution.generation < creatureGenerationNumber(
+            effectiveCreatureEntries(state, date).length,
+          )
+        ? "missed"
+        : "pending";
+  return {
+    generation: evolution.generation,
+    status,
+    selectedId: status === "selected" ? evolution.selectedId : null,
+    selected:
+      status !== "selected"
+        ? null
+        : options.find((option) => option.id === evolution.selectedId),
+    options,
+  };
+}
+
+function selectCreatureEvolution(state, date, choice) {
+  const evolution = currentCreatureEvolutionState(state, date);
+  if (!evolution) return { error: "unavailable" };
+  const slot = Number(choice);
+  if (
+    !Number.isInteger(slot) ||
+    slot < 1 ||
+    slot > evolution.optionIds.length
+  ) {
+    return { error: "invalid", generation: evolution.generation };
+  }
+  const selectedId = evolution.optionIds[slot - 1];
+  if (evolution.selectedId !== null && evolution.selectedId !== selectedId) {
+    return { error: "locked", generation: evolution.generation };
+  }
+  evolution.selectedId = selectedId;
+  evolution.selectedAt ??= date;
+  evolution.status = "selected";
+  const fossil = state.generations.fossils.find(
+    (candidate) =>
+      candidate.generation === evolution.generation &&
+      candidate.sealedAt === date,
+  );
+  if (fossil) fossil.evolutionId = selectedId;
+  return { value: creatureEvolutionSummary(state, date) };
+}
+
 function migrateCreatureState(state) {
   state.appearance ??= creatureAppearanceState(state.seed);
   state.appearance.unlockedPartIds ??= [];
   state.achievements ??= {};
   state.specimens ??= [];
+  state.generations ??= { fossils: [], evolutions: {} };
   let hasHatched = false;
   for (const [date, day] of Object.entries(state.days).sort(([left], [right]) =>
     left.localeCompare(right),
@@ -1586,7 +1851,7 @@ function migrateCreatureState(state) {
     );
     if (day.active) hasHatched = true;
   }
-  state.schemaVersion = 4;
+  state.schemaVersion = 5;
   return state;
 }
 
@@ -1598,7 +1863,7 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if ([1, 2, 3, 4].includes(state?.schemaVersion) && state.days) {
+    if ([1, 2, 3, 4, 5].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
       return migrateCreatureState(state);
@@ -1607,7 +1872,7 @@ async function loadCreatureState() {
     if (error.code !== "ENOENT") throw error;
   }
   return migrateCreatureState({
-    schemaVersion: 4,
+    schemaVersion: 5,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},
@@ -1631,6 +1896,77 @@ function unlockedCreatureTalents(abilities) {
       .filter((talent) => abilities[ability] >= talent.threshold)
       .map((talent) => talent.id),
   );
+}
+
+function creatureEvolutionRule(abilities, abilityId) {
+  const talentModifiers = CREATURE_TALENTS[abilityId].filter(
+    (talent) => abilities[abilityId] >= talent.threshold,
+  ).length;
+  return {
+    procChancePercent: Math.min(
+      35,
+      5 + Math.floor(abilities[abilityId] / 25) + talentModifiers * 2,
+    ),
+    talentModifiers,
+    benefitPoints: 1 + Math.floor(talentModifiers / 3),
+    costPoints: 1 + Math.floor(talentModifiers / 5),
+  };
+}
+
+function creatureEvolutionEffect(state, date, day, previousCreature) {
+  const hasHatched = previousCreature.activeDays > 0 || day.active;
+  if (!hasHatched) return null;
+  const generation = creatureGenerationNumber(
+    previousCreature.experienceDays + 1,
+  );
+  const evolution = state.generations?.evolutions?.[String(generation)];
+  if (
+    evolution?.status !== "selected" ||
+    evolution.selectedAt > date
+  ) {
+    return null;
+  }
+  const definition = CREATURE_EVOLUTION_DEFINITIONS[evolution.selectedId];
+  const rule = creatureEvolutionRule(
+    previousCreature.abilities,
+    definition.abilityId,
+  );
+  const eligible =
+    definition.category === "clarity" ? !day.active : day.active;
+  const digest = createHash("sha256")
+    .update(`${state.seed}:${date}:${evolution.selectedId}:rule-effect`)
+    .digest();
+  const triggered =
+    eligible &&
+    digest.readUInt32BE(0) % 10_000 < rule.procChancePercent * 100;
+  return {
+    generation,
+    evolutionId: evolution.selectedId,
+    category: definition.category,
+    abilityId: definition.abilityId,
+    procChancePercent: rule.procChancePercent,
+    talentModifiers: rule.talentModifiers,
+    triggered,
+    benefitId: definition.benefitId,
+    benefitPoints: triggered ? rule.benefitPoints : 0,
+    costId: definition.costId,
+    costPoints: triggered ? rule.costPoints : 0,
+  };
+}
+
+function applyCreatureEvolutionEffect(record, effect) {
+  record.evolutionEffect = effect;
+  if (!effect?.triggered) return record;
+  if (effect.category === "pollution") {
+    record.abilityGains[effect.abilityId] += effect.benefitPoints;
+    record.ecologyGains.pollution += effect.costPoints;
+  } else if (effect.category === "clarity") {
+    record.ecologyGains.clarity += effect.benefitPoints;
+    record.exposureRecoveryPenalty = effect.costPoints;
+  } else {
+    record.ecologyGains.pollution += effect.costPoints;
+  }
+  return record;
 }
 
 function creatureMood(creature, today) {
@@ -1679,6 +2015,9 @@ function deriveCreature(state, date) {
   let ecologyType = "unformed";
   let pendingEcologyType = null;
   let pendingEcologyDays = 0;
+  let evolutionTriggers = 0;
+  let evolutionBenefitPoints = 0;
+  let evolutionCostPoints = 0;
 
   for (const [, day] of entries) {
     if (day.active) {
@@ -1690,7 +2029,10 @@ function deriveCreature(state, date) {
       mutationEvents += 1;
       if (day.event?.rarity === "rare") rareMutations += 1;
     } else if (activeDays > 0) {
-      exposure = Math.max(0, exposure - 2);
+      exposure = Math.max(
+        0,
+        exposure - Math.max(0, 2 - (day.exposureRecoveryPenalty ?? 0)),
+      );
       activeStreakDays = 0;
       quietStreakDays += 1;
     }
@@ -1733,17 +2075,16 @@ function deriveCreature(state, date) {
         (rareAbilityLevels[id] ?? 0) + points,
       );
     }
+    if (day.evolutionEffect?.triggered) {
+      evolutionTriggers += 1;
+      evolutionBenefitPoints += day.evolutionEffect.benefitPoints;
+      evolutionCostPoints += day.evolutionEffect.costPoints;
+    }
   }
 
   for (const key of Object.keys(traits)) traits[key] = roundCreature(traits[key]);
   const branch = dominantCreatureKey(traits);
   const resolvedBranch = activeDays === 0 ? "nuclear" : branch;
-  const dominantAbility = dominantCreatureKey(abilities);
-  const abilityPoints = Object.values(abilities).reduce(
-    (sum, value) => sum + value,
-    0,
-  );
-  const talents = unlockedCreatureTalents(abilities);
   const rareAbilities = Object.fromEntries(
     Object.entries(CREATURE_RARE_ABILITY_DEFINITIONS)
       .filter(([id]) => rareAbilityLevels[id] > 0)
@@ -1755,10 +2096,58 @@ function deriveCreature(state, date) {
         },
       ]),
   );
+  const generationNumber = creatureGenerationNumber(ageDays);
+  const generationDay =
+    ageDays === 0
+      ? 0
+      : ((ageDays - 1) % CREATURE_GENERATION_LENGTH) + 1;
+  const fossils = (state.generations?.fossils ?? []).filter(
+    (fossil) => fossil.sealedAt <= date,
+  );
+  const inheritedFossil =
+    generationNumber > 1
+      ? fossils.find(
+          (fossil) => fossil.generation === generationNumber - 1,
+        )
+      : undefined;
+  if (inheritedFossil) {
+    abilities[inheritedFossil.inheritanceAbilityId] = Math.min(
+      CREATURE_ABILITY_MAX,
+      abilities[inheritedFossil.inheritanceAbilityId] +
+        CREATURE_INHERITANCE_BONUS,
+    );
+  }
+  const inheritedAbilityId = inheritedFossil?.inheritanceAbilityId ?? null;
+  const scarId = inheritedFossil?.scarId ?? null;
+  const dominantAbility = dominantCreatureKey(abilities);
+  const abilityPoints = Object.values(abilities).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const talents = unlockedCreatureTalents(abilities);
+  const evolution = creatureEvolutionSummary(state, date);
+  if (evolution) {
+    evolution.options = evolution.options.map((option) => ({
+      ...option,
+      ...creatureEvolutionRule(abilities, option.abilityId),
+    }));
+    evolution.selected =
+      evolution.selectedId === null
+        ? null
+        : evolution.options.find(
+            (option) => option.id === evolution.selectedId,
+          );
+  }
   const stageIndex = CREATURE_STAGES.findLastIndex(
-    (stage) => ageDays >= stage.threshold,
+    (stage) => generationDay >= stage.threshold,
   );
   const stage = CREATURE_STAGES[stageIndex];
+  const nextStageAt =
+    stage.nextAt === null
+      ? null
+      : generationNumber === 0
+        ? stage.nextAt
+        : (generationNumber - 1) * CREATURE_GENERATION_LENGTH + stage.nextAt;
   const pollutionRate = roundCreature(
     ecologyPollution / Math.max(1, ageDays),
   );
@@ -1769,7 +2158,8 @@ function deriveCreature(state, date) {
       : Math.min(
           100,
           Math.round(
-            ((ageDays - stage.threshold) / (stage.nextAt - stage.threshold)) *
+            ((generationDay - stage.threshold) /
+              (stage.nextAt - stage.threshold)) *
               100,
           ),
         );
@@ -1781,6 +2171,7 @@ function deriveCreature(state, date) {
     resolvedBranch,
     achievements.unlocked,
     rareAbilities,
+    scarId,
   );
   const titleModifierId =
     ecologyType === "polluted"
@@ -1798,7 +2189,7 @@ function deriveCreature(state, date) {
     branch: resolvedBranch,
     form: CREATURE_FORMS[resolvedBranch][stageIndex],
     exposure,
-    nextStageAt: stage.nextAt,
+    nextStageAt,
     progressPercent,
     quietStreakDays,
     activeStreakDays,
@@ -1840,7 +2231,36 @@ function deriveCreature(state, date) {
         ...state.appearance.unlockedPartIds,
       ]).size,
       specimensCollected: state.specimens?.length ?? 0,
+      fossilsSealed: fossils.length,
+      evolutionTriggers,
+      evolutionBenefitPoints,
+      evolutionCostPoints,
+      evolutionsMissed: Object.values(
+        state.generations?.evolutions ?? {},
+      ).filter(
+        (candidate) =>
+          candidate.offeredAt <= date &&
+          candidate.generation < generationNumber &&
+          candidate.selectedId === null,
+      ).length,
     },
+    generation: {
+      number: generationNumber,
+      day: generationDay,
+      length: CREATURE_GENERATION_LENGTH,
+      progressPercent:
+        ageDays === 0
+          ? 0
+          : Math.round(
+              ((((ageDays - 1) % CREATURE_GENERATION_LENGTH) + 1) /
+                CREATURE_GENERATION_LENGTH) *
+                100,
+            ),
+      inheritedAbilityId,
+      scarId,
+    },
+    fossils,
+    evolution,
     ecology: {
       pollution: ecologyPollution,
       clarity: ecologyClarity,
@@ -1925,6 +2345,12 @@ function creatureCasebook(state, startDate, endDate) {
       experienceDelta: after.experienceDays - before.experienceDays,
       stageFrom: before.stage,
       stageTo: after.stage,
+      generationFrom: before.generation.number,
+      generationTo: after.generation.number,
+      fossilsSealed: after.fossils.filter(
+        (fossil) =>
+          fossil.sealedAt >= startDate && fossil.sealedAt <= endDate,
+      ).length,
     },
     achievementIds,
   };
@@ -1957,6 +2383,8 @@ export {
   creatureCasebook,
   creatureClinicalNote,
   creatureEvent,
+  creatureEvolutionEffect,
+  creatureEvolutionSummary,
   creatureLabel,
   creatureMood,
   creatureRareAbilityGain,
@@ -1965,9 +2393,12 @@ export {
   dailyCreatureRecord,
   deriveCreatureAppearance,
   deriveCreature,
+  applyCreatureEvolutionEffect,
   loadCreatureState,
   roundCreature,
   saveCreatureState,
+  selectCreatureEvolution,
   syncCreatureAchievements,
+  syncCreatureGenerations,
   syncCreatureSpecimen,
 };

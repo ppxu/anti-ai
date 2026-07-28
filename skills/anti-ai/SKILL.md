@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource or creature pathology share card, or asks about their token-fed mutation creature and its living casebook—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource or creature pathology share card, or asks about their token-fed mutation creature, generations, fossils, evolution choices, and living casebook—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local Codex and Claude Code usage metadata.
 ---
 
@@ -58,7 +58,7 @@ anti-ai month
 
 Add `--date YYYY-MM-DD`, `--source codex|claude`, or `--lang zh|en` only when the user requests that scope. Do not run all three reports when one answers the question.
 
-The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage growth, new badges, and a deterministic attending note. The complete-source human `month` report appends a monthly autopsy with post-hatch observation totals, Ecology transition, growth, achievements, and a deterministic conclusion. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
+The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage and generation growth, newly sealed fossils, new badges, and a deterministic attending note. The complete-source human `month` report appends a monthly autopsy with post-hatch observation totals, Ecology transition, generation growth, fossils, achievements, and a deterministic conclusion. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
 
 Daily verdicts are fixed local content, not model output. Each symptom combines seven charge titles with five detail lines, producing at least 35 deterministic combinations before an identical pair repeats; rotation continues across month boundaries.
 
@@ -85,17 +85,32 @@ Inspect the user's locally persisted mutation creature:
 anti-ai creature
 anti-ai creature --lang en
 anti-ai creature --json
+anti-ai creature evolve
+anti-ai creature evolve <1|2|3>
+anti-ai creature evolve --json
 ```
 
-The creature backfills the latest 30 calendar days. Every settled day after hatching adds exactly one experience day, so spending more Tokens cannot accelerate its four life stages. Relative to the prior seven-calendar-day baseline, high use adds Pollution, low use adds Clarity, and an AI-free day adds more Clarity. Those values produce Unformed, Polluted, Lucid, or Paradox ecology after a three-day confirmation window; four usage pathologies still describe how the Token work shapes its body.
+The creature backfills the latest 30 calendar days. Every settled day after hatching adds exactly one experience day, so spending more Tokens cannot accelerate its four life stages. Each generation lasts 90 experience days. Day 90 seals the current form as a permanent fossil; the next generation returns to embryo form, inherits one ability with a small permanent bonus, and carries a scar. Relative to the prior seven-calendar-day baseline, high use adds Pollution, low use adds Clarity, and an AI-free day adds more Clarity. Those values produce Unformed, Polluted, Lucid, or Paradox ecology after a three-day confirmation window; four usage pathologies still describe how the Token work shapes its body.
+
+After the first fossil, `anti-ai creature evolve` shows three explicit choices:
+
+1. POLLUTION strengthens a consumption-oriented ability, but creates more Pollution when it triggers.
+2. CLARITY strengthens withdrawal-driven Clarity, but slows exposure recovery.
+3. PARADOX increases the chance of rare mutations, but also risks Pollution.
+
+Choose with `anti-ai creature evolve <1|2|3>`. A missed choice does not block the next generation, and a sealed choice cannot be changed. Evolution effects are ability-driven rather than guaranteed:
+
+`min(35, 5 + floor(ability / 25) + 2 × unlocked talent count)%`
+
+Talents increase both the benefit and the cost. When reporting an active evolution, include its trigger chance, cumulative proc count, benefit points, and cost points so the trade-off remains visible.
 
 Its ASCII form is assembled deterministically from a stable local genome, life stage, usage pathology, ecology, achievement parts, and chromatic abilities. The first collection contains 16 form families and 24 achievements, split evenly across Offense, Sobriety, and Paradox. Repeatable achievements have three behavior-count tiers; meaningful appearance fingerprints are retained as private specimen records for a future codex. Do not describe high consumption as the primary or preferred upgrade route.
 
 It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Regular abilities cap at 999 and unlock mutation talents at 5, 15, 30, 100, 300, and 700; Instability raises the rare-event chance from 8% up to 20%. Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%, and repeated awakenings grow up to level 9.
 
-When reporting a creature, summarize its specimen ID, life stage and experience, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, and rare-mutation chance. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
+When reporting a creature, summarize its specimen ID, generation, life stage and experience, latest fossil, inherited ability and scar, current evolution choice and benefit/cost totals, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, and rare-mutation chance. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
 
-The creature state is stored at `~/.anti-ai/creature.json` with schema v4. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1/v2/v3 files migrate locally and idempotently. Do not open or edit the state file directly.
+The creature state is stored at `~/.anti-ai/creature.json` with schema v5. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils, sealed evolution choices, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1/v2/v3/v4 files migrate locally and idempotently. Do not open or edit the state file directly.
 
 Only destroy the mutation history when the user explicitly asks to reset or restart it:
 

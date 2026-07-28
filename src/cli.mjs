@@ -2,6 +2,7 @@ import { rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 
 import {
+  applyCreatureEvolutionEffect,
   CREATURE_ABILITY_KEYS,
   CREATURE_ABILITY_MAX,
   CREATURE_COPY,
@@ -14,6 +15,8 @@ import {
   creatureCasebook,
   creatureClinicalNote,
   creatureEvent,
+  creatureEvolutionEffect,
+  creatureEvolutionSummary,
   creatureLabel,
   creatureMood,
   creatureRareAbilityGain,
@@ -24,7 +27,9 @@ import {
   loadCreatureState,
   roundCreature,
   saveCreatureState,
+  selectCreatureEvolution,
   syncCreatureAchievements,
+  syncCreatureGenerations,
   syncCreatureSpecimen,
 } from "./creature.mjs";
 import {
@@ -76,6 +81,17 @@ function achievementLabel(achievement, lang) {
   );
 }
 
+function generationLabel(generation, lang) {
+  return lang === "zh" ? `第 ${generation} 代` : `GEN ${generation}`;
+}
+
+function renderEvolutionOptions(evolution, lang) {
+  return evolution.options.flatMap((option) => [
+    `  ${option.slot}. [${creatureLabel("evolutionCategories", option.category, lang)}] ${creatureLabel("evolutions", option.id, lang)} · ${creatureLabel("abilities", option.abilityId, lang)} · ${localized(lang, "触发", "PROC")} ${option.procChancePercent}%`,
+    `     ${localized(lang, "收益", "BENEFIT")} ${creatureLabel("evolutionBenefits", option.benefitId, lang)} +${option.benefitPoints} · ${localized(lang, "代价", "COST")} ${creatureLabel("evolutionCosts", option.costId, lang)} +${option.costPoints}`,
+  ]);
+}
+
 function parseArgs(argv) {
   const [command, ...rest] = argv;
   const options = {
@@ -86,6 +102,7 @@ function parseArgs(argv) {
     json: false,
     card: undefined,
     action: undefined,
+    choice: undefined,
     unknown: [],
     missing: undefined,
   };
@@ -120,10 +137,17 @@ function parseArgs(argv) {
       }
     } else if (
       command === "creature" &&
-      arg === "reset" &&
+      ["reset", "evolve"].includes(arg) &&
       options.action === undefined
     ) {
       options.action = arg;
+    } else if (
+      command === "creature" &&
+      options.action === "evolve" &&
+      options.choice === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.choice = arg;
     } else if (!["--help", "-h", "--version", "-v"].includes(arg)) {
       options.unknown.push(arg);
     }
@@ -147,7 +171,26 @@ function renderCreatureTodaySummary(creature, lang) {
     .map((achievement) => achievementLabel(achievement, lang))
     .join(" · ");
   const form = creatureLabel("ecologyForms", creature.ecologyForm, lang);
-  return `${localized(lang, "异变体", "MUTATION")}  ${gains || localized(lang, "惯常波动", "habitual drift")} · ${localized(lang, `仍为「${form}」`, `still “${form}”`)} · ${localized(lang, "今日成就", "today's achievements")} ${achievements || localized(lang, "无", "none")}\n`;
+  const fossil = creature.fossils.find(
+    (candidate) => candidate.sealedAt === creature.date,
+  );
+  const milestones = [
+    fossil
+      ? localized(
+          lang,
+          `永久化石 #${fossil.id} 已封存`,
+          `permanent fossil #${fossil.id} sealed`,
+        )
+      : null,
+    creature.evolution?.status === "pending"
+      ? localized(
+          lang,
+          `第 ${creature.evolution.generation} 代进化待选择（anti-ai creature evolve）`,
+          `generation ${creature.evolution.generation} evolution pending (anti-ai creature evolve)`,
+        )
+      : null,
+  ].filter(Boolean);
+  return `${localized(lang, "异变体", "MUTATION")}  ${gains || localized(lang, "惯常波动", "habitual drift")} · ${localized(lang, `仍为「${form}」`, `still “${form}”`)} · ${localized(lang, "今日成就", "today's achievements")} ${achievements || localized(lang, "无", "none")}${milestones.length > 0 ? ` · ${milestones.join(" · ")}` : ""}\n`;
 }
 
 function renderCreatureCasebook(casebook, lang) {
@@ -163,6 +206,7 @@ function renderCreatureCasebook(casebook, lang) {
     `${localized(lang, "本周主症状", "PRIMARY SYMPTOM")}  ${creatureLabel("clinicalSymptoms", casebook.primarySymptom, lang)} · ${casebook.symptomDays} ${localized(lang, "天", casebook.symptomDays === 1 ? "day" : "days")}`,
     `${localized(lang, "生态变化", "ECOLOGY CHANGE")}  ${localized(lang, `污染 +${casebook.ecology.pollutionDelta} · 清醒 +${casebook.ecology.clarityDelta}`, `pollution +${casebook.ecology.pollutionDelta} · clarity +${casebook.ecology.clarityDelta}`)}`,
     `${localized(lang, "成长记录", "GROWTH RECORD")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
+    `${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `${localized(lang, "新增徽章", "NEW BADGES")}  ${achievements || localized(lang, "无", "NONE")}`,
     `${localized(lang, "主治意见", "ATTENDING NOTE")}  ${creatureClinicalNote(casebook, lang, "week")}`,
     "",
@@ -185,6 +229,7 @@ function renderCreatureAutopsy(casebook, lang) {
     `${localized(lang, "主症状", "PRIMARY SYMPTOM")}  ${creatureLabel("clinicalSymptoms", casebook.primarySymptom, lang)} · ${dayUnit(casebook.symptomDays)}`,
     `${localized(lang, "生态人格", "ECOLOGY")}  ${creatureLabel("ecologies", casebook.ecology.from, lang)} → ${creatureLabel("ecologies", casebook.ecology.to, lang)} · ${localized(lang, `污染 +${casebook.ecology.pollutionDelta} · 清醒 +${casebook.ecology.clarityDelta}`, `pollution +${casebook.ecology.pollutionDelta} · clarity +${casebook.ecology.clarityDelta}`)}`,
     `${localized(lang, "成长回顾", "GROWTH REVIEW")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
+    `${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `${localized(lang, "成就回顾", "ACHIEVEMENT REVIEW")}  [${casebook.achievementIds.length}] ${achievements || localized(lang, "无", "NONE")}`,
     `${localized(lang, "尸检结论", "AUTOPSY CONCLUSION")}  ${creatureClinicalNote(casebook, lang, "month")}`,
     "",
@@ -413,11 +458,21 @@ async function runCreature(options, mode = "render") {
       reportsByDate.get(shiftDate(report.date, index - 7)),
     );
     const record = dailyCreatureRecord(report, historicalReports);
+    const evolutionEffect = creatureEvolutionEffect(
+      state,
+      report.date,
+      record,
+      previousCreature,
+    );
     if (record.active) {
       const event = creatureEvent(
         state.seed,
         report.date,
         previousCreature.abilities.instability,
+        evolutionEffect?.triggered &&
+          evolutionEffect.category === "paradox"
+          ? evolutionEffect.benefitPoints * 2
+          : 0,
       );
       record.traits[event.trait] = roundCreature(
         record.traits[event.trait] + event.delta,
@@ -436,6 +491,7 @@ async function runCreature(options, mode = "render") {
       record.event,
       previousCreature.activeDays > 0,
     );
+    applyCreatureEvolutionEffect(record, evolutionEffect);
     record.rareAbilityGain = creatureRareAbilityGain(
       state.seed,
       report.date,
@@ -444,11 +500,89 @@ async function runCreature(options, mode = "render") {
     state.days[report.date] = record;
   }
   syncCreatureAchievements(state, date);
+  syncCreatureGenerations(state, date);
   let creature = deriveCreature(state, date);
   if (syncCreatureSpecimen(state, creature, date)) {
     creature = deriveCreature(state, date);
   }
+  let evolutionAction = null;
+  if (options.action === "evolve") {
+    if (options.choice === undefined) {
+      const evolution = creatureEvolutionSummary(state, date);
+      evolutionAction =
+        evolution === null
+          ? { error: "unavailable" }
+          : { value: evolution };
+    } else {
+      evolutionAction = selectCreatureEvolution(
+        state,
+        date,
+        options.choice,
+      );
+    }
+    if (evolutionAction.error) {
+      const generation = evolutionAction.generation;
+      const message =
+        evolutionAction.error === "locked"
+          ? localized(
+              options.lang,
+              `第 ${generation} 代进化已经封存，不能改选。`,
+              `Generation ${generation} evolution is sealed and cannot be changed.`,
+            )
+          : evolutionAction.error === "invalid"
+            ? localized(
+                options.lang,
+                "进化选项必须是 1、2 或 3。",
+                "Evolution choice must be 1, 2, or 3.",
+              )
+            : localized(
+                options.lang,
+                "当前没有可选择的进化。",
+                "No evolution choice is currently available.",
+              );
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 2;
+      return;
+    }
+    creature = deriveCreature(state, date);
+    evolutionAction.value = creature.evolution;
+  }
   await saveCreatureState(state);
+
+  if (options.action === "evolve") {
+    const evolution = evolutionAction.value;
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(evolution, null, 2)}\n`);
+      return;
+    }
+    process.stdout.write(
+      [
+        localized(
+          options.lang,
+          `第 ${evolution.generation} 代进化 · ${evolution.status === "pending" ? "待选择" : "已封存"}`,
+          `GENERATION ${evolution.generation} EVOLUTION · ${evolution.status.toUpperCase()}`,
+        ),
+        "",
+        ...(evolution.status === "pending"
+          ? renderEvolutionOptions(evolution, options.lang)
+          : [
+              `${localized(options.lang, "已选择", "SELECTED")}  [${creatureLabel("evolutionCategories", evolution.selected.category, options.lang)}] ${creatureLabel("evolutions", evolution.selected.id, options.lang)}`,
+            ]),
+        "",
+        ...(evolution.status === "pending"
+          ? [
+              localized(
+                options.lang,
+                "运行 anti-ai creature evolve <1|2|3> 确认选择。",
+                "Run anti-ai creature evolve <1|2|3> to seal a choice.",
+              ),
+            ]
+          : []),
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
 
   const previousCreature = deriveCreature(state, shiftDate(date, -1));
   const today = state.days[date];
@@ -469,6 +603,7 @@ async function runCreature(options, mode = "render") {
       rareAbilityGain: today.rareAbilityGain,
       achievementUnlockIds: today.achievementUnlockIds,
       newTalents,
+      evolutionEffect: today.evolutionEffect ?? null,
     },
   };
 
@@ -585,6 +720,28 @@ async function runCreature(options, mode = "render") {
   ]
     .filter(Boolean)
     .join(" · ");
+  const fossilPreview = result.fossils.at(-1);
+  const fossilLines = fossilPreview
+    ? [
+        `  #${fossilPreview.id} · ${generationLabel(fossilPreview.generation, lang)} · ${creatureLabel("ecologies", fossilPreview.ecologyId, lang)} · ${creatureLabel("abilities", fossilPreview.inheritanceAbilityId, lang)} · ${creatureLabel("scars", fossilPreview.scarId, lang)}`,
+      ]
+    : [`  ${localized(lang, "尚未形成 · 90 天后再来考古", "NONE · archaeology begins after day 90")}`];
+  const evolutionLines = result.evolution
+    ? [
+        `${localized(lang, "下一代进化", "NEXT EVOLUTION")}  ${generationLabel(result.evolution.generation, lang)} · ${localized(lang, result.evolution.status === "pending" ? "待选择" : "已封存", result.evolution.status.toUpperCase())}`,
+        ...(result.evolution.status === "pending"
+          ? renderEvolutionOptions(result.evolution, lang)
+          : [
+              `${localized(lang, "进化规则", "EVOLUTION RULE")}  [${creatureLabel("evolutionCategories", result.evolution.selected.category, lang)}] ${creatureLabel("evolutions", result.evolution.selected.id, lang)} · ${localized(lang, "触发", "PROC")} ${result.evolution.selected.procChancePercent}% · ${localized(lang, `累计发作 ${result.collections.evolutionTriggers} 次`, `${result.collections.evolutionTriggers} LIFETIME PROCS`)}`,
+              `  ${localized(lang, `累计收益 ${result.collections.evolutionBenefitPoints} · 累计代价 ${result.collections.evolutionCostPoints}`, `LIFETIME BENEFIT ${result.collections.evolutionBenefitPoints} · LIFETIME COST ${result.collections.evolutionCostPoints}`)}`,
+            ]),
+        ...(result.evolution.status === "pending"
+          ? [
+              `  ${localized(lang, "运行", "RUN")} anti-ai creature evolve <1|2|3>`,
+            ]
+          : []),
+      ]
+    : [];
 
   process.stdout.write(
     [
@@ -605,6 +762,11 @@ async function runCreature(options, mode = "render") {
       `${localized(lang, "阅历", "EXPERIENCE")}  ${result.experienceDays}${result.nextStageAt === null ? localized(lang, " 天", " days") : localized(lang, ` / ${result.nextStageAt} 天`, ` / ${result.nextStageAt} days`)}`,
       `${localized(lang, "累积污染", "ACCUMULATED EXPOSURE")}  ${result.exposure}`,
       `${localized(lang, "个体记录", "SPECIMEN LOG")}  ${localized(lang, `孵化 ${result.ageDays} 天 · 活跃连击 ${result.activeStreakDays} 天`, `age ${result.ageDays} days · active streak ${result.activeStreakDays} days`)}`,
+      `${localized(lang, "世代", "GENERATION")}  ${generationLabel(result.generation.number, lang)} · ${result.generation.day} / ${result.generation.length} ${localized(lang, "天", "DAYS")}`,
+      `${localized(lang, "遗传", "INHERITANCE")}  ${result.generation.inheritedAbilityId ? creatureLabel("abilities", result.generation.inheritedAbilityId, lang) : localized(lang, "无", "NONE")} · ${localized(lang, "伤疤", "SCAR")}  ${result.generation.scarId ? creatureLabel("scars", result.generation.scarId, lang) : localized(lang, "无", "NONE")}`,
+      `${localized(lang, "永久化石", "PERMANENT FOSSILS")}  [${result.fossils.length}]`,
+      ...fossilLines,
+      ...evolutionLines,
       `${localized(lang, "徽章", "BADGES")}  [${result.achievements.unlocked.length}] ${achievementPreview || localized(lang, "尚未解锁", "LOCKED")}`,
       `${localized(lang, "今日成就", "TODAY'S ACHIEVEMENTS")}  ${recentAchievementPreview || localized(lang, "无", "NONE")}`,
       "",
@@ -624,8 +786,8 @@ async function runCreature(options, mode = "render") {
       "",
       localized(
         lang,
-        "隐私档案：只保存用量带、派生生态点、基因/部件 ID、成就、污染剂量、性状、能力与事件；不保存对话、路径、模型名或精确 Token。",
-        "PRIVACY FILE: stores usage bands, derived ecology, gene/part IDs, achievements, dose, traits, ability gains, and events; stores no chats, paths, model names, or exact tokens.",
+        "隐私档案：只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、污染剂量、性状、能力与事件；不保存对话、路径、模型名或精确 Token。",
+        "PRIVACY FILE: stores usage bands, derived ecology, gene/part IDs, achievements, fossils, evolution choices, dose, traits, ability gains, and events; stores no chats, paths, model names, or exact tokens.",
       ),
       "",
     ].join("\n"),
@@ -775,10 +937,16 @@ function runExplain(lang = "zh") {
       "  A common event adds 8 to one trait; a rare event adds 20.",
       "  After the first active day, each AI-free day reduces exposure by 2",
       "  and adds 1 WITHDRAWAL without clearing historical traits.",
-      "  State: ~/.anti-ai/creature.json (schema v4)",
+      "  Every 90 experience days seal one permanent fossil. The next generation",
+      "  restarts its four life stages while inheriting one ability and one scar.",
+      "  Each new generation offers one POLLUTION, one CLARITY, and one PARADOX choice.",
+      "  anti-ai creature evolve <1|2|3> seals the choice; ignoring it never blocks reports.",
+      "  Proc chance = min(35%, 5% + floor(ability ÷ 25) + 2% per unlocked talent).",
+      "  Higher talent tiers amplify both the benefit and its cost; there is no free upgrade.",
+      "  State: ~/.anti-ai/creature.json (schema v5)",
       "  It stores only usage bands, derived ecology points, genes/part IDs, achievements,",
-      "  dose, traits, ability/chromatic gains, events, and a local seed—not chats, paths,",
-      "  model names, exact tokens, or per-request timestamps.",
+      "  fossils, evolution choices, dose, traits, ability/chromatic gains, events, and a",
+      "  local seed—not chats, paths, model names, exact tokens, or per-request timestamps.",
       "  anti-ai creature reset explicitly destroys this file.",
       "",
       color("1", "Living casebook"),
@@ -908,8 +1076,12 @@ function runExplain(lang = "zh") {
     "  每日事件由 SHA-256（本地 seed + 日期）确定，基础 8% 进入稀有突变池。",
     "  普通事件给一个性状 +8，稀有事件 +20。",
     "  首个活跃日之后，每个 AI 清醒日污染 -2、戒断反应 +1，但不会清除历史性状。",
-    "  状态文件：~/.anti-ai/creature.json（schema v4）",
-    "  只保存用量带、派生生态点、基因/部件 ID、成就、污染剂量、性状、能力与异色加点、事件和本地 seed；",
+    "  每 90 个阅历日封存一枚永久化石；下一代重新经历四个生命阶段，继承上一代的一项能力和一道伤疤。",
+    "  每代提供污染、清醒、悖论三选一；运行 anti-ai creature evolve <1|2|3> 显式确认，不选择也不会阻断账单。",
+    "  触发概率 = min(35%, 5% + floor(对应能力值 ÷ 25) + 每项已解锁天赋 2%)。",
+    "  高阶天赋会同时放大收益与代价，不存在无成本的最优进化。",
+    "  状态文件：~/.anti-ai/creature.json（schema v5）",
+    "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、污染剂量、性状、能力与异色加点、事件和本地 seed；",
     "  不保存精确 Token、模型名、路径、对话或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",
     "",
@@ -965,7 +1137,7 @@ Commands:
   week              Print the latest seven-day trend
   month             Print this month's usage heatmap through a selected date
   share             Print a privacy-safe SVG share card
-  creature [reset]  Inspect or reset your mutation file
+  creature [reset|evolve]  Inspect, evolve, or reset your mutation file
   doctor            Check local log sources
   explain           Explain resource estimate methodology
 
@@ -990,7 +1162,7 @@ Commands:
   week              打印最近 7 天趋势
   month             打印本月至指定日期的用量热力图
   share             输出隐私安全的 SVG 分享卡片
-  creature [reset]  查看或重置异变体档案
+  creature [reset|evolve]  查看、进化或重置异变体档案
   doctor            检查本地日志
   explain           解释资源估算口径
 

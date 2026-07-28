@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-07-28
+
+### Added
+
+- Ninety-day creature generations that seal each complete form as a permanent fossil.
+- Cross-generation inheritance with one `+5` ability bonus and an ecology-shaped scar that changes the descendant's appearance.
+- Explicit `creature evolve <1|2|3>` choices for Pollution, Clarity, and Paradox routes; ignored choices expire without blocking later generations.
+- Ability- and talent-driven evolution triggers with visible cumulative benefit and cost points.
+- Bilingual generation, fossil, inheritance, scar, choice, trigger, benefit, and cost output in both human and JSON reports.
+- Fossil and generation milestones in complete-source `today`, `week`, and `month` growth summaries.
+
+### Changed
+
+- Life stages now reset inside each 90-day generation while every settled day still advances exactly once.
+- Creature state moves to schema v5; schema v1-v4 files migrate locally and idempotently.
+- The installable Agent Skill now documents generation choices, trade-offs, and schema v5 privacy boundaries.
+
+### Security
+
+- Fossils and evolution choices store only derived IDs, dates, counters, and appearance fingerprints—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps.
+
 ## [1.0.0] - 2026-07-28
 
 ### Added
@@ -165,6 +186,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Streaming-response deduplication for Claude Code.
 - Local-only processing with no usage database or background process.
 
+[1.1.0]: https://github.com/ppxu/anti-ai/releases/tag/v1.1.0
 [1.0.0]: https://github.com/ppxu/anti-ai/releases/tag/v1.0.0
 [0.9.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.9.0
 [0.8.0]: https://github.com/ppxu/anti-ai/releases/tag/v0.8.0

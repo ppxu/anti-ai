@@ -80,7 +80,8 @@ function shiftTestDate(date, days) {
 }
 
 function terminalWidth(value) {
-  return Array.from(value).reduce(
+  const plain = value.replace(/\u001b\[[0-9;]*m/g, "");
+  return Array.from(plain).reduce(
     (width, character) =>
       width + (/\p{Script=Han}/u.test(character) ? 2 : 1),
     0,

@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource or creature pathology share card, or asks about their token-fed mutation creature, generations, fossils, evolution choices, and living casebook—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex or Claude Code token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, or fossil share card, or asks about their token-fed mutation creature, private codex, collections, generations, fossils, evolution choices, and living casebook—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local Codex and Claude Code usage metadata.
 ---
 
@@ -58,7 +58,7 @@ anti-ai month
 
 Add `--date YYYY-MM-DD`, `--source codex|claude`, or `--lang zh|en` only when the user requests that scope. Do not run all three reports when one answers the question.
 
-The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage and generation growth, newly sealed fossils, new badges, and a deterministic attending note. The complete-source human `month` report appends a monthly autopsy with post-hatch observation totals, Ecology transition, generation growth, fossils, achievements, and a deterministic conclusion. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
+The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage and generation growth, newly sealed fossils, new badges, collection discoveries, and a deterministic attending note. The complete-source human `month` report appends a monthly autopsy with post-hatch observation totals, Ecology transition, generation growth, fossils, achievements, collection discoveries, and a deterministic conclusion. Complete-source `today` also surfaces that day's collection discoveries. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
 
 Daily verdicts are fixed local content, not model output. Each symptom combines seven charge titles with five detail lines, producing at least 35 deterministic combinations before an identical pair repeats; rotation continues across month boundaries.
 
@@ -71,11 +71,28 @@ anti-ai share > anti-ai-receipt.svg
 anti-ai share --date YYYY-MM-DD --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
 anti-ai share --card pathology --date YYYY-MM-DD --lang en > anti-ai-pathology.svg
+anti-ai share --card specimen > anti-ai-specimen.svg
+anti-ai share --card wanted > anti-ai-wanted.svg
+anti-ai share --card fossil > anti-ai-fossil.svg
 ```
 
-The default card is a resource receipt. `--card pathology` uses the complete creature history and shows its stable specimen ID and ASCII, Ecology, form, life stage, epithet, and daily Ecology change. It rejects `--source` filters because a partial source must not reshape the creature.
+The default card is a resource receipt. `--card pathology` shows a clinical snapshot, `--card specimen` shows the current collected form, `--card wanted` turns the current mutation into a satirical poster, and `--card fossil` certifies the latest permanent fossil. A fossil certificate is unavailable until the first 90-day generation is sealed. All creature cards use the complete history and reject `--source` filters because a partial source must not reshape the creature.
 
-Both card types intentionally omit prompts, responses, paths, model/source names, request counts, and exact token counts. Tell the user where the file was saved. Do not add sensitive details back into the card.
+All card types intentionally omit prompts, responses, paths, model/source names, request counts, and exact token counts. Tell the user where the file was saved. Do not add sensitive details back into the card.
+
+### Private pathology codex
+
+Use the codex when the user asks what they have collected, what was discovered today, or wants stable machine-readable collection data:
+
+```bash
+anti-ai codex
+anti-ai codex --date YYYY-MM-DD --lang en
+anti-ai codex --json
+```
+
+The codex derives 50 fixed collection entries from the existing schema v5 state: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens and permanent fossils. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
+
+Do not pass `--source` to `codex`. It settles the same complete Codex + Claude Code creature history as `creature`. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, and explicit choices all create independent collection routes.
 
 ### Token mutation creature
 
@@ -104,7 +121,7 @@ Choose with `anti-ai creature evolve <1|2|3>`. A missed choice does not block th
 
 Talents increase both the benefit and the cost. When reporting an active evolution, include its trigger chance, cumulative proc count, benefit points, and cost points so the trade-off remains visible.
 
-Its ASCII form is assembled deterministically from a stable local genome, life stage, usage pathology, ecology, achievement parts, and chromatic abilities. The first collection contains 16 form families and 24 achievements, split evenly across Offense, Sobriety, and Paradox. Repeatable achievements have three behavior-count tiers; meaningful appearance fingerprints are retained as private specimen records for a future codex. Do not describe high consumption as the primary or preferred upgrade route.
+Its ASCII form is assembled deterministically from a stable local genome, life stage, usage pathology, ecology, achievement parts, and chromatic abilities. The codex contains 50 fixed collection entries: 16 form families, 24 achievements split evenly across Offense, Sobriety, and Paradox, 6 chromatic abilities, and 4 scars. Repeatable achievements have three behavior-count tiers; meaningful appearance fingerprints are retained as private dynamic specimens. Do not describe high consumption as the primary or preferred upgrade route.
 
 It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Regular abilities cap at 999 and unlock mutation talents at 5, 15, 30, 100, 300, and 700; Instability raises the rare-event chance from 8% up to 20%. Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%, and repeated awakenings grow up to level 9.
 

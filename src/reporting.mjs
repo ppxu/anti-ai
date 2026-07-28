@@ -901,6 +901,156 @@ function renderPathologyShareSvg(view, lang = "zh") {
 `;
 }
 
+function renderCreatureCollectionShareSvg(view, kind, lang = "zh") {
+  const privacy = localized(
+    lang,
+    "隐私模式：无对话、路径、模型名或精确 Token",
+    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
+  );
+  const titles = {
+    specimen: localized(lang, "异变标本卡", "MUTATION SPECIMEN CARD"),
+    wanted: localized(lang, "异变悬赏", "MUTATION WANTED"),
+    fossil: localized(
+      lang,
+      "永久化石证书",
+      "PERMANENT FOSSIL CERTIFICATE",
+    ),
+  };
+  const palettes = {
+    specimen: {
+      background: "#0a0d12",
+      border: "#27415f",
+      accent: "#5aa9ff",
+      muted: "#7f94ac",
+      body: "#edf6ff",
+      warn: "#c58cff",
+    },
+    wanted: {
+      background: "#120b08",
+      border: "#613e2b",
+      accent: "#ff8a42",
+      muted: "#a98d7b",
+      body: "#fff3e8",
+      warn: "#ffd166",
+    },
+    fossil: {
+      background: "#100e09",
+      border: "#5d5134",
+      accent: "#d8bc72",
+      muted: "#9b9070",
+      body: "#f5edd5",
+      warn: "#e48962",
+    },
+  };
+  const palette = palettes[kind];
+  const art = view.art ?? [
+    "       _______",
+    "    .-' FOSSIL '-.",
+    "   /_______________\\",
+    "      ||       ||",
+  ].join("\n");
+  const artLines = art
+    .replaceAll(/\u001B\[[0-9;]*m/g, "")
+    .split("\n")
+    .filter(Boolean)
+    .map(
+      (line, index) =>
+        `<tspan x="74" dy="${index === 0 ? 0 : 31}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const headerRight =
+    kind === "fossil"
+      ? localized(
+          lang,
+          `化石编号 ${view.fossil.id}`,
+          `FOSSIL ID ${view.fossil.id}`,
+        )
+      : localized(
+          lang,
+          `标本编号 ${view.specimenId}`,
+          `SPECIMEN ID ${view.specimenId}`,
+        );
+  const fields =
+    kind === "fossil"
+      ? [
+          [
+            localized(lang, "世代", "GENERATION"),
+            String(view.fossil.generation),
+          ],
+          [
+            localized(lang, "封存日期", "SEALED"),
+            view.fossil.discoveredAt,
+          ],
+          [
+            localized(lang, "生态 / 病理", "ECOLOGY / PATHOLOGY"),
+            `${view.ecology} / ${view.pathology}`,
+          ],
+          [
+            localized(lang, "遗传 / 伤痕", "INHERITANCE / SCAR"),
+            `${view.inheritance} / ${view.scar}`,
+          ],
+        ]
+      : [
+          [
+            localized(lang, "当前形态", "CURRENT FORM"),
+            view.form,
+          ],
+          [
+            localized(lang, "生态 / 病理", "ECOLOGY / PATHOLOGY"),
+            `${view.ecology} / ${view.pathology}`,
+          ],
+          [
+            localized(lang, "生命阶段", "LIFE STAGE"),
+            `${view.stage} · ${view.experience}`,
+          ],
+          [
+            localized(lang, "病历称号", "CASEBOOK EPITHET"),
+            view.epithet,
+          ],
+        ];
+  const reward =
+    kind === "wanted"
+      ? localized(
+          lang,
+          "悬赏：一次手动思考",
+          "REWARD: ONE MANUAL THOUGHT",
+        )
+      : null;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(titles[kind])}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="${palette.background}"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="${palette.border}" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="${palette.accent}"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: ${palette.muted}; }
+    .body { fill: ${palette.body}; }
+    .accent { fill: ${palette.accent}; }
+    .warn { fill: ${palette.warn}; }
+  </style>
+  <text x="72" y="82" class="mono accent" font-size="32" font-weight="800">${escapeXml(titles[kind])}</text>
+  <text x="1128" y="82" class="mono muted" font-size="18" text-anchor="end">${escapeXml(headerRight)}</text>
+  <line x1="72" y1="114" x2="1128" y2="114" stroke="${palette.border}" stroke-width="2"/>
+
+  <text x="74" y="174" class="mono body" font-size="22" xml:space="preserve">${artLines}</text>
+  ${reward ? `<text x="72" y="482" class="mono warn" font-size="20" font-weight="800">${escapeXml(reward)}</text>` : ""}
+
+  ${fields
+    .map(
+      ([label, value], index) => `<text x="610" y="${154 + index * 92}" class="mono muted" font-size="15" aria-label="${escapeXml(`${label} ${value}`)}">${escapeXml(label)}</text>
+  <text x="610" y="${188 + index * 92}" class="mono ${index === 3 ? "warn" : "body"}" font-size="${index === 3 ? 18 : 21}">${escapeXml(value)}</text>`,
+    )
+    .join("\n  ")}
+
+  <line x1="72" y1="544" x2="1128" y2="544" stroke="${palette.border}" stroke-width="2"/>
+  <text x="72" y="574" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
+  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 function shiftDate(date, days) {
   const value = new Date(`${date}T12:00:00.000Z`);
   value.setUTCDate(value.getUTCDate() + days);
@@ -1082,6 +1232,7 @@ export {
   isValidDate,
   padTerminal,
   renderMonth,
+  renderCreatureCollectionShareSvg,
   renderPathologyShareSvg,
   renderReceipt,
   renderShareSvg,

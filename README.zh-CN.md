@@ -100,9 +100,15 @@ anti-ai week --date 2026-07-23
 anti-ai month
 anti-ai month --date 2026-07-23
 
+anti-ai codex
+anti-ai codex --json
+
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
+anti-ai share --card specimen > anti-ai-specimen.svg
+anti-ai share --card wanted > anti-ai-wanted.svg
+anti-ai share --card fossil > anti-ai-fossil.svg
 
 anti-ai creature
 anti-ai creature --json
@@ -127,7 +133,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json` 和 `creature --json` 不受展示语言影响，字段名和结构保持稳定。
+`today --json`、`codex --json` 和 `creature --json` 不受展示语言影响，字段名和结构保持稳定。
 
 ### `today`
 
@@ -139,19 +145,33 @@ anti-ai explain --lang en
 
 `--json` 按来源和具体模型输出可精确核对的 Token 统计，不把低置信度资源估算、个人基线或吐槽混入机器数据。
 
-默认的完整来源人类账单会在末尾结算当天异变体，并追加一行生态变化、当前形态、今日成就、新封存化石和待选择进化；`today --json` 与带 `--source` 的账单不会改动这条完整成长史。
+默认的完整来源人类账单会在末尾结算当天异变体，并追加生态变化、当前形态、今日成就、新封存化石、待选择进化和当日图鉴入库反馈；`today --json` 与带 `--source` 的账单不会改动这条完整成长史。
 
 人类可读账单会直接扫描比较窗口；本地日志很多时可能需要数秒。当前版本仍不创建持久化用量索引。
 
 ### `week`
 
-打印截至指定日期的最近 7 个自然日趋势，并展示模型账单、资源账单和生活化对照。完整来源的人类可读报告还会结算成长史，追加“活体病历”：本周主症状、污染/清醒变化、阶段与世代成长、本期新化石、新徽章和固定轮换的主治意见。带 `--source` 的报告只展示用量，不改动完整成长史。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
+打印截至指定日期的最近 7 个自然日趋势，并展示模型账单、资源账单和生活化对照。完整来源的人类可读报告还会结算成长史，追加“活体病历”：本周主症状、污染/清醒变化、阶段与世代成长、本期新化石、新徽章、新增收藏和固定轮换的主治意见。带 `--source` 的报告只展示用量，不改动完整成长史。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
 
 ### `month`
 
 打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日比例（例如 `7 天 / 23 天`）、最长清醒期、最重一天、模型账单和本月资源对照。
 
-完整来源的人类可读报告还会追加“月度尸检”，汇总孵化后的有效观察期、主症状、生态人格迁移、阶段与世代成长、本月化石和成就回顾；孵化前的空白日不会被误诊为戒断。
+完整来源的人类可读报告还会追加“月度尸检”，汇总孵化后的有效观察期、主症状、生态人格迁移、阶段与世代成长、本月化石、成就和新增收藏；孵化前的空白日不会被误诊为戒断。
+
+### `codex`
+
+查看从现有成长史派生出的本地病理图鉴：
+
+```bash
+anti-ai codex
+anti-ai codex --date 2026-07-23 --lang en
+anti-ai codex --json
+```
+
+固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹和永久化石则不设人为上限。
+
+`codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的 Codex + Claude Code 成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
 
 ### `share`
 
@@ -162,11 +182,14 @@ anti-ai share > anti-ai-receipt.svg
 anti-ai share --date 2026-07-23 --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
 anti-ai share --card pathology --lang en > anti-ai-pathology.svg
+anti-ai share --card specimen > anti-ai-specimen.svg
+anti-ai share --card wanted > anti-ai-wanted.svg
+anti-ai share --card fossil > anti-ai-fossil.svg
 ```
 
-`--card pathology` 会从完整成长史生成第二种隐私安全的异变体病理报告，展示 ASCII 标本、生态人格、生命阶段、称号和当日生态变化，但不包含精确 Token、请求数、来源/模型名、路径或对话正文。
+成长史现在支持 4 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书。化石证书会在第 90 个阅历日后开放。
 
-工具不会上传卡片，保存位置完全由你的命令行重定向决定。病理报告必须使用完整数据，因此会拒绝 `--source` 过滤。
+工具不会上传卡片；所有卡片均不包含精确 Token、请求数、来源/模型名、路径或对话正文，保存位置完全由你的命令行重定向决定。异变体卡片必须使用完整数据，因此会拒绝 `--source` 过滤。
 
 ### `creature`
 
@@ -247,7 +270,7 @@ ASCII 外观不是固定模板，而是由稳定本地基因、生命阶段、�
 
 每天仍会根据本地随机种子和日期触发一个可复现事件。首个活跃日之后，每个 AI 清醒日还会让旧的累计污染减少 `2`、戒断反应增加 `1`，但历史性状不会被清空。
 
-档案保存在 `~/.anti-ai/creature.json`，当前为 schema v5。文件只保存离散用量带、派生生态点、稳定基因/部件 ID、成就、外观指纹、污染剂量、性状、普通/异色能力加点、事件 ID、永久化石、已封存进化选择和本地随机种子，不包含 Prompt、回复、路径、模型名、精确 Token、个人基线数值或逐请求时间。schema v1/v2/v3/v4 会在本地幂等迁移并保留已有成长；关键外观会保存为不重复的个人标本，为未来 `anti-ai codex` 图鉴预留数据。成长档案固定使用 Codex + Claude Code 完整数据，不能配合 `--source` 过滤。
+档案保存在 `~/.anti-ai/creature.json`，当前为 schema v5。文件只保存离散用量带、派生生态点、稳定基因/部件 ID、成就、外观指纹、污染剂量、性状、普通/异色能力加点、事件 ID、永久化石、已封存进化选择和本地随机种子，不包含 Prompt、回复、路径、模型名、精确 Token、个人基线数值或逐请求时间。schema v1/v2/v3/v4 会在本地幂等迁移并保留已有成长；`anti-ai codex` 直接从这份现有状态派生固定与动态收藏，不增加新迁移。成长档案固定使用 Codex + Claude Code 完整数据，因此 `creature` 和 `codex` 都不能配合 `--source` 过滤。
 
 显式重开：
 

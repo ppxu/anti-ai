@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-07-29
+
+### Added
+
+- Added a packaged bilingual Creature Guide plus standalone Base Organ and Growth Appearance codices covering all 40 structural glyphs, 24 visible growth elements, stage behavior, and overlay precedence.
+- `codex` now reports the deduplicated theoretical capacity of 21,233,664 final ASCII forms in human and JSON output.
+- Added lossless Malignancy ranks for regular abilities: every 255 points rolls the visible counter into a route-specific malignant diagnosis and evolution proc modifier.
+- Permanent fossils now preserve per-generation ability gains, sealed ability progress, and Malignancy-rank changes.
+
+### Changed
+
+- Condensed the Creature sections in both READMEs and linked to the packaged standalone guides.
+- Remapped regular mutation-talent thresholds to 5, 15, 30, 60, 120, and 220; creature state now uses schema v6 with idempotent v1-v5 migration.
+
 ## [1.4.0] - 2026-07-29
 
 ### Changed

@@ -1,6 +1,6 @@
 {
   "name": "anti-ai",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Turn local coding-agent token usage into a satirical resource receipt and growable mutation creature.",
   "type": "module",
   "bin": {
@@ -23,6 +23,7 @@
     "bin",
     "src",
     "skills",
+    "docs",
     "README.md",
     "README.zh-CN.md",
     "LICENSE",

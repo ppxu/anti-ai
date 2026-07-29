@@ -112,6 +112,7 @@ anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 
 anti-ai creature
+anti-ai creature --full
 anti-ai creature --json
 anti-ai creature evolve
 anti-ai creature evolve 2
@@ -177,6 +178,8 @@ The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 c
 
 `codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
+The human view also reports the generator's **21,233,664 deduplicated final ASCII forms**. This is a theoretical species-space estimate, not collection progress. See the [Creature Guide](./docs/creature.md) for the capacity calculation and visual precedence rules.
+
 ### `share`
 
 Print a 1200×630 SVG share card to stdout. It uses the same resource estimate formulas, personal baseline, and deterministic verdict as `today`, but omits prompts, responses, paths, model names, request counts, and exact token counts.
@@ -204,83 +207,18 @@ anti-ai creature
 anti-ai creature --date 2026-07-23
 anti-ai creature --lang en
 anti-ai creature --json
+anti-ai creature --full
 anti-ai creature evolve
 anti-ai creature evolve 2
 ```
 
-The first run backfills the latest 30 calendar days; later runs fill the entire gap since the previous visit. Every settled day after hatching adds exactly `1` experience day, so high use, low use, and AI-free days advance life stages at the same speed. Daily Token totals are still compressed logarithmically into a capped pollution dose from `1–100` for pathology, abilities, and events, but dose cannot accelerate stages.
+Every settled day advances exactly one experience day, so high use, low use, and AI-free days grow different traits without letting Token volume buy faster stages. Each 90-day generation evolves through Compute Embryo, Reactor Hatchling, Nuclear Feeder, and Compute Meltdown, then seals a permanent fossil.
 
-The initial backfill may take several seconds with large logs. Once the file exists, another visit on the same day scans only that day.
+Regular abilities cycle through 255 visible points. Overflow becomes a lossless Malignancy rank, adds a route-specific diagnosis and evolution modifier, and is preserved in permanent fossils.
 
-Each 90-day generation has four life stages:
+The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
-| Stage | Experience | Appearance slots |
-|---|---:|---:|
-| Anomalous Embryo I | days 1–6 | 3 |
-| Differentiating Juvenile II | days 7–29 | 5 |
-| Formed Adult III | days 30–89 | 7 |
-| Ecological Complete IV | day 90 | 9 |
-
-Token work patterns still form four usage pathologies:
-
-| Branch | Main signal |
-|---|---|
-| Context Pathology | Uncached input per request |
-| Cache Fossil | Cached reads as a share of input |
-| Request Proliferation | Daily request count |
-| Nuclear Feeder | High pollution when no specialized trait dominates |
-
-Relative to the prior seven-calendar-day personal baseline, high use adds `1–3` Pollution, low use adds `1–2` Clarity, and an AI-free day adds `3` Clarity. Both values persist and form an Unformed, Polluted, Lucid, or Paradox ecology. A candidate ecology must hold for three settled days before becoming visible, so the creature does not flip personality at every boundary.
-
-On day 90, the complete form is sealed as a permanent fossil. The next settled day begins a new generation at embryo stage, inherits one ability with a `+5` bonus, and carries a route-specific scar that changes its appearance fingerprint and ASCII pattern. This preserves long-term growth without letting Token volume buy faster generations.
-
-Every generation after the first fossil gets one explicit, irreversible evolution choice:
-
-| Route | Powered by | Benefit when triggered | Cost |
-|---|---|---|---|
-| Pollution | A consumption-oriented ability | Extra ability growth | More Pollution |
-| Clarity | Withdrawal | More Clarity | Slower exposure recovery |
-| Paradox | Instability | Higher rare-mutation chance | Pollution risk |
-
-Inspect the menu with `anti-ai creature evolve`, then seal a choice with `anti-ai creature evolve <1|2|3>`. Ignoring a choice does not block later generations; it expires when that generation ends. The daily trigger chance is `min(35, 5 + floor(ability / 25) + 2 × unlocked talent count)%`. Talents increase both benefit points and cost points, and the terminal shows cumulative triggers, benefits, and costs.
-
-ASCII appearance grows on one continuous Reactor Kaiju anatomy: Compute Embryo, Reactor Hatchling, Nuclear Feeder, and Compute Meltdown. A stable local genome controls its eyes, jaw, armor, reactor core, limbs, tail, and chest pattern, while usage pathology, ecology, inherited scars, achievement parts, and chromatic abilities keep reshaping that skeleton. The same file always renders the same specimen; language and `NO_COLOR=1` do not change its shape. The system includes 16 core form families and 54 base appearance parts, with 10,000-seed complete-form collision and 39-column width coverage.
-
-It also grows seven deliberately unhealthy abilities:
-
-| Ability | Main growth source |
-|---|---|
-| Token Appetite | Pollution dose |
-| Parasitic Memory | Context-heavy use |
-| Cache Carapace | Cached input |
-| Request Maws | Request proliferation |
-| Core Glow | Unspecialized compute pollution |
-| Instability | Seeded random gains and rare events |
-| Withdrawal | AI-free days after hatching |
-
-Regular abilities cap at `999`. Each active day grants `1–2` Token Appetite, `1` point to the dominant usage ability, a deterministic random bonus with a `25%` chance, and `1` event-linked point. Even 400 consecutive heavy-use days retain growth headroom. Reaching `5`, `15`, `30`, `100`, `300`, and `700` unlocks 42 progressively worse mutation talents. Every 10 Instability points adds one percentage point to the rare-mutation chance, from a base `8%` up to `20%`.
-
-Six low-probability “chromatic abilities” can also awaken:
-
-| Rarity | Per active day | Abilities |
-|---|---:|---|
-| R (cyan) | `0.50%` | Deadline Scent, Phantom Cache, Rubber-Duck Necromancy |
-| SR (magenta) | `0.10%` | Prompt Telepathy, Hallucination Antibodies |
-| SSR (yellow) | `0.02%` | Token Transmutation |
-
-Chromatic awakenings are determined by the local seed and date. Drawing the same ability again grows it, up to level `9`. Level, temperament, mood, epithet, active streak, age, talent collection, chromatic collection, and daily gains are shown in the terminal and in `creature --json`. Color-capable terminals distinguish R / SR / SSR; set `NO_COLOR=1` to disable colors.
-
-The first 24 achievements are split evenly across red Offense, cyan Sobriety, and yellow Paradox badges. High use, low use, AI-free days, and state transitions each have independent unlocks. Repeatable achievements grow through three behavior-count tiers and show progress toward the next tier without using exact Token totals. The current epithet combines an ecology modifier, core form, and representative achievement.
-
-A local seed plus the date still selects one repeatable event per active day. After the first active day, every AI-free day also reduces legacy accumulated exposure by `2` and grows Withdrawal by `1` without erasing historical traits.
-
-State lives at `~/.anti-ai/creature.json` and currently uses schema v5. It stores only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils, sealed evolution choices, and a local seed—not prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps. Schema v1/v2/v3/v4 files migrate locally and idempotently without losing existing growth. `anti-ai codex` derives its fixed and dynamic collections from this existing state without a new migration. One mutation history always uses the complete supported data set, so `creature` and `codex` reject `--source` filters.
-
-Explicitly restart it with:
-
-```bash
-anti-ai creature reset
-```
+Read the full [Creature Guide](./docs/creature.md) for lifecycle, capacity math, Pollution/Clarity, abilities, talents, generations, evolution costs, chromatic mutations, codex, privacy, and reset. [中文版](./docs/creature.zh-CN.md).
 
 ### `doctor`
 
@@ -375,6 +313,7 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/reporting.mjs`: receipts, calendars, cards, and verdicts
 - `src/creature.mjs`: mutation growth rules and local state
 - `src/shared.mjs`: shared language and empty-usage primitives
+- `docs/creature.md`: complete Creature system and species-capacity guide
 
 ## Contributing
 

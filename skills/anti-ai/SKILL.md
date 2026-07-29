@@ -90,7 +90,7 @@ anti-ai codex --date YYYY-MM-DD --lang en
 anti-ai codex --json
 ```
 
-The codex derives 50 fixed collection entries from the existing schema v5 state: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens and permanent fossils. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
+The codex derives 50 fixed collection entries from the existing schema v6 state: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens and permanent fossils. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
 
 Do not pass `--source` to `codex`. It settles the same complete supported-source creature history as `creature`. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, and explicit choices all create independent collection routes.
 
@@ -117,17 +117,17 @@ After the first fossil, `anti-ai creature evolve` shows three explicit choices:
 
 Choose with `anti-ai creature evolve <1|2|3>`. A missed choice does not block the next generation, and a sealed choice cannot be changed. Evolution effects are ability-driven rather than guaranteed:
 
-`min(35, 5 + floor(ability / 25) + 2 × unlocked talent count)%`
+`min(35, 5 + min(10, floor(lifetime ability / 25)) + 2 × unlocked talent count + 2 × malignancy rank)%`
 
 Talents increase both the benefit and the cost. When reporting an active evolution, include its trigger chance, cumulative proc count, benefit points, and cost points so the trade-off remains visible.
 
 Its ASCII form grows on one continuous four-stage Reactor Kaiju anatomy. A stable local genome controls eyes, jaw, armor, reactor core, limbs, tail, and chest pattern; life stage, usage pathology, ecology, scars, achievement parts, and chromatic abilities keep reshaping that skeleton. The codex contains 50 fixed collection entries: 16 form families, 24 achievements split evenly across Offense, Sobriety, and Paradox, 6 chromatic abilities, and 4 scars. Repeatable achievements have three behavior-count tiers; meaningful appearance fingerprints are retained as private dynamic specimens. Do not describe high consumption as the primary or preferred upgrade route.
 
-It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Regular abilities cap at 999 and unlock mutation talents at 5, 15, 30, 100, 300, and 700; Instability raises the rare-event chance from 8% up to 20%. Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%, and repeated awakenings grow up to level 9.
+It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Visible ability values cycle through 1–255; point 256 becomes `MALIGNANT I · 1/255` while lifetime totals remain lossless. Mutation talents unlock at 5, 15, 30, 60, 120, and 220. Each malignancy rank adds two percentage points to the associated evolution proc chance, and permanent fossils retain per-generation gains, the sealed ability snapshot, and malignancy changes. Instability raises the rare-event chance from 8% up to 20%. Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%, and repeated awakenings grow up to level 9.
 
 When reporting a creature, summarize its specimen ID, generation, life stage and experience, latest fossil, inherited ability and scar, current evolution choice and benefit/cost totals, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, and rare-mutation chance. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
 
-The creature state is stored at `~/.anti-ai/creature.json` with schema v5. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils, sealed evolution choices, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1/v2/v3/v4 files migrate locally and idempotently. Do not open or edit the state file directly.
+The creature state is stored at `~/.anti-ai/creature.json` with schema v6. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils with derived ability snapshots, sealed evolution choices, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1-v5 files migrate locally and idempotently. Do not open or edit the state file directly.
 
 Only destroy the mutation history when the user explicitly asks to reset or restart it:
 

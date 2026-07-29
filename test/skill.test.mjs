@@ -36,7 +36,8 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
-  assert.match(skill, /schema v5/);
+  assert.match(skill, /schema v6/);
+  assert.match(skill, /1–255.*MALIGNANT I/is);
   assert.match(skill, /50 fixed collection entries/i);
   assert.match(skill, /locked.*\?\?\?/is);
   assert.match(skill, /today.*week.*month.*collection discoveries/is);
@@ -57,4 +58,5 @@ test("published npm package includes runtime modules and the installable skill",
 
   assert.ok(packageJson.files.includes("src"));
   assert.ok(packageJson.files.includes("skills"));
+  assert.ok(packageJson.files.includes("docs"));
 });

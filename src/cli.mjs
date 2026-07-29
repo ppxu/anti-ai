@@ -1028,17 +1028,24 @@ async function runCreature(options, mode = "render") {
     return;
   }
 
-  const stripAnsi = (value) =>
-    String(value).replaceAll(/\u001B\[[0-9;]*m/g, "");
   const truncateLine = (value, width) => {
-    const plain = stripAnsi(value);
-    if (terminalWidth(plain) <= width) return plain;
+    const source = String(value);
+    if (terminalWidth(source) <= width) return source;
     let output = "";
-    for (const character of Array.from(plain)) {
-      if (terminalWidth(`${output}${character}…`) > width) break;
-      output += character;
+    let visible = "";
+    let hasAnsi = false;
+    const tokens = source.match(/\u001B\[[0-9;]*m|./gu) ?? [];
+    for (const token of tokens) {
+      if (token.startsWith("\u001B[")) {
+        output += token;
+        hasAnsi = true;
+        continue;
+      }
+      if (terminalWidth(`${visible}${token}…`) > width) break;
+      output += token;
+      visible += token;
     }
-    return `${output}…`;
+    return `${output}…${hasAnsi ? "\u001B[0m" : ""}`;
   };
   const joinColumns = (left, right, leftWidth, totalWidth) => {
     const count = Math.max(left.length, right.length);
@@ -1049,9 +1056,7 @@ async function runCreature(options, mode = "render") {
       return `${padTerminal(leftLine, leftWidth)} │ ${rightLine}`.trimEnd();
     });
   };
-  const artLines = stripAnsi(creatureArt(result))
-    .split("\n")
-    .filter(Boolean);
+  const artLines = creatureArt(result).split("\n").filter(Boolean);
   const overviewLines = [
     `${localized(lang, "标本编号", "SPECIMEN ID")}  ${result.appearance.specimenId}`,
     `☢ ${localized(lang, "今日污染剂量", "TODAY'S POLLUTION DOSE")}  +${today.pollutionDose}`,
@@ -1082,8 +1087,8 @@ async function runCreature(options, mode = "render") {
       ? joinColumns(abilityLines, stateLines, 43, configuredWidth)
       : [...abilityLines, "", ...stateLines]),
     `${localized(lang, "今日加点", "TODAY'S GROWTH")}  ${growth || localized(lang, "无", "NONE")}`,
-    `${localized(lang, "稀有突变率", "RARE MUTATION CHANCE")}  ${result.rareChancePercent}% · ${localized(lang, "每日觉醒率", "DAILY AWAKENING ODDS")} ${stripAnsi(rareAbilityOdds)}`,
-    `${localized(lang, "异色能力", "CHROMATIC ABILITIES")}  [${rareAbilityEntries.length}] · ${localized(lang, "今日", "TODAY")} ${stripAnsi(rareAbilityGain)}`,
+    `${localized(lang, "稀有突变率", "RARE MUTATION CHANCE")}  ${result.rareChancePercent}% · ${localized(lang, "每日觉醒率", "DAILY AWAKENING ODDS")} ${rareAbilityOdds}`,
+    `${localized(lang, "异色能力", "CHROMATIC ABILITIES")}  [${rareAbilityEntries.length}] · ${localized(lang, "今日", "TODAY")} ${rareAbilityGain}`,
     ...eventLines,
     `${localized(lang, "完整病历", "FULL CASEBOOK")}  anti-ai creature --full`,
     localized(

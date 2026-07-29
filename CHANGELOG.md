@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.4.0] - 2026-07-29
+
+### Changed
+
+- Rebuilt every dynamic ASCII specimen on one continuous four-stage Reactor Kaiju anatomy: Compute Embryo, Reactor Hatchling, Nuclear Feeder, and Compute Meltdown.
+- Existing local genes now map to kaiju eyes, jaws, armor, reactor cores, limbs, tails, and chest patterns while pathology, Ecology, scars, achievements, and chromatic abilities remain visibly distinct.
+- Complete forms stay within 39 terminal columns and preserve existing schema v5 state, specimen IDs, appearance fingerprints, collection history, and language-neutral JSON.
+
+### Fixed
+
+- The default compact `creature` view now preserves ANSI colors for the specimen, achievements, and chromatic rarity while keeping narrow and wide terminal layouts aligned.
+
 ## [1.3.0] - 2026-07-28
 
 ### Added

@@ -244,7 +244,7 @@ Every generation after the first fossil gets one explicit, irreversible evolutio
 
 Inspect the menu with `anti-ai creature evolve`, then seal a choice with `anti-ai creature evolve <1|2|3>`. Ignoring a choice does not block later generations; it expires when that generation ends. The daily trigger chance is `min(35, 5 + floor(ability / 25) + 2 × unlocked talent count)%`. Talents increase both benefit points and cost points, and the terminal shows cumulative triggers, benefits, and costs.
 
-ASCII appearance is assembled from a stable local genome, life stage, usage pathology, ecology, inherited scar, achievement parts, and chromatic abilities. The same file always renders the same specimen; language and `NO_COLOR=1` do not change its shape. The first release includes 16 core form families and 54 base appearance parts, with 10,000-seed complete-form collision and width coverage.
+ASCII appearance grows on one continuous Reactor Kaiju anatomy: Compute Embryo, Reactor Hatchling, Nuclear Feeder, and Compute Meltdown. A stable local genome controls its eyes, jaw, armor, reactor core, limbs, tail, and chest pattern, while usage pathology, ecology, inherited scars, achievement parts, and chromatic abilities keep reshaping that skeleton. The same file always renders the same specimen; language and `NO_COLOR=1` do not change its shape. The system includes 16 core form families and 54 base appearance parts, with 10,000-seed complete-form collision and 39-column width coverage.
 
 It also grows seven deliberately unhealthy abilities:
 

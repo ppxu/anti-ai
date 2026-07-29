@@ -1799,6 +1799,42 @@ test("codex --json derives a stable private collection from creature history", (
   );
 });
 
+test("codex exposes the deduplicated final ASCII species capacity", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-codex-capacity-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "codex-capacity",
+  };
+
+  const chinese = runCli(["codex", "--date", "2026-07-23"], env);
+  const english = runCli(
+    ["codex", "--date", "2026-07-23", "--lang", "en"],
+    env,
+  );
+  const json = runCli(
+    ["codex", "--date", "2026-07-23", "--json"],
+    env,
+  );
+
+  assert.equal(chinese.status, 0, chinese.stderr);
+  assert.match(
+    chinese.stdout,
+    /理论物种容量\s+21,233,664 · 去重后的最终 ASCII 形象/,
+  );
+  assert.equal(english.status, 0, english.stderr);
+  assert.match(
+    english.stdout,
+    /THEORETICAL SPECIES CAPACITY\s+21,233,664 · DEDUPLICATED FINAL ASCII FORMS/,
+  );
+  assert.equal(json.status, 0, json.stderr);
+  assert.deepEqual(JSON.parse(json.stdout).capacity, {
+    structuralForms: 82_944,
+    growthVariants: 256,
+    finalAsciiForms: 21_233_664,
+  });
+});
+
 test("codex renders bilingual locked and discovered collections", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-codex-human-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));
@@ -1950,6 +1986,69 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
       instability: 0,
       withdrawal: 0,
     },
+    abilityTotals: {
+      appetite: 1,
+      memory: 0,
+      shell: 1,
+      mouths: 0,
+      glow: 1,
+      instability: 0,
+      withdrawal: 0,
+    },
+    abilityProgress: {
+      appetite: {
+        value: 1,
+        totalPoints: 1,
+        malignancyRank: 0,
+        nextMalignancyAt: 256,
+      },
+      memory: {
+        value: 0,
+        totalPoints: 0,
+        malignancyRank: 0,
+        nextMalignancyAt: 256,
+      },
+      shell: {
+        value: 1,
+        totalPoints: 1,
+        malignancyRank: 0,
+        nextMalignancyAt: 256,
+      },
+      mouths: {
+        value: 0,
+        totalPoints: 0,
+        malignancyRank: 0,
+        nextMalignancyAt: 256,
+      },
+      glow: {
+        value: 1,
+        totalPoints: 1,
+        malignancyRank: 0,
+        nextMalignancyAt: 256,
+      },
+      instability: {
+        value: 0,
+        totalPoints: 0,
+        malignancyRank: 0,
+        nextMalignancyAt: 256,
+      },
+      withdrawal: {
+        value: 0,
+        totalPoints: 0,
+        malignancyRank: 0,
+        nextMalignancyAt: 256,
+      },
+    },
+    malignancyRanks: {
+      appetite: 0,
+      memory: 0,
+      shell: 0,
+      mouths: 0,
+      glow: 0,
+      instability: 0,
+      withdrawal: 0,
+    },
+    malignancies: [],
     abilityPoints: 3,
     dominantAbility: "appetite",
     temperament: "voracious",
@@ -2696,7 +2795,7 @@ test("creature grows deterministic random abilities and exposes playable state",
   ]);
   assert.ok(
     Object.values(report.abilities).every(
-      (value) => Number.isInteger(value) && value >= 0 && value <= 999,
+      (value) => Number.isInteger(value) && value >= 0 && value <= 255,
     ),
   );
   assert.ok(Object.values(report.today.abilityGains).some((value) => value > 0));
@@ -2721,6 +2820,185 @@ test("creature grows deterministic random abilities and exposes playable state",
     evolutionCostPoints: 0,
     evolutionsMissed: 0,
   });
+});
+
+test("creature rolls legacy ability points into 255-point malignancy ranks without loss", (t) => {
+  const workspace = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-creature-malignancy-"),
+  );
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 5,
+      seed: "malignancy-migration",
+      days: {
+        "2026-07-22": {
+          pollutionDose: 100,
+          active: true,
+          usageBand: "meltdown",
+          ecologyGains: { pollution: 3, clarity: 0 },
+          traits: { context: 0, cache: 0, frenzy: 0, nuclear: 100 },
+          event: null,
+          abilityGains: {
+            appetite: 267,
+            memory: 0,
+            shell: 0,
+            mouths: 0,
+            glow: 0,
+            instability: 0,
+            withdrawal: 0,
+          },
+          rareAbilityGain: null,
+        },
+      },
+    })}\n`,
+  );
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+  };
+
+  const json = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    env,
+  );
+  const human = runCli(
+    ["creature", "--date", "2026-07-23", "--lang", "en", "--full"],
+    env,
+  );
+  const colored = runCli(
+    ["creature", "--date", "2026-07-23", "--lang", "en", "--full"],
+    {
+      ...env,
+      FORCE_COLOR: "1",
+      NO_COLOR: "",
+    },
+  );
+  const compact = runCli(
+    ["creature", "--date", "2026-07-23", "--lang", "en"],
+    {
+      ...env,
+      COLUMNS: "120",
+    },
+  );
+
+  assert.equal(json.status, 0, json.stderr);
+  const report = JSON.parse(json.stdout);
+  assert.equal(report.abilities.appetite, 12);
+  assert.equal(report.abilityTotals.appetite, 267);
+  assert.equal(report.malignancyRanks.appetite, 1);
+  assert.deepEqual(report.abilityProgress.appetite, {
+    value: 12,
+    totalPoints: 267,
+    malignancyRank: 1,
+    nextMalignancyAt: 511,
+  });
+  assert.deepEqual(report.malignancies, [
+    {
+      abilityId: "appetite",
+      rank: 1,
+      titleId: "famine_tumor",
+      evolutionChanceBonusPercent: 2,
+    },
+  ]);
+  assert.equal(human.status, 0, human.stderr);
+  assert.match(
+    human.stdout,
+    /TOKEN APPETITE · MALIGNANT I\s+█░{9}\s+12 \/ 255/,
+  );
+  assert.match(human.stdout, /MALIGNANT GROWTH\s+\[1\] FAMINE TUMOR I/);
+  assert.equal(colored.status, 0, colored.stderr);
+  assert.match(
+    colored.stdout,
+    /\u001b\[1;31mTOKEN APPETITE · MALIGNANT I\u001b\[0m/,
+  );
+  assert.equal(compact.status, 0, compact.stderr);
+  assert.match(
+    compact.stdout,
+    /TOKEN APPETITE · MALIGNANT I\s+█░{9}\s+12 \/ 255/,
+  );
+  assert.ok(
+    compact.stdout
+      .trimEnd()
+      .split("\n")
+      .every((line) => terminalWidth(line) <= 120),
+    compact.stdout,
+  );
+  const saved = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  assert.equal(saved.schemaVersion, 6);
+  assert.equal(saved.days["2026-07-22"].abilityGains.appetite, 267);
+});
+
+test("creature remaps all six regular talent tiers into one 255-point cycle", (t) => {
+  const workspace = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-creature-talent-cycle-"),
+  );
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 5,
+      seed: "talent-cycle-migration",
+      days: {
+        "2026-07-22": {
+          pollutionDose: 100,
+          active: true,
+          usageBand: "meltdown",
+          ecologyGains: { pollution: 3, clarity: 0 },
+          traits: { context: 0, cache: 0, frenzy: 0, nuclear: 100 },
+          event: null,
+          abilityGains: {
+            appetite: 220,
+            memory: 0,
+            shell: 0,
+            mouths: 0,
+            glow: 0,
+            instability: 0,
+            withdrawal: 0,
+          },
+          rareAbilityGain: null,
+        },
+      },
+    })}\n`,
+  );
+
+  const result = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    {
+      HOME: home,
+      ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(
+    report.talents.filter((talent) =>
+      [
+        "bottomless_stomach",
+        "throughput_singularity",
+        "invoice_devourer",
+        "token_landfill",
+        "budget_event_horizon",
+        "planetary_feedlot",
+      ].includes(talent),
+    ),
+    [
+      "bottomless_stomach",
+      "throughput_singularity",
+      "invoice_devourer",
+      "token_landfill",
+      "budget_event_horizon",
+      "planetary_feedlot",
+    ],
+  );
 });
 
 test("creature abilities unlock talents and withdrawal grows on AI-free days", (t) => {
@@ -2804,7 +3082,7 @@ test("grown Instability raises the future rare-mutation chance", (t) => {
   assert.ok(report.collections.rareMutations > 0);
 });
 
-test("creature abilities retain more than one year of growth headroom", (t) => {
+test("creature malignancy ranks retain more than one year of growth headroom", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-year-growth-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
   const root = path.join(workspace, "codex");
@@ -2841,10 +3119,15 @@ test("creature abilities retain more than one year of growth headroom", (t) => {
   assert.equal(grown.status, 0, grown.stderr);
   const report = JSON.parse(grown.stdout);
   const values = Object.values(report.abilities);
+  const totals = Object.values(report.abilityTotals);
   assert.equal(report.activeDays, 400);
-  assert.ok(Math.max(...values) > 99);
-  assert.ok(Math.max(...values) < 999);
-  assert.ok(values.every((value) => value >= 0 && value <= 999));
+  assert.ok(Math.max(...totals) > 255);
+  assert.ok(values.every((value) => value >= 0 && value <= 255));
+  assert.ok(Object.values(report.malignancyRanks).some((rank) => rank > 0));
+  assert.equal(
+    totals.reduce((total, value) => total + value, 0),
+    report.abilityPoints,
+  );
   assert.ok(report.talents.includes("planetary_feedlot"));
 });
 
@@ -2969,6 +3252,80 @@ test("creature seals a fossil at day ninety and offers balanced next-generation 
   );
   assert.equal(nextReport.abilities.withdrawal >= 94, true);
   assert.equal(nextReport.collections.fossilsSealed, 1);
+});
+
+test("generation fossils preserve ability gains and malignancy changes", (t) => {
+  const workspace = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-generation-ability-fossil-"),
+  );
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  const startDate = "2026-01-01";
+  const days = Object.fromEntries(
+    Array.from({ length: 90 }, (_, index) => [
+      shiftTestDate(startDate, index),
+      {
+        pollutionDose: 100,
+        active: true,
+        usageBand: "meltdown",
+        ecologyGains: { pollution: 3, clarity: 0 },
+        traits: { context: 0, cache: 0, frenzy: 0, nuclear: 100 },
+        event: null,
+        abilityGains: {
+          appetite: 3,
+          memory: 0,
+          shell: 0,
+          mouths: 0,
+          glow: 0,
+          instability: 0,
+          withdrawal: 0,
+        },
+        rareAbilityGain: null,
+      },
+    ]),
+  );
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 5,
+      seed: "malignancy-passive-2",
+      days,
+    })}\n`,
+  );
+  const date = shiftTestDate(startDate, 90);
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+  };
+
+  const first = runCli(["creature", "--date", date, "--json"], env);
+  const second = runCli(["creature", "--date", date, "--json"], env);
+  const human = runCli(
+    ["creature", "--date", date, "--lang", "en", "--full"],
+    env,
+  );
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(human.status, 0, human.stderr);
+  assert.deepEqual(JSON.parse(second.stdout), JSON.parse(first.stdout));
+  const report = JSON.parse(first.stdout);
+  const fossil = report.fossils[0];
+  assert.equal(fossil.abilityGains.appetite, 270);
+  assert.deepEqual(fossil.abilitySnapshot.appetite, {
+    value: 15,
+    totalPoints: 270,
+    malignancyRank: 1,
+    nextMalignancyAt: 511,
+  });
+  assert.equal(fossil.malignancyGains.appetite, 1);
+  const appetiteEvolution = report.evolution.options.find(
+    (option) => option.abilityId === "appetite",
+  );
+  assert.equal(appetiteEvolution.malignancyModifiers, 2);
+  assert.equal(appetiteEvolution.procChancePercent, 29);
+  assert.match(human.stdout, /PERMANENT FOSSILS\s+\[1\][\s\S]*MALIGNANCY \+1/);
 });
 
 test("the clarity evolution is powered by AI-free growth rather than token feeding", (t) => {
@@ -3426,8 +3783,8 @@ test("v0.6 creature files migrate without losing stored ability growth", (t) => 
   assert.ok(report.collections.rareAbilitiesUnlocked >= 0);
 });
 
-test("schema v1-v4 creature files migrate idempotently to private generation state", (t) => {
-  for (const schemaVersion of [1, 2, 3, 4]) {
+test("schema v1-v5 creature files migrate idempotently to private malignancy state", (t) => {
+  for (const schemaVersion of [1, 2, 3, 4, 5]) {
     const home = mkdtempSync(
       path.join(tmpdir(), `anti-ai-schema-${schemaVersion}-`),
     );
@@ -3488,7 +3845,7 @@ test("schema v1-v4 creature files migrate idempotently to private generation sta
     const saved = JSON.parse(
       readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
     );
-    assert.equal(saved.schemaVersion, 5);
+    assert.equal(saved.schemaVersion, 6);
     assert.equal(saved.appearance.version, 1);
     assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
     assert.equal(saved.specimens.length, 1);
@@ -3891,7 +4248,7 @@ test("creature ability bars and numeric values align in both languages", (t) => 
       terminalWidth(line.slice(0, line.search(/[█░]/u))),
     );
     assert.equal(new Set(barColumns).size, 1);
-    assert.ok(lines.every((line) => /[█░]{10} [ 0-9]{3} \/ 999$/u.test(line)));
+    assert.ok(lines.every((line) => /[█░]{10} [ 0-9]{3} \/ 255$/u.test(line)));
   }
 });
 
@@ -4081,7 +4438,7 @@ test("explain supports focused resource and comparison topics", () => {
 
   assert.equal(creature.status, 0, creature.stderr);
   assert.match(creature.stdout, /异变体成长/);
-  assert.match(creature.stdout, /能力上限 999/);
+  assert.match(creature.stdout, /普通能力每 255 点.*恶性增殖/);
   assert.match(creature.stdout, /AI 清醒日.*清醒性/);
   assert.doesNotMatch(creature.stdout, /Google|OpenAI|Mistral/);
 });
@@ -4173,10 +4530,10 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
     result.stdout,
     /失控指数.*每 10 点.*稀有突变率.*1.*上限 20%/s,
   );
-  assert.match(result.stdout, /能力上限 999/);
+  assert.match(result.stdout, /普通能力按 255 点循环.*恶性 I · 1\/255/s);
   assert.match(
     result.stdout,
-    /能力值达到 5、15、30、100、300、700.*解锁.*畸变天赋/s,
+    /能力值达到 5、15、30、60、120、220.*解锁.*畸变天赋/s,
   );
   assert.match(
     result.stdout,
@@ -4186,12 +4543,12 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /schema v5.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
+    /schema v6.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
 
-test("explain discloses ecology, generations, evolution costs, and schema v5", () => {
+test("explain discloses ecology, generations, malignancy costs, and schema v6", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
@@ -4219,7 +4576,7 @@ test("explain discloses ecology, generations, evolution costs, and schema v5", (
   );
   assert.match(
     result.stdout,
-    /schema v5.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+    /schema v6.*不保存.*精确 Token.*模型名.*路径.*对话/s,
   );
 });
 
@@ -4335,7 +4692,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 1.4.0\n");
+  assert.equal(result.stdout, "anti-ai 1.5.0\n");
   assert.equal(result.stderr, "");
 });
 

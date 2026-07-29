@@ -19,6 +19,7 @@ import {
   creatureEvolutionEffect,
   creatureEvolutionSummary,
   creatureLabel,
+  creatureMalignancyRankLabel,
   creatureMood,
   creatureRareAbilityGain,
   creatureStatePath,
@@ -336,6 +337,7 @@ function renderCodex(codex, lang) {
     `  ${color("1;35", localized(lang, `病理图鉴 · ${codex.date}`, `PATHOLOGY CODEX · ${codex.date}`))}`,
     color("2", "├────────────────────────────────────────────────────────┤"),
     `  ${localized(lang, "标本编号", "SPECIMEN ID")}  ${codex.specimenId}`,
+    `  ${localized(lang, "理论物种容量", "THEORETICAL SPECIES CAPACITY")}  ${formatTokens(codex.capacity.finalAsciiForms)} · ${localized(lang, "去重后的最终 ASCII 形象", "DEDUPLICATED FINAL ASCII FORMS")}`,
     `  ${localized(lang, "固定收藏", "FIXED COLLECTION")}  ${codex.summary.fixed.discovered} / ${codex.summary.fixed.total} · ${codex.summary.fixed.percent}%`,
     "",
     ...fixedSection(
@@ -699,7 +701,7 @@ async function runCreature(options, mode = "render") {
       const event = creatureEvent(
         state.seed,
         report.date,
-        previousCreature.abilities.instability,
+        previousCreature.abilityTotals.instability,
         evolutionEffect?.triggered &&
           evolutionEffect.category === "paradox"
           ? evolutionEffect.benefitPoints * 2
@@ -868,18 +870,40 @@ async function runCreature(options, mode = "render") {
     : [
         `${localized(lang, "今日突变", "TODAY'S MUTATION")}  ${localized(lang, "无 · 今日未进食，污染 -2", "NONE · no feeding today, exposure -2")}`,
       ];
+  const abilityDisplayLabels = Object.fromEntries(
+    CREATURE_ABILITY_KEYS.map((ability) => {
+      const rank = result.malignancyRanks[ability];
+      const suffix =
+        rank === 0
+          ? ""
+          : localized(
+              lang,
+              ` · 恶性 ${creatureMalignancyRankLabel(rank)}`,
+              ` · MALIGNANT ${creatureMalignancyRankLabel(rank)}`,
+            );
+      return [ability, `${creatureLabel("abilities", ability, lang)}${suffix}`];
+    }),
+  );
   const abilityLabelWidth = Math.max(
-    ...CREATURE_ABILITY_KEYS.map((ability) =>
-      terminalWidth(creatureLabel("abilities", ability, lang)),
+    ...Object.values(abilityDisplayLabels).map((label) =>
+      terminalWidth(label),
     ),
   );
   const abilityLines = CREATURE_ABILITY_KEYS.map((ability) => {
-    const label = padTerminal(
-      creatureLabel("abilities", ability, lang),
-      abilityLabelWidth,
-    );
-    return `  ${label}  ${creatureAbilityBar(result.abilities[ability])} ${String(result.abilities[ability]).padStart(3, " ")} / ${CREATURE_ABILITY_MAX}`;
+    const rank = result.malignancyRanks[ability];
+    const malignancyColor =
+      rank >= 3 ? "1;33" : rank === 2 ? "1;35" : "1;31";
+    const label = padTerminal(abilityDisplayLabels[ability], abilityLabelWidth);
+    const renderedLabel = rank === 0 ? label : color(malignancyColor, label);
+    return `  ${renderedLabel}  ${creatureAbilityBar(result.abilities[ability])} ${String(result.abilities[ability]).padStart(3, " ")} / ${CREATURE_ABILITY_MAX}`;
   });
+  const malignancyPreview = result.malignancies
+    .map(
+      (entry) =>
+        `${creatureLabel("malignancyTitles", entry.titleId, lang)} ${creatureMalignancyRankLabel(entry.rank)}`,
+    )
+    .join(" · ");
+  const malignancyLine = `${localized(lang, "恶性增殖", "MALIGNANT GROWTH")}  [${result.malignancies.length}] ${malignancyPreview || localized(lang, "尚未越界", "CONTAINED")}`;
   const growth = CREATURE_ABILITY_KEYS.filter(
     (ability) => today.abilityGains[ability] > 0,
   )
@@ -952,9 +976,12 @@ async function runCreature(options, mode = "render") {
     .filter(Boolean)
     .join(" · ");
   const fossilPreview = result.fossils.at(-1);
+  const fossilMalignancyGain = Object.values(
+    fossilPreview?.malignancyGains ?? {},
+  ).reduce((total, value) => total + value, 0);
   const fossilLines = fossilPreview
     ? [
-        `  #${fossilPreview.id} · ${generationLabel(fossilPreview.generation, lang)} · ${creatureLabel("ecologies", fossilPreview.ecologyId, lang)} · ${creatureLabel("abilities", fossilPreview.inheritanceAbilityId, lang)} · ${creatureLabel("scars", fossilPreview.scarId, lang)}`,
+        `  #${fossilPreview.id} · ${generationLabel(fossilPreview.generation, lang)} · ${creatureLabel("ecologies", fossilPreview.ecologyId, lang)} · ${creatureLabel("abilities", fossilPreview.inheritanceAbilityId, lang)} · ${creatureLabel("scars", fossilPreview.scarId, lang)}${fossilMalignancyGain > 0 ? localized(lang, ` · 恶性阶 +${fossilMalignancyGain}`, ` · MALIGNANCY +${fossilMalignancyGain}`) : ""}`,
       ]
     : [`  ${localized(lang, "尚未形成 · 90 天后再来考古", "NONE · archaeology begins after day 90")}`];
   const evolutionLines = result.evolution
@@ -1002,6 +1029,7 @@ async function runCreature(options, mode = "render") {
       "",
       `${localized(lang, `能力值 · Lv.${result.level}`, `ABILITIES · LV.${result.level}`)}  (${result.abilityPoints} pts)`,
       ...abilityLines,
+      malignancyLine,
       `${localized(lang, "今日加点", "TODAY'S GROWTH")}  ${growth || localized(lang, "无", "NONE")}`,
       `${localized(lang, "稀有突变率", "RARE MUTATION CHANCE")}  ${result.rareChancePercent}%`,
       `${localized(lang, "畸变天赋", "MUTATION TALENTS")}  [${result.talents.length}] ${talentPreview || localized(lang, "尚未解锁", "LOCKED")}`,
@@ -1075,6 +1103,10 @@ async function runCreature(options, mode = "render") {
     `${localized(lang, "徽章", "BADGES")}  [${result.achievements.unlocked.length}] ${achievementPreview || localized(lang, "尚未解锁", "LOCKED")}`,
     `${localized(lang, "畸变天赋", "MUTATION TALENTS")}  [${result.talents.length}] ${talentPreview || localized(lang, "尚未解锁", "LOCKED")}`,
   ];
+  const abilityColumnWidth = Math.min(
+    Math.max(43, ...abilityLines.map((line) => terminalWidth(line))),
+    Math.max(43, configuredWidth - 33),
+  );
   const compactLines = [
     `TOKEN MUTATION FILE · ${date}`,
     "",
@@ -1084,8 +1116,14 @@ async function runCreature(options, mode = "render") {
     "",
     `${localized(lang, `能力值 · Lv.${result.level}`, `ABILITIES · LV.${result.level}`)}  (${result.abilityPoints} pts)`,
     ...(configuredWidth >= 100
-      ? joinColumns(abilityLines, stateLines, 43, configuredWidth)
+      ? joinColumns(
+          abilityLines,
+          stateLines,
+          abilityColumnWidth,
+          configuredWidth,
+        )
       : [...abilityLines, "", ...stateLines]),
+    malignancyLine,
     `${localized(lang, "今日加点", "TODAY'S GROWTH")}  ${growth || localized(lang, "无", "NONE")}`,
     `${localized(lang, "稀有突变率", "RARE MUTATION CHANCE")}  ${result.rareChancePercent}% · ${localized(lang, "每日觉醒率", "DAILY AWAKENING ODDS")} ${rareAbilityOdds}`,
     `${localized(lang, "异色能力", "CHROMATIC ABILITIES")}  [${rareAbilityEntries.length}] · ${localized(lang, "今日", "TODAY")} ${rareAbilityGain}`,
@@ -1287,7 +1325,7 @@ function focusedExplain(topic, lang = "zh") {
         "每个已结算自然日只增加 1 天阅历，高 Token 不能加速生命阶段。",
         "高用量增加污染性；低用量增加清醒性；AI 清醒日增加 3 点清醒性。",
         "污染与清醒分别保留，可形成污染型、清醒型或矛盾型生态人格。",
-        "能力上限 999；普通能力、异色能力、徽章、化石和进化选择提供不同成长路线。",
+        "普通能力每 255 点发生一次恶性增殖；累计点数不会截断，恶性阶会增强对应进化的触发率。",
         "普通事件 12 种、稀有事件 8 种；事件文案变化不会改变原有病理性状选择。",
         "完整档案使用全部来源；带 --source 的报告不会改写成长史。",
         "状态文件 ~/.anti-ai/creature.json 只保存派生状态，不保存精确 Token 或对话。",
@@ -1299,7 +1337,7 @@ function focusedExplain(topic, lang = "zh") {
         "Each settled calendar day adds exactly one experience day; Token volume cannot accelerate stages.",
         "High use adds Pollution, low use adds Clarity, and an AI-free day adds 3 Clarity.",
         "Pollution and Clarity persist separately, creating Polluted, Lucid, or Paradox ecologies.",
-        "Regular abilities cap at 999; chromatic abilities, badges, fossils, and choices provide separate routes.",
+        "Regular abilities undergo malignant growth every 255 points; lifetime points are never truncated, and each rank strengthens its evolution proc chance.",
         "Twelve common and eight rare events vary the copy without changing the selected pathology trait.",
         "The complete file uses all sources; --source reports never rewrite creature history.",
         "~/.anti-ai/creature.json stores derived state, never exact tokens or conversation text.",
@@ -1413,28 +1451,31 @@ function runExplain(lang = "zh", topic = undefined) {
       "  different local seeds produce different specimens.",
       "  Twenty-four achievements are split evenly across OFFENSE, SOBRIETY, and PARADOX badges;",
       "  repeatable badges grow through three behavior-based tiers without exact Token totals.",
-      "  anti-ai codex derives 50 fixed entries plus private specimens and fossils from schema v5.",
+      "  anti-ai codex derives 50 fixed entries plus private specimens and fossils from schema v6.",
       "  Locked human entries remain ???; JSON exposes stable IDs and discovery dates.",
       "  Seven abilities grow: TOKEN APPETITE, PARASITIC MEMORY, CACHE CARAPACE,",
       "  REQUEST MAWS, CORE GLOW, INSTABILITY, and WITHDRAWAL.",
-      "  Ability values cap at 999: active days add 1–2 APPETITE, 1 point to the",
+      "  Visible ability values run from 1–255. Point 256 becomes MALIGNANT I · 1/255;",
+      "  lifetime points remain lossless. Active days add 1–2 APPETITE, 1 point to the",
       "  dominant usage ability, a 25% seeded random bonus, and 1 event-linked point.",
       "  INSTABILITY adds 1 percentage point to the rare-mutation chance per 10 points,",
       "  starting at 8% rare mutation chance and capped at 20%.",
-      "  Ability values unlock mutation talents at 5, 15, 30, 100, 300, and 700.",
+      "  Ability values unlock mutation talents at 5, 15, 30, 60, 120, and 220.",
       "  Chromatic abilities awaken independently on active days: R 0.50%, SR 0.10%,",
       "  and SSR 0.02%. Drawing the same one again grows it, up to level 9.",
       "  One event is selected with SHA-256(local seed + date); a base 8% enters the rare pool.",
       "  A common event adds 8 to one trait; a rare event adds 20.",
       "  After the first active day, each AI-free day reduces exposure by 2",
       "  and adds 1 WITHDRAWAL without clearing historical traits.",
-      "  Every 90 experience days seal one permanent fossil. The next generation",
+      "  Every 90 experience days seal one permanent fossil with that generation's",
+      "  ability gains, sealed snapshot, and new malignancy ranks. The next generation",
       "  restarts its four life stages while inheriting one ability and one scar.",
       "  Each new generation offers one POLLUTION, one CLARITY, and one PARADOX choice.",
       "  anti-ai creature evolve <1|2|3> seals the choice; ignoring it never blocks reports.",
-      "  Proc chance = min(35%, 5% + floor(ability ÷ 25) + 2% per unlocked talent).",
+      "  Proc chance = min(35%, 5% + min(10, floor(lifetime ability ÷ 25))",
+      "  + 2% per unlocked talent + 2% per malignancy rank).",
       "  Higher talent tiers amplify both the benefit and its cost; there is no free upgrade.",
-      "  State: ~/.anti-ai/creature.json (schema v5)",
+      "  State: ~/.anti-ai/creature.json (schema v6; schema v1-v5 migrate locally)",
       "  It stores only usage bands, derived ecology points, genes/part IDs, achievements,",
       "  fossils, evolution choices, dose, traits, ability/chromatic gains, events, and a",
       "  local seed—not chats, paths, model names, exact tokens, or per-request timestamps.",
@@ -1562,21 +1603,23 @@ function runExplain(lang = "zh", topic = undefined) {
     "  ASCII 外观由稳定本地基因、生命阶段、使用病型、生态人格、成就部件和异色突变共同拼装。",
     "  同一档案稳定生成同一标本，不同本地 seed 尽量生成不同个体。",
     "  首批 24 项成就平均分为罪证章、戒断章、悖论章三类；可重复成就按行为次数成长为三级，",
-    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v5 派生 50 项固定收藏、动态标本和化石。",
+    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v6 派生 50 项固定收藏、动态标本和化石。",
     "  人类输出的锁定项保持 ???，JSON 提供稳定 ID 和发现日期。",
     "  7 个能力值：吞噬欲、赘生脑回、化石甲、请求口器、核素亮度、失控指数、戒断反应。",
-    "  能力上限 999：活跃日获得 1–2 点吞噬欲、1 点主使用能力、25% 确定性随机加点和 1 点事件关联能力。",
+    "  普通能力按 255 点循环：第 256 点显示为“恶性 I · 1/255”，累计点数不会截断。",
+    "  活跃日获得 1–2 点吞噬欲、1 点主使用能力、25% 确定性随机加点和 1 点事件关联能力。",
     "  失控指数每 10 点让稀有突变率增加 1 个百分点，基础 8%，上限 20%。",
-    "  能力值达到 5、15、30、100、300、700 时解锁对应的畸变天赋。",
+    "  能力值达到 5、15、30、60、120、220 时解锁对应的畸变天赋。",
     "  异色能力在活跃日独立觉醒：R 0.50%、SR 0.10%、SSR 0.02%；重复觉醒同一能力会升级，最高 9 级。",
     "  每日事件由 SHA-256（本地 seed + 日期）确定，基础 8% 进入稀有突变池。",
     "  普通事件给一个性状 +8，稀有事件 +20。",
     "  首个活跃日之后，每个 AI 清醒日污染 -2、戒断反应 +1，但不会清除历史性状。",
-    "  每 90 个阅历日封存一枚永久化石；下一代重新经历四个生命阶段，继承上一代的一项能力和一道伤疤。",
+    "  每 90 个阅历日封存一枚永久化石，同时记录该代能力增量、封存快照和新增恶性阶；",
+    "  下一代重新经历四个生命阶段，继承上一代的一项能力和一道伤疤。",
     "  每代提供污染、清醒、悖论三选一；运行 anti-ai creature evolve <1|2|3> 显式确认，不选择也不会阻断账单。",
-    "  触发概率 = min(35%, 5% + floor(对应能力值 ÷ 25) + 每项已解锁天赋 2%)。",
+    "  触发概率 = min(35%, 5% + min(10, floor(累计能力值 ÷ 25)) + 每项已解锁天赋 2% + 每个恶性阶 2%)。",
     "  高阶天赋会同时放大收益与代价，不存在无成本的最优进化。",
-    "  状态文件：~/.anti-ai/creature.json（schema v5）",
+    "  状态文件：~/.anti-ai/creature.json（schema v6；schema v1-v5 在本地幂等迁移）",
     "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、污染剂量、性状、能力与异色加点、事件和本地 seed；",
     "  不保存精确 Token、模型名、路径、对话或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",

@@ -538,7 +538,17 @@ const CREATURE_ABILITY_KEYS = [
   "withdrawal",
 ];
 
-const CREATURE_ABILITY_MAX = 999;
+const CREATURE_ABILITY_MAX = 255;
+const CREATURE_MALIGNANCY_EVOLUTION_BONUS = 2;
+const CREATURE_MALIGNANCY_TITLE_IDS = {
+  appetite: "famine_tumor",
+  memory: "recursive_cancer",
+  shell: "cache_osteosarcoma",
+  mouths: "request_hyperplasia",
+  glow: "isotope_sarcoma",
+  instability: "probability_deterioration",
+  withdrawal: "withdrawal_necrosis",
+};
 const CREATURE_RARE_ABILITY_MAX = 9;
 const CREATURE_GENERATION_LENGTH = 90;
 const CREATURE_INHERITANCE_BONUS = 5;
@@ -634,57 +644,57 @@ const CREATURE_TALENTS = {
     { id: "bottomless_stomach", threshold: 5 },
     { id: "throughput_singularity", threshold: 15 },
     { id: "invoice_devourer", threshold: 30 },
-    { id: "token_landfill", threshold: 100 },
-    { id: "budget_event_horizon", threshold: 300 },
-    { id: "planetary_feedlot", threshold: 700 },
+    { id: "token_landfill", threshold: 60 },
+    { id: "budget_event_horizon", threshold: 120 },
+    { id: "planetary_feedlot", threshold: 220 },
   ],
   memory: [
     { id: "appendix_gills", threshold: 5 },
     { id: "recursive_cortex", threshold: 15 },
     { id: "dossier_hive", threshold: 30 },
-    { id: "appendix_lung", threshold: 100 },
-    { id: "context_graveyard", threshold: 300 },
-    { id: "infinite_review_board", threshold: 700 },
+    { id: "appendix_lung", threshold: 60 },
+    { id: "context_graveyard", threshold: 120 },
+    { id: "infinite_review_board", threshold: 220 },
   ],
   shell: [
     { id: "cache_scab", threshold: 5 },
     { id: "fossil_carapace", threshold: 15 },
     { id: "yesterday_immortal", threshold: 30 },
-    { id: "cache_coffin", threshold: 100 },
-    { id: "legacy_strata", threshold: 300 },
-    { id: "rollback_continent", threshold: 700 },
+    { id: "cache_coffin", threshold: 60 },
+    { id: "legacy_strata", threshold: 120 },
+    { id: "rollback_continent", threshold: 220 },
   ],
   mouths: [
     { id: "reply_teeth", threshold: 5 },
     { id: "parallel_dentition", threshold: 15 },
     { id: "api_choir", threshold: 30 },
-    { id: "followup_larynx", threshold: 100 },
-    { id: "webhook_hydra", threshold: 300 },
-    { id: "api_weather_system", threshold: 700 },
+    { id: "followup_larynx", threshold: 60 },
+    { id: "webhook_hydra", threshold: 120 },
+    { id: "api_weather_system", threshold: 220 },
   ],
   glow: [
     { id: "nightlight_thorax", threshold: 5 },
     { id: "private_reactor", threshold: 15 },
     { id: "meltdown_countdown", threshold: 30 },
-    { id: "rack_fever", threshold: 100 },
-    { id: "datacenter_sunburn", threshold: 300 },
-    { id: "private_heat_death", threshold: 700 },
+    { id: "rack_fever", threshold: 60 },
+    { id: "datacenter_sunburn", threshold: 120 },
+    { id: "private_heat_death", threshold: 220 },
   ],
   instability: [
     { id: "dice_organ", threshold: 5 },
     { id: "bad_luck_field", threshold: 15 },
     { id: "probability_leak", threshold: 30 },
-    { id: "edge_case_weather", threshold: 100 },
-    { id: "rollback_prophecy", threshold: 300 },
-    { id: "production_poltergeist", threshold: 700 },
+    { id: "edge_case_weather", threshold: 60 },
+    { id: "rollback_prophecy", threshold: 120 },
+    { id: "production_poltergeist", threshold: 220 },
   ],
   withdrawal: [
     { id: "cold_sweat", threshold: 5 },
     { id: "offline_tinnitus", threshold: 15 },
     { id: "ai_intolerance", threshold: 30 },
-    { id: "airplane_mode_rash", threshold: 100 },
-    { id: "manual_thought_allergy", threshold: 300 },
-    { id: "offline_organ_failure", threshold: 700 },
+    { id: "airplane_mode_rash", threshold: 60 },
+    { id: "manual_thought_allergy", threshold: 120 },
+    { id: "offline_organ_failure", threshold: 220 },
   ],
 };
 
@@ -948,6 +958,18 @@ const CREATURE_COPY = {
     glow: { zh: "核素亮度", en: "CORE GLOW" },
     instability: { zh: "失控指数", en: "INSTABILITY" },
     withdrawal: { zh: "戒断反应", en: "WITHDRAWAL" },
+  },
+  malignancyTitles: {
+    famine_tumor: { zh: "饥荒肿瘤", en: "FAMINE TUMOR" },
+    recursive_cancer: { zh: "递归脑癌", en: "RECURSIVE CANCER" },
+    cache_osteosarcoma: { zh: "缓存骨肉瘤", en: "CACHE OSTEOSARCOMA" },
+    request_hyperplasia: { zh: "请求增生", en: "REQUEST HYPERPLASIA" },
+    isotope_sarcoma: { zh: "核素肉瘤", en: "ISOTOPE SARCOMA" },
+    probability_deterioration: {
+      zh: "概率恶化",
+      en: "PROBABILITY DETERIORATION",
+    },
+    withdrawal_necrosis: { zh: "戒断坏死", en: "WITHDRAWAL NECROSIS" },
   },
   rareAbilities: {
     deadline_scent: { zh: "截止日嗅觉", en: "DEADLINE SCENT" },
@@ -1408,6 +1430,55 @@ function creatureAbilityBar(value, maximum = CREATURE_ABILITY_MAX) {
   return `${"█".repeat(filled)}${"░".repeat(10 - filled)}`;
 }
 
+function creatureAbilityProgress(totalPoints) {
+  const normalized = Math.max(0, Math.floor(totalPoints));
+  if (normalized === 0) {
+    return {
+      value: 0,
+      totalPoints: 0,
+      malignancyRank: 0,
+      nextMalignancyAt: CREATURE_ABILITY_MAX + 1,
+    };
+  }
+  const malignancyRank = Math.floor(
+    (normalized - 1) / CREATURE_ABILITY_MAX,
+  );
+  return {
+    value: ((normalized - 1) % CREATURE_ABILITY_MAX) + 1,
+    totalPoints: normalized,
+    malignancyRank,
+    nextMalignancyAt:
+      (malignancyRank + 1) * CREATURE_ABILITY_MAX + 1,
+  };
+}
+
+function creatureMalignancyRankLabel(rank) {
+  const values = [
+    [1000, "M"],
+    [900, "CM"],
+    [500, "D"],
+    [400, "CD"],
+    [100, "C"],
+    [90, "XC"],
+    [50, "L"],
+    [40, "XL"],
+    [10, "X"],
+    [9, "IX"],
+    [5, "V"],
+    [4, "IV"],
+    [1, "I"],
+  ];
+  let remaining = Math.max(0, Math.floor(rank));
+  let output = "";
+  for (const [value, glyph] of values) {
+    while (remaining >= value) {
+      output += glyph;
+      remaining -= value;
+    }
+  }
+  return output || "0";
+}
+
 function roundCreature(value) {
   return Number(value.toFixed(2));
 }
@@ -1522,6 +1593,34 @@ function creatureAppearanceContentStats() {
       0,
     ),
     achievements: CREATURE_ACHIEVEMENT_DEFINITIONS.length,
+  };
+}
+
+function creatureAppearanceCapacity() {
+  const structuralForms = Object.entries(CREATURE_APPEARANCE_GENE_POOLS)
+    .filter(([gene]) => gene !== "pattern")
+    .reduce((total, [, pool]) => total * pool.length, 1);
+  const chestVariants =
+    CREATURE_APPEARANCE_GENE_POOLS.pattern.length +
+    new Set(Object.values(CREATURE_SCARS)).size +
+    new Set(
+      CREATURE_ACHIEVEMENT_DEFINITIONS.map(
+        (achievement) => achievement.category,
+      ),
+    ).size +
+    new Set(
+      Object.values(CREATURE_RARE_ABILITY_DEFINITIONS).map(
+        (ability) => ability.rarity,
+      ),
+    ).size;
+  const growthVariants =
+    Object.keys(CREATURE_BRANCH_PARTS).length *
+    Object.keys(CREATURE_ECOLOGY_PARTS).length *
+    chestVariants;
+  return {
+    structuralForms,
+    growthVariants,
+    finalAsciiForms: structuralForms * growthVariants,
   };
 }
 
@@ -2064,6 +2163,7 @@ function creatureCodex(state, date) {
   return {
     date,
     specimenId: creature.appearance.specimenId,
+    capacity: creatureAppearanceCapacity(),
     summary: {
       fixed: {
         discovered: fixedDiscovered,
@@ -2145,21 +2245,37 @@ function syncCreatureGenerations(state, date) {
   );
 
   for (let generation = 1; generation <= completedGenerations; generation += 1) {
-    if (
-      state.generations.fossils.some(
-        (fossil) => fossil.generation === generation,
-      )
-    ) {
-      continue;
-    }
     const sealedAt =
       entries[generation * CREATURE_GENERATION_LENGTH - 1][0];
     const creature = deriveCreature(state, sealedAt);
-    state.generations.fossils.push({
-      id: createHash("sha256")
-        .update(`${state.seed}:generation:${generation}:fossil`)
-        .digest("hex")
-        .slice(0, 8),
+    const generationEntries = entries.slice(
+      (generation - 1) * CREATURE_GENERATION_LENGTH,
+      generation * CREATURE_GENERATION_LENGTH,
+    );
+    const abilityGains = Object.fromEntries(
+      CREATURE_ABILITY_KEYS.map((ability) => [
+        ability,
+        generationEntries.reduce(
+          (total, [, day]) =>
+            total + (day.abilityGains?.[ability] ?? 0),
+          0,
+        ),
+      ]),
+    );
+    const previousFossil = state.generations.fossils.find(
+      (fossil) => fossil.generation === generation - 1,
+    );
+    const malignancyGains = Object.fromEntries(
+      CREATURE_ABILITY_KEYS.map((ability) => [
+        ability,
+        Math.max(
+          0,
+          creature.malignancyRanks[ability] -
+            (previousFossil?.abilitySnapshot?.[ability]?.malignancyRank ?? 0),
+        ),
+      ]),
+    );
+    const fossilDetails = {
       generation,
       sealedAt,
       ecologyId: creature.ecology.type,
@@ -2167,9 +2283,26 @@ function syncCreatureGenerations(state, date) {
       inheritanceAbilityId: creature.dominantAbility,
       scarId: CREATURE_SCARS[creature.ecology.type],
       appearanceFingerprint: creature.appearance.fingerprint,
-      evolutionId:
-        state.generations.evolutions[String(generation)]?.selectedId ?? null,
-    });
+      abilityGains,
+      abilitySnapshot: creature.abilityProgress,
+      malignancyGains,
+    };
+    const existingFossil = state.generations.fossils.find(
+      (fossil) => fossil.generation === generation,
+    );
+    if (existingFossil) {
+      Object.assign(existingFossil, fossilDetails);
+    } else {
+      state.generations.fossils.push({
+        id: createHash("sha256")
+          .update(`${state.seed}:generation:${generation}:fossil`)
+          .digest("hex")
+          .slice(0, 8),
+        ...fossilDetails,
+        evolutionId:
+          state.generations.evolutions[String(generation)]?.selectedId ?? null,
+      });
+    }
     const nextGeneration = generation + 1;
     state.generations.evolutions[String(nextGeneration)] ??= {
       generation: nextGeneration,
@@ -2297,7 +2430,7 @@ function migrateCreatureState(state) {
     );
     if (day.active) hasHatched = true;
   }
-  state.schemaVersion = 5;
+  state.schemaVersion = 6;
   return state;
 }
 
@@ -2309,7 +2442,7 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if ([1, 2, 3, 4, 5].includes(state?.schemaVersion) && state.days) {
+    if ([1, 2, 3, 4, 5, 6].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
       return migrateCreatureState(state);
@@ -2318,7 +2451,7 @@ async function loadCreatureState() {
     if (error.code !== "ENOENT") throw error;
   }
   return migrateCreatureState({
-    schemaVersion: 5,
+    schemaVersion: 6,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},
@@ -2344,16 +2477,23 @@ function unlockedCreatureTalents(abilities) {
   );
 }
 
-function creatureEvolutionRule(abilities, abilityId) {
+function creatureEvolutionRule(abilityTotals, abilityId) {
   const talentModifiers = CREATURE_TALENTS[abilityId].filter(
-    (talent) => abilities[abilityId] >= talent.threshold,
+    (talent) => abilityTotals[abilityId] >= talent.threshold,
   ).length;
+  const progress = creatureAbilityProgress(abilityTotals[abilityId]);
+  const malignancyModifiers =
+    progress.malignancyRank * CREATURE_MALIGNANCY_EVOLUTION_BONUS;
   return {
     procChancePercent: Math.min(
       35,
-      5 + Math.floor(abilities[abilityId] / 25) + talentModifiers * 2,
+      5 +
+        Math.min(10, Math.floor(abilityTotals[abilityId] / 25)) +
+        talentModifiers * 2 +
+        malignancyModifiers,
     ),
     talentModifiers,
+    malignancyModifiers,
     benefitPoints: 1 + Math.floor(talentModifiers / 3),
     costPoints: 1 + Math.floor(talentModifiers / 5),
   };
@@ -2374,7 +2514,7 @@ function creatureEvolutionEffect(state, date, day, previousCreature) {
   }
   const definition = CREATURE_EVOLUTION_DEFINITIONS[evolution.selectedId];
   const rule = creatureEvolutionRule(
-    previousCreature.abilities,
+    previousCreature.abilityTotals,
     definition.abilityId,
   );
   const eligible =
@@ -2392,6 +2532,7 @@ function creatureEvolutionEffect(state, date, day, previousCreature) {
     abilityId: definition.abilityId,
     procChancePercent: rule.procChancePercent,
     talentModifiers: rule.talentModifiers,
+    malignancyModifiers: rule.malignancyModifiers,
     triggered,
     benefitId: definition.benefitId,
     benefitPoints: triggered ? rule.benefitPoints : 0,
@@ -2447,7 +2588,7 @@ function deriveCreature(state, date) {
     frenzy: 0,
     nuclear: 0,
   };
-  const abilities = emptyCreatureAbilities();
+  const abilityTotals = emptyCreatureAbilities();
   const rareAbilityLevels = {};
   let exposure = 0;
   let activeDays = 0;
@@ -2509,10 +2650,7 @@ function deriveCreature(state, date) {
       }
     }
     for (const key of CREATURE_ABILITY_KEYS) {
-      abilities[key] = Math.min(
-        CREATURE_ABILITY_MAX,
-        abilities[key] + (day.abilityGains?.[key] ?? 0),
-      );
+      abilityTotals[key] += day.abilityGains?.[key] ?? 0;
     }
     if (day.rareAbilityGain) {
       const { id, points } = day.rareAbilityGain;
@@ -2557,25 +2695,49 @@ function deriveCreature(state, date) {
         )
       : undefined;
   if (inheritedFossil) {
-    abilities[inheritedFossil.inheritanceAbilityId] = Math.min(
-      CREATURE_ABILITY_MAX,
-      abilities[inheritedFossil.inheritanceAbilityId] +
-        CREATURE_INHERITANCE_BONUS,
-    );
+    abilityTotals[inheritedFossil.inheritanceAbilityId] +=
+      CREATURE_INHERITANCE_BONUS;
   }
+  const abilityProgress = Object.fromEntries(
+    CREATURE_ABILITY_KEYS.map((ability) => [
+      ability,
+      creatureAbilityProgress(abilityTotals[ability]),
+    ]),
+  );
+  const abilities = Object.fromEntries(
+    CREATURE_ABILITY_KEYS.map((ability) => [
+      ability,
+      abilityProgress[ability].value,
+    ]),
+  );
+  const malignancyRanks = Object.fromEntries(
+    CREATURE_ABILITY_KEYS.map((ability) => [
+      ability,
+      abilityProgress[ability].malignancyRank,
+    ]),
+  );
+  const malignancies = CREATURE_ABILITY_KEYS
+    .filter((ability) => malignancyRanks[ability] > 0)
+    .map((ability) => ({
+      abilityId: ability,
+      rank: malignancyRanks[ability],
+      titleId: CREATURE_MALIGNANCY_TITLE_IDS[ability],
+      evolutionChanceBonusPercent:
+        malignancyRanks[ability] * CREATURE_MALIGNANCY_EVOLUTION_BONUS,
+    }));
   const inheritedAbilityId = inheritedFossil?.inheritanceAbilityId ?? null;
   const scarId = inheritedFossil?.scarId ?? null;
-  const dominantAbility = dominantCreatureKey(abilities);
-  const abilityPoints = Object.values(abilities).reduce(
+  const dominantAbility = dominantCreatureKey(abilityTotals);
+  const abilityPoints = Object.values(abilityTotals).reduce(
     (sum, value) => sum + value,
     0,
   );
-  const talents = unlockedCreatureTalents(abilities);
+  const talents = unlockedCreatureTalents(abilityTotals);
   const evolution = creatureEvolutionSummary(state, date);
   if (evolution) {
     evolution.options = evolution.options.map((option) => ({
       ...option,
-      ...creatureEvolutionRule(abilities, option.abilityId),
+      ...creatureEvolutionRule(abilityTotals, option.abilityId),
     }));
     evolution.selected =
       evolution.selectedId === null
@@ -2646,6 +2808,10 @@ function deriveCreature(state, date) {
     traits,
     level: 1 + Math.floor(abilityPoints / 10),
     abilities,
+    abilityTotals,
+    abilityProgress,
+    malignancyRanks,
+    malignancies,
     abilityPoints,
     dominantAbility,
     temperament: CREATURE_TEMPERAMENTS[dominantAbility],
@@ -2654,7 +2820,7 @@ function deriveCreature(state, date) {
         ? "unlicensed_specimen"
         : CREATURE_EPITHETS[dominantAbility],
     talents,
-    rareChancePercent: creatureRareChance(abilities.instability),
+    rareChancePercent: creatureRareChance(abilityTotals.instability),
     rareAbilities,
     rareAbilityChancesPercent: { ...CREATURE_RARE_ABILITY_CHANCES },
     collections: {
@@ -2857,6 +3023,7 @@ export {
   CREATURE_RARE_ABILITY_RANKS,
   creatureAbilityBar,
   creatureAbilityGains,
+  creatureAbilityProgress,
   creatureAppearanceContentStats,
   creatureAppearanceState,
   creatureArt,
@@ -2868,6 +3035,7 @@ export {
   creatureEvolutionSummary,
   creatureLabel,
   creatureMood,
+  creatureMalignancyRankLabel,
   creatureRareAbilityGain,
   creatureStatePath,
   creatureTitle,

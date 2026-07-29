@@ -934,6 +934,85 @@ function renderPathologyShareSvg(view, lang = "zh") {
 `;
 }
 
+function renderEncounterShareSvg(view, lang = "zh") {
+  const title = localized(
+    lang,
+    "异变体接触事故",
+    "MUTATION CONTACT INCIDENT",
+  );
+  const privacy = localized(
+    lang,
+    "隐私模式：无对话、路径、模型名、精确 Token 或污染编码",
+    "PRIVACY MODE: no chats, paths, models, exact tokens, or pollution codes",
+  );
+  const artLines = view.art
+    .replaceAll(/\u001B\[[0-9;]*m/g, "")
+    .split("\n")
+    .filter(Boolean)
+    .map(
+      (line, index) =>
+        `<tspan x="72" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const detailLines = [];
+  let remainingDetail = view.detail;
+  while (remainingDetail.length > 0 && detailLines.length < 2) {
+    if (remainingDetail.length <= 52) {
+      detailLines.push(remainingDetail);
+      break;
+    }
+    const candidate = remainingDetail.slice(0, 52);
+    const splitAt =
+      lang === "en" && candidate.includes(" ")
+        ? candidate.lastIndexOf(" ")
+        : 52;
+    detailLines.push(remainingDetail.slice(0, splitAt));
+    remainingDetail = remainingDetail.slice(splitAt).trimStart();
+  }
+  const detailTspans = detailLines
+    .map(
+      (line, index) =>
+        `<tspan x="610" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(title)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#0d0912"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#513069" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#bd68ff"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #927da3; }
+    .body { fill: #f5eff9; }
+    .accent { fill: #d991ff; }
+    .warn { fill: #ffca6b; }
+  </style>
+  <text x="72" y="82" class="mono accent" font-size="32" font-weight="800">${escapeXml(title)}</text>
+  <text x="1128" y="82" class="mono muted" font-size="18" text-anchor="end">${escapeXml(view.date)} · INCIDENT #${escapeXml(view.encounterId)}</text>
+  <line x1="72" y1="114" x2="1128" y2="114" stroke="#513069" stroke-width="2"/>
+
+  <text x="72" y="154" class="mono warn" font-size="17">${escapeXml(localized(lang, `混种标本 #${view.hybridFingerprint}`, `HYBRID SPECIMEN #${view.hybridFingerprint}`))}</text>
+  <text x="72" y="190" class="mono body" font-size="17" xml:space="preserve">${artLines}</text>
+
+  <text x="610" y="158" class="mono muted" font-size="15">${escapeXml(localized(lang, "算力天气", "COMPUTE WEATHER"))}</text>
+  <text x="610" y="190" class="mono warn" font-size="20">${escapeXml(view.weather)}</text>
+  <text x="610" y="230" class="mono muted" font-size="15">${escapeXml(localized(lang, "接触类型", "CONTACT TYPE"))}</text>
+  <text x="610" y="262" class="mono accent" font-size="20">${escapeXml(view.type)}</text>
+  <text x="610" y="302" class="mono muted" font-size="15">${escapeXml(localized(lang, "亲本形态", "PARENT FORMS"))}</text>
+  <text x="610" y="334" class="mono body" font-size="16">${escapeXml(`${view.localForm} × ${view.visitorForm}`)}</text>
+  <text x="610" y="374" class="mono muted" font-size="15">${escapeXml(localized(lang, "事故产物", "ACCIDENT PRODUCT"))}</text>
+  <text x="610" y="406" class="mono body" font-size="18">${escapeXml(view.hybridForm)}</text>
+  <text x="610" y="452" class="mono body" font-size="15">${detailTspans}</text>
+
+  <line x1="72" y1="544" x2="1128" y2="544" stroke="#513069" stroke-width="2"/>
+  <text x="72" y="574" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 function renderCreatureCollectionShareSvg(view, kind, lang = "zh") {
   const privacy = localized(
     lang,
@@ -1283,6 +1362,7 @@ export {
   padTerminal,
   renderMonth,
   renderCreatureCollectionShareSvg,
+  renderEncounterShareSvg,
   renderPathologyShareSvg,
   renderReceipt,
   renderShareSvg,

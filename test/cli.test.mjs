@@ -1779,6 +1779,7 @@ test("codex --json derives a stable private collection from creature history", (
     chromaticAbilities: { discovered: 0, total: 6 },
     scars: { discovered: 0, total: 4 },
     specimens: { discovered: 1 },
+    foreignSpecimens: { discovered: 0 },
     fossils: { discovered: 0 },
   });
   assert.deepEqual(
@@ -1794,6 +1795,7 @@ test("codex --json derives a stable private collection from creature history", (
       chromaticAbilities: 6,
       scars: 4,
       specimens: 1,
+      foreignSpecimens: 0,
       fossils: 0,
     },
   );
@@ -1984,12 +1986,12 @@ test("today week and month surface collection discoveries", (t) => {
   assert.equal(week.status, 0, week.stderr);
   assert.match(
     week.stdout,
-    /新增收藏\s+2 · 形态 1 · 成就 0 · 异色 0 · 伤痕 0 · 标本 1 · 化石 0/,
+    /新增收藏\s+2 · 形态 1 · 成就 0 · 异色 0 · 伤痕 0 · 标本 1 · 外来 0 · 化石 0/,
   );
   assert.equal(month.status, 0, month.stderr);
   assert.match(
     month.stdout,
-    /NEW COLLECTIONS\s+2 · forms 1 · achievements 0 · chromatics 0 · scars 0 · specimens 1 · fossils 0/,
+    /NEW COLLECTIONS\s+2 · forms 1 · achievements 0 · chromatics 0 · scars 0 · specimens 1 · foreign 0 · fossils 0/,
   );
 });
 
@@ -2982,7 +2984,7 @@ test("creature rolls legacy ability points into 255-point malignancy ranks witho
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 6);
+  assert.equal(saved.schemaVersion, 7);
   assert.equal(saved.days["2026-07-22"].abilityGains.appetite, 267);
 });
 
@@ -3835,8 +3837,8 @@ test("v0.6 creature files migrate without losing stored ability growth", (t) => 
   assert.ok(report.collections.rareAbilitiesUnlocked >= 0);
 });
 
-test("schema v1-v5 creature files migrate idempotently to private malignancy state", (t) => {
-  for (const schemaVersion of [1, 2, 3, 4, 5]) {
+test("schema v1-v6 creature files migrate idempotently to private encounter state", (t) => {
+  for (const schemaVersion of [1, 2, 3, 4, 5, 6]) {
     const home = mkdtempSync(
       path.join(tmpdir(), `anti-ai-schema-${schemaVersion}-`),
     );
@@ -3897,7 +3899,7 @@ test("schema v1-v5 creature files migrate idempotently to private malignancy sta
     const saved = JSON.parse(
       readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
     );
-    assert.equal(saved.schemaVersion, 6);
+    assert.equal(saved.schemaVersion, 7);
     assert.equal(saved.appearance.version, 1);
     assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
     assert.equal(saved.specimens.length, 1);
@@ -3912,6 +3914,7 @@ test("schema v1-v5 creature files migrate idempotently to private malignancy sta
       fossils: [],
       evolutions: {},
     });
+    assert.deepEqual(saved.foreignSpecimens, []);
     assert.doesNotMatch(
       JSON.stringify(saved),
       /totalTokens|modelName|prompt|response|requestTimestamp/,
@@ -4276,6 +4279,368 @@ test("creature compact default preserves terminal colors at narrow and wide widt
   }
 });
 
+test("creature export emits a versioned privacy-safe pollution code", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-export-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "export-specimen",
+  };
+
+  const human = runCli(
+    ["creature", "export", "--date", "2026-07-23"],
+    env,
+  );
+  const machine = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    env,
+  );
+
+  assert.equal(human.status, 0, human.stderr);
+  assert.match(human.stdout, /污染编码\s+AA1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+  assert.match(human.stdout, /标本编号\s+[a-f0-9]{8}/);
+  assert.match(human.stdout, /不包含精确 Token、模型、路径或对话/);
+  assert.doesNotMatch(human.stdout, /gpt-test|180 tokens|session\.jsonl/);
+
+  assert.equal(machine.status, 0, machine.stderr);
+  const exported = JSON.parse(machine.stdout);
+  assert.equal(exported.protocolVersion, 1);
+  assert.match(exported.code, /^AA1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  assert.match(exported.specimenId, /^[a-f0-9]{8}$/);
+  assert.match(exported.fingerprint, /^[a-f0-9]{12}$/);
+  assert.deepEqual(Object.keys(exported).sort(), [
+    "code",
+    "fingerprint",
+    "protocolVersion",
+    "specimenId",
+  ]);
+  const payload = JSON.parse(
+    Buffer.from(exported.code.split(".")[1], "base64url").toString("utf8"),
+  );
+  assert.deepEqual(Object.keys(payload).sort(), [
+    "a",
+    "c",
+    "e",
+    "f",
+    "g",
+    "i",
+    "o",
+    "p",
+    "r",
+    "s",
+    "v",
+    "x",
+  ]);
+  assert.doesNotMatch(
+    JSON.stringify(payload),
+    /exactTokens|modelName|sourceName|filePath|prompt|response|requestCount|conversation/i,
+  );
+});
+
+test("encounter combines two pollution codes into one deterministic local accident", (t) => {
+  const localHome = mkdtempSync(path.join(tmpdir(), "anti-ai-encounter-local-"));
+  const visitorHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-encounter-visitor-"),
+  );
+  t.after(() => {
+    rmSync(localHome, { recursive: true, force: true });
+    rmSync(visitorHome, { recursive: true, force: true });
+  });
+  const visitorExport = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    {
+      HOME: visitorHome,
+      ANTI_AI_CREATURE_SEED: "encounter-visitor",
+    },
+  );
+  assert.equal(visitorExport.status, 0, visitorExport.stderr);
+  const visitor = JSON.parse(visitorExport.stdout);
+  const localEnv = {
+    HOME: localHome,
+    ANTI_AI_CREATURE_SEED: "encounter-local",
+  };
+
+  const human = runCli(
+    ["encounter", visitor.code, "--date", "2026-07-23"],
+    localEnv,
+  );
+  const english = runCli(
+    [
+      "encounter",
+      visitor.code,
+      "--date",
+      "2026-07-23",
+      "--lang",
+      "en",
+    ],
+    localEnv,
+  );
+  const first = runCli(
+    ["encounter", visitor.code, "--date", "2026-07-23", "--json"],
+    localEnv,
+  );
+  const repeated = runCli(
+    ["encounter", visitor.code, "--date", "2026-07-23", "--json"],
+    localEnv,
+  );
+
+  assert.equal(human.status, 0, human.stderr);
+  assert.match(human.stdout, /异变体接触事故/);
+  assert.match(human.stdout, /算力天气\s+\S+/);
+  assert.match(human.stdout, /接触类型\s+\S+/);
+  assert.match(human.stdout, /混种标本\s+#[a-f0-9]{12}/);
+  assert.match(human.stdout, /anti-ai encounter .* --save/);
+  assert.doesNotMatch(human.stdout, /gpt-test|180 tokens|session\.jsonl/);
+  assert.equal(english.status, 0, english.stderr);
+  assert.match(english.stdout, /MUTATION CONTACT INCIDENT/);
+  assert.match(english.stdout, /COMPUTE WEATHER\s+\S+/);
+  assert.match(english.stdout, /CONTACT TYPE\s+\S+/);
+  assert.doesNotMatch(english.stdout, /[\p{Script=Han}]/u);
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  const firstResult = JSON.parse(first.stdout);
+  const repeatedResult = JSON.parse(repeated.stdout);
+  assert.equal(firstResult.protocolVersion, 1);
+  assert.match(firstResult.encounterId, /^[a-f0-9]{12}$/);
+  assert.equal(firstResult.saved, false);
+  assert.equal(firstResult.visitor.specimenId, visitor.specimenId);
+  assert.match(firstResult.hybrid.fingerprint, /^[a-f0-9]{12}$/);
+  assert.deepEqual(firstResult, repeatedResult);
+});
+
+test("encounter keeps the incident and hybrid stable in both directions", (t) => {
+  const leftHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-encounter-left-"),
+  );
+  const rightHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-encounter-right-"),
+  );
+  t.after(() => {
+    rmSync(leftHome, { recursive: true, force: true });
+    rmSync(rightHome, { recursive: true, force: true });
+  });
+  const leftEnv = {
+    HOME: leftHome,
+    ANTI_AI_CREATURE_SEED: "encounter-left",
+  };
+  const rightEnv = {
+    HOME: rightHome,
+    ANTI_AI_CREATURE_SEED: "encounter-right",
+  };
+  const leftCode = JSON.parse(
+    runCli(
+      ["creature", "export", "--date", "2026-07-23", "--json"],
+      leftEnv,
+    ).stdout,
+  ).code;
+  const rightCode = JSON.parse(
+    runCli(
+      ["creature", "export", "--date", "2026-07-23", "--json"],
+      rightEnv,
+    ).stdout,
+  ).code;
+
+  const leftToRight = JSON.parse(
+    runCli(
+      ["encounter", rightCode, "--date", "2026-07-23", "--json"],
+      leftEnv,
+    ).stdout,
+  );
+  const rightToLeft = JSON.parse(
+    runCli(
+      ["encounter", leftCode, "--date", "2026-07-23", "--json"],
+      rightEnv,
+    ).stdout,
+  );
+
+  assert.equal(leftToRight.encounterId, rightToLeft.encounterId);
+  assert.deepEqual(leftToRight.weather, rightToLeft.weather);
+  assert.deepEqual(leftToRight.type, rightToLeft.type);
+  assert.deepEqual(leftToRight.hybrid, rightToLeft.hybrid);
+});
+
+test("encounter rejects malformed, oversized, tampered, and self pollution codes", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-encounter-guard-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "encounter-guard",
+  };
+  const exported = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    env,
+  );
+  assert.equal(exported.status, 0, exported.stderr);
+  const code = JSON.parse(exported.stdout).code;
+  const tampered = `${code.slice(0, -1)}${code.endsWith("A") ? "B" : "A"}`;
+  const cases = [
+    [[], /缺少污染编码/],
+    [["not-a-specimen"], /格式无效/],
+    [[`AA1.${"a".repeat(2050)}.checksum`], /过长/],
+    [[tampered], /校验失败/],
+    [[code], /不能让异变体和自己的污染编码/],
+  ];
+
+  for (const [args, message] of cases) {
+    const result = runCli(
+      ["encounter", ...args, "--date", "2026-07-23"],
+      env,
+    );
+    assert.equal(result.status, 2, result.stderr);
+    assert.match(result.stderr, message);
+    assert.equal(result.stdout, "");
+  }
+});
+
+test("encounter save bottles one privacy-safe foreign specimen in the codex", (t) => {
+  const localHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-encounter-save-local-"),
+  );
+  const visitorHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-encounter-save-visitor-"),
+  );
+  t.after(() => {
+    rmSync(localHome, { recursive: true, force: true });
+    rmSync(visitorHome, { recursive: true, force: true });
+  });
+  const visitorResult = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    {
+      HOME: visitorHome,
+      ANTI_AI_CREATURE_SEED: "encounter-save-visitor",
+    },
+  );
+  assert.equal(visitorResult.status, 0, visitorResult.stderr);
+  const visitor = JSON.parse(visitorResult.stdout);
+  const env = {
+    HOME: localHome,
+    ANTI_AI_CREATURE_SEED: "encounter-save-local",
+  };
+
+  const first = runCli(
+    [
+      "encounter",
+      visitor.code,
+      "--date",
+      "2026-07-23",
+      "--save",
+      "--json",
+    ],
+    env,
+  );
+  const repeated = runCli(
+    [
+      "encounter",
+      visitor.code,
+      "--date",
+      "2026-07-23",
+      "--save",
+      "--json",
+    ],
+    env,
+  );
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  const firstEncounter = JSON.parse(first.stdout);
+  const repeatedEncounter = JSON.parse(repeated.stdout);
+  assert.equal(firstEncounter.saved, true);
+  assert.equal(firstEncounter.alreadyCollected, false);
+  assert.equal(repeatedEncounter.saved, true);
+  assert.equal(repeatedEncounter.alreadyCollected, true);
+
+  const machineCodex = runCli(
+    ["codex", "--date", "2026-07-23", "--json"],
+    env,
+  );
+  const humanCodex = runCli(["codex", "--date", "2026-07-23"], env);
+  const weekly = runCli(["week", "--date", "2026-07-23"], env);
+  assert.equal(machineCodex.status, 0, machineCodex.stderr);
+  assert.equal(humanCodex.status, 0, humanCodex.stderr);
+  assert.equal(weekly.status, 0, weekly.stderr);
+  const codex = JSON.parse(machineCodex.stdout);
+  assert.equal(codex.summary.foreignSpecimens.discovered, 1);
+  assert.equal(codex.sections.foreignSpecimens.length, 1);
+  assert.equal(
+    codex.sections.foreignSpecimens[0].id,
+    firstEncounter.encounterId,
+  );
+  assert.match(humanCodex.stdout, /外来标本\s+\[1\]/);
+  assert.match(humanCodex.stdout, new RegExp(`#${firstEncounter.encounterId}`));
+  assert.match(weekly.stdout, /新增收藏.*外来 1/);
+
+  const savedState = readFileSync(
+    path.join(localHome, ".anti-ai", "creature.json"),
+    "utf8",
+  );
+  const state = JSON.parse(savedState);
+  assert.equal(state.schemaVersion, 7);
+  assert.equal(state.foreignSpecimens.length, 1);
+  assert.doesNotMatch(
+    savedState,
+    /pollutionCode|exactTokens|modelName|conversation|session\.jsonl/,
+  );
+});
+
+test("encounter share card renders one private bilingual contact accident SVG", (t) => {
+  const localHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-encounter-card-local-"),
+  );
+  const visitorHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-encounter-card-visitor-"),
+  );
+  t.after(() => {
+    rmSync(localHome, { recursive: true, force: true });
+    rmSync(visitorHome, { recursive: true, force: true });
+  });
+  const visitorResult = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    {
+      HOME: visitorHome,
+      ANTI_AI_CREATURE_SEED: "encounter-card-visitor",
+    },
+  );
+  assert.equal(visitorResult.status, 0, visitorResult.stderr);
+  const visitor = JSON.parse(visitorResult.stdout);
+  const env = {
+    HOME: localHome,
+    ANTI_AI_CREATURE_SEED: "encounter-card-local",
+  };
+
+  const card = runCli(
+    [
+      "share",
+      "--card",
+      "encounter",
+      "--with",
+      visitor.code,
+      "--date",
+      "2026-07-23",
+      "--lang",
+      "en",
+    ],
+    env,
+  );
+  assert.equal(card.status, 0, card.stderr);
+  assert.match(card.stdout, /^<svg /);
+  assert.match(card.stdout, /MUTATION CONTACT INCIDENT/);
+  assert.match(card.stdout, /COMPUTE WEATHER/);
+  assert.match(card.stdout, /CONTACT TYPE/);
+  assert.match(card.stdout, /HYBRID SPECIMEN/);
+  assert.match(card.stdout, /PRIVACY MODE/);
+  assert.doesNotMatch(
+    card.stdout,
+    /gpt-test|180 tokens|session\.jsonl|AA1\./,
+  );
+
+  const missing = runCli(
+    ["share", "--card", "encounter", "--date", "2026-07-23"],
+    env,
+  );
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /--with/);
+});
+
 test("creature ability bars and numeric values align in both languages", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-alignment-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
@@ -4595,12 +4960,12 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /schema v6.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
+    /schema v7.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
 
-test("explain discloses ecology, generations, malignancy costs, and schema v6", () => {
+test("explain discloses ecology, generations, malignancy costs, and schema v7", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
@@ -4628,7 +4993,7 @@ test("explain discloses ecology, generations, malignancy costs, and schema v6", 
   );
   assert.match(
     result.stdout,
-    /schema v6.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+    /schema v7.*不保存.*精确 Token.*模型名.*路径.*对话/s,
   );
 });
 
@@ -4678,6 +5043,7 @@ test("--help documents public commands and routes command-specific options", () 
   assert.match(result.stdout, /codex\s+查看本地病理图鉴/);
   assert.match(result.stdout, /share\s+输出隐私安全的 SVG 分享卡/);
   assert.match(result.stdout, /creature\s+查看和管理异变体档案/);
+  assert.match(result.stdout, /encounter\s+让两只异变体在本地发生接触事故/);
   assert.match(result.stdout, /doctor\s+检查本地记录来源/);
   assert.match(result.stdout, /explain\s+解释统计、资源换算和隐私边界/);
   assert.match(result.stdout, /--lang <zh\|en>/);
@@ -4688,6 +5054,7 @@ test("--help documents public commands and routes command-specific options", () 
 test("command help documents only the selected command contract", () => {
   const today = runCli(["today", "--help"]);
   const englishMonth = runCli(["help", "month", "--lang", "en"]);
+  const englishEncounter = runCli(["help", "encounter", "--lang", "en"]);
   const explain = runCli(["explain", "--help"]);
 
   assert.equal(today.status, 0, today.stderr);
@@ -4708,6 +5075,14 @@ test("command help documents only the selected command contract", () => {
   assert.match(englishMonth.stdout, /Related commands.*week.*creature/s);
   assert.doesNotMatch(englishMonth.stdout, /打印本月/);
 
+  assert.equal(englishEncounter.status, 0, englishEncounter.stderr);
+  assert.match(
+    englishEncounter.stdout,
+    /Usage: anti-ai encounter <pollution-code> \[options\]/,
+  );
+  assert.match(englishEncounter.stdout, /--save/);
+  assert.match(englishEncounter.stdout, /creature export/);
+
   assert.equal(explain.status, 0, explain.stderr);
   assert.match(explain.stdout, /--lang <zh\|en>/);
   assert.match(explain.stdout, /-h, --help/);
@@ -4716,6 +5091,7 @@ test("command help documents only the selected command contract", () => {
 test("nested creature actions expose focused help", () => {
   const evolve = runCli(["creature", "evolve", "--help"]);
   const reset = runCli(["help", "creature", "reset", "--lang", "en"]);
+  const exported = runCli(["creature", "export", "--help"]);
 
   assert.equal(evolve.status, 0, evolve.stderr);
   assert.match(evolve.stdout, /Usage: anti-ai creature evolve <1\|2\|3>/);
@@ -4725,6 +5101,11 @@ test("nested creature actions expose focused help", () => {
   assert.equal(reset.status, 0, reset.stderr);
   assert.match(reset.stdout, /Usage: anti-ai creature reset/);
   assert.match(reset.stdout, /permanently deletes/i);
+
+  assert.equal(exported.status, 0, exported.stderr);
+  assert.match(exported.stdout, /Usage: anti-ai creature export/);
+  assert.match(exported.stdout, /污染编码/);
+  assert.match(exported.stdout, /encounter/);
 });
 
 test("top-level help keeps only global options and points to command help", () => {
@@ -4744,7 +5125,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 1.5.0\n");
+  assert.equal(result.stdout, "anti-ai 1.6.0\n");
   assert.equal(result.stderr, "");
 });
 

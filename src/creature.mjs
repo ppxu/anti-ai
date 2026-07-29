@@ -1581,6 +1581,115 @@ function deriveCreatureAppearance(
   };
 }
 
+function creatureSpecimenSnapshot(creature) {
+  const appearance = creature.appearance;
+  return {
+    version: appearance.version,
+    specimenId: appearance.specimenId,
+    fingerprint: appearance.fingerprint,
+    stageIndex: appearance.stageIndex,
+    ecology: appearance.ecology,
+    pathology: appearance.pathology,
+    formId: appearance.formId,
+    geneIds: { ...appearance.geneIds },
+    achievementId: appearance.achievementId,
+    achievementCategory: appearance.achievementCategory,
+    rareAbilityId: appearance.rareAbilityId,
+    scarId: appearance.scarId,
+  };
+}
+
+function isCreatureSpecimenSnapshot(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  if (
+    value.version !== 1 ||
+    !/^[a-f0-9]{8}$/.test(value.specimenId ?? "") ||
+    !/^[a-f0-9]{12}$/.test(value.fingerprint ?? "") ||
+    !Number.isInteger(value.stageIndex) ||
+    value.stageIndex < 0 ||
+    value.stageIndex > 3
+  ) {
+    return false;
+  }
+  if (
+    !Object.hasOwn(CREATURE_ECOLOGY_FORM_IDS, value.ecology) ||
+    !Object.hasOwn(
+      CREATURE_ECOLOGY_FORM_IDS[value.ecology],
+      value.pathology,
+    ) ||
+    CREATURE_ECOLOGY_FORM_IDS[value.ecology][value.pathology] !==
+      value.formId
+  ) {
+    return false;
+  }
+  if (
+    !value.geneIds ||
+    typeof value.geneIds !== "object" ||
+    Array.isArray(value.geneIds) ||
+    Object.keys(value.geneIds).length !==
+      Object.keys(CREATURE_APPEARANCE_GENE_POOLS).length ||
+    !Object.entries(CREATURE_APPEARANCE_GENE_POOLS).every(
+      ([gene, pool]) => pool.includes(value.geneIds[gene]),
+    )
+  ) {
+    return false;
+  }
+  const achievement = value.achievementId
+    ? CREATURE_ACHIEVEMENT_BY_ID[value.achievementId]
+    : null;
+  if (
+    (value.achievementId === null &&
+      value.achievementCategory !== null) ||
+    (value.achievementId !== null &&
+      (!achievement ||
+        achievement.category !== value.achievementCategory))
+  ) {
+    return false;
+  }
+  if (
+    value.rareAbilityId !== null &&
+    !Object.hasOwn(
+      CREATURE_RARE_ABILITY_DEFINITIONS,
+      value.rareAbilityId,
+    )
+  ) {
+    return false;
+  }
+  if (
+    value.scarId !== null &&
+    !Object.values(CREATURE_SCARS).includes(value.scarId)
+  ) {
+    return false;
+  }
+  const derived = deriveCreatureAppearance(
+    {
+      version: value.version,
+      specimenId: value.specimenId,
+      genes: value.geneIds,
+      unlockedPartIds: [],
+    },
+    value.stageIndex,
+    value.ecology,
+    value.pathology,
+    achievement
+      ? [
+          {
+            ...achievement,
+            tier: 1,
+            unlockedAt: "specimen-code",
+          },
+        ]
+      : [],
+    value.rareAbilityId
+      ? { [value.rareAbilityId]: { level: 1 } }
+      : {},
+    value.scarId,
+  );
+  return derived.fingerprint === value.fingerprint;
+}
+
 function creatureAppearanceContentStats() {
   return {
     basePartIds: new Set([
@@ -2052,6 +2161,20 @@ function creatureCodex(state, date) {
       achievementId: specimen.achievementId,
       rareAbilityId: specimen.rareAbilityId,
     }));
+  const foreignSpecimens = (state.foreignSpecimens ?? [])
+    .filter((specimen) => specimen.collectedAt <= date)
+    .map((specimen) => ({
+      id: specimen.id,
+      discoveredAt: specimen.collectedAt,
+      typeId: specimen.typeId,
+      weatherId: specimen.weatherId,
+      localSpecimenId: specimen.local.specimenId,
+      visitorSpecimenId: specimen.visitor.specimenId,
+      localFormId: specimen.local.formId,
+      visitorFormId: specimen.visitor.formId,
+      hybridFingerprint: specimen.hybrid.fingerprint,
+      hybridFormId: specimen.hybrid.formId,
+    }));
   const formDiscoveries = new Map();
   for (const specimen of specimens) {
     if (
@@ -2150,6 +2273,12 @@ function creatureCodex(state, date) {
       discovered: true,
       discoveredAt: entry.discoveredAt,
     })),
+    ...foreignSpecimens.map((entry) => ({
+      type: "foreignSpecimen",
+      id: entry.id,
+      discovered: true,
+      discoveredAt: entry.discoveredAt,
+    })),
     ...fossils.map((entry) => ({
       type: "fossil",
       id: entry.id,
@@ -2190,6 +2319,7 @@ function creatureCodex(state, date) {
         total: scars.length,
       },
       specimens: { discovered: specimens.length },
+      foreignSpecimens: { discovered: foreignSpecimens.length },
       fossils: { discovered: fossils.length },
     },
     sections: {
@@ -2198,6 +2328,7 @@ function creatureCodex(state, date) {
       chromaticAbilities,
       scars,
       specimens,
+      foreignSpecimens,
       fossils,
     },
     recent,
@@ -2404,6 +2535,7 @@ function migrateCreatureState(state) {
   state.appearance.unlockedPartIds ??= [];
   state.achievements ??= {};
   state.specimens ??= [];
+  state.foreignSpecimens ??= [];
   state.generations ??= { fossils: [], evolutions: {} };
   let hasHatched = false;
   for (const [date, day] of Object.entries(state.days).sort(([left], [right]) =>
@@ -2430,7 +2562,7 @@ function migrateCreatureState(state) {
     );
     if (day.active) hasHatched = true;
   }
-  state.schemaVersion = 6;
+  state.schemaVersion = 7;
   return state;
 }
 
@@ -2442,7 +2574,7 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if ([1, 2, 3, 4, 5, 6].includes(state?.schemaVersion) && state.days) {
+    if ([1, 2, 3, 4, 5, 6, 7].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
       return migrateCreatureState(state);
@@ -2451,7 +2583,7 @@ async function loadCreatureState() {
     if (error.code !== "ENOENT") throw error;
   }
   return migrateCreatureState({
-    schemaVersion: 6,
+    schemaVersion: 7,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},
@@ -2959,6 +3091,10 @@ function creatureCasebook(state, startDate, endDate) {
       (entry) =>
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,
+    foreignSpecimens: codex.sections.foreignSpecimens.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
     fossils: codex.sections.fossils.filter(
       (entry) =>
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
@@ -3037,11 +3173,13 @@ export {
   creatureMood,
   creatureMalignancyRankLabel,
   creatureRareAbilityGain,
+  creatureSpecimenSnapshot,
   creatureStatePath,
   creatureTitle,
   dailyCreatureRecord,
   deriveCreatureAppearance,
   deriveCreature,
+  isCreatureSpecimenSnapshot,
   applyCreatureEvolutionEffect,
   loadCreatureState,
   roundCreature,

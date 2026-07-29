@@ -10,6 +10,7 @@ const COMMANDS = [
   ["codex", "查看本地病理图鉴", "Inspect the private pathology codex"],
   ["share", "输出隐私安全的 SVG 分享卡", "Print a privacy-safe SVG share card"],
   ["creature", "查看和管理异变体档案", "Inspect and manage the mutation file"],
+  ["encounter", "让两只异变体在本地发生接触事故", "Run a local contact accident between two mutations"],
   ["doctor", "检查本地记录来源", "Check local record sources"],
   ["explain", "解释统计、资源换算和隐私边界", "Explain accounting, estimates, and privacy"],
   ["help", "查看具体命令帮助", "Show help for one command"],
@@ -111,13 +112,15 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|pathology|specimen|wanted|fossil>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|pathology|specimen|wanted|fossil|encounter>", "选择卡片类型", "Select card type"],
+      ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
     ],
     examples: [
       "anti-ai share > receipt.svg",
       "anti-ai share --card pathology > pathology.svg",
       "anti-ai share --card wanted --lang en > wanted.svg",
+      "anti-ai share --card encounter --with <pollution-code> > encounter.svg",
     ],
     note: [
       "异变体收藏卡必须使用完整来源。",
@@ -147,7 +150,30 @@ const COMMAND_HELP = {
       "creature 必须使用完整来源；reset 会永久删除本地成长档案。",
       "creature requires complete sources; reset permanently deletes the local growth file.",
     ],
-    related: ["creature evolve", "creature reset", "codex", "today"],
+    related: ["creature evolve", "creature export", "creature reset", "codex", "today"],
+  },
+  encounter: {
+    usage: "anti-ai encounter <pollution-code> [options]",
+    summary: ["让本地异变体与一份外来污染编码发生确定性接触事故。", "Run a deterministic local contact accident with a visitor pollution code."],
+    output: [
+      "显示算力天气、接触类型、混种 ASCII 和隐私安全的事故编号。",
+      "Shows compute weather, contact type, hybrid ASCII, and a privacy-safe incident ID.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "指定事故日期（默认今天）", "Select incident date (default: today)"],
+      ["--save", "将混种加入本地外来标本柜", "Bottle the hybrid in the local foreign-specimen cabinet"],
+      ["--json", "输出稳定机器可读事故数据", "Print stable machine-readable incident data"],
+    ],
+    examples: [
+      "anti-ai creature export",
+      "anti-ai encounter <pollution-code>",
+      "anti-ai encounter <pollution-code> --save",
+    ],
+    note: [
+      "遭遇完全在本地演算；污染编码不包含精确 Token、模型、路径或对话。",
+      "Encounters are computed locally; pollution codes contain no exact tokens, models, paths, or chats.",
+    ],
+    related: ["creature export", "codex", "share"],
   },
   doctor: {
     usage: "anti-ai doctor [options]",
@@ -220,6 +246,28 @@ const ACTION_HELP = {
       "This cannot be undone. It never deletes original Agent records.",
     ],
     related: ["creature"],
+  },
+  "creature export": {
+    usage: "anti-ai creature export [options]",
+    summary: ["导出一份可交换的隐私安全污染编码。", "Export a shareable privacy-safe pollution code."],
+    output: [
+      "输出协议版本、标本编号、外观指纹和带校验的污染编码。",
+      "Prints the protocol version, specimen ID, appearance fingerprint, and checksummed pollution code.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "导出指定日期的形态", "Export the form at a selected date"],
+      ["--json", "输出稳定机器可读编码", "Print stable machine-readable code data"],
+    ],
+    examples: [
+      "anti-ai creature export",
+      "anti-ai creature export --json",
+      "anti-ai encounter <pollution-code>",
+    ],
+    note: [
+      "编码只含离散外观状态，不含精确 Token、模型、路径或对话。",
+      "The code contains derived appearance state, never exact tokens, models, paths, or chats.",
+    ],
+    related: ["encounter", "share", "creature"],
   },
 };
 

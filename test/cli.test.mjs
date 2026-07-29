@@ -2331,24 +2331,97 @@ test("creature renders a stable individualized ASCII specimen from its local gen
   assert.ok(secondArtLines.every((line) => terminalWidth(line) <= 39));
 });
 
-test("complete-form ASCII keeps 10,000 seeded specimens diverse and bounded", () => {
-  const appearances = new Set();
-  for (let index = 0; index < 10_000; index += 1) {
-    const appearanceState = creatureAppearanceState(`collision-seed-${index}`);
+test("reactor kaiju standard anatomy grows through four bounded stages", () => {
+  const appearanceState = creatureAppearanceState("reactor-kaiju-standard");
+  const stageLimits = [15, 25, 34, 39];
+  const stageLineCounts = [8, 9, 9, 10];
+  const arts = stageLimits.map((limit, stageIndex) => {
     const appearance = deriveCreatureAppearance(
       appearanceState,
-      3,
-      "paradox",
-      "context",
+      stageIndex,
+      "polluted",
+      "nuclear",
       [],
       {},
     );
     const art = creatureArt({ appearance });
-    appearances.add(art);
-    assert.ok(
-      art.split("\n").every((line) => terminalWidth(line) <= 39),
-      `seed ${index} exceeded 39 columns`,
-    );
+    const lines = art.split("\n");
+    const width = Math.max(...lines.map((line) => terminalWidth(line)));
+    assert.equal(lines.length, stageLineCounts[stageIndex]);
+    assert.ok(width <= limit, `stage ${stageIndex + 1} exceeded ${limit} columns`);
+    return { art, width };
+  });
+
+  assert.ok(arts[0].art.includes("["));
+  assert.match(arts[1].art, /╱╲╱╲/);
+  assert.match(arts[2].art, /━━$/m);
+  assert.match(arts[3].art, /[>》]$/m);
+  assert.ok(
+    arts.every(({ width }, index) => index === 0 || width > arts[index - 1].width),
+    `stage widths did not grow monotonically: ${arts.map(({ width }) => width).join(", ")}`,
+  );
+});
+
+test("reactor kaiju keeps ecology and pathology visibly distinct on one skeleton", () => {
+  const appearanceState = creatureAppearanceState("reactor-kaiju-ecology");
+  const ecologies = ["unformed", "polluted", "lucid", "paradox"];
+  const pathologies = ["context", "cache", "frenzy", "nuclear"];
+  const ecologyArts = new Set(
+    ecologies.map((ecology) =>
+      creatureArt({
+        appearance: deriveCreatureAppearance(
+          appearanceState,
+          3,
+          ecology,
+          "nuclear",
+          [],
+          {},
+        ),
+      }),
+    ),
+  );
+  const pathologyArts = new Set(
+    pathologies.map((pathology) =>
+      creatureArt({
+        appearance: deriveCreatureAppearance(
+          appearanceState,
+          3,
+          "polluted",
+          pathology,
+          [],
+          {},
+        ),
+      }),
+    ),
+  );
+
+  assert.equal(ecologyArts.size, ecologies.length);
+  assert.equal(pathologyArts.size, pathologies.length);
+});
+
+test("all reactor kaiju stages keep 10,000 seeded specimens diverse and bounded", () => {
+  const appearances = new Set();
+  const stageLimits = [15, 25, 34, 39];
+  for (let index = 0; index < 10_000; index += 1) {
+    const appearanceState = creatureAppearanceState(`collision-seed-${index}`);
+    for (let stageIndex = 0; stageIndex < stageLimits.length; stageIndex += 1) {
+      const appearance = deriveCreatureAppearance(
+        appearanceState,
+        stageIndex,
+        "paradox",
+        "context",
+        [],
+        {},
+      );
+      const art = creatureArt({ appearance });
+      if (stageIndex === 3) appearances.add(art);
+      assert.ok(
+        art
+          .split("\n")
+          .every((line) => terminalWidth(line) <= stageLimits[stageIndex]),
+        `seed ${index} stage ${stageIndex + 1} exceeded ${stageLimits[stageIndex]} columns`,
+      );
+    }
   }
 
   const collisionRate = (10_000 - appearances.size) / 10_000;
@@ -3754,6 +3827,46 @@ test("creature compact fallback does not overflow an 80-column terminal", (t) =>
   assert.match(result.stdout, /完整病历\s+anti-ai creature --full/);
 });
 
+test("creature compact default preserves terminal colors at narrow and wide widths", (t) => {
+  for (const columns of ["80", "120"]) {
+    const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-color-"));
+    t.after(() => rmSync(home, { recursive: true, force: true }));
+    const env = {
+      HOME: home,
+      ANTI_AI_CODEX_DIR: baselineCodexDir,
+      ANTI_AI_CREATURE_SEED: `creature-color-${columns}`,
+      COLUMNS: columns,
+    };
+    const plain = runCli(["creature", "--date", "2026-07-23"], env);
+    const colored = runCli(["creature", "--date", "2026-07-23"], {
+      ...env,
+      FORCE_COLOR: "1",
+      NO_COLOR: "",
+    });
+
+    assert.equal(plain.status, 0, plain.stderr);
+    assert.equal(colored.status, 0, colored.stderr);
+    assert.match(colored.stdout, /\u001b\[[0-9;]*m/);
+    assert.match(
+      colored.stdout
+        .split("\n")
+        .find((line) => line.includes("╱╲")),
+      /^\u001b\[[0-9;]*m/,
+    );
+    assert.equal(
+      colored.stdout.replaceAll(/\u001b\[[0-9;]*m/g, ""),
+      plain.stdout,
+    );
+    assert.ok(
+      colored.stdout
+        .trimEnd()
+        .split("\n")
+        .every((line) => terminalWidth(line) <= Number(columns)),
+      colored.stdout,
+    );
+  }
+});
+
 test("creature ability bars and numeric values align in both languages", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-alignment-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
@@ -4222,7 +4335,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 1.3.0\n");
+  assert.equal(result.stdout, "anti-ai 1.4.0\n");
   assert.equal(result.stderr, "");
 });
 

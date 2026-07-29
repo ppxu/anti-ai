@@ -29,7 +29,8 @@ function formatChange(current, baseline, lang = "zh") {
 }
 
 function terminalWidth(value) {
-  return Array.from(value).reduce(
+  const plain = String(value).replaceAll(/\u001B\[[0-9;]*m/g, "");
+  return Array.from(plain).reduce(
     (total, character) =>
       total + (/\p{Script=Han}/u.test(character) ? 2 : 1),
     0,

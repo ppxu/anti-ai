@@ -101,36 +101,28 @@ const CREATURE_APPEARANCE_GENE_POOLS = {
     "pattern_06",
   ],
 };
-const CREATURE_APPEARANCE_GLYPHS = {
-  body: {
-    body_01: { top: "_", left: "/", right: "\\", lower: "_" },
-    body_02: { top: "=", left: "{", right: "}", lower: "-" },
-    body_03: { top: "~", left: "(", right: ")", lower: "~" },
-    body_04: { top: "#", left: "[", right: "]", lower: "=" },
-    body_05: { top: ".", left: "<", right: ">", lower: "." },
-    body_06: { top: "-", left: "/", right: "\\", lower: "^" },
-  },
+const CREATURE_KAIJU_GLYPHS = {
   eyes: {
-    eyes_01: "o   o",
-    eyes_02: "O   O",
-    eyes_03: "@   @",
-    eyes_04: "x   x",
+    eyes_01: "◉   ◉",
+    eyes_02: "●   ●",
+    eyes_03: "◆   ◆",
+    eyes_04: "×   ×",
     eyes_05: "+   +",
-    eyes_06: "* o *",
+    eyes_06: "◌ ◉ ◌",
     eyes_07: "0 0 0",
-    eyes_08: "#   #",
+    eyes_08: "▣   ▣",
   },
-  mouth: {
-    mouth_01: " ___ ",
-    mouth_02: " === ",
-    mouth_03: " ||| ",
-    mouth_04: " vvv ",
-    mouth_05: " www ",
-    mouth_06: " --- ",
-    mouth_07: " [_] ",
-    mouth_08: " }{ ",
+  jaws: {
+    mouth_01: "╲═══╱",
+    mouth_02: "╲≡≡≡╱",
+    mouth_03: "╲███╱",
+    mouth_04: "╲▼▼▼╱",
+    mouth_05: "╲WWW╱",
+    mouth_06: "╲───╱",
+    mouth_07: "╲[_]╱",
+    mouth_08: "╲}{ ╱",
   },
-  core: {
+  cores: {
     core_01: "@",
     core_02: "0",
     core_03: "*",
@@ -138,23 +130,47 @@ const CREATURE_APPEARANCE_GLYPHS = {
     core_05: "+",
     core_06: "-",
   },
-  limbs: {
-    limbs_01: "/|\\",
-    limbs_02: "/_\\",
-    limbs_03: "v v",
-    limbs_04: "|| ||",
-    limbs_05: "/Y\\",
-    limbs_06: "_/\\_",
+  armor: {
+    body_01: "▓",
+    body_02: "█",
+    body_03: "▒",
+    body_04: "▦",
+    body_05: "#",
+    body_06: "≋",
   },
-  tail: {
-    tail_01: "~>",
-    tail_02: "==",
-    tail_03: "~~",
-    tail_04: "->",
-    tail_05: "::",
-    tail_06: "##",
+  legs: {
+    limbs_01: "█",
+    limbs_02: "▓",
+    limbs_03: "▒",
+    limbs_04: "║",
+    limbs_05: "╳",
+    limbs_06: "▦",
   },
-  pattern: {
+  feet: {
+    limbs_01: "═╩═         ═╩═",
+    limbs_02: "╙─╜         ╙─╜",
+    limbs_03: "╱_╲         ╱_╲",
+    limbs_04: "┻━┻         ┻━┻",
+    limbs_05: "╰┳╯         ╰┳╯",
+    limbs_06: "▰▰▰         ▰▰▰",
+  },
+  tails: {
+    tail_01: "━━>",
+    tail_02: "══>",
+    tail_03: "~~>",
+    tail_04: "──>",
+    tail_05: "::>",
+    tail_06: "##>",
+  },
+  completeCores: {
+    core_01: "[●X●]",
+    core_02: "[◉X◉]",
+    core_03: "[@X@]",
+    core_04: "[◆X◆]",
+    core_05: "[+X+]",
+    core_06: "[-X-]",
+  },
+  patterns: {
     pattern_01: ". . .",
     pattern_02: "x-x-x",
     pattern_03: ":::::",
@@ -1254,23 +1270,35 @@ function centeredCreatureText(value, width) {
   return `${" ".repeat(left)}${value}`;
 }
 
+function centeredCreatureToken(value, width) {
+  const padding = Math.max(0, width - value.length);
+  const left = Math.floor(padding / 2);
+  return `${" ".repeat(left)}${value}${" ".repeat(padding - left)}`;
+}
+
 function creatureArt(creature) {
   const { appearance } = creature;
-  const geneIds = appearance.geneIds;
-  const body = CREATURE_APPEARANCE_GLYPHS.body[geneIds.body];
-  const stageWidths = [23, 27, 33, 39];
+  const { geneIds } = appearance;
+  const armor = CREATURE_KAIJU_GLYPHS.armor[geneIds.body];
+  const leg = CREATURE_KAIJU_GLYPHS.legs[geneIds.limbs];
+  const eyes = centeredCreatureToken(
+    CREATURE_KAIJU_GLYPHS.eyes[geneIds.eyes],
+    5,
+  );
+  const jaw = CREATURE_KAIJU_GLYPHS.jaws[geneIds.mouth];
+  const core = `[${CREATURE_KAIJU_GLYPHS.cores[geneIds.core]}]`;
+  const stageWidths = [15, 25, 34, 39];
   const width = stageWidths[appearance.stageIndex];
-  const insideWidth = width - 2;
   const branchCrests = {
-    context: "[[[...]]]",
-    cache: "###=###",
-    frenzy: "(o)(o)(o)",
-    nuclear: "/\\/\\/\\",
+    context: "╱╲[[ ]]╱╲",
+    cache: "▟▙▟▙▟▙",
+    frenzy: "╱◉╲╱◉╲╱◉╲",
+    nuclear: "╱╲╱╲╱╲",
   };
   const ecologyMarks = {
-    unformed: ".....",
+    unformed: "·····",
     polluted: "!!~!!",
-    lucid: "--X--",
+    lucid: "--○--",
     paradox: "!X!X!",
   };
   const scarMarks = {
@@ -1279,15 +1307,6 @@ function creatureArt(creature) {
     sterile_halo: "oo/oo",
     split_shadow: "//\\\\//",
   };
-  const centerInside = (value) => {
-    const padding = Math.max(0, insideWidth - value.length);
-    const left = Math.floor(padding / 2);
-    return `${" ".repeat(left)}${value}${" ".repeat(padding - left)}`;
-  };
-  const mouthAndCore =
-    appearance.stageIndex >= 2
-      ? `${CREATURE_APPEARANCE_GLYPHS.mouth[geneIds.mouth]}  ${CREATURE_APPEARANCE_GLYPHS.core[geneIds.core]}`
-      : CREATURE_APPEARANCE_GLYPHS.mouth[geneIds.mouth];
   const rarePattern = appearance.rareAbilityId
     ? {
         rare: "@R@R@",
@@ -1305,32 +1324,71 @@ function creatureArt(creature) {
           : appearance.achievementCategory === "paradox"
             ? "!X?X!"
             : scarMarks[appearance.scarId] ??
-              CREATURE_APPEARANCE_GLYPHS.pattern[geneIds.pattern]
+              CREATURE_KAIJU_GLYPHS.patterns[geneIds.pattern]
       : scarMarks[appearance.scarId] ?? ecologyMarks[appearance.ecology]);
-  const limbs =
-    appearance.stageIndex >= 1
-      ? CREATURE_APPEARANCE_GLYPHS.limbs[geneIds.limbs]
-      : "/\\";
-  const tail =
-    appearance.stageIndex >= 3
-      ? ` ${CREATURE_APPEARANCE_GLYPHS.tail[geneIds.tail]}`
-      : "";
-  const lines = [
-    centeredCreatureText(
-      appearance.stageIndex >= 1
-        ? branchCrests[appearance.pathology]
-        : ecologyMarks[appearance.ecology],
-      width,
-    ),
-    `${body.left}${body.top.repeat(insideWidth)}${body.right}`,
-    `${body.left}${centerInside(
-      CREATURE_APPEARANCE_GLYPHS.eyes[geneIds.eyes],
-    )}${body.right}`,
-    `${body.left}${centerInside(mouthAndCore)}${body.right}`,
-    `${body.left}${centerInside(pattern)}${body.right}`,
-    `${body.right}${body.lower.repeat(insideWidth)}${body.left}`,
-    centeredCreatureText(`${limbs}${tail}`, width),
-  ];
+  const center = (value) => centeredCreatureText(value, width);
+  const crest =
+    appearance.pathology === "nuclear" && appearance.stageIndex === 1
+      ? "╱╲╱╲"
+      : appearance.pathology === "nuclear" && appearance.stageIndex === 3
+        ? "╱╲╱╲╱╲╱╲"
+        : branchCrests[appearance.pathology];
+  let lines;
+  if (appearance.stageIndex === 0) {
+    lines = [
+      center("╱╲"),
+      center(`╭╱${armor.repeat(2)}╲╮`),
+      center(`│ ${eyes} │`),
+      center(`│ ${jaw} │`),
+      center("│  [●]  │"),
+      center(`│ ${pattern} │`),
+      center("╰────╯"),
+      center("╰──╯"),
+    ];
+  } else if (appearance.stageIndex === 1) {
+    lines = [
+      center(crest),
+      center(`╭──╱${eyes}╲──╮`),
+      center(`╭─╯ ${armor.repeat(2)} ╲▲╱ ${armor.repeat(2)} ╰─╮`),
+      center(`╱ ${armor.repeat(3)} ${jaw} ${armor.repeat(3)} ╲`),
+      center("│    ╭[●]╮    │"),
+      center(`╲__╭─╯${pattern}╰─╮__╱`),
+      center("╲╱  ╱  ╲  ╲╱"),
+      center(`╱${leg}╲  ╱${leg}╲`),
+      center(CREATURE_KAIJU_GLYPHS.feet[geneIds.limbs]),
+    ];
+  } else if (appearance.stageIndex === 2) {
+    lines = [
+      center(crest),
+      center(`╭───╱${eyes}╲───╮`),
+      center(`╭──╯ ${armor.repeat(2)} ╲ ▲ ╱ ${armor.repeat(2)} ╰──╮`),
+      center(`╱ ${armor.repeat(4)} ${jaw} ${armor.repeat(4)} ╲`),
+      center(`│ ╭────╯ ${core} ╰────╮ │`),
+      center(`╲╭╯ ╱${pattern}╲ ╰╮╱`),
+      center(`╰━╯ ╲__╱${leg.repeat(2)}╱   ╲${leg.repeat(2)}╲__╱ ╰━╯━━`),
+      center(`╱${leg.repeat(2)}╱     ╲${leg.repeat(2)}╲`),
+      center(CREATURE_KAIJU_GLYPHS.feet[geneIds.limbs]),
+    ];
+  } else {
+    lines = [
+      center(crest),
+      center(`╭───╱ ${eyes} ╲───╮`),
+      center(`╭──╯${armor.repeat(3)} ╲  ▲  ╱${armor.repeat(3)}╰──╮`),
+      center(`╭─╯ ${armor.repeat(5)} ${jaw} ${armor.repeat(5)} ╰─╮`),
+      center(
+        `╱  ╭──────╯ ${CREATURE_KAIJU_GLYPHS.completeCores[geneIds.core]} ╰──────╮  ╲`,
+      ),
+      center(
+        `│╭─╯${ecologyMarks[appearance.ecology]} ╲${pattern}╱ ╰─╮│`,
+      ),
+      center(
+        `╲━╯   ╱${leg.repeat(4)}╱   ╲${leg.repeat(4)}╲   ╰━━╯${CREATURE_KAIJU_GLYPHS.tails[geneIds.tail]}`,
+      ),
+      center(`╲___╱${leg.repeat(3)}╱     ╲${leg.repeat(3)}╲___╱`),
+      center(`╱${leg.repeat(2)}╱         ╲${leg.repeat(2)}╲`),
+      center(CREATURE_KAIJU_GLYPHS.feet[geneIds.limbs]),
+    ];
+  }
   const colorCode = appearance.rareAbilityId
     ? CREATURE_RARE_ABILITY_RANKS[
         CREATURE_RARE_ABILITY_DEFINITIONS[appearance.rareAbilityId].rarity

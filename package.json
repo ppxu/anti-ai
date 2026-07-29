@@ -1,6 +1,6 @@
 {
   "name": "anti-ai",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Turn local coding-agent token usage into a satirical resource receipt and growable mutation creature.",
   "type": "module",
   "bin": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check bin/anti-ai.mjs && node --check src/cli.mjs && node --check src/comparisons.mjs && node --check src/content.mjs && node --check src/creature.mjs && node --check src/help.mjs && node --check src/methodology.mjs && node --check src/reporting.mjs && node --check src/scanner.mjs && node --check src/shared.mjs",
+    "check": "node --check bin/anti-ai.mjs && node --check src/cli.mjs && node --check src/comparisons.mjs && node --check src/content.mjs && node --check src/creature.mjs && node --check src/encounter.mjs && node --check src/help.mjs && node --check src/methodology.mjs && node --check src/reporting.mjs && node --check src/scanner.mjs && node --check src/shared.mjs",
     "verify": "npm run check && npm test",
     "prepublishOnly": "npm run verify",
     "start": "node ./bin/anti-ai.mjs"

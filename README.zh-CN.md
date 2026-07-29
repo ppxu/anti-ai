@@ -103,12 +103,17 @@ anti-ai month --date 2026-07-23
 anti-ai codex
 anti-ai codex --json
 
+anti-ai creature export
+anti-ai encounter <污染编码>
+anti-ai encounter <污染编码> --save
+
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
 anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
+anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 
 anti-ai creature
 anti-ai creature --full
@@ -137,7 +142,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json`、`codex --json` 和 `creature --json` 不受展示语言影响，字段名和结构保持稳定。
+`today --json`、`codex --json`、`creature --json` 和 `encounter --json` 不受展示语言影响，字段名和结构保持稳定。
 
 ### `today`
 
@@ -173,11 +178,26 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹和永久化石则不设人为上限。
+固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本和永久化石则不设人为上限。
 
 `codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
 
 人类可读图鉴还会展示生成器的 **21,233,664 种去重后的最终 ASCII 形象**。这是理论物种空间，不是个人收集进度。容量算法与视觉覆盖优先级详见[异变体成长指南](./docs/creature.zh-CN.md)。
+
+### `encounter`
+
+把当前形态导出为隐私安全的污染编码，与别人交换后，在本地制造一次事故：
+
+```bash
+anti-ai creature export
+anti-ai encounter <污染编码>
+anti-ai encounter <污染编码> --save
+anti-ai encounter <污染编码> --json
+```
+
+同一对外观指纹始终生成同一个事故编号、接触类型和混种标本；算力天气则由所选日期确定。`--save` 只会把混种放进一次本地外来标本柜，不是必选项，也不会改变成长速度、评分或 Token 激励。
+
+污染编码只包含协议版本和派生外观 ID，不包含精确 Token、来源/模型名、路径、Prompt、回复或请求时间。这个玩法没有服务器、上传、排行榜、战力或 Token 排名。协议、安全边界和收藏逻辑见[本地异变体遭遇](./docs/encounters.zh-CN.md)。
 
 ### `share`
 
@@ -191,9 +211,10 @@ anti-ai share --card pathology --lang en > anti-ai-pathology.svg
 anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
+anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 ```
 
-成长史现在支持 4 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书。化石证书会在第 90 个阅历日后开放。
+成长史现在支持 5 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡。化石证书会在第 90 个阅历日后开放。
 
 工具不会上传卡片；所有卡片均不包含精确 Token、请求数、来源/模型名、路径或对话正文，保存位置完全由你的命令行重定向决定。异变体卡片必须使用完整数据，因此会拒绝 `--source` 过滤。
 
@@ -207,6 +228,7 @@ anti-ai creature --date 2026-07-23
 anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
+anti-ai creature export
 anti-ai creature evolve
 anti-ai creature evolve 2
 ```

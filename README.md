@@ -104,12 +104,17 @@ anti-ai month --date 2026-07-23
 anti-ai codex
 anti-ai codex --json
 
+anti-ai creature export
+anti-ai encounter <pollution-code>
+anti-ai encounter <pollution-code> --save
+
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
 anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
+anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 
 anti-ai creature
 anti-ai creature --full
@@ -138,7 +143,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json`, `codex --json`, and `creature --json` ignore presentation language and keep stable machine-readable keys.
+`today --json`, `codex --json`, `creature --json`, and `encounter --json` ignore presentation language and keep stable machine-readable keys.
 
 ### `today`
 
@@ -174,11 +179,26 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints and permanent fossils are collected without an artificial upper limit.
+The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, and permanent fossils are collected without an artificial upper limit.
 
 `codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
 The human view also reports the generator's **21,233,664 deduplicated final ASCII forms**. This is a theoretical species-space estimate, not collection progress. See the [Creature Guide](./docs/creature.md) for the capacity calculation and visual precedence rules.
+
+### `encounter`
+
+Export your current form as a privacy-safe pollution code, exchange it with somebody else, and run the accident locally:
+
+```bash
+anti-ai creature export
+anti-ai encounter <pollution-code>
+anti-ai encounter <pollution-code> --save
+anti-ai encounter <pollution-code> --json
+```
+
+The same two appearance fingerprints always produce the same incident ID, contact type, and hybrid specimen. Compute weather is deterministic for the selected date. `--save` bottles the hybrid once in the local foreign-specimen cabinet; it is optional and does not alter growth, scores, or Token incentives.
+
+Pollution codes contain only protocol version and derived appearance IDs. They omit exact Token totals, model/source names, paths, prompts, responses, and request timestamps. There is no server, upload, leaderboard, combat power, or Token ranking. See [Local Mutation Encounters](./docs/encounters.md) for the protocol, safety limits, and collection behavior.
 
 ### `share`
 
@@ -192,9 +212,10 @@ anti-ai share --card pathology --lang en > anti-ai-pathology.svg
 anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
+anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 ```
 
-Creature history now supports four privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, and `fossil` for the latest sealed generation. A fossil certificate becomes available after experience day 90.
+Creature history supports five privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, and `encounter` for a local contact accident. A fossil certificate becomes available after experience day 90.
 
 Nothing is uploaded. Every card omits exact Token totals, requests, source/model names, paths, and conversation content; the destination file is controlled entirely by your shell. Creature cards require the complete data set and therefore reject `--source` filters.
 
@@ -208,6 +229,7 @@ anti-ai creature --date 2026-07-23
 anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
+anti-ai creature export
 anti-ai creature evolve
 anti-ai creature evolve 2
 ```

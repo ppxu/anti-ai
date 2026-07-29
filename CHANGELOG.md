@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-07-29
+
+### Added
+
+- Added versioned, checksummed `creature export` pollution codes containing derived appearance IDs while omitting exact Tokens, models, paths, prompts, responses, and request timestamps.
+- Added deterministic local `encounter` accidents with date-derived compute weather, contact types, mixed parent genes, Paradox Ecology rules, and unique hybrid ASCII specimens.
+- Added an optional idempotent foreign-specimen cabinet in `codex`; encounter hybrids are not collected unless explicitly saved with `--save`.
+- Added a fifth privacy-safe SVG card for encounters, generated with `share --card encounter --with <pollution-code>`.
+- Added focused help for `encounter` and `creature export`, bilingual encounter documentation, and Agent Skill routing for cross-machine specimen exchange.
+
+### Changed
+
+- Creature state now uses schema v7 with local, idempotent v1-v6 migration and stores saved encounters only as derived specimen/form/appearance IDs.
+
+### Fixed
+
+- Unified achievement category and chromatic-rarity colors across `creature`, `week`, `month`, and `codex`, while preserving text labels for colorless terminals.
+- Added consistent Codex navigation hints to weekly and monthly creature follow-ups.
+
+### Security
+
+- Pollution-code input is length-limited, versioned, checksummed, fully ID-validated, and rejected for self-encounters; its checksum detects damage but is not presented as identity authentication.
+- Encounters, foreign-specimen storage, and SVG rendering remain local-only and add no server, upload, Token leaderboard, combat power, or raw Agent-log access.
+
 ## [1.5.0] - 2026-07-29
 
 ### Added

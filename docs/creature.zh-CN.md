@@ -16,6 +16,7 @@ anti-ai creature --json
 anti-ai creature --full
 anti-ai creature evolve
 anti-ai creature evolve 2
+anti-ai creature export
 anti-ai codex
 ```
 
@@ -263,20 +264,23 @@ min(35, 5 + min(10, floor(累计能力值 / 25))
 - 6 个异色能力；
 - 4 种世代伤疤；
 - 不限数量的动态标本指纹；
+- 不限数量的外来遭遇标本；
 - 不限数量的永久化石。
 
 未解锁的固定收藏保持 `???`。收藏系统不会偏爱高 Token：污染、清醒、AI 清醒日、成就、稀有能力、世代和显式进化选择都有独立路线。
 
-当前支持四种隐私安全的 SVG 卡片：
+当前支持五种隐私安全的 SVG 卡片：
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
 anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
+anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 ```
 
 化石证书会在第 90 个阅历日后开放。
+跨机器收藏完全在本地完成，并且是可选项。污染编码和外来标本规则见[本地异变体遭遇](./encounters.zh-CN.md)。
 
 ## 档案、隐私与重置
 
@@ -286,7 +290,7 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 ~/.anti-ai/creature.json
 ```
 
-当前使用 schema v6，只保存：
+当前使用 schema v7，只保存：
 
 - 离散用量带与派生生态点；
 - 稳定基因和部件 ID；
@@ -294,11 +298,12 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 - 污染剂量、性状、普通/异色能力加点和事件 ID；
 - 含每代能力增量、封存快照和恶性阶变化的永久化石；
 - 已封存进化选择；
+- 已保存遭遇的派生亲本/形态 ID 与混种外观 ID；
 - 本地随机种子。
 
 它**不会**保存 Prompt、回复、路径、模型名、精确 Token、个人基线数值或逐请求时间。
 
-schema v1-v5 会在本地幂等迁移，并无损保留已有能力点。旧档案的每日加点会重新解释为 255 点循环，例如原来的 267 点会变成`恶性 I · 12/255`，而不是被截断。`anti-ai codex` 直接从同一份档案派生收藏，不需要额外迁移。
+schema v1-v6 会在本地幂等迁移，并无损保留已有能力点。旧档案的每日加点会重新解释为 255 点循环，例如原来的 267 点会变成`恶性 I · 12/255`，而不是被截断。`anti-ai codex` 直接从同一份档案派生收藏，不需要额外迁移。
 
 一条成长史始终使用全部受支持数据源，因此 `creature` 和 `codex` 都拒绝 `--source` 过滤。
 

@@ -23,8 +23,11 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /anti-ai share --card specimen/);
   assert.match(skill, /anti-ai share --card wanted/);
   assert.match(skill, /anti-ai share --card fossil/);
+  assert.match(skill, /anti-ai share --card encounter --with/);
   assert.match(skill, /anti-ai codex --json/);
   assert.match(skill, /anti-ai creature/);
+  assert.match(skill, /anti-ai creature export/);
+  assert.match(skill, /anti-ai encounter <pollution-code>/);
   assert.match(skill, /anti-ai creature evolve <1\|2\|3>/);
   assert.match(skill, /anti-ai creature reset/);
   assert.match(skill, /deterministic|确定性/i);
@@ -36,10 +39,11 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
-  assert.match(skill, /schema v6/);
+  assert.match(skill, /schema v7/);
   assert.match(skill, /1–255.*MALIGNANT I/is);
   assert.match(skill, /50 fixed collection entries/i);
   assert.match(skill, /locked.*\?\?\?/is);
+  assert.match(skill, /foreign specimens|外来标本/i);
   assert.match(skill, /today.*week.*month.*collection discoveries/is);
   assert.match(skill, /~\/\.anti-ai\/creature\.json/);
   assert.match(

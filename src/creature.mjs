@@ -2931,13 +2931,12 @@ function creatureCasebook(state, startDate, endDate) {
               : current,
           "context",
         );
-  const achievementIds = after.achievements.unlocked
-    .filter(
-      (achievement) =>
-        achievement.unlockedAt >= startDate &&
-        achievement.unlockedAt <= endDate,
-    )
-    .map((achievement) => achievement.id);
+  const achievements = after.achievements.unlocked.filter(
+    (achievement) =>
+      achievement.unlockedAt >= startDate &&
+      achievement.unlockedAt <= endDate,
+  );
+  const achievementIds = achievements.map((achievement) => achievement.id);
   const codex = creatureCodex(state, endDate);
   const discoveries = {
     forms: codex.sections.forms.filter(
@@ -2992,6 +2991,7 @@ function creatureCasebook(state, startDate, endDate) {
       ).length,
     },
     achievementIds,
+    achievements,
     discoveries: {
       ...discoveries,
       total: Object.values(discoveries).reduce(

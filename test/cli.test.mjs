@@ -1374,8 +1374,34 @@ test("week renders its mutation follow-up after everyday translation inside one 
   const closingIndex = result.stdout.lastIndexOf("└");
   assert.ok(mutationIndex > translationIndex, result.stdout);
   assert.ok(closingIndex > mutationIndex, result.stdout);
-  assert.match(result.stdout, /异变体周报[\s\S]*查看完整档案\s+anti-ai creature/);
+  assert.match(
+    result.stdout,
+    /异变体周报[\s\S]*查看完整档案\s+anti-ai creature[\s\S]*查看图鉴\s+anti-ai codex/,
+  );
   assert.equal(result.stdout.trimEnd().split("\n").at(-1).startsWith("└"), true);
+});
+
+test("week and month keep achievement category colors", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-period-achievement-color-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "period-achievement-color",
+    FORCE_COLOR: "1",
+    NO_COLOR: "",
+  };
+
+  const week = runCli(["week", "--date", "2026-07-23"], env);
+  const month = runCli(["month", "--date", "2026-07-23"], env);
+
+  assert.equal(week.status, 0, week.stderr);
+  assert.equal(month.status, 0, month.stderr);
+  assert.match(week.stdout, /新增徽章.*\u001b\[1;31m基线纵火犯\u001b\[0m/);
+  assert.match(
+    month.stdout,
+    /成就回顾.*\u001b\[1;31m基线纵火犯\u001b\[0m/,
+  );
 });
 
 test("month prints a calendar heatmap and monthly usage summary", () => {
@@ -1464,6 +1490,7 @@ test("month aligns calendar cells and renders a monthly follow-up inside the fra
   assert.ok(closingIndex > followUpIndex, result.stdout);
   assert.match(result.stdout, /复诊意见\s+\S+/);
   assert.match(result.stdout, /查看完整档案\s+anti-ai creature/);
+  assert.match(result.stdout, /查看图鉴\s+anti-ai codex/);
   assert.doesNotMatch(result.stdout, /尸检|AUTOPSY/);
   assert.equal(result.stdout.trimEnd().split("\n").at(-1).startsWith("└"), true);
 });
@@ -1883,7 +1910,7 @@ test("codex renders bilingual locked and discovered collections", (t) => {
   );
 });
 
-test("codex colors discovered rarity labels without making color the only signal", (t) => {
+test("codex keeps achievement category colors while preserving rarity labels", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-codex-rarity-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));
   const env = {
@@ -1902,14 +1929,39 @@ test("codex colors discovered rarity labels without making color the only signal
   });
 
   assert.equal(colored.status, 0, colored.stderr);
-  assert.match(colored.stdout, /\u001b\[37m.*COMMON.*\u001b\[0m/);
-  assert.match(colored.stdout, /\u001b\[36m.*UNCOMMON.*\u001b\[0m/);
-  assert.match(colored.stdout, /\u001b\[35m.*RARE.*\u001b\[0m/);
+  assert.match(
+    colored.stdout,
+    /\u001b\[1;31m基线纵火犯 · OFFENSE\u001b\[0m \/ \u001b\[36mUNCOMMON\u001b\[0m/,
+  );
+  assert.match(colored.stdout, /\u001b\[37mCOMMON\u001b\[0m/);
+  assert.match(colored.stdout, /\u001b\[36mUNCOMMON\u001b\[0m/);
+  assert.match(colored.stdout, /\u001b\[35mRARE\u001b\[0m/);
   assert.equal(plain.status, 0, plain.stderr);
   assert.doesNotMatch(plain.stdout, /\u001b/);
+  assert.match(plain.stdout, /基线纵火犯 · OFFENSE \/ UNCOMMON/);
   assert.match(plain.stdout, /COMMON/);
   assert.match(plain.stdout, /UNCOMMON/);
   assert.match(plain.stdout, /RARE/);
+});
+
+test("codex and creature use the same chromatic ability rank colors", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-codex-chromatic-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "rare-ability-297",
+    NO_COLOR: "",
+    FORCE_COLOR: "1",
+  };
+
+  const creature = runCli(["creature", "--date", "2026-07-23"], env);
+  const codex = runCli(["codex", "--date", "2026-07-23"], env);
+
+  assert.equal(creature.status, 0, creature.stderr);
+  assert.equal(codex.status, 0, codex.stderr);
+  assert.ok(creature.stdout.includes("\u001b[1;36m[R] 截止日嗅觉"));
+  assert.ok(codex.stdout.includes("\u001b[1;36m✓ [R] 截止日嗅觉"));
 });
 
 test("today week and month surface collection discoveries", (t) => {

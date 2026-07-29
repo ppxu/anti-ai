@@ -231,8 +231,13 @@ function renderCreatureTodaySummary(creature, codex, lang) {
 }
 
 function renderCreatureCasebook(casebook, lang) {
-  const achievements = casebook.achievementIds
-    .map((id) => creatureLabel("achievements", id, lang))
+  const achievements = casebook.achievements
+    .map((achievement) =>
+      color(
+        ACHIEVEMENT_CATEGORY_COLORS[achievement.category],
+        creatureLabel("achievements", achievement.id, lang),
+      ),
+    )
     .join(" · ");
   return [
     `  ${color("33", localized(
@@ -248,13 +253,19 @@ function renderCreatureCasebook(casebook, lang) {
     `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 化石 ${casebook.discoveries.fossils}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · fossils ${casebook.discoveries.fossils}`)}`,
     `  ${localized(lang, "主治意见", "ATTENDING NOTE")}  ${creatureClinicalNote(casebook, lang, "week")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
+    `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
     "",
   ].join("\n");
 }
 
 function renderCreatureAutopsy(casebook, lang) {
-  const achievements = casebook.achievementIds
-    .map((id) => creatureLabel("achievements", id, lang))
+  const achievements = casebook.achievements
+    .map((achievement) =>
+      color(
+        ACHIEVEMENT_CATEGORY_COLORS[achievement.category],
+        creatureLabel("achievements", achievement.id, lang),
+      ),
+    )
     .join(" · ");
   const dayUnit = (count) =>
     localized(lang, `${count} 天`, `${count} ${count === 1 ? "day" : "days"}`);
@@ -273,6 +284,7 @@ function renderCreatureAutopsy(casebook, lang) {
     `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 化石 ${casebook.discoveries.fossils}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · fossils ${casebook.discoveries.fossils}`)}`,
     `  ${localized(lang, "复诊意见", "FOLLOW-UP NOTE")}  ${creatureClinicalNote(casebook, lang, "month")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
+    `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
     "",
   ].join("\n");
 }
@@ -305,15 +317,20 @@ function codexDiscoveryLabel(discovery, lang) {
 }
 
 function renderCodex(codex, lang) {
-  const fixedSection = (title, entries, label) => {
+  const fixedSection = (
+    title,
+    entries,
+    label,
+    lineColor = (entry) => CODEX_RARITY_COLORS[entry.rarity],
+  ) => {
     const discovered = entries.filter((entry) => entry.discovered);
     const locked = entries.length - discovered.length;
     return [
       `${title}  [${discovered.length} / ${entries.length}]`,
       ...discovered.map((entry) => {
         const line = `✓ ${label(entry)}`;
-        const rarityColor = CODEX_RARITY_COLORS[entry.rarity];
-        return `  ${rarityColor ? color(rarityColor, line) : line}`;
+        const colorCode = lineColor?.(entry);
+        return `  ${colorCode ? color(colorCode, line) : line}`;
       }),
       ...(locked > 0 ? [`  ? ??? × ${locked}`] : []),
       "",
@@ -350,13 +367,21 @@ function renderCodex(codex, lang) {
       localized(lang, "成就徽章", "ACHIEVEMENT BADGES"),
       codex.sections.achievements,
       (entry) =>
-        `${creatureLabel("achievements", entry.id, lang)} · ${entry.category.toUpperCase()} / ${entry.rarity.toUpperCase()}`,
+        `${color(
+          ACHIEVEMENT_CATEGORY_COLORS[entry.category],
+          `${creatureLabel("achievements", entry.id, lang)} · ${entry.category.toUpperCase()}`,
+        )} / ${color(
+          CODEX_RARITY_COLORS[entry.rarity],
+          entry.rarity.toUpperCase(),
+        )}`,
+      null,
     ),
     ...fixedSection(
       localized(lang, "异色能力", "CHROMATIC ABILITIES"),
       codex.sections.chromaticAbilities,
       (entry) =>
         `[${CREATURE_RARE_ABILITY_RANKS[entry.rarity].badge}] ${creatureLabel("rareAbilities", entry.id, lang)} · Lv.${entry.level}`,
+      (entry) => CREATURE_RARE_ABILITY_RANKS[entry.rarity].color,
     ),
     ...fixedSection(
       localized(lang, "世代伤痕", "GENERATION SCARS"),

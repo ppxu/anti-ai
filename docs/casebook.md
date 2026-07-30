@@ -79,6 +79,6 @@ Creature state uses schema v10. Casebook records contain only:
 - experience-day, Ecology, pathology, and ability IDs used as the trigger summary;
 - the next experience-day interval.
 
-Schema v1–v8 files migrate locally and idempotently. Migration preserves the casebook, adds an empty laboratory when needed, and never invents a past choice or experiment.
+Schema v1–v9 files migrate sequentially and idempotently. Migration preserves the casebook, adds empty laboratory and companion indexes when needed, and never invents a past choice, experiment, or bond.
 
 Everything stays in `~/.anti-ai/creature.json`. There is no account, server, upload, leaderboard, daily check-in, or Token-spending accelerator.

@@ -37,7 +37,7 @@
 
 ## 环境要求
 
-- Node.js 20 或更高版本
+- Node.js 22 或更高版本
 - 已在本机使用过至少一个受支持的 Agent，存在 JSONL 或 SQLite 本地记录
 - 当前已在 macOS 验证
 
@@ -337,6 +337,8 @@ OpenCode 从 SQLite 的 `message` 或 `session_message` 表读取 assistant usag
 
 Hermes 是有意保留的精度例外：优先读取包含辅助调用的 `session_model_usage`，否则回退到 `sessions` 汇总。汇总可能跨越多个自然日，工具按最后活动日归档，因此 `doctor` 会明确标为“会话级近似”。
 
+OpenCode 和 Hermes 使用可选的 `better-sqlite3` 适配器。npm 会正常尝试安装，但驱动缺失或 Node ABI 不兼容时，不再阻塞 Codex、Claude Code、OpenClaw 与 Pi。可以运行 `anti-ai doctor` 查看降级来源：使用 `all` 时会保留健康来源并显示隐私安全的警告；显式选择损坏的 SQLite 来源时会以可操作的错误退出。
+
 日志没有模型字段时会归入 `unknown`。终端账单最多展示 Token 用量最高的 5 个“来源 + 模型”组合，`today --json` 保留完整模型明细。
 
 ## 资源账单口径
@@ -373,11 +375,16 @@ WaterSense 淋浴采用 EPA 的 `2.0 gal/min` 上限（约 `7.6L/min`），标�
 - 不采集、不保存、不输出 Prompt、回复或工具调用正文
 - 默认分享卡片不包含路径、模型名、请求数或精确 Token
 - 不创建用量数据库或后台进程；`creature` 只维护一个不含精确用量的本地成长档案
+- `codex` 与全部 `share` 卡片只派生只读快照，不会结算或改写成长档案
+- 持久化 schema 迁移会保留精确的内容寻址备份；并发写入会被拒绝，不会静默覆盖成长进度
 
 ## 测试
 
 ```bash
 npm test
+npm run check
+npm run test:coverage
+npm run test:package
 ```
 
 测试使用脱敏的合成 JSONL 和 SQLite，不读取真实会话内容。
@@ -385,17 +392,24 @@ npm test
 ## 代码结构
 
 - `bin/anti-ai.mjs`：最小可执行入口
-- `src/cli.mjs`：参数校验与命令编排
+- `src/cli.mjs`：轻量命令注册与分发
+- `src/cli/`：参数解析、终端渲染和方法论说明
+- `src/commands/`：异变体、遭遇、实验室和分享命令
 - `src/help.mjs`：全局与分命令帮助
-- `src/scanner.mjs`：六来源 JSONL/SQLite 扫描和统计
+- `src/registry.mjs`：命令、卡片和本地来源元数据
+- `src/scanner.mjs`：彼此隔离的六来源 JSONL/可选 SQLite 适配器
 - `src/methodology.mjs`：具名公开案例与高位选择
 - `src/comparisons.mjs`：按周期分级的生活对照
 - `src/content.mjs`：确定性中英文尾句与分享文案池
-- `src/reporting.mjs`：账单、日历、卡片与每日罪名
-- `src/creature.mjs`：异变体成长规则和本地档案
+- `src/reporting.mjs`：终端账单、日历与每日罪名
+- `src/renderers/svg.mjs`：隐私安全的 SVG 卡片
+- `src/creature.mjs`：异变体成长和收藏规则
+- `src/creature/`：内容池与外观生成
+- `src/state-store.mjs`：带校验、备份和冲突保护的本地状态存储
 - `src/laboratory.mjs`：派生配方、封存培养物和培养架
 - `src/companion.mjs`：伴生绑定、印记、路线和 ASCII 成长
 - `src/shared.mjs`：共享的语言和空统计结构
+- `docs/architecture.zh-CN.md`：扩展、状态、隐私与质量边界
 - `docs/creature.zh-CN.md`：完整的异变体系统与理论物种容量指南
 - `docs/companions.zh-CN.md`：完整的伴生异物成长指南
 

@@ -1,3 +1,5 @@
 #!/usr/bin/env node
 
-await import("../src/cli.mjs");
+const { main } = await import("../src/cli.mjs");
+
+await main();

@@ -19,7 +19,7 @@ anti-ai share --card companion > anti-ai-companion.svg
 
 可以运行 `anti-ai help lab bond` 或 `anti-ai help lab companion` 查看分级帮助。
 
-当指定日期尚未结算时，`lab bond`、`lab companion` 和伴生分享卡会先执行与 `creature` 相同的完整来源本地用量统计。这个过程只读取用量元数据，不读取对话正文，因此伴生命令可以独立作为每日入口使用。
+当指定日期尚未结算时，`lab bond` 和 `lab companion` 会先执行与 `creature` 相同的完整来源本地用量统计；伴生分享卡只在内存中派生同一份当前快照，不会保存。两条路径都只读取用量元数据，不读取对话正文。
 
 ## 建立伴生关系
 

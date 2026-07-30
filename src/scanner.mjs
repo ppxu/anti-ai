@@ -3,10 +3,37 @@ import { readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import Database from "better-sqlite3";
 
 import { addModelUsage, addUsage } from "./reporting.mjs";
+import { SOURCE_REGISTRY } from "./registry.mjs";
 import { emptyUsage } from "./shared.mjs";
+
+let sqliteDriverPromise;
+
+class SourceScanError extends Error {
+  constructor(source, cause) {
+    super(`Unable to scan ${source}`, { cause });
+    this.name = "SourceScanError";
+    this.code = "ANTI_AI_SOURCE_SCAN_FAILED";
+    this.source = source;
+    this.sourceCode = cause?.code ?? "UNKNOWN";
+  }
+}
+
+async function sqliteDatabaseConstructor() {
+  sqliteDriverPromise ??= import("better-sqlite3")
+    .then((module) => module.default)
+    .catch((error) => {
+      if (
+        error.code === "ERR_MODULE_NOT_FOUND" ||
+        error.code === "ERR_DLOPEN_FAILED"
+      ) {
+        return null;
+      }
+      throw error;
+    });
+  return sqliteDriverPromise;
+}
 
 function localDate(timestamp, timezone) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -54,8 +81,14 @@ async function* matchingFiles(root, matches, modifiedSince = undefined) {
   }
 }
 
-function openReadonlyDatabase(databasePath) {
+async function openReadonlyDatabase(databasePath) {
   if (!existsSync(databasePath)) return null;
+  const Database = await sqliteDatabaseConstructor();
+  if (!Database) {
+    const error = new Error("Optional SQLite driver is unavailable");
+    error.code = "SQLITE_DRIVER_UNAVAILABLE";
+    throw error;
+  }
   try {
     return new Database(databasePath, {
       readonly: true,
@@ -245,7 +278,7 @@ async function scanClaude(root, dates, timezone) {
 
 async function scanOpenCode(databasePath, dates, timezone) {
   const results = sourceUsageByDate(dates);
-  const database = openReadonlyDatabase(databasePath);
+  const database = await openReadonlyDatabase(databasePath);
   if (!database) return results;
 
   try {
@@ -445,7 +478,7 @@ function databaseHasTable(database, tableName) {
 
 async function scanHermes(databasePath, dates, timezone) {
   const results = sourceUsageByDate(dates);
-  const database = openReadonlyDatabase(databasePath);
+  const database = await openReadonlyDatabase(databasePath);
   if (!database) return results;
 
   try {
@@ -514,8 +547,8 @@ async function countMatchingFiles(root, matches) {
   return count;
 }
 
-function inspectDatabase(databasePath, tableName) {
-  const database = openReadonlyDatabase(databasePath);
+async function inspectDatabase(databasePath, tableName) {
+  const database = await openReadonlyDatabase(databasePath);
   if (!database) return false;
   try {
     return Boolean(
@@ -533,91 +566,88 @@ function inspectDatabase(databasePath, tableName) {
 }
 
 function sourceRoots() {
-  return {
-    codex:
-      process.env.ANTI_AI_CODEX_DIR ??
-      path.join(os.homedir(), ".codex", "sessions"),
-    claude:
-      process.env.ANTI_AI_CLAUDE_DIR ??
-      path.join(os.homedir(), ".claude", "projects"),
-    opencode:
-      process.env.ANTI_AI_OPENCODE_DB ??
-      path.join(os.homedir(), ".local", "share", "opencode", "opencode.db"),
-    openclaw:
-      process.env.ANTI_AI_OPENCLAW_DIR ??
-      path.join(os.homedir(), ".openclaw", "agents"),
-    hermes:
-      process.env.ANTI_AI_HERMES_DB ??
-      path.join(os.homedir(), ".hermes", "state.db"),
-    pi:
-      process.env.ANTI_AI_PI_DIR ??
-      path.join(os.homedir(), ".pi", "agent", "sessions"),
+  return Object.fromEntries(
+    SOURCE_REGISTRY.map((source) => [
+      source.id,
+      process.env[source.environment] ??
+        path.join(os.homedir(), ...source.homePath),
+    ]),
+  );
+}
+
+function sourceAdapters(roots = sourceRoots()) {
+  const operations = {
+    codex: {
+      count: () =>
+        countMatchingFiles(roots.codex, (name) => name.endsWith(".jsonl")),
+      scan: (dates, timezone) => scanCodex(roots.codex, dates, timezone),
+    },
+    claude: {
+      count: () =>
+        countMatchingFiles(roots.claude, (name) => name.endsWith(".jsonl")),
+      scan: (dates, timezone) => scanClaude(roots.claude, dates, timezone),
+    },
+    opencode: {
+      inspect: async () => {
+        if (!existsSync(roots.opencode)) {
+          return { available: false, issue: "missing" };
+        }
+        if (!(await sqliteDatabaseConstructor())) {
+          return { available: false, issue: "driver" };
+        }
+        const available =
+          (await inspectDatabase(roots.opencode, "message")) ||
+          (await inspectDatabase(roots.opencode, "session_message"));
+        return {
+          available,
+          issue: available ? null : "unreadable",
+        };
+      },
+      scan: (dates, timezone) => scanOpenCode(roots.opencode, dates, timezone),
+    },
+    openclaw: {
+      count: () => countMatchingFiles(roots.openclaw, openClawFile),
+      scan: (dates, timezone) => scanOpenClaw(roots.openclaw, dates, timezone),
+    },
+    hermes: {
+      inspect: async () => {
+        if (!existsSync(roots.hermes)) {
+          return { available: false, issue: "missing" };
+        }
+        if (!(await sqliteDatabaseConstructor())) {
+          return { available: false, issue: "driver" };
+        }
+        const available = await inspectDatabase(roots.hermes, "sessions");
+        return {
+          available,
+          issue: available ? null : "unreadable",
+        };
+      },
+      scan: (dates, timezone) => scanHermes(roots.hermes, dates, timezone),
+    },
+    pi: {
+      count: () =>
+        countMatchingFiles(roots.pi, (name) => name.endsWith(".jsonl")),
+      scan: (dates, timezone) => scanPi(roots.pi, dates, timezone),
+    },
   };
+
+  return SOURCE_REGISTRY.map((source) => ({
+    ...source,
+    root: roots[source.id],
+    ...operations[source.id],
+  }));
 }
 
 async function inspectLocalSources(source = "all") {
-  const roots = sourceRoots();
-  const definitions = [
-    {
-      id: "codex",
-      label: "Codex",
-      root: roots.codex,
-      kind: "jsonl",
-      precision: { zh: "逐消息精确", en: "message exact" },
-      count: () => countMatchingFiles(roots.codex, (name) => name.endsWith(".jsonl")),
-    },
-    {
-      id: "claude",
-      label: "Claude Code",
-      root: roots.claude,
-      kind: "jsonl",
-      precision: { zh: "逐消息精确", en: "message exact" },
-      count: () =>
-        countMatchingFiles(roots.claude, (name) => name.endsWith(".jsonl")),
-    },
-    {
-      id: "opencode",
-      label: "OpenCode",
-      root: roots.opencode,
-      kind: "sqlite",
-      precision: { zh: "逐消息精确", en: "message exact" },
-      available: () =>
-        inspectDatabase(roots.opencode, "message") ||
-        inspectDatabase(roots.opencode, "session_message"),
-    },
-    {
-      id: "openclaw",
-      label: "OpenClaw",
-      root: roots.openclaw,
-      kind: "jsonl",
-      precision: { zh: "逐消息精确", en: "message exact" },
-      count: () => countMatchingFiles(roots.openclaw, openClawFile),
-    },
-    {
-      id: "hermes",
-      label: "Hermes",
-      root: roots.hermes,
-      kind: "sqlite",
-      precision: { zh: "会话级近似", en: "session approximate" },
-      available: () => inspectDatabase(roots.hermes, "sessions"),
-    },
-    {
-      id: "pi",
-      label: "Pi",
-      root: roots.pi,
-      kind: "jsonl",
-      precision: { zh: "逐条目精确", en: "entry exact" },
-      count: () => countMatchingFiles(roots.pi, (name) => name.endsWith(".jsonl")),
-    },
-  ];
-  const selected = definitions.filter(
+  const selected = sourceAdapters().filter(
     (definition) => source === "all" || definition.id === source,
   );
   return Promise.all(
     selected.map(async (definition) => {
       if (definition.kind === "sqlite") {
-        const available = definition.available();
-        return { ...definition, available };
+        const inspection = await definition.inspect();
+        return { ...definition, ...inspection };
       }
       const count = await definition.count();
       return { ...definition, available: count > 0, count };
@@ -626,34 +656,24 @@ async function inspectLocalSources(source = "all") {
 }
 
 async function reportsForDates(options, dates, timezone) {
-  const roots = sourceRoots();
   const sourceResults = {};
-
-  if (options.source === "all" || options.source === "codex") {
-    sourceResults.codex = await scanCodex(roots.codex, dates, timezone);
-  }
-  if (options.source === "all" || options.source === "claude") {
-    sourceResults.claude = await scanClaude(roots.claude, dates, timezone);
-  }
-  if (options.source === "all" || options.source === "opencode") {
-    sourceResults.opencode = await scanOpenCode(
-      roots.opencode,
-      dates,
-      timezone,
-    );
-  }
-  if (options.source === "all" || options.source === "openclaw") {
-    sourceResults.openclaw = await scanOpenClaw(
-      roots.openclaw,
-      dates,
-      timezone,
-    );
-  }
-  if (options.source === "all" || options.source === "hermes") {
-    sourceResults.hermes = await scanHermes(roots.hermes, dates, timezone);
-  }
-  if (options.source === "all" || options.source === "pi") {
-    sourceResults.pi = await scanPi(roots.pi, dates, timezone);
+  const warnings = [];
+  const selected = sourceAdapters().filter(
+    (adapter) => options.source === "all" || adapter.id === options.source,
+  );
+  for (const adapter of selected) {
+    try {
+      sourceResults[adapter.id] = await adapter.scan(dates, timezone);
+    } catch (error) {
+      if (options.source !== "all") {
+        throw new SourceScanError(adapter.id, error);
+      }
+      sourceResults[adapter.id] = sourceUsageByDate(dates);
+      warnings.push({
+        source: adapter.id,
+        code: error?.code ?? "UNKNOWN",
+      });
+    }
   }
 
   return dates.map((date) => {
@@ -666,16 +686,25 @@ async function reportsForDates(options, dates, timezone) {
     }
     const totals = emptyUsage();
     for (const usage of Object.values(sources)) addUsage(totals, usage);
-    return { date, timezone, sources, models, totals };
+    return {
+      date,
+      timezone,
+      sources,
+      models,
+      totals,
+      ...(warnings.length > 0 ? { warnings } : {}),
+    };
   });
 }
 
 export {
+  SourceScanError,
   jsonlFiles,
   inspectLocalSources,
   localDate,
   matchingFiles,
   openClawFile,
   reportsForDates,
+  sourceAdapters,
   sourceRoots,
 };

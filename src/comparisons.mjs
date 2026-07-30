@@ -1,4 +1,5 @@
 import { localized } from "./shared.mjs";
+import { COMPARISON_REFERENCES } from "./methodology.mjs";
 
 const NUMBER = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
@@ -77,8 +78,14 @@ function everydayComparisons(resources, period = "today", lang = "zh") {
   const energyWh = resources.energyWh.value;
   const waterMl = resources.waterMl.value;
   const carbonGrams = resources.carbonGrams.value;
-  const drivingKm = carbonGrams / 244.2;
-  const treeHours = (carbonGrams / 60_000) * 365 * 24;
+  const { epaEquivalencies, energyStarDishwasher, waterSense } =
+    COMPARISON_REFERENCES;
+  const drivingKm =
+    carbonGrams / epaEquivalencies.gasolineCarCarbonGramsPerKm;
+  const treeHours =
+    (carbonGrams / epaEquivalencies.urbanTreeCarbonGramsPerYear) *
+    365 *
+    24;
 
   if (period === "week") {
     return [
@@ -100,7 +107,10 @@ function everydayComparisons(resources, period = "today", lang = "zh") {
       {
         icon: "🚿",
         label: localized(lang, "WaterSense 淋浴", "WaterSense shower"),
-        value: formatDuration(waterMl / 7_600 / 60, lang),
+        value: formatDuration(
+          waterMl / waterSense.showerMlPerMinute / 60,
+          lang,
+        ),
       },
       {
         icon: "🍽️",
@@ -110,7 +120,7 @@ function everydayComparisons(resources, period = "today", lang = "zh") {
           "ENERGY STAR dishwasher",
         ),
         value: formatPortion(
-          waterMl / 12_100,
+          waterMl / energyStarDishwasher.waterMlPerCycle,
           "次",
           "cycle",
           lang,
@@ -156,7 +166,7 @@ function everydayComparisons(resources, period = "today", lang = "zh") {
           "U.S. household electricity day",
         ),
         value: formatPortion(
-          energyWh / 33_400,
+          energyWh / epaEquivalencies.householdElectricityWhPerDay,
           "天",
           "day",
           lang,

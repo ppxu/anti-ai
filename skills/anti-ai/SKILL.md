@@ -1,7 +1,7 @@
 ---
 name: anti-ai
 description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, fossil, encounter, prognosis, culture, or companion share card, wants to exchange a pollution code or run a local mutation encounter, or asks about their token-fed mutation creature, pollution laboratory, symbiotic companion, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
-compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local usage metadata from supported Agent JSONL or SQLite stores.
+compatibility: Requires Node.js 22+ and the anti-ai CLI. Reads only local usage metadata from supported Agent JSONL or optional SQLite stores.
 ---
 
 # anti-ai
@@ -127,7 +127,7 @@ The laboratory references only three kinds of already-derived material: saved fo
 
 Show the three formulas and let the user decide. Never choose an incubation slot on their behalf unless they explicitly ask. Incubation appends one culture to the private shelf; referenced materials are not consumed or rewritten. A culture adds collection variety only: it does not change creature growth, experience, abilities, ecology, scores, or create a Token-powered shortcut.
 
-`lab bond <culture-id>` turns one sealed culture into the active symbiotic companion. Switching later preserves every former companion and its growth. `lab bond`, `lab companion`, and the companion card settle an unseen date through the same complete-source local usage-metadata accounting as `creature`, without reading conversation content. The active companion receives exactly one imprint per observed day; heavy, restrained, and AI-free days grow it at the same rate while shaping different directions: Pollution, Clarity, or neutral evidence. Relative imprint balance produces POLLUTION, CLARITY, or PARADOX instead of rewarding raw volume.
+`lab bond <culture-id>` turns one sealed culture into the active symbiotic companion. Switching later preserves every former companion and its growth. `lab bond` and `lab companion` settle an unseen date through the same complete-source local usage-metadata accounting as `creature`; the companion card derives that date in memory without saving it. Neither path reads conversation content. The active companion receives exactly one imprint per observed day; heavy, restrained, and AI-free days grow it at the same rate while shaping different directions: Pollution, Clarity, or neutral evidence. Relative imprint balance produces POLLUTION, CLARITY, or PARADOX instead of rewarding raw volume.
 
 Companion growth uses three visible stages: PARASITIC HATCHLING on days 1–6, SYMBIOTIC ABERRATION on days 7–20, and ACCOMPLICE ORGAN from day 21 onward. Days 7 and 21 deterministically seal rare anomalies and reshape its ASCII form; repeated commands cannot reroll them. Use `lab companion` for the compact file and `--full` for its fingerprint and privacy guardrail. Companion growth is narrative and visual only: it grants no numeric creature benefit, score, ability, combat power, or Token incentive.
 
@@ -187,13 +187,15 @@ It also grows seven regular abilities from usage signals, AI-free days, seeded r
 
 When reporting a creature, summarize its specimen ID, generation, life stage and experience, latest fossil, inherited ability and scar, current evolution choice and benefit/cost totals, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, rare-mutation chance, and the active companion's stage and route when one is bonded. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
 
-The creature state is stored at `~/.anti-ai/creature.json` with schema v10. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils with derived ability snapshots, sealed evolution choices, turning-point case IDs with privacy-safe triggers and selections, saved foreign encounters as derived appearance IDs, derived laboratory cultures and their ingredient references, companion bond dates, daily discrete imprint bands, anomaly IDs, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1-v9 files migrate locally and idempotently without inventing choices, cultures, bonds, or companion growth. Do not open or edit the state file directly.
+The creature state is stored at `~/.anti-ai/creature.json` with schema v10. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils with derived ability snapshots, sealed evolution choices, turning-point case IDs with privacy-safe triggers and selections, saved foreign encounters as derived appearance IDs, derived laboratory cultures and their ingredient references, companion bond dates, daily discrete imprint bands, anomaly IDs, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1-v9 files migrate sequentially and idempotently without inventing choices, cultures, bonds, or companion growth; the first persisted migration keeps an exact local backup. Do not open or edit the state file directly.
 
 Only destroy the mutation history when the user explicitly asks to reset or restart it:
 
 ```bash
 anti-ai creature reset
 ```
+
+Reset also removes migration backups, but never Agent logs.
 
 Do not pass `--source` to `creature`, `codex`, or `lab`; one evolution and collection history always uses the complete supported-source data set.
 

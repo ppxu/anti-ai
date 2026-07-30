@@ -11,6 +11,7 @@ const COMMANDS = [
   ["share", "输出隐私安全的 SVG 分享卡", "Print a privacy-safe SVG share card"],
   ["creature", "查看和管理异变体档案", "Inspect and manage the mutation file"],
   ["encounter", "让两只异变体在本地发生接触事故", "Run a local contact accident between two mutations"],
+  ["lab", "查看和管理污染实验室", "Inspect and manage the pollution laboratory"],
   ["doctor", "检查本地记录来源", "Check local record sources"],
   ["explain", "解释统计、资源换算和隐私边界", "Explain accounting, estimates, and privacy"],
   ["help", "查看具体命令帮助", "Show help for one command"],
@@ -89,8 +90,8 @@ const COMMAND_HELP = {
     usage: "anti-ai codex [options]",
     summary: ["查看由本地成长史派生的私人病理图鉴。", "Inspect the private pathology codex derived from local growth history."],
     output: [
-      "形态、徽章、异色能力、伤痕、标本、化石及其稀有度。",
-      "Forms, badges, chromatic abilities, scars, specimens, fossils, and rarity.",
+      "形态、徽章、异色能力、伤痕、标本、病例、培养物、化石及其稀有度。",
+      "Forms, badges, chromatic abilities, scars, specimens, cases, cultures, fossils, and rarity.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期状态", "Inspect state at a date"],
@@ -101,7 +102,7 @@ const COMMAND_HELP = {
       "图鉴只接受完整来源；锁定条目在人类输出中保持 ???。",
       "The codex requires complete sources; locked human entries remain ???.",
     ],
-    related: ["creature", "share"],
+    related: ["creature", "lab", "share"],
   },
   share: {
     usage: "anti-ai share [options]",
@@ -112,8 +113,9 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture>", "选择卡片类型", "Select card type"],
       ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
+      ["--id <culture-id>", "指定 culture 卡的培养物", "Select the culture for a culture card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
     ],
     examples: [
@@ -122,12 +124,13 @@ const COMMAND_HELP = {
       "anti-ai share --card wanted --lang en > wanted.svg",
       "anti-ai share --card encounter --with <pollution-code> > encounter.svg",
       "anti-ai share --card prognosis > prognosis.svg",
+      "anti-ai share --card culture --id <culture-id> > culture.svg",
     ],
     note: [
       "异变体收藏卡必须使用完整来源。",
       "Mutation collection cards require the complete source set.",
     ],
-    related: ["today", "codex", "creature"],
+    related: ["today", "codex", "creature", "lab"],
   },
   creature: {
     usage: "anti-ai creature [options]",
@@ -179,6 +182,32 @@ const COMMAND_HELP = {
     ],
     related: ["creature export", "codex", "share"],
   },
+  lab: {
+    usage: "anti-ai lab [options]",
+    summary: [
+      "查看由本地派生收藏驱动的污染实验室。",
+      "Inspect the pollution laboratory driven by local derived collections.",
+    ],
+    output: [
+      "显示外来标本、化石和病例切片库存，以及三个稳定的本地培养方案。",
+      "Shows material inventory and three stable local formulas from foreign specimens, fossils, and case slices.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定日期可用的派生原料", "Inspect derived material available on a date"],
+      ["--json", "输出稳定机器可读配方", "Print stable machine-readable formulas"],
+    ],
+    examples: [
+      "anti-ai lab",
+      "anti-ai lab --json",
+      "anti-ai lab incubate 1",
+      "anti-ai lab shelf",
+    ],
+    note: [
+      "配方完全在本地确定；培养物不增加阅历、能力、战力或 Token 收益。",
+      "Formulas are fully local; cultures add no experience, abilities, combat power, or Token rewards.",
+    ],
+    related: ["lab incubate", "lab shelf", "lab inspect", "codex", "encounter"],
+  },
   doctor: {
     usage: "anti-ai doctor [options]",
     summary: ["检查各本地 Agent 记录是否可读取。", "Check whether each local Agent record source is readable."],
@@ -218,6 +247,74 @@ const COMMAND_HELP = {
 };
 
 const ACTION_HELP = {
+  "lab incubate": {
+    usage: "anti-ai lab incubate <1|2|3> [options]",
+    summary: [
+      "从当前稳定批次中封存一份污染培养物。",
+      "Seal one pollution culture from the current stable batch.",
+    ],
+    output: [
+      "追加培养物 ASCII、配方、稀有度、并发症和副作用，并推进到下一批次。",
+      "Appends culture ASCII, recipe, rarity, complication, and side effect, then advances the batch.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "指定封存日期", "Select sealed date"],
+      ["--json", "输出机器可读培养结果", "Print the machine-readable culture result"],
+    ],
+    examples: ["anti-ai lab incubate 1", "anti-ai lab incubate 3 --json"],
+    note: [
+      "原料不会消耗，另外两个方案随批次结束；培养不会改变主异变体属性。",
+      "Materials are not consumed; the other formulas expire with the batch and incubation never changes the main creature.",
+    ],
+    related: ["lab", "lab shelf", "lab inspect", "codex"],
+  },
+  "lab shelf": {
+    usage: "anti-ai lab shelf [options]",
+    summary: [
+      "查看本地封存的污染培养架。",
+      "Inspect the locally sealed pollution culture shelf.",
+    ],
+    output: [
+      "默认显示最近六份培养物；--full 展示完整培养记录。",
+      "Shows the six most recent cultures by default; --full reveals the complete shelf.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看截至指定日期的培养物", "Inspect cultures through a date"],
+      ["--full", "显示完整培养架", "Show the complete shelf"],
+      ["--json", "输出全部机器可读培养物", "Print every machine-readable culture"],
+    ],
+    examples: ["anti-ai lab shelf", "anti-ai lab shelf --full", "anti-ai lab shelf --json"],
+    note: [
+      "培养架只读取派生实验记录，不扫描 Agent 原始日志。",
+      "The shelf reads derived experiment records only and never scans raw Agent logs.",
+    ],
+    related: ["lab", "lab incubate", "lab inspect", "codex"],
+  },
+  "lab inspect": {
+    usage: "anti-ai lab inspect <culture-id> [options]",
+    summary: [
+      "查看一份污染培养物的完整诊断。",
+      "Inspect the complete diagnosis for one pollution culture.",
+    ],
+    output: [
+      "显示培养皿 ASCII、原料、生态、病灶、并发症和副作用。",
+      "Shows dish ASCII, materials, Ecology, pathology, complication, and side effect.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定日期前的培养物", "Inspect a culture available by a date"],
+      ["--json", "输出稳定机器可读培养物", "Print the stable machine-readable culture"],
+    ],
+    examples: [
+      "anti-ai lab inspect <culture-id>",
+      "anti-ai lab inspect <culture-id> --json",
+      "anti-ai share --card culture --id <culture-id>",
+    ],
+    note: [
+      "培养物是收藏与叙事结果，不提供战力、加成或稀有率提升。",
+      "A culture is a collection and narrative outcome, with no combat power, bonuses, or rarity boost.",
+    ],
+    related: ["lab", "lab shelf", "share", "codex"],
+  },
   "creature history": {
     usage: "anti-ai creature history [options]",
     summary: [
@@ -417,6 +514,7 @@ function renderTopLevelHelp(lang = "zh") {
     localized(lang, "Examples:", "Examples:"),
     "  anti-ai today",
     "  anti-ai creature",
+    "  anti-ai lab",
     "  anti-ai help today",
     "",
     `${localized(lang, "具体命令帮助", "Command help")}  anti-ai help <command>`,

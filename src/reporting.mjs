@@ -1228,6 +1228,66 @@ function renderCreatureCollectionShareSvg(view, kind, lang = "zh") {
 `;
 }
 
+function renderCultureShareSvg(view, lang = "zh") {
+  const title = localized(
+    lang,
+    "污染培养事故",
+    "POLLUTION CULTURE ACCIDENT",
+  );
+  const privacy = localized(
+    lang,
+    "本地模式：无对话、路径、模型名或精确 Token",
+    "LOCAL-ONLY: no chats, paths, model names, or exact tokens",
+  );
+  const artLines = view.art
+    .map(
+      (line, index) =>
+        `<tspan x="76" dy="${index === 0 ? 0 : 31}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const fields = [
+    [localized(lang, "类型 / 稀有度", "TYPE / RARITY"), `${view.type} · ${view.rarity}`],
+    [localized(lang, "原料", "MATERIALS"), view.materials],
+    [localized(lang, "生态 / 病灶", "ECOLOGY / PATHOLOGY"), `${view.ecology} / ${view.pathology}`],
+    [localized(lang, "并发症", "COMPLICATION"), view.complication],
+    [localized(lang, "副作用", "SIDE EFFECT"), view.sideEffect],
+  ];
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(title)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#09110d"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#24533a" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#62ff9b"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #729884; }
+    .body { fill: #eefcf4; }
+    .accent { fill: #62ff9b; }
+    .warn { fill: #efbf65; }
+  </style>
+  <text x="72" y="82" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
+  <text x="1128" y="82" class="mono muted" font-size="17" text-anchor="end">${escapeXml(`${view.date} · BATCH ${view.batch}`)}</text>
+  <line x1="72" y1="114" x2="1128" y2="114" stroke="#24533a" stroke-width="2"/>
+
+  <text x="72" y="154" class="mono warn" font-size="17">${escapeXml(`LOCAL-ONLY CULTURE #${view.cultureId}`)}</text>
+  <text x="76" y="208" class="mono body" font-size="22" xml:space="preserve">${artLines}</text>
+  <text x="72" y="454" class="mono muted" font-size="15">${escapeXml(localized(lang, "它没有战力，只有可追责性。", "It has no combat power, only auditability."))}</text>
+
+  ${fields
+    .map(
+      ([label, value], index) => `<text x="590" y="${150 + index * 74}" class="mono muted" font-size="14">${escapeXml(label)}</text>
+  <text x="590" y="${179 + index * 74}" class="mono ${index === 4 ? "warn" : "body"}" font-size="${index === 4 ? 17 : 18}">${escapeXml(value)}</text>`,
+    )
+    .join("\n  ")}
+
+  <line x1="72" y1="544" x2="1128" y2="544" stroke="#24533a" stroke-width="2"/>
+  <text x="72" y="574" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
+  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 function shiftDate(date, days) {
   const value = new Date(`${date}T12:00:00.000Z`);
   value.setUTCDate(value.getUTCDate() + days);
@@ -1426,6 +1486,7 @@ export {
   isValidDate,
   padTerminal,
   renderMonth,
+  renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
   renderPathologyShareSvg,

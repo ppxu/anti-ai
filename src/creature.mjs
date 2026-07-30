@@ -2195,6 +2195,16 @@ function creatureCodex(state, date) {
       ],
       trigger: { ...entry.trigger },
     }));
+  const cultures = (state.laboratory?.cultures ?? [])
+    .filter((entry) => entry.createdAt <= date)
+    .map((entry) => ({
+      id: entry.id,
+      discoveredAt: entry.createdAt,
+      typeId: entry.typeId,
+      rarity: entry.rarity,
+      fingerprint: entry.appearance.fingerprint,
+      ingredientTypes: entry.ingredients.map(({ type }) => type),
+    }));
   const formDiscoveries = new Map();
   for (const specimen of specimens) {
     if (
@@ -2305,6 +2315,12 @@ function creatureCodex(state, date) {
       discovered: true,
       discoveredAt: entry.discoveredAt,
     })),
+    ...cultures.map((entry) => ({
+      type: "culture",
+      id: entry.id,
+      discovered: true,
+      discoveredAt: entry.discoveredAt,
+    })),
     ...fossils.map((entry) => ({
       type: "fossil",
       id: entry.id,
@@ -2347,6 +2363,7 @@ function creatureCodex(state, date) {
       specimens: { discovered: specimens.length },
       foreignSpecimens: { discovered: foreignSpecimens.length },
       caseSlices: { discovered: caseSlices.length },
+      cultures: { discovered: cultures.length },
       fossils: { discovered: fossils.length },
     },
     sections: {
@@ -2357,6 +2374,7 @@ function creatureCodex(state, date) {
       specimens,
       foreignSpecimens,
       caseSlices,
+      cultures,
       fossils,
     },
     recent,
@@ -2571,6 +2589,14 @@ function migrateCreatureState(state) {
   };
   state.casebook.cases ??= [];
   state.casebook.nextAtExperience ??= 14;
+  state.laboratory ??= {
+    version: 1,
+    nextBatch: 1,
+    cultures: [],
+  };
+  state.laboratory.version ??= 1;
+  state.laboratory.nextBatch ??= (state.laboratory.cultures?.length ?? 0) + 1;
+  state.laboratory.cultures ??= [];
   let hasHatched = false;
   for (const [date, day] of Object.entries(state.days).sort(([left], [right]) =>
     left.localeCompare(right),
@@ -2596,7 +2622,7 @@ function migrateCreatureState(state) {
     );
     if (day.active) hasHatched = true;
   }
-  state.schemaVersion = 8;
+  state.schemaVersion = 9;
   return state;
 }
 
@@ -2608,7 +2634,7 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if ([1, 2, 3, 4, 5, 6, 7, 8].includes(state?.schemaVersion) && state.days) {
+    if ([1, 2, 3, 4, 5, 6, 7, 8, 9].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
       return migrateCreatureState(state);
@@ -2617,7 +2643,7 @@ async function loadCreatureState() {
     if (error.code !== "ENOENT") throw error;
   }
   return migrateCreatureState({
-    schemaVersion: 8,
+    schemaVersion: 9,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},
@@ -3130,6 +3156,14 @@ function creatureCasebook(state, startDate, endDate) {
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,
     fossils: codex.sections.fossils.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    caseSlices: codex.sections.caseSlices.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    cultures: codex.sections.cultures.filter(
       (entry) =>
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,

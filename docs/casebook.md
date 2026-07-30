@@ -72,13 +72,13 @@ The prognosis share card shows the current case and its three visible trade-offs
 
 Sealed choices become unlimited case slices in `anti-ai codex`. They do not change the fixed 50-entry collection denominator and do not grant combat power or Token-based score.
 
-Creature state uses schema v8. Casebook records contain only:
+Creature state uses schema v9. Casebook records contain only:
 
 - stable case and route IDs;
 - offered and selected dates;
 - experience-day, Ecology, pathology, and ability IDs used as the trigger summary;
 - the next experience-day interval.
 
-Schema v1–v7 files migrate locally and idempotently. Migration creates an empty casebook and never invents a past choice.
+Schema v1–v8 files migrate locally and idempotently. Migration preserves the casebook, adds an empty laboratory when needed, and never invents a past choice or experiment.
 
 Everything stays in `~/.anti-ai/creature.json`. There is no account, server, upload, leaderboard, daily check-in, or Token-spending accelerator.

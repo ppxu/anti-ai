@@ -90,8 +90,8 @@ const COMMAND_HELP = {
     usage: "anti-ai codex [options]",
     summary: ["查看由本地成长史派生的私人病理图鉴。", "Inspect the private pathology codex derived from local growth history."],
     output: [
-      "形态、徽章、异色能力、伤痕、标本、病例、培养物、化石及其稀有度。",
-      "Forms, badges, chromatic abilities, scars, specimens, cases, cultures, fossils, and rarity.",
+      "形态、徽章、异色能力、伤痕、标本、病例、培养物、伴生异物、化石及其稀有度。",
+      "Forms, badges, chromatic abilities, scars, specimens, cases, cultures, companions, fossils, and rarity.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期状态", "Inspect state at a date"],
@@ -109,11 +109,11 @@ const COMMAND_HELP = {
     summary: ["将账单或收藏输出为 1200×630 SVG。", "Print a receipt or collection card as a 1200×630 SVG."],
     output: [
       "SVG 只写入标准输出，不上传；不包含对话、路径、模型名或精确 Token。",
-      "SVG is written to stdout only; it omits chats, paths, model names, and exact tokens.",
+      "SVG is written to stdout only; all cards, including growing companion cards, omit chats, paths, model names, and exact tokens.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion>", "选择卡片类型", "Select card type"],
       ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
       ["--id <culture-id>", "指定 culture 卡的培养物", "Select the culture for a culture card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
@@ -125,6 +125,7 @@ const COMMAND_HELP = {
       "anti-ai share --card encounter --with <pollution-code> > encounter.svg",
       "anti-ai share --card prognosis > prognosis.svg",
       "anti-ai share --card culture --id <culture-id> > culture.svg",
+      "anti-ai share --card companion > companion.svg",
     ],
     note: [
       "异变体收藏卡必须使用完整来源。",
@@ -136,8 +137,8 @@ const COMMAND_HELP = {
     usage: "anti-ai creature [options]",
     summary: ["查看由长期 AI 使用方式塑造的异变体档案。", "Inspect the mutation shaped by long-term AI usage."],
     output: [
-      "默认显示紧凑档案；--full 展示完整病历、能力、收藏和事件。",
-      "Shows a compact file by default; --full reveals the complete casebook, abilities, collections, and events.",
+      "默认显示紧凑档案与活动伴生异物；--full 展示完整病历、能力、收藏和事件。",
+      "Shows a compact file and active companion by default; --full reveals the complete casebook, abilities, collections, and events.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "结算并查看指定日期", "Settle and inspect a date"],
@@ -201,12 +202,14 @@ const COMMAND_HELP = {
       "anti-ai lab --json",
       "anti-ai lab incubate 1",
       "anti-ai lab shelf",
+      "anti-ai lab bond <culture-id>",
+      "anti-ai lab companion",
     ],
     note: [
       "配方完全在本地确定；培养物不增加阅历、能力、战力或 Token 收益。",
       "Formulas are fully local; cultures add no experience, abilities, combat power, or Token rewards.",
     ],
-    related: ["lab incubate", "lab shelf", "lab inspect", "codex", "encounter"],
+    related: ["lab incubate", "lab shelf", "lab inspect", "lab bond", "lab companion", "codex", "encounter"],
   },
   doctor: {
     usage: "anti-ai doctor [options]",
@@ -314,6 +317,58 @@ const ACTION_HELP = {
       "A culture is a collection and narrative outcome, with no combat power, bonuses, or rarity boost.",
     ],
     related: ["lab", "lab shelf", "share", "codex"],
+  },
+  "lab bond": {
+    usage: "anti-ai lab bond <culture-id> [options]",
+    summary: [
+      "将一份已封存培养物设为当前伴生异物，建立伴生关系。",
+      "Establish a symbiotic bond with one sealed culture.",
+    ],
+    output: [
+      "保存当前伴生培养物和首次绑定日期；切换时保留旧伴生体已有成长。",
+      "Stores the active culture and first bond date; switching preserves prior companion growth.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "指定建立伴生关系的日期", "Select the bond date"],
+      ["--json", "输出机器可读伴生结果", "Print the machine-readable bond result"],
+    ],
+    examples: [
+      "anti-ai lab shelf",
+      "anti-ai lab bond <culture-id>",
+      "anti-ai lab bond <culture-id> --json",
+    ],
+    note: [
+      "同一天最多形成一个印记；切换、重复绑定或重复运行命令都不能复制成长。",
+      "At most one imprint exists per day; switching, rebonding, or rerunning commands cannot duplicate growth.",
+    ],
+    related: ["lab shelf", "lab companion", "creature", "codex"],
+  },
+  "lab companion": {
+    usage: "anti-ai lab companion [options]",
+    summary: [
+      "查看当前伴生异物的成长档案。",
+      "Inspect the active symbiotic companion growth file.",
+    ],
+    output: [
+      "显示寄生幼体、共生异形和共犯器官阶段，以及路线、行为印记、异常和动态 ASCII。",
+      "Shows parasitic hatchling, symbiotic aberration, and accomplice organ stages with route, imprints, anomalies, and dynamic ASCII.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定日期的伴生状态", "Inspect companion state on a date"],
+      ["--full", "显示完整伴生档案与隐私护栏", "Show the full companion file and privacy guardrail"],
+      ["--json", "输出稳定机器可读伴生状态", "Print stable machine-readable companion state"],
+    ],
+    examples: [
+      "anti-ai lab companion",
+      "anti-ai lab companion --full",
+      "anti-ai lab companion --json",
+      "anti-ai share --card companion > companion.svg",
+    ],
+    note: [
+      "每个观察日只增加一个印记；高消耗、低消耗和 AI 清醒日等速成长，只塑造不同路线。",
+      "One imprint per observed day; heavy, restrained, and AI-free days grow equally and only shape different routes.",
+    ],
+    related: ["lab bond", "creature", "codex", "share"],
   },
   "creature history": {
     usage: "anti-ai creature history [options]",

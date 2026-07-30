@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, fossil, encounter, prognosis, or culture share card, wants to exchange a pollution code or run a local mutation encounter, or asks about their token-fed mutation creature, pollution laboratory, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, fossil, encounter, prognosis, culture, or companion share card, wants to exchange a pollution code or run a local mutation encounter, or asks about their token-fed mutation creature, pollution laboratory, symbiotic companion, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 20+ and the anti-ai CLI. Reads only local usage metadata from supported Agent JSONL or SQLite stores.
 ---
 
@@ -77,9 +77,10 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
+anti-ai share --card companion > anti-ai-companion.svg
 ```
 
-The default card is a resource receipt. `--card pathology` shows a clinical snapshot, `--card specimen` shows the current collected form, `--card wanted` turns the current mutation into a satirical poster, `--card fossil` certifies the latest permanent fossil, `--card encounter` shows a local contact accident, `--card prognosis` shows the current three-choice case without prediction percentages, and `--card culture` renders the latest or selected laboratory culture. A fossil certificate is unavailable until the first 90-day generation is sealed. Prognosis is unavailable until a turning-point case exists, and culture is unavailable until something has been incubated. All creature cards use the complete history and reject `--source` filters because a partial source must not reshape the creature.
+The default card is a resource receipt. `--card pathology` shows a clinical snapshot, `--card specimen` shows the current collected form, `--card wanted` turns the current mutation into a satirical poster, `--card fossil` certifies the latest permanent fossil, `--card encounter` shows a local contact accident, `--card prognosis` shows the current three-choice case without prediction percentages, `--card culture` renders the latest or selected laboratory culture, and `--card companion` renders the currently bonded growing companion. A fossil certificate is unavailable until the first 90-day generation is sealed. Prognosis is unavailable until a turning-point case exists, culture is unavailable until something has been incubated, and companion is unavailable until a culture has been bonded. All creature cards use the complete history and reject `--source` filters because a partial source must not reshape the creature.
 
 All card types intentionally omit prompts, responses, paths, model/source names, request counts, exact token counts, and pollution codes. Tell the user where the file was saved. Do not add sensitive details back into the card.
 
@@ -114,12 +115,21 @@ anti-ai lab shelf --full
 anti-ai lab shelf --json
 anti-ai lab inspect <culture-id>
 anti-ai lab inspect <culture-id> --json
+anti-ai lab bond <culture-id>
+anti-ai lab companion
+anti-ai lab companion --full
+anti-ai lab companion --json
 anti-ai share --card culture --id <culture-id>
+anti-ai share --card companion
 ```
 
 The laboratory references only three kinds of already-derived material: saved foreign specimens, permanent fossils, and selected turning-point case slices. It never reads raw logs for a recipe. The same local state, selected date, and batch produce the same three deterministic formulas; a successful incubation advances the batch so the next set changes.
 
 Show the three formulas and let the user decide. Never choose an incubation slot on their behalf unless they explicitly ask. Incubation appends one culture to the private shelf; referenced materials are not consumed or rewritten. A culture adds collection variety only: it does not change creature growth, experience, abilities, ecology, scores, or create a Token-powered shortcut.
+
+`lab bond <culture-id>` turns one sealed culture into the active symbiotic companion. Switching later preserves every former companion and its growth. `lab bond`, `lab companion`, and the companion card settle an unseen date through the same complete-source local usage-metadata accounting as `creature`, without reading conversation content. The active companion receives exactly one imprint per observed day; heavy, restrained, and AI-free days grow it at the same rate while shaping different directions: Pollution, Clarity, or neutral evidence. Relative imprint balance produces POLLUTION, CLARITY, or PARADOX instead of rewarding raw volume.
+
+Companion growth uses three visible stages: PARASITIC HATCHLING on days 1–6, SYMBIOTIC ABERRATION on days 7–20, and ACCOMPLICE ORGAN from day 21 onward. Days 7 and 21 deterministically seal rare anomalies and reshape its ASCII form; repeated commands cannot reroll them. Use `lab companion` for the compact file and `--full` for its fingerprint and privacy guardrail. Companion growth is narrative and visual only: it grants no numeric creature benefit, score, ability, combat power, or Token incentive.
 
 ### Private pathology codex
 
@@ -131,7 +141,7 @@ anti-ai codex --date YYYY-MM-DD --lang en
 anti-ai codex --json
 ```
 
-The codex derives 50 fixed collection entries from the existing schema v9 state: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens, foreign specimens, permanent fossils, selected case slices, and laboratory cultures. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
+The codex derives 50 fixed collection entries from the existing schema v10 state: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens, foreign specimens, permanent fossils, selected case slices, laboratory cultures, and bonded companions. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
 
 Do not pass `--source` to `codex`. It settles the same complete supported-source creature history as `creature`. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, and explicit choices all create independent collection routes.
 
@@ -175,9 +185,9 @@ Its ASCII form grows on one continuous four-stage Reactor Kaiju anatomy. A stabl
 
 It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Visible ability values cycle through 1–255; point 256 becomes `MALIGNANT I · 1/255` while lifetime totals remain lossless. Mutation talents unlock at 5, 15, 30, 60, 120, and 220. Each malignancy rank adds two percentage points to the associated evolution proc chance, and permanent fossils retain per-generation gains, the sealed ability snapshot, and malignancy changes. Instability raises the rare-event chance from 8% up to 20%. Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%, and repeated awakenings grow up to level 9.
 
-When reporting a creature, summarize its specimen ID, generation, life stage and experience, latest fossil, inherited ability and scar, current evolution choice and benefit/cost totals, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, and rare-mutation chance. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
+When reporting a creature, summarize its specimen ID, generation, life stage and experience, latest fossil, inherited ability and scar, current evolution choice and benefit/cost totals, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, rare-mutation chance, and the active companion's stage and route when one is bonded. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
 
-The creature state is stored at `~/.anti-ai/creature.json` with schema v9. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils with derived ability snapshots, sealed evolution choices, turning-point case IDs with privacy-safe triggers and selections, saved foreign encounters as derived appearance IDs, derived laboratory cultures and their ingredient references, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1-v8 files migrate locally and idempotently without inventing choices or cultures. Do not open or edit the state file directly.
+The creature state is stored at `~/.anti-ai/creature.json` with schema v10. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils with derived ability snapshots, sealed evolution choices, turning-point case IDs with privacy-safe triggers and selections, saved foreign encounters as derived appearance IDs, derived laboratory cultures and their ingredient references, companion bond dates, daily discrete imprint bands, anomaly IDs, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1-v9 files migrate locally and idempotently without inventing choices, cultures, bonds, or companion growth. Do not open or edit the state file directly.
 
 Only destroy the mutation history when the user explicitly asks to reset or restart it:
 

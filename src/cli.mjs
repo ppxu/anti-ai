@@ -40,6 +40,7 @@ import {
   inclusiveDateRange,
   isValidDate,
   padTerminal,
+  renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
@@ -82,6 +83,13 @@ import {
   laboratoryShelf,
   laboratoryView,
 } from "./laboratory.mjs";
+import {
+  bondLaboratoryCompanion,
+  companionLabel,
+  companionPeriodSummary,
+  laboratoryCompanion,
+  syncLaboratoryCompanion,
+} from "./companion.mjs";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json");
@@ -221,7 +229,7 @@ function parseArgs(argv) {
       options.choice = arg;
     } else if (
       command === "lab" &&
-      ["incubate", "shelf", "inspect"].includes(arg) &&
+      ["incubate", "shelf", "inspect", "bond", "companion"].includes(arg) &&
       options.action === undefined
     ) {
       options.action = arg;
@@ -235,6 +243,13 @@ function parseArgs(argv) {
     } else if (
       command === "lab" &&
       options.action === "inspect" &&
+      options.id === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.id = arg;
+    } else if (
+      command === "lab" &&
+      options.action === "bond" &&
       options.id === undefined &&
       !arg.startsWith("-")
     ) {
@@ -258,7 +273,112 @@ function parseArgs(argv) {
 async function runLaboratory(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const date = options.date ?? localDate(new Date(), timezone);
-  const state = await loadCreatureState();
+  let state = await loadCreatureState();
+  if (
+    ["bond", "companion"].includes(options.action) &&
+    !state.days?.[date]
+  ) {
+    const creatureContext = await runCreature(
+      {
+        ...options,
+        action: undefined,
+        command: "creature",
+        json: false,
+      },
+      "context",
+    );
+    if (!creatureContext) return;
+    state = creatureContext.state;
+  }
+  if (options.action === "companion") {
+    syncLaboratoryCompanion(state, date);
+    await saveCreatureState(state);
+    const view = laboratoryCompanion(state, date);
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(view, null, 2)}\n`);
+      return;
+    }
+    if (view.status === "unbound") {
+      process.stdout.write(
+        `${localized(options.lang, "当前没有绑定伴生异物。", "No symbiotic companion is currently bonded.")}\n`,
+      );
+      return;
+    }
+    const companion = view.companion;
+    const routeColor = {
+      unformed: "2",
+      pollution: "1;31",
+      clarity: "1;36",
+      paradox: "1;33",
+    }[companion.routeId];
+    const anomalyLabels = companion.anomalyIds.map((id) =>
+      companionLabel("anomalies", id, options.lang),
+    );
+    process.stdout.write(
+      [
+        color(
+          routeColor,
+          localized(
+            options.lang,
+            `伴生异物 · #${companion.cultureId}`,
+            `SYMBIOTIC COMPANION · #${companion.cultureId}`,
+          ),
+        ),
+        "",
+        ...companion.appearance.lines.map((line) => `  ${line}`),
+        "",
+        `${localized(options.lang, "类型", "TYPE")}  ${color(
+          CODEX_RARITY_COLORS[companion.rarity],
+          `${laboratoryLabel("types", companion.typeId, options.lang)} · ${companion.rarity.toUpperCase()}`,
+        )}`,
+        `${localized(options.lang, "阶段", "STAGE")}  ${companionLabel("stages", companion.stageId, options.lang)}${companion.nextStageAt === null ? " · MAX" : ` · ${companion.imprintCounts.total} / ${companion.nextStageAt}`}`,
+        `${localized(options.lang, "路线", "ROUTE")}  ${color(
+          routeColor,
+          companionLabel("routes", companion.routeId, options.lang),
+        )}`,
+        localized(
+          options.lang,
+          `印记  污染 ${companion.imprintCounts.pollution} · 清醒 ${companion.imprintCounts.clarity} · 常态 ${companion.imprintCounts.neutral}`,
+          `IMPRINTS  pollution ${companion.imprintCounts.pollution} · clarity ${companion.imprintCounts.clarity} · neutral ${companion.imprintCounts.neutral}`,
+        ),
+        `${localized(options.lang, "异常", "ANOMALIES")}  [${anomalyLabels.length}] ${anomalyLabels.join(" · ") || localized(options.lang, "尚未封存", "NONE SEALED")}`,
+        `${localized(options.lang, "绑定日期", "BONDED AT")}  ${companion.bondedAt}`,
+        ...(options.full
+          ? [
+              `${localized(options.lang, "外观指纹", "APPEARANCE FINGERPRINT")}  ${companion.appearance.fingerprint}`,
+              localized(
+                options.lang,
+                "成长护栏  每日一个印记；不提供战力、能力或 Token 收益。",
+                "GROWTH GUARDRAIL  one daily imprint; no combat, abilities, or Token rewards.",
+              ),
+            ]
+          : [
+              `${localized(options.lang, "完整档案", "FULL FILE")}  anti-ai lab companion --full`,
+            ]),
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+  if (options.action === "bond") {
+    const result = bondLaboratoryCompanion(state, date, options.id);
+    if (result.error === "not_found") {
+      process.stderr.write(
+        `${localized(options.lang, `未找到培养物：${options.id ?? ""}`, `Culture not found: ${options.id ?? ""}`)}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    await saveCreatureState(state);
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(result.value, null, 2)}\n`);
+      return;
+    }
+    process.stdout.write(
+      `${localized(options.lang, `伴生关系已建立：#${result.value.companion.cultureId}`, `Symbiotic bond established: #${result.value.companion.cultureId}`)}\n`,
+    );
+    return;
+  }
   if (options.action === "shelf") {
     const shelf = laboratoryShelf(state, date);
     if (options.json) {
@@ -488,6 +608,11 @@ function renderCreatureTodaySummary(creature, codex, lang) {
   const discoveries = codex.recent
     .map((discovery) => codexDiscoveryLabel(discovery, lang))
     .join(" · ");
+  const companionImprint = {
+    pollution: localized(lang, "污染印记", "pollution imprint"),
+    clarity: localized(lang, "清醒印记", "clarity imprint"),
+    neutral: localized(lang, "常态印记", "neutral imprint"),
+  }[creature.companion?.todayImprint];
   return [
     `  ${color("33", localized(lang, "今日异变体", "TODAY'S MUTATION FILE"))}`,
     `  ${localized(lang, "生态切片", "ECOLOGY SLICE")}  ${gains || localized(lang, "惯常波动", "habitual drift")} · ${localized(lang, `仍为「${form}」`, `still “${form}”`)}`,
@@ -497,8 +622,22 @@ function renderCreatureTodaySummary(creature, codex, lang) {
           `  ${localized(lang, "图鉴入库", "CODEX INTAKE")}  +${codex.recent.length} · ${discoveries}`,
         ]
       : []),
+    ...(creature.companion
+      ? [
+          `  ${localized(lang, "伴生观察", "COMPANION WATCH")}  ${companionImprint ?? localized(lang, "今日尚无印记", "no imprint today")} · ${companionLabel("stages", creature.companion.stageId, lang)} · ${companionLabel("routes", creature.companion.routeId, lang)}`,
+        ]
+      : []),
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
+    "",
+  ].join("\n");
+}
+
+function renderCompanionPeriod(period, lang) {
+  if (period === null) return "";
+  return [
+    `  ${localized(lang, "伴生病程", "COMPANION COURSE")}  ${localized(lang, `${period.imprintCounts.total} 个印记`, `${period.imprintCounts.total} IMPRINTS`)} · ${companionLabel("stages", period.stageFrom, lang)} → ${companionLabel("stages", period.stageTo, lang)} · ${companionLabel("routes", period.routeTo, lang)}`,
+    `  ${localized(lang, "印记构成", "IMPRINT MIX")}  ${localized(lang, `污染 ${period.imprintCounts.pollution} · 清醒 ${period.imprintCounts.clarity} · 常态 ${period.imprintCounts.neutral}`, `pollution ${period.imprintCounts.pollution} · clarity ${period.imprintCounts.clarity} · neutral ${period.imprintCounts.neutral}`)}${period.anomaliesSealed > 0 ? localized(lang, ` · 新异常 ${period.anomaliesSealed}`, ` · NEW ANOMALIES ${period.anomaliesSealed}`) : ""}`,
     "",
   ].join("\n");
 }
@@ -523,7 +662,7 @@ function renderCreatureCasebook(casebook, lang) {
     `  ${localized(lang, "成长记录", "GROWTH RECORD")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "新增徽章", "NEW BADGES")}  ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions}`)}`,
     `  ${localized(lang, "主治意见", "ATTENDING NOTE")}  ${creatureClinicalNote(casebook, lang, "week")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -554,7 +693,7 @@ function renderCreatureAutopsy(casebook, lang) {
     `  ${localized(lang, "成长回顾", "GROWTH REVIEW")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "成就回顾", "ACHIEVEMENT REVIEW")}  [${casebook.achievementIds.length}] ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions}`)}`,
     `  ${localized(lang, "复诊意见", "FOLLOW-UP NOTE")}  ${creatureClinicalNote(casebook, lang, "month")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -601,6 +740,13 @@ function codexDiscoveryLabel(discovery, lang) {
       lang,
       `污染培养物 #${discovery.id}`,
       `POLLUTION CULTURE #${discovery.id}`,
+    );
+  }
+  if (discovery.type === "companion") {
+    return localized(
+      lang,
+      `伴生异物 #${discovery.id}`,
+      `SYMBIOTIC COMPANION #${discovery.id}`,
     );
   }
   return localized(
@@ -651,6 +797,18 @@ function renderCodex(codex, lang) {
   const cultureLines = codex.sections.cultures.slice(-5).map(
     (entry) =>
       `  ${color(CODEX_RARITY_COLORS[entry.rarity], `#${entry.id} · ${laboratoryLabel("types", entry.typeId, lang)} · ${entry.rarity.toUpperCase()}`)} · ${entry.discoveredAt}`,
+  );
+  const companionLines = codex.sections.companions.slice(-5).map(
+    (entry) =>
+      `  ${color(
+        {
+          pollution: "1;31",
+          clarity: "1;36",
+          paradox: "1;33",
+          unformed: "2",
+        }[entry.routeId],
+        `#${entry.id} · ${companionLabel("stages", entry.stageId, lang)} · ${companionLabel("routes", entry.routeId, lang)} · ${localized(lang, "异常", "ANOMALIES")} ${entry.anomalyIds.length}`,
+      )} · ${entry.discoveredAt}`,
   );
   const recentLines = codex.recent.map(
     (discovery) =>
@@ -718,6 +876,13 @@ function renderCodex(codex, lang) {
       ? cultureLines
       : [
           `  ${localized(lang, "尚无 · 培养皿目前只含有职业焦虑。", "NONE · the dishes currently contain professional anxiety only.")}`,
+        ]),
+    "",
+    `${localized(lang, "伴生异物", "SYMBIOTIC COMPANIONS")}  [${codex.summary.companions.discovered}]`,
+    ...(companionLines.length > 0
+      ? companionLines
+      : [
+          `  ${localized(lang, "尚无 · 所有培养物仍拒绝建立劳动关系。", "NONE · every culture still refuses an employment relationship.")}`,
         ]),
     "",
     `${localized(lang, "永久化石", "PERMANENT FOSSILS")}  [${codex.summary.fossils.discovered}]`,
@@ -800,11 +965,14 @@ async function runWeek(options) {
   const casebook = creatureContext
     ? creatureCasebook(creatureContext.state, dates[0], endDate)
     : null;
+  const companionPeriod = creatureContext
+    ? companionPeriodSummary(creatureContext.state, dates[0], endDate)
+    : null;
   process.stdout.write(
     renderWeek(
       reports,
       options.lang,
-      casebook ? renderCreatureCasebook(casebook, options.lang) : "",
+      `${casebook ? renderCreatureCasebook(casebook, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}`,
     ),
   );
 }
@@ -832,11 +1000,14 @@ async function runMonth(options) {
   const autopsy = creatureContext
     ? creatureCasebook(creatureContext.state, dates[0], endDate)
     : null;
+  const companionPeriod = creatureContext
+    ? companionPeriodSummary(creatureContext.state, dates[0], endDate)
+    : null;
   process.stdout.write(
     renderMonth(
       reports,
       options.lang,
-      autopsy ? renderCreatureAutopsy(autopsy, options.lang) : "",
+      `${autopsy ? renderCreatureAutopsy(autopsy, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}`,
     ),
   );
 }
@@ -864,6 +1035,68 @@ async function runCodex(options) {
 }
 
 async function runShare(options) {
+  if (options.card === "companion") {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const date = options.date ?? localDate(new Date(), timezone);
+    let state;
+    try {
+      state = await loadCreatureState();
+    } catch {
+      process.stderr.write(
+        `${localized(options.lang, "伴生异物分享卡无法读取异变体档案。", "The companion card cannot read the mutation file.")}\n`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    if (!state.days?.[date]) {
+      const creatureContext = await runCreature(
+        {
+          ...options,
+          action: undefined,
+          command: "creature",
+          json: false,
+        },
+        "context",
+      );
+      if (!creatureContext) return;
+      state = creatureContext.state;
+    }
+    const sync = syncLaboratoryCompanion(state, date);
+    if (sync.changed) await saveCreatureState(state);
+    const view = laboratoryCompanion(state, date);
+    if (!view.companion) {
+      process.stderr.write(
+        `${localized(options.lang, "当前没有可分享的伴生异物。", "No symbiotic companion is available to share.")}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    const companion = view.companion;
+    process.stdout.write(
+      renderCompanionShareSvg(
+        {
+          date,
+          cultureId: companion.cultureId,
+          art: companion.appearance.lines,
+          type: laboratoryLabel("types", companion.typeId, options.lang),
+          rarity: companion.rarity.toUpperCase(),
+          stage: companionLabel("stages", companion.stageId, options.lang),
+          route: companionLabel("routes", companion.routeId, options.lang),
+          imprints: localized(
+            options.lang,
+            `污染 ${companion.imprintCounts.pollution} · 清醒 ${companion.imprintCounts.clarity} · 常态 ${companion.imprintCounts.neutral}`,
+            `pollution ${companion.imprintCounts.pollution} · clarity ${companion.imprintCounts.clarity} · neutral ${companion.imprintCounts.neutral}`,
+          ),
+          anomalies:
+            companion.anomalyIds
+              .map((id) => companionLabel("anomalies", id, options.lang))
+              .join(" · ") || localized(options.lang, "尚无", "NONE"),
+        },
+        options.lang,
+      ),
+    );
+    return;
+  }
   if (options.card === "culture") {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const date = options.date ?? localDate(new Date(), timezone);
@@ -1256,6 +1489,7 @@ async function runCreature(options, mode = "render") {
     creature = deriveCreature(state, date);
   }
   syncCreatureInterventions(state, date, creature);
+  syncLaboratoryCompanion(state, date);
   let evolutionAction = null;
   if (options.action === "evolve") {
     if (options.choice === undefined) {
@@ -1544,6 +1778,7 @@ async function runCreature(options, mode = "render") {
           entry.selectedAt <= date,
       ).length,
     },
+    companion: laboratoryCompanion(state, date).companion,
   };
 
   if (options.action === "export") {
@@ -1746,11 +1981,36 @@ async function runCreature(options, mode = "render") {
         : [
             `${localized(lang, "病例后遗症", "CASE AFTEREFFECT")}  ${casebookLabel("marks", result.casebook.current.selected.markId, lang)}`,
           ];
+  const companionRouteColor = {
+    unformed: "2",
+    pollution: "1;31",
+    clarity: "1;36",
+    paradox: "1;33",
+  };
+  const companionPanel =
+    result.companion === null
+      ? []
+      : [
+          color(
+            companionRouteColor[result.companion.routeId],
+            localized(
+              lang,
+              `伴生异物 · #${result.companion.cultureId}`,
+              `SYMBIOTIC COMPANION · #${result.companion.cultureId}`,
+            ),
+          ),
+          ...result.companion.appearance.lines.map((line) => `  ${line}`),
+          `${localized(lang, "阶段", "STAGE")}  ${companionLabel("stages", result.companion.stageId, lang)}`,
+          `${localized(lang, "路线", "ROUTE")}  ${companionLabel("routes", result.companion.routeId, lang)}`,
+          `${localized(lang, "印记", "IMPRINTS")}  ${result.companion.imprintCounts.total}${result.companion.nextStageAt === null ? " · MAX" : ` / ${result.companion.nextStageAt}`}`,
+          `${localized(lang, "异常", "ANOMALIES")}  [${result.companion.anomalyIds.length}]`,
+        ];
 
   const fullLines = [
       `TOKEN MUTATION FILE · ${date}`,
       "",
       creatureArt(result),
+      ...(companionPanel.length > 0 ? ["", ...companionPanel] : []),
       "",
       `${localized(lang, "标本编号", "SPECIMEN ID")}  ${result.appearance.specimenId}`,
       `☢ ${localized(lang, "今日污染剂量", "TODAY'S POLLUTION DOSE")}  +${today.pollutionDose}`,
@@ -1840,6 +2100,7 @@ async function runCreature(options, mode = "render") {
     `${localized(lang, "进化分支", "EVOLUTION BRANCH")}  ${creatureLabel("branches", result.branch, lang)}`,
     `${localized(lang, "生态人格", "ECOLOGY")}  ${creatureLabel("ecologies", result.ecology.type, lang)} · ${localized(lang, `污染 ${result.ecology.pollution} / 清醒 ${result.ecology.clarity}`, `pollution ${result.ecology.pollution} / clarity ${result.ecology.clarity}`)}`,
     `${localized(lang, "形态", "FORM")}  ${creatureLabel("ecologyForms", result.ecologyForm, lang)}`,
+    ...(companionPanel.length > 0 ? ["", ...companionPanel] : []),
   ];
   const stateLines = [
     `${localized(lang, "称号", "EPITHET")}  ${creatureTitle(result, lang)}`,
@@ -2335,7 +2596,7 @@ function runExplain(lang = "zh", topic = undefined) {
       "  different local seeds produce different specimens.",
       "  Twenty-four achievements are split evenly across OFFENSE, SOBRIETY, and PARADOX badges;",
       "  repeatable badges grow through three behavior-based tiers without exact Token totals.",
-      "  anti-ai codex derives 50 fixed entries plus private, foreign, fossil, selected case, and culture specimens from schema v9.",
+      "  anti-ai codex derives 50 fixed entries plus private, foreign, fossil, selected case, culture, and companion specimens from schema v10.",
       "  Locked human entries remain ???; JSON exposes stable IDs and discovery dates.",
       "  Seven abilities grow: TOKEN APPETITE, PARASITIC MEMORY, CACHE CARAPACE,",
       "  REQUEST MAWS, CORE GLOW, INSTABILITY, and WITHDRAWAL.",
@@ -2365,10 +2626,11 @@ function runExplain(lang = "zh", topic = undefined) {
       "  anti-ai creature history compresses stages, mutations, badges, and case choices;",
       "  --full expands privacy-safe daily bands. prognosis previews three explainable",
       "  directions with LEADING/POSSIBLE/LATENT labels, never precise probabilities.",
-      "  State: ~/.anti-ai/creature.json (schema v9; schema v1-v8 migrate locally)",
+      "  State: ~/.anti-ai/creature.json (schema v10; schema v1-v9 migrate locally)",
       "  It stores only usage bands, derived ecology points, genes/part IDs, achievements,",
       "  fossils, evolution choices, turning-point cases, derived cultures and ingredient",
-      "  references, dose, traits, ability/chromatic gains, events, and a",
+      "  references, companion bonds/discrete imprints/anomaly IDs, dose, traits,",
+      "  ability/chromatic gains, events, and a",
       "  local seed—not chats, paths, model names, exact tokens, or per-request timestamps.",
       "  anti-ai creature reset explicitly destroys this file.",
       "",
@@ -2378,6 +2640,12 @@ function runExplain(lang = "zh", topic = undefined) {
       "  Incubation does not consume materials and does not change growth, abilities, or ecology.",
       "  Cultures add private collection variety without creating a Token-powered shortcut.",
       "  Use anti-ai lab incubate <1|2|3> only after the user chooses a formula.",
+      "  A sealed culture may be bonded as a symbiotic companion. It receives exactly",
+      "  one imprint per observed day: heavy, restrained, and AI-free days grow at",
+      "  the same rate while shaping POLLUTION, CLARITY, or PARADOX.",
+      "  PARASITIC HATCHLING grows into SYMBIOTIC ABERRATION at day 7 and",
+      "  ACCOMPLICE ORGAN at day 21; both milestones seal deterministic anomalies.",
+      "  Companion growth is narrative and visual only. It changes no creature numbers.",
       "",
       color("1", "Living casebook"),
       "  Complete-source human week reports settle creature history and append the",
@@ -2502,7 +2770,7 @@ function runExplain(lang = "zh", topic = undefined) {
     "  ASCII 外观由稳定本地基因、生命阶段、使用病型、生态人格、成就部件和异色突变共同拼装。",
     "  同一档案稳定生成同一标本，不同本地 seed 尽量生成不同个体。",
     "  首批 24 项成就平均分为罪证章、戒断章、悖论章三类；可重复成就按行为次数成长为三级，",
-    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v9 派生 50 项固定收藏、动态/外来标本、化石、已封存病例切片和培养物。",
+    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v10 派生 50 项固定收藏、动态/外来标本、化石、已封存病例切片、培养物和伴生异物。",
     "  人类输出的锁定项保持 ???，JSON 提供稳定 ID 和发现日期。",
     "  7 个能力值：吞噬欲、赘生脑回、化石甲、请求口器、核素亮度、失控指数、戒断反应。",
     "  普通能力按 255 点循环：第 256 点显示为“恶性 I · 1/255”，累计点数不会截断。",
@@ -2522,8 +2790,8 @@ function runExplain(lang = "zh", topic = undefined) {
     "  污染、清醒、悖论三条路线各有收益与代价；未处理病例不会堆积成待办列表。",
     "  anti-ai creature history 压缩阶段、突变、徽章和病例选择；--full 展开隐私安全的逐日用量带。",
     "  prognosis 使用“主导/可能/潜伏”预演三条可解释方向，不伪造精确概率。",
-    "  状态文件：~/.anti-ai/creature.json（schema v9；schema v1-v8 在本地幂等迁移）",
-    "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、转折病例、培养物及素材引用、污染剂量、性状、能力与异色加点、事件和本地 seed；",
+    "  状态文件：~/.anti-ai/creature.json（schema v10；schema v1-v9 在本地幂等迁移）",
+    "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、转折病例、培养物及素材引用、伴生绑定/离散印记/异常 ID、污染剂量、性状、能力与异色加点、事件和本地 seed；",
     "  不保存精确 Token、模型名、路径、对话或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",
     "",
@@ -2532,6 +2800,10 @@ function runExplain(lang = "zh", topic = undefined) {
     "  每批给出三份确定性配方。培养不会消耗素材，也不会改变成长、能力或生态。",
     "  培养物只增加私有收藏差异，不提供靠 Token 刷出的升级捷径。",
     "  用户选定配方后，再运行 anti-ai lab incubate <1|2|3>。",
+    "  已封存培养物可以绑定为伴生异物。每天只增加一枚印记；高消耗、克制使用和 AI 清醒日",
+    "  成长速度相同，但会分别塑造污染、清醒或悖论路线。",
+    "  寄生幼体会在第 7 天成为共生异形、第 21 天成为共犯器官；两个里程碑都会封存确定性异常。",
+    "  伴生成长只改变叙事和外观，不改变主异变体的任何数值。",
     "",
     color("1", "活体病历"),
     "  完整来源的 week 会结算成长史，追加主症状、生态变化、阶段成长、新徽章和主治意见。",
@@ -2668,6 +2940,7 @@ if (helpRequested) {
       "encounter",
       "prognosis",
       "culture",
+      "companion",
     ].includes(options.card))
 ) {
   process.stderr.write(
@@ -2685,7 +2958,7 @@ if (helpRequested) {
   process.exitCode = 2;
 } else if (
   options.command === "share" &&
-  ["pathology", "specimen", "wanted", "fossil", "encounter", "prognosis", "culture"].includes(
+  ["pathology", "specimen", "wanted", "fossil", "encounter", "prognosis", "culture", "companion"].includes(
     options.card,
   ) &&
   options.source !== "all"

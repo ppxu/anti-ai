@@ -2,7 +2,7 @@
 
 [English](./laboratory.md)
 
-污染实验室会把已有派生收藏变成一套纯本地的选择与陈列玩法。它不读取 Agent 原始日志，不消耗原料，也不奖励更多 Token 消耗。
+污染实验室会把已有派生收藏变成一套纯本地的选择与陈列玩法。配方生成和培养不会扫描 Agent 记录、消耗原料或奖励更多 Token 消耗。伴生观察可能通过和 `creature` 相同的本地用量元数据统计补齐尚未观察的日期，但不会读取对话正文。
 
 ## 命令
 
@@ -20,11 +20,17 @@ anti-ai lab shelf --json
 anti-ai lab inspect <培养物编号>
 anti-ai lab inspect <培养物编号> --json
 
+anti-ai lab bond <培养物编号>
+anti-ai lab companion
+anti-ai lab companion --full
+anti-ai lab companion --json
+
 anti-ai share --card culture
 anti-ai share --card culture --id <培养物编号>
+anti-ai share --card companion
 ```
 
-可运行 `anti-ai help lab`、`anti-ai help lab incubate`、`anti-ai help lab shelf` 或 `anti-ai help lab inspect` 查看分级帮助。
+可运行 `anti-ai help lab`、`anti-ai help lab incubate`、`anti-ai help lab shelf`、`anti-ai help lab inspect`、`anti-ai help lab bond` 或 `anti-ai help lab companion` 查看分级帮助。
 
 ## 派生原料
 
@@ -79,9 +85,17 @@ anti-ai share --card culture --id <培养物编号>
 
 `share --card culture` 会把最近一份培养物输出为 1200×630 SVG；`--id` 可指定其他培养物。SVG 只写入标准输出，不会上传。
 
+## 伴生异物
+
+`lab bond <培养物编号>` 会把一份已封存培养物变成活动伴生异物。以后切换到其他培养物时，旧伴生异物及其成长都会保留；同一个观察日期永远不能重复获得两枚印记。
+
+伴生异物每天只推进一次。高消耗、克制使用和 AI 清醒日的成长速度相同，但会分别塑造污染、清醒或常态印记。第 1 天成为寄生幼体，第 7 天成为共生异形，第 21 天成为共犯器官；后两个里程碑会封存确定性的路线异常，并重塑 ASCII 身体。
+
+使用 `lab companion` 查看当前档案，`--full` 查看稳定外观指纹和隐私说明，`share --card companion` 生成隐私安全 SVG。完整的路线、切换、外观和迁移规则见[伴生异物](./companions.zh-CN.md)。
+
 ## 成长护栏
 
-培养物不会改变：
+培养物或伴生异物不会改变：
 
 - 阅历日和生命阶段；
 - 污染性、清醒性、病灶或主异变体外观；
@@ -89,18 +103,20 @@ anti-ai share --card culture --id <培养物编号>
 - 成就进度、进化概率或病例间隔；
 - 战力、分数、Token 收益或资源估算。
 
-实验室是一套收藏与叙事系统。多烧 Token 不是捷径；外来交换、中性阅历日、显式病例选择和已有本地历史提供彼此独立的原料路线。
+实验室是一套收藏与叙事系统。多烧 Token 不是捷径；外来交换、中性阅历日、显式病例选择和已有本地历史提供彼此独立的原料路线。已绑定培养物可以发展自己的伴生叙事与外观，但不会改变主异变体的任何数值。
 
 ## 档案与隐私
 
-异变体档案使用 schema v9。`laboratory` 只保存：
+异变体档案使用 schema v10。Laboratory v2 只保存：
 
 - 实验室格式版本和下一批次；
 - 稳定培养物与原料 ID；
 - 封存日期和批次；
 - 离散培养类型、生态、病灶、并发症、副作用和稀有度 ID；
 - 派生 ASCII 行和外观指纹。
+- 活动培养物编号和隐私安全的绑定历史；
+- 每个观察日期的一项离散伴生印记和已封存异常 ID。
 
-schema v1–v8 会在本地幂等迁移，只新增空实验室，不会虚构历史实验。
+schema v1–v9 会在本地幂等迁移，只补充缺失的空实验室或伴生索引，不会虚构历史实验、绑定、印记或异常。
 
-状态、JSON、图鉴和培养物卡片都不会包含精确 Token、请求数、模型与 Agent 名、Prompt、回复、工具调用、本地路径、个人基线或逐请求时间。所有内容仍保存在 `~/.anti-ai/creature.json`。
+状态、JSON、图鉴、培养物卡片和伴生卡片都不会包含精确 Token、请求数、模型与 Agent 名、Prompt、回复、工具调用、本地路径、个人基线或逐请求时间。所有内容仍保存在 `~/.anti-ai/creature.json`。

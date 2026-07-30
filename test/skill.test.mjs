@@ -26,10 +26,13 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /anti-ai share --card encounter --with/);
   assert.match(skill, /anti-ai share --card prognosis/);
   assert.match(skill, /anti-ai share --card culture/);
+  assert.match(skill, /anti-ai share --card companion/);
   assert.match(skill, /anti-ai lab --json/);
   assert.match(skill, /anti-ai lab incubate <1\|2\|3>/);
   assert.match(skill, /anti-ai lab shelf/);
   assert.match(skill, /anti-ai lab inspect <culture-id>/);
+  assert.match(skill, /anti-ai lab bond <culture-id>/);
+  assert.match(skill, /anti-ai lab companion/);
   assert.match(skill, /anti-ai codex --json/);
   assert.match(skill, /anti-ai creature/);
   assert.match(skill, /anti-ai creature export/);
@@ -48,7 +51,10 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
-  assert.match(skill, /schema v9/);
+  assert.match(skill, /schema v10/);
+  assert.match(skill, /PARASITIC HATCHLING.*SYMBIOTIC ABERRATION.*ACCOMPLICE ORGAN/is);
+  assert.match(skill, /one imprint per observed day/i);
+  assert.match(skill, /heavy.*restrained.*AI-free.*same rate/is);
   assert.match(skill, /materials.*not consumed/is);
   assert.match(skill, /does not.*growth|does not.*Token-powered/is);
   assert.match(skill, /never choose.*incubat/is);

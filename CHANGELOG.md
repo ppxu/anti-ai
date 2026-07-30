@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-07-30
+
+### Added
+
+- Added Symbiotic Companions: bind any sealed laboratory culture, preserve former companions when switching, and grow the active one through PARASITIC HATCHLING, SYMBIOTIC ABERRATION, and ACCOMPLICE ORGAN stages.
+- Added one deterministic companion imprint per observed day, with equal growth speed for heavy, restrained, and AI-free behavior while Pollution, Clarity, and Paradox shape different routes.
+- Added deterministic route-specific anomalies at days 7 and 21, route-aware growing ASCII bodies, stable appearance fingerprints, focused bilingual Help, JSON output, and standalone Companion documentation.
+- Added companion panels to `creature`, `today`, `week`, and `month`; private companion entries to `codex`; and a privacy-safe `share --card companion` SVG.
+
+### Changed
+
+- Creature state now uses schema v10 and Laboratory v2, with local idempotent v1-v9 migration that adds an empty companion index without auto-bonding old cultures or inventing growth.
+- Laboratory cultures can now develop an independent narrative and visual companion route while remaining non-consumable collection references.
+- Direct companion inspection, bonding, and sharing now settle an unseen date through the normal privacy-preserving local usage accounting, so companion commands work as standalone daily entry points without duplicating settled growth.
+
+### Security
+
+- Companion state stores only a culture ID, privacy-safe bond dates, discrete daily imprint bands, deterministic anomaly IDs, and derived appearance data—never exact Tokens, requests, models, paths, prompts, responses, personal baselines, or request timestamps.
+- Companion growth changes no main-creature experience, abilities, Ecology, appearance, evolution chance, achievements, resource estimates, score, combat power, or Token reward; one calendar day remains the only growth unit.
+
 ## [1.8.0] - 2026-07-30
 
 ### Added

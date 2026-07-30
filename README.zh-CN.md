@@ -112,6 +112,8 @@ anti-ai lab --json
 anti-ai lab incubate 1
 anti-ai lab shelf
 anti-ai lab inspect <培养物编号>
+anti-ai lab bond <培养物编号>
+anti-ai lab companion
 
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
@@ -122,6 +124,7 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
+anti-ai share --card companion > anti-ai-companion.svg
 
 anti-ai creature
 anti-ai creature --full
@@ -190,7 +193,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片和污染培养物则不设人为上限。
+固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物和已绑定伴生形态则不设人为上限。
 
 `codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
 
@@ -222,11 +225,16 @@ anti-ai lab incubate 1
 anti-ai lab shelf
 anti-ai lab shelf --full
 anti-ai lab inspect <培养物编号>
+anti-ai lab bond <培养物编号>
+anti-ai lab companion
+anti-ai lab companion --full
 ```
 
 每个批次会给出三组确定性配方。重复查看不能重抽：相同本地 seed、派生原料库存和批次始终得到相同选择。显式选择一组后，会封存一份拥有独立培养皿 ASCII、稀有度、生态、病灶、并发症和副作用的培养物；另外两组配方随本批次结束。
 
-原料只是引用，不会消耗。培养物不会改变阅历、能力、恶性阶、生态、进化概率、战力或 Token 收益。实验室只读取派生本地状态，不扫描 Agent 原始日志。配方、稀有度、状态和隐私规则见[污染实验室](./docs/laboratory.zh-CN.md)。
+原料只是引用，不会消耗。培养物不会改变阅历、能力、恶性阶、生态、进化概率、战力或 Token 收益。配方生成和培养只读取派生本地状态，不扫描 Agent 记录。
+
+已封存培养物可以通过 `lab bond` 成为伴生异物。它每天只获得一枚印记：高消耗、克制使用和 AI 清醒日成长速度相同，但会分别塑造污染、清醒或悖论路线。它会从寄生幼体成长为共生异形与共犯器官，并在第 7 天和第 21 天获得确定性异常和新的 ASCII 身体。直接运行伴生命令时，会通过和 `creature` 相同的隐私安全本地用量统计补齐尚未观察的日期，但不会读取对话正文。配方规则见[污染实验室](./docs/laboratory.zh-CN.md)，完整成长模型见[伴生异物](./docs/companions.zh-CN.md)。
 
 ### `share`
 
@@ -243,9 +251,10 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
+anti-ai share --card companion > anti-ai-companion.svg
 ```
 
-成长史与实验室现在支持 7 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡，`prognosis` 是当前病例的三路线预演，`culture` 是已封存培养事故。化石证书会在第 90 个阅历日后开放；预后卡会在转折病例待处理时开放；培养物卡默认选择最近一份，也可使用 `--id` 指定。
+成长史与实验室现在支持 8 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡，`prognosis` 是当前病例的三路线预演，`culture` 是已封存培养事故，`companion` 是当前绑定伴生异物的成长档案。化石证书会在第 90 个阅历日后开放；预后卡会在转折病例待处理时开放；培养物卡默认选择最近一份，也可使用 `--id` 指定；伴生卡会在执行 `lab bond` 后开放。
 
 工具不会上传卡片；所有卡片均不包含精确 Token、请求数、来源/模型名、路径或对话正文，保存位置完全由你的命令行重定向决定。异变体卡片必须使用完整数据，因此会拒绝 `--source` 过滤。
 
@@ -277,7 +286,7 @@ anti-ai creature evolve 2
 
 核能巨兽生成器包含 16 个核心形态家族，以及 **21,233,664 种去重后的最终 ASCII 形象**。本地稳定基因决定器官，使用病型、生态人格、伤疤、成就和异色稀有度则继续改写同一条骨架。运行 `anti-ai codex` 可以对照理论容量与个人收藏。
 
-生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Pollution Laboratory](./docs/laboratory.md)。
+生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md)。
 
 ### `doctor`
 
@@ -384,8 +393,11 @@ npm test
 - `src/content.mjs`：确定性中英文尾句与分享文案池
 - `src/reporting.mjs`：账单、日历、卡片与每日罪名
 - `src/creature.mjs`：异变体成长规则和本地档案
+- `src/laboratory.mjs`：派生配方、封存培养物和培养架
+- `src/companion.mjs`：伴生绑定、印记、路线和 ASCII 成长
 - `src/shared.mjs`：共享的语言和空统计结构
 - `docs/creature.zh-CN.md`：完整的异变体系统与理论物种容量指南
+- `docs/companions.zh-CN.md`：完整的伴生异物成长指南
 
 ## 参与贡献
 

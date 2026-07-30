@@ -41,6 +41,8 @@ An encounter does not collect its hybrid by default. `--save` adds one derived r
 
 Saving is idempotent: the same incident cannot create duplicate inventory. A saved entry records the incident/date/type/weather IDs, parent specimen/form IDs, and the hybrid appearance snapshot. It does not change creature experience, abilities, Ecology, achievements, or evolution.
 
+Saved foreign specimens can later be referenced by `anti-ai lab` formulas. Laboratory incubation never consumes or rewrites the encounter record. See [Pollution Laboratory](./laboratory.md).
+
 ## Pollution-code protocol
 
 Version 1 uses:

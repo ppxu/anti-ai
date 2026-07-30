@@ -40,6 +40,7 @@ import {
   inclusiveDateRange,
   isValidDate,
   padTerminal,
+  renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
   renderMonth,
@@ -74,6 +75,13 @@ import {
   selectCreatureIntervention,
   syncCreatureInterventions,
 } from "./casebook.mjs";
+import {
+  incubateLaboratoryCulture,
+  laboratoryCulture,
+  laboratoryLabel,
+  laboratoryShelf,
+  laboratoryView,
+} from "./laboratory.mjs";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json");
@@ -135,6 +143,7 @@ function parseArgs(argv) {
     with: undefined,
     action: undefined,
     choice: undefined,
+    id: undefined,
     topic: undefined,
     unknown: [],
     missing: undefined,
@@ -172,6 +181,12 @@ function parseArgs(argv) {
       } else {
         options.card = rest[++index];
       }
+    } else if (arg === "--id") {
+      if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
+        options.missing ??= arg;
+      } else {
+        options.id = rest[++index];
+      }
     } else if (arg === "--with") {
       if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
         options.missing ??= arg;
@@ -205,6 +220,26 @@ function parseArgs(argv) {
     ) {
       options.choice = arg;
     } else if (
+      command === "lab" &&
+      ["incubate", "shelf", "inspect"].includes(arg) &&
+      options.action === undefined
+    ) {
+      options.action = arg;
+    } else if (
+      command === "lab" &&
+      options.action === "incubate" &&
+      options.choice === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.choice = arg;
+    } else if (
+      command === "lab" &&
+      options.action === "inspect" &&
+      options.id === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.id = arg;
+    } else if (
       command === "explain" &&
       ["resources", "comparisons", "sources", "creature", "privacy"].includes(
         arg,
@@ -218,6 +253,202 @@ function parseArgs(argv) {
   }
 
   return options;
+}
+
+async function runLaboratory(options) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const date = options.date ?? localDate(new Date(), timezone);
+  const state = await loadCreatureState();
+  if (options.action === "shelf") {
+    const shelf = laboratoryShelf(state, date);
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(shelf, null, 2)}\n`);
+      return;
+    }
+    const shown = options.full
+      ? shelf.cultures
+      : shelf.cultures.slice(-6);
+    process.stdout.write(
+      [
+        color(
+          "1;35",
+          localized(
+            options.lang,
+            `污染培养架 · ${shelf.total}`,
+            `POLLUTION CULTURE SHELF · ${shelf.total}`,
+          ),
+        ),
+        "",
+        ...(shown.length === 0
+          ? [
+              localized(
+                options.lang,
+                "  尚无培养物。实验室仍在认真培养空气。",
+                "  NONE. The laboratory is still culturing air.",
+              ),
+            ]
+          : shown.map(
+              (culture) =>
+                `  ${color(
+                  CODEX_RARITY_COLORS[culture.rarity],
+                  `#${culture.id} · ${laboratoryLabel("types", culture.typeId, options.lang)} · ${culture.rarity.toUpperCase()}`,
+                )} · ${culture.createdAt}`,
+            )),
+        ...(shelf.total > shown.length
+          ? [
+              localized(
+                options.lang,
+                `  另有 ${shelf.total - shown.length} 份封存记录 · anti-ai lab shelf --full`,
+                `  ${shelf.total - shown.length} more sealed records · anti-ai lab shelf --full`,
+              ),
+            ]
+          : []),
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+  if (options.action === "inspect") {
+    const culture = laboratoryCulture(state, date, options.id);
+    if (!culture) {
+      process.stderr.write(
+        `${localized(options.lang, `未找到培养物：${options.id ?? ""}`, `Culture not found: ${options.id ?? ""}`)}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(culture, null, 2)}\n`);
+      return;
+    }
+    const material = culture.ingredients
+      .map(
+        ({ type, id }) =>
+          `${laboratoryLabel("ingredients", type, options.lang)} #${id}`,
+      )
+      .join(" × ");
+    process.stdout.write(
+      [
+        color(
+          "1;35",
+          localized(
+            options.lang,
+            `污染培养标本 · #${culture.id}`,
+            `POLLUTION CULTURE SPECIMEN · #${culture.id}`,
+          ),
+        ),
+        "",
+        ...culture.appearance.lines.map((line) => `  ${line}`),
+        "",
+        `  ${localized(options.lang, "类型", "TYPE")}  ${color(
+          CODEX_RARITY_COLORS[culture.rarity],
+          `${laboratoryLabel("types", culture.typeId, options.lang)} · ${culture.rarity.toUpperCase()}`,
+        )}`,
+        `  ${localized(options.lang, "原料", "MATERIALS")}  ${material}`,
+        `  ${localized(options.lang, "并发症", "COMPLICATION")}  ${laboratoryLabel("complications", culture.complicationId, options.lang)}`,
+        `  ${localized(options.lang, "副作用", "SIDE EFFECT")}  ${laboratoryLabel("sideEffects", culture.sideEffectId, options.lang)}`,
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+  if (options.action === "incubate") {
+    const selection = incubateLaboratoryCulture(
+      state,
+      date,
+      options.choice,
+    );
+    if (selection.error === "unavailable") {
+      process.stderr.write(
+        `${localized(options.lang, "当前没有可培养的派生原料。", "No derived material is available for incubation.")}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    if (selection.error === "invalid") {
+      process.stderr.write(
+        `${localized(options.lang, "培养方案必须是 1、2 或 3。", "Culture choice must be 1, 2, or 3.")}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    await saveCreatureState(state);
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(selection.value, null, 2)}\n`);
+      return;
+    }
+    process.stdout.write(
+      [
+        color(
+          "1;35",
+          localized(options.lang, "培养事故已封存", "INCUBATION ACCIDENT SEALED"),
+        ),
+        "",
+        `  ${color(
+          CODEX_RARITY_COLORS[selection.value.culture.rarity],
+          `#${selection.value.culture.id} · ${laboratoryLabel("types", selection.value.culture.typeId, options.lang)} · ${selection.value.culture.rarity.toUpperCase()}`,
+        )}`,
+        ...selection.value.culture.appearance.lines.map((line) => `  ${line}`),
+        "",
+        `  ${localized(options.lang, "查看标本", "INSPECT")}  anti-ai lab inspect ${selection.value.culture.id}`,
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+  const view = laboratoryView(state, date);
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify(view, null, 2)}\n`);
+    return;
+  }
+  const lines = [
+    color("1;35", localized(options.lang, "污染实验室", "POLLUTION LABORATORY")),
+    "",
+    localized(
+      options.lang,
+      `原料：外来标本 ${view.inventory.foreignSpecimens} · 永久化石 ${view.inventory.fossils} · 病例切片 ${view.inventory.caseSlices}`,
+      `MATERIALS: foreign ${view.inventory.foreignSpecimens} · fossils ${view.inventory.fossils} · case slices ${view.inventory.caseSlices}`,
+    ),
+    localized(
+      options.lang,
+      `培养架：${view.cultures} · 当前批次 #${view.batch}`,
+      `SHELF: ${view.cultures} · CURRENT BATCH #${view.batch}`,
+    ),
+    "",
+    ...(view.status === "locked"
+      ? [
+          localized(
+            options.lang,
+            "尚无可用原料。保存一次遭遇、封存一枚化石或处理一个转折病例后再来。",
+            "No derived material is available. Save an encounter, seal a fossil, or treat a turning case first.",
+          ),
+        ]
+      : view.proposals.flatMap((proposal) => {
+          const material = proposal.ingredients
+            .map(
+              ({ type, id }) =>
+                `${laboratoryLabel("ingredients", type, options.lang)} #${id}`,
+            )
+            .join(" × ");
+          return [
+            `  ${color(
+              CODEX_RARITY_COLORS[proposal.rarity],
+              localized(
+                options.lang,
+                `方案 ${proposal.slot} · #${proposal.id} · ${laboratoryLabel("types", proposal.typeId, options.lang)} · ${proposal.rarity.toUpperCase()}`,
+                `FORMULA ${proposal.slot} · #${proposal.id} · ${laboratoryLabel("types", proposal.typeId, options.lang)} · ${proposal.rarity.toUpperCase()}`,
+              ),
+            )}`,
+            `    ${localized(options.lang, "原料", "MATERIALS")}  ${material}`,
+            `    ${localized(options.lang, "诊断", "DIAGNOSIS")}  ${creatureLabel("ecologies", proposal.ecologyId, options.lang)} / ${creatureLabel("branches", proposal.pathologyId, options.lang)} · ${laboratoryLabel("complications", proposal.complicationId, options.lang)}`,
+            `    ${localized(options.lang, "副作用", "SIDE EFFECT")}  ${laboratoryLabel("sideEffects", proposal.sideEffectId, options.lang)}`,
+            `    ${localized(options.lang, "培养", "INCUBATE")}  anti-ai lab incubate ${proposal.slot}`,
+            "",
+          ];
+        })),
+    "",
+  ];
+  process.stdout.write(lines.join("\n"));
 }
 
 function renderCreatureTodaySummary(creature, codex, lang) {
@@ -292,7 +523,7 @@ function renderCreatureCasebook(casebook, lang) {
     `  ${localized(lang, "成长记录", "GROWTH RECORD")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "新增徽章", "NEW BADGES")}  ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures}`)}`,
     `  ${localized(lang, "主治意见", "ATTENDING NOTE")}  ${creatureClinicalNote(casebook, lang, "week")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -323,7 +554,7 @@ function renderCreatureAutopsy(casebook, lang) {
     `  ${localized(lang, "成长回顾", "GROWTH REVIEW")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "成就回顾", "ACHIEVEMENT REVIEW")}  [${casebook.achievementIds.length}] ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures}`)}`,
     `  ${localized(lang, "复诊意见", "FOLLOW-UP NOTE")}  ${creatureClinicalNote(casebook, lang, "month")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -363,6 +594,13 @@ function codexDiscoveryLabel(discovery, lang) {
       lang,
       `病例切片 #${discovery.id}`,
       `CASE SLICE #${discovery.id}`,
+    );
+  }
+  if (discovery.type === "culture") {
+    return localized(
+      lang,
+      `污染培养物 #${discovery.id}`,
+      `POLLUTION CULTURE #${discovery.id}`,
     );
   }
   return localized(
@@ -409,6 +647,10 @@ function renderCodex(codex, lang) {
   const caseSliceLines = codex.sections.caseSlices.slice(-5).map(
     (entry) =>
       `  #${entry.id} · ${casebookLabel("cases", entry.caseId, lang)} · ${casebookLabel("routes", entry.routeId, lang)} · ${casebookLabel("marks", entry.markId, lang)} · ${entry.discoveredAt}`,
+  );
+  const cultureLines = codex.sections.cultures.slice(-5).map(
+    (entry) =>
+      `  ${color(CODEX_RARITY_COLORS[entry.rarity], `#${entry.id} · ${laboratoryLabel("types", entry.typeId, lang)} · ${entry.rarity.toUpperCase()}`)} · ${entry.discoveredAt}`,
   );
   const recentLines = codex.recent.map(
     (discovery) =>
@@ -469,6 +711,13 @@ function renderCodex(codex, lang) {
       ? caseSliceLines
       : [
           `  ${localized(lang, "尚无 · 它还没有接受任何不可靠治疗。", "NONE · no unreliable treatment has been accepted yet.")}`,
+        ]),
+    "",
+    `${localized(lang, "污染培养物", "POLLUTION CULTURES")}  [${codex.summary.cultures.discovered}]`,
+    ...(cultureLines.length > 0
+      ? cultureLines
+      : [
+          `  ${localized(lang, "尚无 · 培养皿目前只含有职业焦虑。", "NONE · the dishes currently contain professional anxiety only.")}`,
         ]),
     "",
     `${localized(lang, "永久化石", "PERMANENT FOSSILS")}  [${codex.summary.fossils.discovered}]`,
@@ -615,6 +864,71 @@ async function runCodex(options) {
 }
 
 async function runShare(options) {
+  if (options.card === "culture") {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const date = options.date ?? localDate(new Date(), timezone);
+    let state;
+    try {
+      state = await loadCreatureState();
+    } catch {
+      process.stderr.write(
+        `${localized(options.lang, "培养物分享卡无法读取异变体档案。", "The culture card cannot read the mutation file.")}\n`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    const shelf = laboratoryShelf(state, date);
+    const culture = options.id
+      ? laboratoryCulture(state, date, options.id)
+      : shelf.cultures.at(-1);
+    if (!culture) {
+      process.stderr.write(
+        `${localized(options.lang, "当前没有可分享的污染培养物。", "No pollution culture is available to share.")}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    process.stdout.write(
+      renderCultureShareSvg(
+        {
+          date: culture.createdAt,
+          batch: culture.batch,
+          cultureId: culture.id,
+          art: culture.appearance.lines,
+          type: laboratoryLabel("types", culture.typeId, options.lang),
+          rarity: culture.rarity.toUpperCase(),
+          materials: culture.ingredients
+            .map(
+              ({ type, id }) =>
+                `${laboratoryLabel("ingredients", type, options.lang)} #${id}`,
+            )
+            .join(" × "),
+          ecology: creatureLabel(
+            "ecologies",
+            culture.ecologyId,
+            options.lang,
+          ),
+          pathology: creatureLabel(
+            "branches",
+            culture.pathologyId,
+            options.lang,
+          ),
+          complication: laboratoryLabel(
+            "complications",
+            culture.complicationId,
+            options.lang,
+          ),
+          sideEffect: laboratoryLabel(
+            "sideEffects",
+            culture.sideEffectId,
+            options.lang,
+          ),
+        },
+        options.lang,
+      ),
+    );
+    return;
+  }
   if (options.card === "prognosis") {
     const context = await runCreature(
       {
@@ -2021,7 +2335,7 @@ function runExplain(lang = "zh", topic = undefined) {
       "  different local seeds produce different specimens.",
       "  Twenty-four achievements are split evenly across OFFENSE, SOBRIETY, and PARADOX badges;",
       "  repeatable badges grow through three behavior-based tiers without exact Token totals.",
-      "  anti-ai codex derives 50 fixed entries plus private, foreign, fossil, and selected case specimens from schema v8.",
+      "  anti-ai codex derives 50 fixed entries plus private, foreign, fossil, selected case, and culture specimens from schema v9.",
       "  Locked human entries remain ???; JSON exposes stable IDs and discovery dates.",
       "  Seven abilities grow: TOKEN APPETITE, PARASITIC MEMORY, CACHE CARAPACE,",
       "  REQUEST MAWS, CORE GLOW, INSTABILITY, and WITHDRAWAL.",
@@ -2051,11 +2365,19 @@ function runExplain(lang = "zh", topic = undefined) {
       "  anti-ai creature history compresses stages, mutations, badges, and case choices;",
       "  --full expands privacy-safe daily bands. prognosis previews three explainable",
       "  directions with LEADING/POSSIBLE/LATENT labels, never precise probabilities.",
-      "  State: ~/.anti-ai/creature.json (schema v8; schema v1-v7 migrate locally)",
+      "  State: ~/.anti-ai/creature.json (schema v9; schema v1-v8 migrate locally)",
       "  It stores only usage bands, derived ecology points, genes/part IDs, achievements,",
-      "  fossils, evolution choices, turning-point cases, dose, traits, ability/chromatic gains, events, and a",
+      "  fossils, evolution choices, turning-point cases, derived cultures and ingredient",
+      "  references, dose, traits, ability/chromatic gains, events, and a",
       "  local seed—not chats, paths, model names, exact tokens, or per-request timestamps.",
       "  anti-ai creature reset explicitly destroys this file.",
+      "",
+      color("1", "Pollution laboratory"),
+      "  The lab references saved foreign specimens, permanent fossils, and selected",
+      "  case slices. It presents three deterministic formulas for the current batch.",
+      "  Incubation does not consume materials and does not change growth, abilities, or ecology.",
+      "  Cultures add private collection variety without creating a Token-powered shortcut.",
+      "  Use anti-ai lab incubate <1|2|3> only after the user chooses a formula.",
       "",
       color("1", "Living casebook"),
       "  Complete-source human week reports settle creature history and append the",
@@ -2093,7 +2415,7 @@ function runExplain(lang = "zh", topic = undefined) {
       color("1", "Share card"),
       "  anti-ai share uses the same estimate formulas and fixed local verdict rules.",
       "  anti-ai share --card pathology creates a complete-source mutation pathology card.",
-      "  specimen, wanted, fossil, encounter, and prognosis add privacy-safe collection cards.",
+      "  specimen, wanted, fossil, encounter, prognosis, and culture add privacy-safe collection cards.",
       "  creature export and encounter exchange only derived appearance IDs; all mixing stays local.",
       "  The share card omits chats, paths, model names, and exact token counts.",
       "  Every card also omits source names and request counts.",
@@ -2180,7 +2502,7 @@ function runExplain(lang = "zh", topic = undefined) {
     "  ASCII 外观由稳定本地基因、生命阶段、使用病型、生态人格、成就部件和异色突变共同拼装。",
     "  同一档案稳定生成同一标本，不同本地 seed 尽量生成不同个体。",
     "  首批 24 项成就平均分为罪证章、戒断章、悖论章三类；可重复成就按行为次数成长为三级，",
-    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v8 派生 50 项固定收藏、动态/外来标本、化石和已封存病例切片。",
+    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v9 派生 50 项固定收藏、动态/外来标本、化石、已封存病例切片和培养物。",
     "  人类输出的锁定项保持 ???，JSON 提供稳定 ID 和发现日期。",
     "  7 个能力值：吞噬欲、赘生脑回、化石甲、请求口器、核素亮度、失控指数、戒断反应。",
     "  普通能力按 255 点循环：第 256 点显示为“恶性 I · 1/255”，累计点数不会截断。",
@@ -2200,10 +2522,16 @@ function runExplain(lang = "zh", topic = undefined) {
     "  污染、清醒、悖论三条路线各有收益与代价；未处理病例不会堆积成待办列表。",
     "  anti-ai creature history 压缩阶段、突变、徽章和病例选择；--full 展开隐私安全的逐日用量带。",
     "  prognosis 使用“主导/可能/潜伏”预演三条可解释方向，不伪造精确概率。",
-    "  状态文件：~/.anti-ai/creature.json（schema v8；schema v1-v7 在本地幂等迁移）",
-    "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、转折病例、污染剂量、性状、能力与异色加点、事件和本地 seed；",
+    "  状态文件：~/.anti-ai/creature.json（schema v9；schema v1-v8 在本地幂等迁移）",
+    "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、转折病例、培养物及素材引用、污染剂量、性状、能力与异色加点、事件和本地 seed；",
     "  不保存精确 Token、模型名、路径、对话或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",
+    "",
+    color("1", "污染实验室"),
+    "  实验室只引用已保存的外来标本、永久化石和已选择的病例切片，",
+    "  每批给出三份确定性配方。培养不会消耗素材，也不会改变成长、能力或生态。",
+    "  培养物只增加私有收藏差异，不提供靠 Token 刷出的升级捷径。",
+    "  用户选定配方后，再运行 anti-ai lab incubate <1|2|3>。",
     "",
     color("1", "活体病历"),
     "  完整来源的 week 会结算成长史，追加主症状、生态变化、阶段成长、新徽章和主治意见。",
@@ -2238,7 +2566,7 @@ function runExplain(lang = "zh", topic = undefined) {
     color("1", "分享卡片"),
     "  anti-ai share 使用相同的资源估算公式和本地固定判词。",
     "  anti-ai share --card pathology 使用完整成长史生成异变体病理报告。",
-    "  specimen、wanted、fossil、encounter、prognosis 提供隐私安全的收藏卡。",
+    "  specimen、wanted、fossil、encounter、prognosis、culture 提供隐私安全的收藏卡。",
     "  creature export 与 encounter 只交换派生外观 ID，全部混合都在本地完成。",
     "  所有卡片都不包含对话、路径、模型名或精确 Token，也不包含来源名和请求数；SVG 只写入标准输出，不会上传。",
     "",
@@ -2279,7 +2607,7 @@ const helpTarget = helpAlias
   : options.command && !options.command.startsWith("-")
     ? [
         options.command,
-        ...(options.command === "creature" && options.action
+        ...(["creature", "lab"].includes(options.command) && options.action
           ? [options.action]
           : []),
       ]
@@ -2339,6 +2667,7 @@ if (helpRequested) {
       "fossil",
       "encounter",
       "prognosis",
+      "culture",
     ].includes(options.card))
 ) {
   process.stderr.write(
@@ -2356,7 +2685,7 @@ if (helpRequested) {
   process.exitCode = 2;
 } else if (
   options.command === "share" &&
-  ["pathology", "specimen", "wanted", "fossil", "encounter", "prognosis"].includes(
+  ["pathology", "specimen", "wanted", "fossil", "encounter", "prognosis", "culture"].includes(
     options.card,
   ) &&
   options.source !== "all"
@@ -2373,6 +2702,11 @@ if (helpRequested) {
 } else if (options.command === "encounter" && options.source !== "all") {
   process.stderr.write(
     `${localized(options.lang, "encounter 必须使用完整数据源；请移除 --source 过滤。", "encounter requires the complete data set; remove the --source filter.")}\n`,
+  );
+  process.exitCode = 2;
+} else if (options.command === "lab" && options.source !== "all") {
+  process.stderr.write(
+    `${localized(options.lang, "lab 必须使用完整数据源；请移除 --source 过滤。", "lab requires the complete data set; remove the --source filter.")}\n`,
   );
   process.exitCode = 2;
 } else if (options.command === "codex" && options.source !== "all") {
@@ -2399,13 +2733,15 @@ if (helpRequested) {
   await runCreature(options);
 } else if (options.command === "encounter") {
   await runEncounter(options);
+} else if (options.command === "lab") {
+  await runLaboratory(options);
 } else if (options.command === "doctor") {
   await runDoctor(options);
 } else if (options.command === "explain") {
   runExplain(options.lang, options.topic);
 } else {
   process.stderr.write(
-    `Usage: anti-ai <today|week|month|codex|share|creature|encounter|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude|opencode|openclaw|hermes|pi] [--lang zh|en] [--json]\n`,
+    `Usage: anti-ai <today|week|month|codex|share|creature|encounter|lab|doctor|explain> [--date YYYY-MM-DD] [--source all|codex|claude|opencode|openclaw|hermes|pi] [--lang zh|en] [--json]\n`,
   );
   process.exitCode = 1;
 }

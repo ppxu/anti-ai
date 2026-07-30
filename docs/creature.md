@@ -270,10 +270,11 @@ A local seed plus the date selects one reproducible event per active day. After 
 - unlimited foreign encounter specimens;
 - unlimited permanent fossils.
 - unlimited sealed case slices.
+- unlimited sealed laboratory cultures.
 
 Locked fixed entries remain `???`. Collection discovery does not prefer high Token use: Pollution, Clarity, AI-free days, achievements, rare abilities, generations, and explicit evolution choices all have independent routes.
 
-Six privacy-safe SVG cards are available:
+Seven privacy-safe SVG cards are available:
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -282,11 +283,13 @@ anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
+anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 ```
 
 A fossil certificate becomes available after experience day 90.
 Cross-machine collection is local and optional. Read [Local Mutation Encounters](./encounters.md) for pollution-code and foreign-specimen behavior.
 Turning-point cases are also local and optional. Read [Forked Casebook](./casebook.md) for history, intervention, prognosis, and case-slice behavior.
+Laboratory cultures are local and optional. Read [Pollution Laboratory](./laboratory.md) for stable formula, rarity, shelf, and culture-card behavior.
 
 ## State, privacy, and reset
 
@@ -296,7 +299,7 @@ State lives at:
 ~/.anti-ai/creature.json
 ```
 
-The current schema is v8. It stores only:
+The current schema is v9. It stores only:
 
 - discrete usage bands and derived Ecology points;
 - stable gene and part IDs;
@@ -306,13 +309,14 @@ The current schema is v8. It stores only:
 - sealed evolution choices;
 - turning-point case IDs, privacy-safe triggers, and sealed route choices;
 - saved foreign encounters as derived parent/form and hybrid appearance IDs;
+- laboratory batches and cultures as derived material, diagnosis, rarity, and appearance IDs;
 - a local seed.
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v7 files migrate locally and idempotently without losing existing ability points or inventing case choices. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives its collections from the same state without another migration.
+Schema v1-v8 files migrate locally and idempotently without losing existing ability points or inventing case choices or laboratory cultures. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives its collections from the same state without another migration.
 
-One mutation history always uses the complete supported data set, so `creature` and `codex` reject `--source` filters.
+One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 
 Explicitly restart the creature with:
 

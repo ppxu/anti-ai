@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-07-30
+
+### Added
+
+- Added a pure-local Pollution Laboratory with stable three-formula batches derived from saved foreign specimens, permanent fossils, and sealed case slices.
+- Added `lab incubate <1|2|3>` to seal one culture with deterministic dish ASCII, rarity, Ecology, pathology, complication, and side effect without consuming materials.
+- Added compact and full culture shelves, focused culture inspection, bilingual nested Help, standalone Laboratory documentation, and stable JSON output.
+- Added unlimited culture entries to `codex` plus a privacy-safe `share --card culture [--id <culture-id>]` SVG.
+
+### Changed
+
+- Creature state now uses schema v9 with local, idempotent v1-v8 migration that adds an empty Laboratory without inventing historical experiments.
+- Codex and period collection summaries now include sealed cultures while preserving the fixed 50-entry denominator and consistent rarity colors.
+
+### Security
+
+- Laboratory formulas read derived creature state only and never scan raw Agent logs; stored cultures contain stable material/diagnosis/appearance IDs and dates, never exact Tokens, requests, models, paths, prompts, responses, personal baselines, or request timestamps.
+- Materials are references rather than consumables, and cultures add no experience, abilities, Malignancy, Ecology, evolution chance, combat power, score, Token reward, reroll timer, account, server, or upload.
+
 ## [1.7.0] - 2026-07-30
 
 ### Added

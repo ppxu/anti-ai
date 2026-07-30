@@ -108,6 +108,12 @@ anti-ai creature export
 anti-ai encounter <pollution-code>
 anti-ai encounter <pollution-code> --save
 
+anti-ai lab
+anti-ai lab --json
+anti-ai lab incubate 1
+anti-ai lab shelf
+anti-ai lab inspect <culture-id>
+
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -116,6 +122,7 @@ anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
+anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 
 anti-ai creature
 anti-ai creature --full
@@ -148,7 +155,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json`, `codex --json`, `creature --json`, and `encounter --json` ignore presentation language and keep stable machine-readable keys.
+`today --json`, `codex --json`, `creature --json`, `encounter --json`, and `lab --json` ignore presentation language and keep stable machine-readable keys.
 
 ### `today`
 
@@ -184,7 +191,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, and sealed case slices are collected without an artificial upper limit.
+The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, and laboratory cultures are collected without an artificial upper limit.
 
 `codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
@@ -205,6 +212,23 @@ The same two appearance fingerprints always produce the same incident ID, contac
 
 Pollution codes contain only protocol version and derived appearance IDs. They omit exact Token totals, model/source names, paths, prompts, responses, and request timestamps. There is no server, upload, leaderboard, combat power, or Token ranking. See [Local Mutation Encounters](./docs/encounters.md) for the protocol, safety limits, and collection behavior.
 
+### `lab`
+
+Turn saved foreign specimens, permanent fossils, and sealed case slices into a local pollution laboratory:
+
+```bash
+anti-ai lab
+anti-ai lab --json
+anti-ai lab incubate 1
+anti-ai lab shelf
+anti-ai lab shelf --full
+anti-ai lab inspect <culture-id>
+```
+
+Each batch exposes three deterministic formulas. Viewing the laboratory cannot reroll them: the same local seed, derived material inventory, and batch always produce the same choices. Selecting one formula seals a culture with its own dish ASCII, rarity, Ecology, pathology, complication, and side effect; the other two formulas expire with that batch.
+
+Materials are references and are never consumed. Cultures do not change creature experience, abilities, Malignancy, Ecology, evolution rates, combat power, or Token rewards. The laboratory reads only derived local state and never scans raw Agent logs. See [Pollution Laboratory](./docs/laboratory.md) for formula rules, rarity, state, and privacy.
+
 ### `share`
 
 Print a 1200×630 SVG share card to stdout. It uses the same resource estimate formulas, personal baseline, and deterministic verdict as `today`, but omits prompts, responses, paths, model names, request counts, and exact token counts.
@@ -219,9 +243,10 @@ anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
+anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 ```
 
-Creature history supports six privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, and `prognosis` for the current three-route case. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending.
+Creature history and the laboratory support seven privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, `prognosis` for the current three-route case, and `culture` for a sealed laboratory accident. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending; culture defaults to the latest sealed dish and accepts `--id`.
 
 Nothing is uploaded. Every card omits exact Token totals, requests, source/model names, paths, and conversation content; the destination file is controlled entirely by your shell. Creature cards require the complete data set and therefore reject `--source` filters.
 
@@ -253,7 +278,7 @@ Every 14 experience days may offer one turning-point case. Its three routes—Po
 
 The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
-Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, and [Forked Casebook](./docs/casebook.md) for history, intervention, prognosis, case slices, and privacy. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md).
+Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, and [Pollution Laboratory](./docs/laboratory.md) for culture formulas and display. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md).
 
 ### `doctor`
 

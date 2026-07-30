@@ -44,6 +44,7 @@ import {
   renderEncounterShareSvg,
   renderMonth,
   renderPathologyShareSvg,
+  renderPrognosisShareSvg,
   renderReceipt,
   renderShareSvg,
   renderWeek,
@@ -65,6 +66,14 @@ import {
   saveEncounterSpecimen,
 } from "./encounter.mjs";
 import { localized } from "./shared.mjs";
+import {
+  casebookLabel,
+  creatureHistory,
+  creaturePrognosis,
+  currentCreatureIntervention,
+  selectCreatureIntervention,
+  syncCreatureInterventions,
+} from "./casebook.mjs";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json");
@@ -177,13 +186,20 @@ function parseArgs(argv) {
       options.code = arg;
     } else if (
       command === "creature" &&
-      ["reset", "evolve", "export"].includes(arg) &&
+      [
+        "reset",
+        "evolve",
+        "export",
+        "history",
+        "intervene",
+        "prognosis",
+      ].includes(arg) &&
       options.action === undefined
     ) {
       options.action = arg;
     } else if (
       command === "creature" &&
-      options.action === "evolve" &&
+      ["evolve", "intervene"].includes(options.action) &&
       options.choice === undefined &&
       !arg.startsWith("-")
     ) {
@@ -342,6 +358,13 @@ function codexDiscoveryLabel(discovery, lang) {
       `FOREIGN SPECIMEN #${discovery.id}`,
     );
   }
+  if (discovery.type === "caseSlice") {
+    return localized(
+      lang,
+      `病例切片 #${discovery.id}`,
+      `CASE SLICE #${discovery.id}`,
+    );
+  }
   return localized(
     lang,
     `永久化石 #${discovery.id}`,
@@ -383,6 +406,10 @@ function renderCodex(codex, lang) {
       (specimen) =>
         `  #${specimen.id} · ${creatureLabel("ecologyForms", specimen.localFormId, lang)} × ${creatureLabel("ecologyForms", specimen.visitorFormId, lang)} · ${encounterLabel("type", specimen.typeId, lang)} · ${specimen.discoveredAt}`,
     );
+  const caseSliceLines = codex.sections.caseSlices.slice(-5).map(
+    (entry) =>
+      `  #${entry.id} · ${casebookLabel("cases", entry.caseId, lang)} · ${casebookLabel("routes", entry.routeId, lang)} · ${casebookLabel("marks", entry.markId, lang)} · ${entry.discoveredAt}`,
+  );
   const recentLines = codex.recent.map(
     (discovery) =>
       `  + ${codexDiscoveryLabel(discovery, lang)}`,
@@ -436,6 +463,13 @@ function renderCodex(codex, lang) {
     ...(foreignSpecimenLines.length > 0
       ? foreignSpecimenLines
       : [`  ${localized(lang, "尚无 · 暂未发生跨机器排异。", "NONE · no cross-machine rejection yet.")}`]),
+    "",
+    `${localized(lang, "病例切片", "CASE SLICES")}  [${codex.summary.caseSlices.discovered}]`,
+    ...(caseSliceLines.length > 0
+      ? caseSliceLines
+      : [
+          `  ${localized(lang, "尚无 · 它还没有接受任何不可靠治疗。", "NONE · no unreliable treatment has been accepted yet.")}`,
+        ]),
     "",
     `${localized(lang, "永久化石", "PERMANENT FOSSILS")}  [${codex.summary.fossils.discovered}]`,
     ...(fossilLines.length > 0
@@ -581,6 +615,56 @@ async function runCodex(options) {
 }
 
 async function runShare(options) {
+  if (options.card === "prognosis") {
+    const context = await runCreature(
+      {
+        ...options,
+        action: undefined,
+        command: "creature",
+        json: false,
+      },
+      "context",
+    );
+    if (!context) return;
+    const intervention = currentCreatureIntervention(
+      context.state,
+      context.result.date,
+    );
+    if (!intervention || intervention.status !== "pending") {
+      process.stderr.write(
+        `${localized(options.lang, "当前没有可分享的待处理转折病例。", "No pending turning-point case is available to share.")}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    process.stdout.write(
+      renderPrognosisShareSvg(
+        {
+          date: context.result.date,
+          specimenId: context.result.appearance.specimenId,
+          art: creatureArt(context.result),
+          caseId: intervention.id,
+          caseLabel: casebookLabel(
+            "cases",
+            intervention.caseId,
+            options.lang,
+          ),
+          options: intervention.options.map((option) => ({
+            slot: option.slot,
+            label: casebookLabel("routes", option.route, options.lang),
+            benefit: casebookLabel(
+              "benefits",
+              option.benefitId,
+              options.lang,
+            ),
+            cost: casebookLabel("costs", option.costId, options.lang),
+          })),
+        },
+        options.lang,
+      ),
+    );
+    return;
+  }
   if (options.card === "encounter") {
     let context;
     try {
@@ -857,6 +941,7 @@ async function runCreature(options, mode = "render") {
   if (syncCreatureSpecimen(state, creature, date)) {
     creature = deriveCreature(state, date);
   }
+  syncCreatureInterventions(state, date, creature);
   let evolutionAction = null;
   if (options.action === "evolve") {
     if (options.choice === undefined) {
@@ -899,7 +984,186 @@ async function runCreature(options, mode = "render") {
     creature = deriveCreature(state, date);
     evolutionAction.value = creature.evolution;
   }
+  let interventionAction = null;
+  if (options.action === "intervene") {
+    if (options.choice === undefined) {
+      const intervention = currentCreatureIntervention(state, date);
+      interventionAction =
+        intervention === null
+          ? { error: "unavailable" }
+          : { value: intervention };
+    } else {
+      interventionAction = selectCreatureIntervention(
+        state,
+        date,
+        options.choice,
+        creature.experienceDays,
+      );
+    }
+    if (interventionAction.error) {
+      const message =
+        interventionAction.error === "locked"
+          ? localized(
+              options.lang,
+              "病例已封存，不能改选治疗方案。",
+              "The case is sealed and its treatment cannot be changed.",
+            )
+          : interventionAction.error === "invalid"
+            ? localized(
+                options.lang,
+                "治疗方案必须是 1、2 或 3。",
+                "Treatment choice must be 1, 2, or 3.",
+              )
+            : localized(
+                options.lang,
+                "当前没有可干预的转折病例。",
+                "No turning-point case is currently available.",
+              );
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 2;
+      return;
+    }
+  }
   await saveCreatureState(state);
+
+  if (options.action === "intervene") {
+    const intervention = interventionAction.value;
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(intervention, null, 2)}\n`);
+      return;
+    }
+    const optionLines = intervention.options.flatMap((option) => [
+      `  ${option.slot}. ${casebookLabel("routes", option.route, options.lang)}`,
+      `     ${localized(options.lang, "作用", "EFFECT")}  ${casebookLabel("benefits", option.benefitId, options.lang)}`,
+      `     ${localized(options.lang, "代价", "COST")}  ${casebookLabel("costs", option.costId, options.lang)}`,
+    ]);
+    process.stdout.write(
+      [
+        localized(options.lang, "分叉病历 · 转折病例", "FORKED CASEBOOK · TURNING CASE"),
+        `${localized(options.lang, "病例", "CASE")} #${intervention.id} · ${casebookLabel("cases", intervention.caseId, options.lang)}`,
+        `${localized(options.lang, "状态", "STATUS")}  ${localized(options.lang, intervention.status === "pending" ? "待处理" : "已封存", intervention.status.toUpperCase())}`,
+        "",
+        ...(intervention.status === "pending"
+          ? optionLines
+          : [
+              `${localized(options.lang, "已选择", "SELECTED")}  ${intervention.selected.slot}. ${casebookLabel("routes", intervention.selected.route, options.lang)}`,
+              `${localized(options.lang, "后遗症", "AFTEREFFECT")}  ${casebookLabel("marks", intervention.selected.markId, options.lang)}`,
+            ]),
+        "",
+        ...(intervention.status === "pending"
+          ? [
+              localized(
+                options.lang,
+                "运行 anti-ai creature intervene <1|2|3> 封存选择。",
+                "Run anti-ai creature intervene <1|2|3> to seal a choice.",
+              ),
+            ]
+          : []),
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+
+  if (options.action === "history") {
+    const history = creatureHistory(state, date, { full: options.full });
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(history, null, 2)}\n`);
+      return;
+    }
+    const eventLines = history.events.map((event) => {
+      let label;
+      if (event.type === "hatch") {
+        label = localized(options.lang, "首次孵化", "INITIAL HATCH");
+      } else if (event.type === "stage") {
+        label = creatureLabel("stages", event.id, options.lang);
+      } else if (event.type === "rare_mutation") {
+        label = `${localized(options.lang, "稀有突变", "RARE MUTATION")} · ${CREATURE_COPY.events[event.id].name[options.lang]}`;
+      } else if (event.type === "chromatic") {
+        label = `${localized(options.lang, "异色觉醒", "CHROMATIC AWAKENING")} · ${creatureLabel("rareAbilities", event.id, options.lang)} +${event.levelGain}`;
+      } else if (event.type === "achievement") {
+        label = `${localized(options.lang, "徽章解锁", "BADGE UNLOCKED")} · ${creatureLabel("achievements", event.id, options.lang)}`;
+      } else if (event.type === "fossil") {
+        label = `${localized(options.lang, "永久化石", "PERMANENT FOSSIL")} · #${event.id} · ${generationLabel(event.generation, options.lang)}`;
+      } else if (event.type === "evolution_selected") {
+        label = `${localized(options.lang, "进化封存", "EVOLUTION SEALED")} · ${generationLabel(event.generation, options.lang)} · ${creatureLabel("evolutions", event.evolutionId, options.lang)}`;
+      } else if (event.type === "case_offered") {
+        label = `${localized(options.lang, "转折病例", "TURNING CASE")} · ${casebookLabel("cases", event.caseId, options.lang)}`;
+      } else {
+        label = `${localized(options.lang, "选择封存", "SEALED CHOICE")} · ${casebookLabel("routes", event.routeId, options.lang)} · ${casebookLabel("marks", event.markId, options.lang)}`;
+      }
+      return `  ${event.date}  ${label}`;
+    });
+    const usageBandLabels = {
+      sober: ["AI 清醒", "AI-FREE"],
+      calibrating: ["校准污染", "CALIBRATING"],
+      restrained: ["节制使用", "RESTRAINED"],
+      light: ["轻量使用", "LIGHT"],
+      habitual: ["惯常使用", "HABITUAL"],
+      heavy: ["重度使用", "HEAVY"],
+      binge: ["暴食使用", "BINGE"],
+      meltdown: ["熔毁使用", "MELTDOWN"],
+    };
+    const dailyLines = (history.daily ?? []).map((day) => {
+      const band =
+        usageBandLabels[day.usageBand]?.[options.lang === "zh" ? 0 : 1] ??
+        day.usageBand.toUpperCase();
+      return `  ${day.date}  ${localized(options.lang, `阅历 ${day.experienceDay} · ${day.status === "active" ? "活跃" : "休眠"} · ${band}`, `EXPERIENCE ${day.experienceDay} · ${day.status.toUpperCase()} · ${band}`)}`;
+    });
+    process.stdout.write(
+      [
+        localized(options.lang, "分叉病历 · 关键病程", "FORKED CASEBOOK · KEY HISTORY"),
+        `${localized(options.lang, "观察", "OBSERVED")}  ${history.observedDays} ${localized(options.lang, "天", "DAYS")} · ${localized(options.lang, "关键节点", "KEY EVENTS")} ${history.totalEvents}`,
+        "",
+        ...(eventLines.length > 0
+          ? eventLines
+          : [
+              `  ${localized(options.lang, "尚未孵化", "NOT YET HATCHED")}`,
+            ]),
+        ...(dailyLines.length > 0
+          ? [
+              "",
+              localized(options.lang, "逐日病程", "DAILY COURSE"),
+              ...dailyLines,
+            ]
+          : []),
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+
+  if (options.action === "prognosis") {
+    const prognosis = creaturePrognosis(state, date, creature);
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(prognosis, null, 2)}\n`);
+      return;
+    }
+    const routeLines = prognosis.routes.flatMap((route) => [
+      `  [${casebookLabel("likelihoods", route.likelihood, options.lang)}] ${casebookLabel("routes", route.route, options.lang)}`,
+      `    ${localized(options.lang, "可能病例", "POSSIBLE CASE")}  ${casebookLabel("cases", route.previewCaseId, options.lang)}`,
+      ...route.driverIds.map(
+        (driverId) =>
+          `    · ${casebookLabel("drivers", driverId, options.lang)}`,
+      ),
+    ]);
+    process.stdout.write(
+      [
+        localized(options.lang, "分叉病历 · 三路预演", "FORKED CASEBOOK · THREE-WAY PROGNOSIS"),
+        `${localized(options.lang, "观察窗口", "WINDOW")}  ${prognosis.window.minDays}–${prognosis.window.maxDays} ${localized(options.lang, "个阅历日", "EXPERIENCE DAYS")}`,
+        "",
+        ...routeLines,
+        "",
+        localized(
+          options.lang,
+          "这是可解释的方向预演，不是精确概率、任务或奖励承诺。",
+          "This is an explainable directional preview, not a precise probability, task, or reward promise.",
+        ),
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
 
   if (options.action === "evolve") {
     const evolution = evolutionAction.value;
@@ -956,6 +1220,15 @@ async function runCreature(options, mode = "render") {
       achievementUnlockIds: today.achievementUnlockIds,
       newTalents,
       evolutionEffect: today.evolutionEffect ?? null,
+    },
+    casebook: {
+      current: currentCreatureIntervention(state, date),
+      selectedCount: (state.casebook?.cases ?? []).filter(
+        (entry) =>
+          entry.status === "selected" &&
+          entry.selectedAt !== null &&
+          entry.selectedAt <= date,
+      ).length,
     },
   };
 
@@ -1148,6 +1421,17 @@ async function runCreature(options, mode = "render") {
           : []),
       ]
     : [];
+  const casebookLines =
+    result.casebook.current === null
+      ? []
+      : result.casebook.current.status === "pending"
+        ? [
+            `${localized(lang, "转折病例", "TURNING CASE")}  ${localized(lang, "待处理", "PENDING")} · ${casebookLabel("cases", result.casebook.current.caseId, lang)}`,
+            `${localized(lang, "病例处置", "CASE ACTION")}  anti-ai creature intervene`,
+          ]
+        : [
+            `${localized(lang, "病例后遗症", "CASE AFTEREFFECT")}  ${casebookLabel("marks", result.casebook.current.selected.markId, lang)}`,
+          ];
 
   const fullLines = [
       `TOKEN MUTATION FILE · ${date}`,
@@ -1172,6 +1456,7 @@ async function runCreature(options, mode = "render") {
       `${localized(lang, "永久化石", "PERMANENT FOSSILS")}  [${result.fossils.length}]`,
       ...fossilLines,
       ...evolutionLines,
+      ...casebookLines,
       `${localized(lang, "徽章", "BADGES")}  [${result.achievements.unlocked.length}] ${achievementPreview || localized(lang, "尚未解锁", "LOCKED")}`,
       `${localized(lang, "今日成就", "TODAY'S ACHIEVEMENTS")}  ${recentAchievementPreview || localized(lang, "无", "NONE")}`,
       "",
@@ -1276,6 +1561,7 @@ async function runCreature(options, mode = "render") {
     `${localized(lang, "稀有突变率", "RARE MUTATION CHANCE")}  ${result.rareChancePercent}% · ${localized(lang, "每日觉醒率", "DAILY AWAKENING ODDS")} ${rareAbilityOdds}`,
     `${localized(lang, "异色能力", "CHROMATIC ABILITIES")}  [${rareAbilityEntries.length}] · ${localized(lang, "今日", "TODAY")} ${rareAbilityGain}`,
     ...eventLines,
+    ...casebookLines,
     `${localized(lang, "完整病历", "FULL CASEBOOK")}  anti-ai creature --full`,
     localized(
       lang,
@@ -1607,6 +1893,8 @@ function focusedExplain(topic, lang = "zh") {
         "污染与清醒分别保留，可形成污染型、清醒型或矛盾型生态人格。",
         "普通能力每 255 点发生一次恶性增殖；累计点数不会截断，恶性阶会增强对应进化的触发率。",
         "普通事件 12 种、稀有事件 8 种；事件文案变化不会改变原有病理性状选择。",
+        "每 14 个阅历日最多出现一个转折病例；污染、清醒、悖论三条路线都有收益与代价。",
+        "history 压缩关键节点，prognosis 只给可解释方向，不伪造精确概率。",
         "完整档案使用全部来源；带 --source 的报告不会改写成长史。",
         "状态文件 ~/.anti-ai/creature.json 只保存派生状态和可选外来标本，不保存精确 Token 或对话。",
         "",
@@ -1619,6 +1907,8 @@ function focusedExplain(topic, lang = "zh") {
         "Pollution and Clarity persist separately, creating Polluted, Lucid, or Paradox ecologies.",
         "Regular abilities undergo malignant growth every 255 points; lifetime points are never truncated, and each rank strengthens its evolution proc chance.",
         "Twelve common and eight rare events vary the copy without changing the selected pathology trait.",
+        "At most one turning-point case appears per 14 experience days; Pollution, Clarity, and Paradox routes each carry a benefit and a cost.",
+        "history compresses key events, while prognosis shows explainable directions with no precise probabilities.",
         "The complete file uses all sources; --source reports never rewrite creature history.",
         "~/.anti-ai/creature.json stores derived state and optional foreign specimens, never exact tokens or conversation text.",
         "",
@@ -1731,7 +2021,7 @@ function runExplain(lang = "zh", topic = undefined) {
       "  different local seeds produce different specimens.",
       "  Twenty-four achievements are split evenly across OFFENSE, SOBRIETY, and PARADOX badges;",
       "  repeatable badges grow through three behavior-based tiers without exact Token totals.",
-      "  anti-ai codex derives 50 fixed entries plus private, foreign, and fossil specimens from schema v7.",
+      "  anti-ai codex derives 50 fixed entries plus private, foreign, fossil, and selected case specimens from schema v8.",
       "  Locked human entries remain ???; JSON exposes stable IDs and discovery dates.",
       "  Seven abilities grow: TOKEN APPETITE, PARASITIC MEMORY, CACHE CARAPACE,",
       "  REQUEST MAWS, CORE GLOW, INSTABILITY, and WITHDRAWAL.",
@@ -1755,9 +2045,15 @@ function runExplain(lang = "zh", topic = undefined) {
       "  Proc chance = min(35%, 5% + min(10, floor(lifetime ability ÷ 25))",
       "  + 2% per unlocked talent + 2% per malignancy rank).",
       "  Higher talent tiers amplify both the benefit and its cost; there is no free upgrade.",
-      "  State: ~/.anti-ai/creature.json (schema v7; schema v1-v6 migrate locally)",
+      "  Every 14 experience days may offer at most one turning-point case from 12",
+      "  local case skeletons. POLLUTION, CLARITY, and PARADOX choices each seal one",
+      "  benefit and one cost; an unanswered case does not build a choice backlog.",
+      "  anti-ai creature history compresses stages, mutations, badges, and case choices;",
+      "  --full expands privacy-safe daily bands. prognosis previews three explainable",
+      "  directions with LEADING/POSSIBLE/LATENT labels, never precise probabilities.",
+      "  State: ~/.anti-ai/creature.json (schema v8; schema v1-v7 migrate locally)",
       "  It stores only usage bands, derived ecology points, genes/part IDs, achievements,",
-      "  fossils, evolution choices, dose, traits, ability/chromatic gains, events, and a",
+      "  fossils, evolution choices, turning-point cases, dose, traits, ability/chromatic gains, events, and a",
       "  local seed—not chats, paths, model names, exact tokens, or per-request timestamps.",
       "  anti-ai creature reset explicitly destroys this file.",
       "",
@@ -1797,7 +2093,7 @@ function runExplain(lang = "zh", topic = undefined) {
       color("1", "Share card"),
       "  anti-ai share uses the same estimate formulas and fixed local verdict rules.",
       "  anti-ai share --card pathology creates a complete-source mutation pathology card.",
-      "  specimen, wanted, fossil, and encounter add privacy-safe collection cards.",
+      "  specimen, wanted, fossil, encounter, and prognosis add privacy-safe collection cards.",
       "  creature export and encounter exchange only derived appearance IDs; all mixing stays local.",
       "  The share card omits chats, paths, model names, and exact token counts.",
       "  Every card also omits source names and request counts.",
@@ -1884,7 +2180,7 @@ function runExplain(lang = "zh", topic = undefined) {
     "  ASCII 外观由稳定本地基因、生命阶段、使用病型、生态人格、成就部件和异色突变共同拼装。",
     "  同一档案稳定生成同一标本，不同本地 seed 尽量生成不同个体。",
     "  首批 24 项成就平均分为罪证章、戒断章、悖论章三类；可重复成就按行为次数成长为三级，",
-    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v7 派生 50 项固定收藏、动态/外来标本和化石。",
+    "  不使用精确 Token 作为等级条件。anti-ai codex 从 schema v8 派生 50 项固定收藏、动态/外来标本、化石和已封存病例切片。",
     "  人类输出的锁定项保持 ???，JSON 提供稳定 ID 和发现日期。",
     "  7 个能力值：吞噬欲、赘生脑回、化石甲、请求口器、核素亮度、失控指数、戒断反应。",
     "  普通能力按 255 点循环：第 256 点显示为“恶性 I · 1/255”，累计点数不会截断。",
@@ -1900,8 +2196,12 @@ function runExplain(lang = "zh", topic = undefined) {
     "  每代提供污染、清醒、悖论三选一；运行 anti-ai creature evolve <1|2|3> 显式确认，不选择也不会阻断账单。",
     "  触发概率 = min(35%, 5% + min(10, floor(累计能力值 ÷ 25)) + 每项已解锁天赋 2% + 每个恶性阶 2%)。",
     "  高阶天赋会同时放大收益与代价，不存在无成本的最优进化。",
-    "  状态文件：~/.anti-ai/creature.json（schema v7；schema v1-v6 在本地幂等迁移）",
-    "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、污染剂量、性状、能力与异色加点、事件和本地 seed；",
+    "  每 14 个阅历日最多出现一个转折病例，从 12 个本地病例骨架中确定性选择。",
+    "  污染、清醒、悖论三条路线各有收益与代价；未处理病例不会堆积成待办列表。",
+    "  anti-ai creature history 压缩阶段、突变、徽章和病例选择；--full 展开隐私安全的逐日用量带。",
+    "  prognosis 使用“主导/可能/潜伏”预演三条可解释方向，不伪造精确概率。",
+    "  状态文件：~/.anti-ai/creature.json（schema v8；schema v1-v7 在本地幂等迁移）",
+    "  只保存用量带、派生生态点、基因/部件 ID、成就、化石、进化选择、转折病例、污染剂量、性状、能力与异色加点、事件和本地 seed；",
     "  不保存精确 Token、模型名、路径、对话或逐请求时间。",
     "  anti-ai creature reset 会显式销毁档案。",
     "",
@@ -1938,7 +2238,7 @@ function runExplain(lang = "zh", topic = undefined) {
     color("1", "分享卡片"),
     "  anti-ai share 使用相同的资源估算公式和本地固定判词。",
     "  anti-ai share --card pathology 使用完整成长史生成异变体病理报告。",
-    "  specimen、wanted、fossil、encounter 提供隐私安全的收藏卡。",
+    "  specimen、wanted、fossil、encounter、prognosis 提供隐私安全的收藏卡。",
     "  creature export 与 encounter 只交换派生外观 ID，全部混合都在本地完成。",
     "  所有卡片都不包含对话、路径、模型名或精确 Token，也不包含来源名和请求数；SVG 只写入标准输出，不会上传。",
     "",
@@ -2038,6 +2338,7 @@ if (helpRequested) {
       "wanted",
       "fossil",
       "encounter",
+      "prognosis",
     ].includes(options.card))
 ) {
   process.stderr.write(
@@ -2055,7 +2356,7 @@ if (helpRequested) {
   process.exitCode = 2;
 } else if (
   options.command === "share" &&
-  ["pathology", "specimen", "wanted", "fossil", "encounter"].includes(
+  ["pathology", "specimen", "wanted", "fossil", "encounter", "prognosis"].includes(
     options.card,
   ) &&
   options.source !== "all"

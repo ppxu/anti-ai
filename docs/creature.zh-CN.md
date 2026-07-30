@@ -270,11 +270,12 @@ min(35, 5 + min(10, floor(累计能力值 / 25))
 - 不限数量的外来遭遇标本；
 - 不限数量的永久化石。
 - 不限数量的已封存病例切片。
-- 不限数量的已封存污染培养物。
+- 不限数量的已封存污染培养物；
+- 不限数量的已绑定伴生形态。
 
 未解锁的固定收藏保持 `???`。收藏系统不会偏爱高 Token：污染、清醒、AI 清醒日、成就、稀有能力、世代和显式进化选择都有独立路线。
 
-当前支持七种隐私安全的 SVG 卡片：
+当前支持八种隐私安全的 SVG 卡片：
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -284,12 +285,14 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
+anti-ai share --card companion > anti-ai-companion.svg
 ```
 
 化石证书会在第 90 个阅历日后开放。
 跨机器收藏完全在本地完成，并且是可选项。污染编码和外来标本规则见[本地异变体遭遇](./encounters.zh-CN.md)。
 转折病例同样完全在本地运行，并且是可选项。关键病程、干预、预后和病例切片规则见[分叉病历](./casebook.zh-CN.md)。
 污染培养同样完全在本地运行，并且是可选项。稳定配方、稀有度、培养架和培养物卡片规则见[污染实验室](./laboratory.zh-CN.md)。
+伴生异物同样完全在本地运行，并且是可选项。印记、路线、里程碑和伴生卡片规则见[伴生异物](./companions.zh-CN.md)。
 
 ## 档案、隐私与重置
 
@@ -299,7 +302,7 @@ anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 ~/.anti-ai/creature.json
 ```
 
-当前使用 schema v9，只保存：
+当前使用 schema v10，只保存：
 
 - 离散用量带与派生生态点；
 - 稳定基因和部件 ID；
@@ -310,11 +313,12 @@ anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 - 转折病例 ID、隐私安全的触发摘要和已封存路线；
 - 已保存遭遇的派生亲本/形态 ID 与混种外观 ID；
 - 实验室批次，以及培养物的派生原料、诊断、稀有度和外观 ID；
+- 伴生绑定、离散每日印记和已封存异常 ID；
 - 本地随机种子。
 
 它**不会**保存 Prompt、回复、路径、模型名、精确 Token、个人基线数值或逐请求时间。
 
-schema v1-v8 会在本地幂等迁移，并无损保留已有能力点，也不会凭空生成病例选择或培养物。旧档案的每日加点会重新解释为 255 点循环，例如原来的 267 点会变成`恶性 I · 12/255`，而不是被截断。`anti-ai codex` 直接从同一份档案派生收藏，不需要额外迁移。
+schema v1-v9 会在本地幂等迁移，并无损保留已有能力点，也不会凭空生成病例选择、培养物、伴生绑定、印记或异常。旧档案的每日加点会重新解释为 255 点循环，例如原来的 267 点会变成`恶性 I · 12/255`，而不是被截断。`anti-ai codex` 直接从同一份档案派生收藏，不需要额外迁移。
 
 一条成长史始终使用全部受支持数据源，因此 `creature`、`codex` 和 `lab` 都拒绝 `--source` 过滤。
 

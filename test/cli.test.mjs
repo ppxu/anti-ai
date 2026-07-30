@@ -1860,6 +1860,7 @@ test("codex --json derives a stable private collection from creature history", (
     fossils: { discovered: 0 },
     caseSlices: { discovered: 0 },
     cultures: { discovered: 0 },
+    companions: { discovered: 0 },
   });
   assert.deepEqual(
     Object.fromEntries(
@@ -1878,6 +1879,7 @@ test("codex --json derives a stable private collection from creature history", (
       fossils: 0,
       caseSlices: 0,
       cultures: 0,
+      companions: 0,
     },
   );
   assert.deepEqual(
@@ -2361,6 +2363,7 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
       current: null,
       selectedCount: 0,
     },
+    companion: null,
   });
 });
 
@@ -3136,7 +3139,7 @@ test("creature rolls legacy ability points into 255-point malignancy ranks witho
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 9);
+  assert.equal(saved.schemaVersion, 10);
   assert.equal(saved.days["2026-07-22"].abilityGains.appetite, 267);
 });
 
@@ -3989,8 +3992,8 @@ test("v0.6 creature files migrate without losing stored ability growth", (t) => 
   assert.ok(report.collections.rareAbilitiesUnlocked >= 0);
 });
 
-test("schema v1-v8 creature files migrate idempotently without inventing cases or laboratory cultures", (t) => {
-  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8]) {
+test("schema v1-v9 creature files migrate idempotently without inventing companion history", (t) => {
+  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9]) {
     const home = mkdtempSync(
       path.join(tmpdir(), `anti-ai-schema-${schemaVersion}-`),
     );
@@ -4051,7 +4054,7 @@ test("schema v1-v8 creature files migrate idempotently without inventing cases o
     const saved = JSON.parse(
       readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
     );
-    assert.equal(saved.schemaVersion, 9);
+    assert.equal(saved.schemaVersion, 10);
     assert.equal(saved.appearance.version, 1);
     assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
     assert.equal(saved.specimens.length, 1);
@@ -4072,15 +4075,87 @@ test("schema v1-v8 creature files migrate idempotently without inventing cases o
       nextAtExperience: 14,
     });
     assert.deepEqual(saved.laboratory, {
-      version: 1,
+      version: 2,
       nextBatch: 1,
       cultures: [],
+      activeCultureId: null,
+      bondHistory: [],
+      imprintAssignments: {},
     });
     assert.doesNotMatch(
       JSON.stringify(saved),
       /totalTokens|modelName|prompt|response|requestTimestamp/,
     );
   }
+});
+
+test("schema v9 cultures remain unbound after companion migration", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-schema9-culture-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const culture = {
+    id: "culture-legacy",
+    batch: 1,
+    createdAt: "2026-07-01",
+    typeId: "request_amoeba",
+    ecologyId: "paradox",
+    pathologyId: "context",
+    complicationId: "recursive_hunger",
+    sideEffectId: "keyboard_fever",
+    rarity: "uncommon",
+    ingredients: [{ type: "selfTissue", id: "self" }],
+    appearance: {
+      version: 1,
+      fingerprint: "abc123def456",
+      lines: ["legacy culture"],
+    },
+  };
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "schema9-culture",
+      days: {
+        "2026-07-02": {
+          pollutionDose: 0,
+          active: false,
+          usageBand: "sober",
+          ecologyGains: { pollution: 0, clarity: 0 },
+          traits: { context: 0, cache: 0, frenzy: 0, nuclear: 0 },
+          event: null,
+        },
+      },
+      laboratory: {
+        version: 1,
+        nextBatch: 2,
+        cultures: [culture],
+      },
+    })}\n`,
+  );
+
+  const result = runCli(
+    ["lab", "companion", "--date", "2026-07-02", "--json"],
+    { HOME: home },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    date: "2026-07-02",
+    status: "unbound",
+    companion: null,
+  });
+  const saved = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  assert.equal(saved.schemaVersion, 10);
+  assert.deepEqual(saved.laboratory, {
+    version: 2,
+    nextBatch: 2,
+    cultures: [culture],
+    activeCultureId: null,
+    bondHistory: [],
+    imprintAssignments: {},
+  });
 });
 
 test("creature can reach a rare mutation from its local deterministic seed", (t) => {
@@ -5334,7 +5409,7 @@ test("encounter save bottles one privacy-safe foreign specimen in the codex", (t
     "utf8",
   );
   const state = JSON.parse(savedState);
-  assert.equal(state.schemaVersion, 9);
+  assert.equal(state.schemaVersion, 10);
   assert.equal(state.foreignSpecimens.length, 1);
   assert.doesNotMatch(
     savedState,
@@ -5609,7 +5684,7 @@ test("lab incubate seals one culture without changing creature growth", (t) => {
     "utf8",
   );
   const saved = JSON.parse(savedText);
-  assert.equal(saved.schemaVersion, 9);
+  assert.equal(saved.schemaVersion, 10);
   assert.equal(saved.laboratory.nextBatch, 2);
   assert.deepEqual(saved.laboratory.cultures, [result.culture]);
   assert.deepEqual(saved.days, initialState.days);
@@ -5630,6 +5705,1088 @@ test("lab incubate seals one culture without changing creature growth", (t) => {
     next.proposals.every(
       (candidate) => candidate.id !== result.culture.id,
     ),
+  );
+});
+
+test("lab bonds one sealed culture as the active companion", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-lab-bond-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "lab-bond",
+      days: {},
+      generations: {
+        fossils: [
+          {
+            id: "fossil-bond",
+            generation: 1,
+            sealedAt: "2026-07-10",
+            ecologyId: "paradox",
+            pathologyId: "context",
+            scarId: "split_shadow",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home };
+  const incubated = runCli(
+    ["lab", "incubate", "1", "--date", "2026-07-29", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const culture = JSON.parse(incubated.stdout).culture;
+  const cultureId = culture.id;
+
+  const bonded = runCli(
+    ["lab", "bond", cultureId, "--date", "2026-07-30", "--json"],
+    env,
+  );
+  const companion = runCli(
+    ["lab", "companion", "--date", "2026-07-30", "--json"],
+    env,
+  );
+  const repeated = runCli(
+    ["lab", "bond", cultureId, "--date", "2026-07-30", "--json"],
+    env,
+  );
+
+  assert.equal(bonded.status, 0, bonded.stderr);
+  assert.equal(companion.status, 0, companion.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  const bondedView = JSON.parse(bonded.stdout);
+  const companionView = JSON.parse(companion.stdout);
+  assert.equal(bondedView.status, "bonded");
+  assert.deepEqual(bondedView.companion, companionView.companion);
+  assert.equal(companionView.date, "2026-07-30");
+  assert.equal(companionView.status, "active");
+  assert.equal(companionView.companion.cultureId, cultureId);
+  assert.equal(companionView.companion.bondedAt, "2026-07-30");
+  assert.equal(companionView.companion.stageId, "parasite");
+  assert.equal(companionView.companion.nextStageAt, 7);
+  assert.equal(companionView.companion.routeId, "paradox");
+  assert.deepEqual(companionView.companion.imprintCounts, {
+    pollution: 0,
+    clarity: 1,
+    neutral: 0,
+    total: 1,
+  });
+  assert.equal(companionView.companion.todayImprint, "clarity");
+  assert.deepEqual(companionView.companion.anomalyIds, []);
+  assert.equal(companionView.companion.typeId, culture.typeId);
+  assert.equal(companionView.companion.rarity, culture.rarity);
+  assert.equal(companionView.companion.appearance.version, 2);
+  assert.match(companionView.companion.appearance.fingerprint, /^[0-9a-f]{12}$/);
+  assert.notEqual(
+    companionView.companion.appearance.fingerprint,
+    culture.appearance.fingerprint,
+  );
+  assert.deepEqual(JSON.parse(repeated.stdout), bondedView);
+  assert.doesNotMatch(
+    `${bonded.stdout}${companion.stdout}${repeated.stdout}`,
+    /totalTokens|modelName|prompt|response|requestTimestamp|session\.jsonl/,
+  );
+});
+
+test("a bonded companion gains one pollution imprint per observed day", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-growth-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 7 }, (_, index) => {
+      const date = `2026-07-0${index + 1}`;
+      return [
+        date,
+        {
+          pollutionDose: 90,
+          active: true,
+          usageBand: "meltdown",
+          ecologyGains: { pollution: 3, clarity: 0 },
+          traits: { context: 1, cache: 1, frenzy: 1, nuclear: 3 },
+          event: null,
+        },
+      ];
+    }),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-growth",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-growth",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "polluted",
+            pathologyId: "nuclear",
+            scarId: "carbonized_spine",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home };
+  const incubated = runCli(
+    ["lab", "incubate", "1", "--date", "2026-06-30", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const culture = JSON.parse(incubated.stdout).culture;
+  const cultureId = culture.id;
+  const bonded = runCli(
+    ["lab", "bond", cultureId, "--date", "2026-07-01", "--json"],
+    env,
+  );
+  assert.equal(bonded.status, 0, bonded.stderr);
+
+  const first = runCli(
+    ["lab", "companion", "--date", "2026-07-07", "--json"],
+    env,
+  );
+  const repeated = runCli(
+    ["lab", "companion", "--date", "2026-07-07", "--json"],
+    env,
+  );
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  const view = JSON.parse(first.stdout);
+  assert.deepEqual(JSON.parse(repeated.stdout), view);
+  assert.equal(view.status, "active");
+  assert.deepEqual(view.companion.imprintCounts, {
+    pollution: 7,
+    clarity: 0,
+    neutral: 0,
+    total: 7,
+  });
+  assert.equal(view.companion.stageId, "symbiote");
+  assert.equal(view.companion.nextStageAt, 21);
+  assert.equal(view.companion.routeId, "pollution");
+});
+
+test("lab companion settles an unseen day before adding its daily imprint", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-standalone-"));
+  const codexDir = path.join(home, "codex");
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-standalone",
+      days: {
+        "2026-07-22": {
+          pollutionDose: 50,
+          active: true,
+          usageBand: "habitual",
+          ecologyGains: { pollution: 1, clarity: 0 },
+          traits: { context: 1, cache: 1, frenzy: 1, nuclear: 1 },
+          event: null,
+        },
+      },
+      generations: {
+        fossils: [
+          {
+            id: "fossil-standalone",
+            generation: 1,
+            sealedAt: "2026-07-10",
+            ecologyId: "polluted",
+            pathologyId: "context",
+            scarId: "carbonized_spine",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  writeCodexUsage(
+    codexDir,
+    [
+      {
+        input_tokens: 4_000,
+        cached_input_tokens: 500,
+        cache_write_input_tokens: 0,
+        output_tokens: 800,
+        reasoning_output_tokens: 100,
+        total_tokens: 4_800,
+      },
+    ],
+    "2026-07-23",
+  );
+  const env = { HOME: home, ANTI_AI_CODEX_DIR: codexDir };
+  const incubated = runCli(
+    ["lab", "incubate", "1", "--date", "2026-07-22", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const cultureId = JSON.parse(incubated.stdout).culture.id;
+  const bonded = runCli(
+    ["lab", "bond", cultureId, "--date", "2026-07-22", "--json"],
+    env,
+  );
+  assert.equal(bonded.status, 0, bonded.stderr);
+  assert.equal(JSON.parse(bonded.stdout).companion.imprintCounts.total, 1);
+
+  const companion = runCli(
+    ["lab", "companion", "--date", "2026-07-23", "--json"],
+    env,
+  );
+
+  assert.equal(companion.status, 0, companion.stderr);
+  const view = JSON.parse(companion.stdout).companion;
+  assert.equal(view.imprintCounts.total, 2);
+  assert.equal(view.todayImprint, "pollution");
+  const saved = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  assert.ok(saved.days["2026-07-23"]);
+  assert.equal(saved.laboratory.imprintAssignments["2026-07-23"], cultureId);
+
+  writeCodexUsage(
+    codexDir,
+    [
+      {
+        input_tokens: 5_000,
+        cached_input_tokens: 1_000,
+        cache_write_input_tokens: 0,
+        output_tokens: 900,
+        reasoning_output_tokens: 100,
+        total_tokens: 5_900,
+      },
+    ],
+    "2026-07-24",
+  );
+  const card = runCli(
+    [
+      "share",
+      "--card",
+      "companion",
+      "--date",
+      "2026-07-24",
+      "--lang",
+      "en",
+    ],
+    env,
+  );
+  assert.equal(card.status, 0, card.stderr);
+  assert.match(card.stdout, /pollution 3 · clarity 0 · neutral 0/);
+  const afterCard = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  assert.ok(afterCard.days["2026-07-24"]);
+  assert.equal(
+    afterCard.laboratory.imprintAssignments["2026-07-24"],
+    cultureId,
+  );
+});
+
+test("pollution, clarity, and neutral days grow companions at the same rate", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-routes-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const dayRecord = (kind) =>
+    kind === "pollution"
+      ? {
+          pollutionDose: 90,
+          active: true,
+          usageBand: "meltdown",
+          ecologyGains: { pollution: 3, clarity: 0 },
+          traits: { context: 1, cache: 1, frenzy: 1, nuclear: 3 },
+          event: null,
+        }
+      : kind === "clarity"
+        ? {
+            pollutionDose: 0,
+            active: false,
+            usageBand: "sober",
+            ecologyGains: { pollution: 0, clarity: 3 },
+            traits: { context: 0, cache: 0, frenzy: 0, nuclear: 0 },
+            event: null,
+          }
+        : {
+            pollutionDose: 40,
+            active: true,
+            usageBand: "habitual",
+            ecologyGains: { pollution: 0, clarity: 0 },
+            traits: { context: 1, cache: 1, frenzy: 1, nuclear: 1 },
+            event: null,
+          };
+  const days = Object.fromEntries(
+    Array.from({ length: 21 }, (_, index) => {
+      const date = `2026-07-${String(index + 1).padStart(2, "0")}`;
+      const kind =
+        index < 7 ? "pollution" : index < 14 ? "clarity" : "neutral";
+      return [date, dayRecord(kind)];
+    }),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-routes",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-routes",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "paradox",
+            pathologyId: "context",
+            scarId: "split_shadow",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home };
+  const cultureIds = [];
+  for (const slot of ["1", "2", "3"]) {
+    const incubated = runCli(
+      ["lab", "incubate", slot, "--date", "2026-06-30", "--json"],
+      env,
+    );
+    assert.equal(incubated.status, 0, incubated.stderr);
+    cultureIds.push(JSON.parse(incubated.stdout).culture.id);
+  }
+
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureIds[0], "--date", "2026-07-01", "--json"],
+      env,
+    ).status,
+    0,
+  );
+  const pollution = runCli(
+    ["lab", "companion", "--date", "2026-07-07", "--json"],
+    env,
+  );
+  assert.equal(pollution.status, 0, pollution.stderr);
+
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureIds[1], "--date", "2026-07-07", "--json"],
+      env,
+    ).status,
+    0,
+  );
+  const clarity = runCli(
+    ["lab", "companion", "--date", "2026-07-14", "--json"],
+    env,
+  );
+  assert.equal(clarity.status, 0, clarity.stderr);
+
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureIds[2], "--date", "2026-07-14", "--json"],
+      env,
+    ).status,
+    0,
+  );
+  const paradox = runCli(
+    ["lab", "companion", "--date", "2026-07-21", "--json"],
+    env,
+  );
+  assert.equal(paradox.status, 0, paradox.stderr);
+
+  const views = [pollution, clarity, paradox].map(({ stdout }) =>
+    JSON.parse(stdout).companion
+  );
+  assert.deepEqual(
+    views.map(({ cultureId, stageId, routeId, imprintCounts }) => ({
+      cultureId,
+      stageId,
+      routeId,
+      imprintCounts,
+    })),
+    [
+      {
+        cultureId: cultureIds[0],
+        stageId: "symbiote",
+        routeId: "pollution",
+        imprintCounts: {
+          pollution: 7,
+          clarity: 0,
+          neutral: 0,
+          total: 7,
+        },
+      },
+      {
+        cultureId: cultureIds[1],
+        stageId: "symbiote",
+        routeId: "clarity",
+        imprintCounts: {
+          pollution: 0,
+          clarity: 7,
+          neutral: 0,
+          total: 7,
+        },
+      },
+      {
+        cultureId: cultureIds[2],
+        stageId: "symbiote",
+        routeId: "paradox",
+        imprintCounts: {
+          pollution: 0,
+          clarity: 0,
+          neutral: 7,
+          total: 7,
+        },
+      },
+    ],
+  );
+  assert.equal(
+    views.reduce((sum, view) => sum + view.imprintCounts.total, 0),
+    21,
+  );
+});
+
+test("companion stage milestones seal stable anomalies and evolve its ASCII", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-stages-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 21 }, (_, index) => [
+      `2026-07-${String(index + 1).padStart(2, "0")}`,
+      {
+        pollutionDose: 85,
+        active: true,
+        usageBand: "binge",
+        ecologyGains: { pollution: 2, clarity: 0 },
+        traits: { context: 1, cache: 2, frenzy: 2, nuclear: 1 },
+        event: null,
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-stages",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-stages",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "polluted",
+            pathologyId: "cache",
+            scarId: "carbonized_spine",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home };
+  const incubated = runCli(
+    ["lab", "incubate", "2", "--date", "2026-06-30", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const culture = JSON.parse(incubated.stdout).culture;
+  const bonded = runCli(
+    ["lab", "bond", culture.id, "--date", "2026-07-01", "--json"],
+    env,
+  );
+  assert.equal(bonded.status, 0, bonded.stderr);
+
+  const daySeven = runCli(
+    ["lab", "companion", "--date", "2026-07-07", "--json"],
+    env,
+  );
+  const dayTwentyOne = runCli(
+    ["lab", "companion", "--date", "2026-07-21", "--json"],
+    env,
+  );
+  const repeated = runCli(
+    ["lab", "companion", "--date", "2026-07-21", "--json"],
+    env,
+  );
+  const historicalDaySeven = runCli(
+    ["lab", "companion", "--date", "2026-07-07", "--json"],
+    env,
+  );
+
+  assert.equal(daySeven.status, 0, daySeven.stderr);
+  assert.equal(dayTwentyOne.status, 0, dayTwentyOne.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  assert.equal(historicalDaySeven.status, 0, historicalDaySeven.stderr);
+  const growing = JSON.parse(daySeven.stdout).companion;
+  const complete = JSON.parse(dayTwentyOne.stdout).companion;
+  assert.equal(growing.stageId, "symbiote");
+  assert.equal(growing.anomalyIds.length, 1);
+  assert.equal(complete.stageId, "accomplice");
+  assert.equal(complete.nextStageAt, null);
+  assert.equal(complete.anomalyIds.length, 2);
+  assert.equal(new Set(complete.anomalyIds).size, 2);
+  assert.deepEqual(JSON.parse(repeated.stdout).companion, complete);
+  assert.deepEqual(JSON.parse(historicalDaySeven.stdout).companion, growing);
+  assert.notEqual(growing.appearance.fingerprint, culture.appearance.fingerprint);
+  assert.notEqual(complete.appearance.fingerprint, growing.appearance.fingerprint);
+  assert.equal(growing.appearance.version, 2);
+  assert.equal(complete.appearance.version, 2);
+  assert.ok(growing.appearance.lines.length >= 5);
+  assert.ok(complete.appearance.lines.length >= 7);
+  assert.ok(
+    complete.appearance.lines.every(
+      (line) => terminalWidth(line) <= 31,
+    ),
+  );
+});
+
+test("lab companion renders a bilingual colored file within 80 columns", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-human-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 7 }, (_, index) => [
+      `2026-07-0${index + 1}`,
+      {
+        pollutionDose: 80,
+        active: true,
+        usageBand: "binge",
+        ecologyGains: { pollution: 2, clarity: 0 },
+        traits: { context: 1, cache: 2, frenzy: 1, nuclear: 2 },
+        event: null,
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-human",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-human",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "polluted",
+            pathologyId: "cache",
+            scarId: "carbonized_spine",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home, COLUMNS: "80" };
+  const incubated = runCli(
+    ["lab", "incubate", "1", "--date", "2026-06-30", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const cultureId = JSON.parse(incubated.stdout).culture.id;
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureId, "--date", "2026-07-01", "--json"],
+      env,
+    ).status,
+    0,
+  );
+
+  const zh = runCli(
+    ["lab", "companion", "--date", "2026-07-07"],
+    env,
+  );
+  const en = runCli(
+    [
+      "lab",
+      "companion",
+      "--date",
+      "2026-07-07",
+      "--lang",
+      "en",
+      "--full",
+    ],
+    env,
+  );
+  const colored = runCli(
+    ["lab", "companion", "--date", "2026-07-07"],
+    { ...env, FORCE_COLOR: "1", NO_COLOR: "" },
+  );
+
+  assert.equal(zh.status, 0, zh.stderr);
+  assert.equal(en.status, 0, en.stderr);
+  assert.equal(colored.status, 0, colored.stderr);
+  assert.match(zh.stdout, /伴生异物 · #[0-9a-f]+/);
+  assert.match(zh.stdout, /阶段\s+共生异形/);
+  assert.match(zh.stdout, /路线\s+污染寄生/);
+  assert.match(zh.stdout, /印记\s+污染 7 · 清醒 0 · 常态 0/);
+  assert.match(zh.stdout, /异常\s+\[1\]/);
+  assert.match(zh.stdout, /anti-ai lab companion --full/);
+  assert.match(en.stdout, /SYMBIOTIC COMPANION/);
+  assert.match(en.stdout, /STAGE\s+SYMBIOTIC ABERRATION/);
+  assert.match(en.stdout, /ROUTE\s+POLLUTION PARASITE/);
+  assert.match(en.stdout, /IMPRINTS\s+pollution 7 · clarity 0 · neutral 0/);
+  assert.match(en.stdout, /APPEARANCE FINGERPRINT/);
+  assert.doesNotMatch(en.stdout, /[\p{Script=Han}]/u);
+  assert.match(colored.stdout, /\u001b\[[0-9;]*m/);
+  assert.equal(
+    colored.stdout.replaceAll(/\u001b\[[0-9;]*m/g, ""),
+    zh.stdout,
+  );
+  for (const output of [zh.stdout, en.stdout, colored.stdout]) {
+    assert.ok(
+      output
+        .trimEnd()
+        .split("\n")
+        .every((line) => terminalWidth(line) <= 80),
+      output,
+    );
+  }
+});
+
+test("creature carries its companion without receiving numeric growth", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-companion-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 7 }, (_, index) => [
+      `2026-07-0${index + 1}`,
+      {
+        pollutionDose: 75,
+        active: true,
+        usageBand: "heavy",
+        ecologyGains: { pollution: 1, clarity: 0 },
+        traits: { context: 2, cache: 1, frenzy: 1, nuclear: 1 },
+        event: null,
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "creature-companion",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-companion",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "polluted",
+            pathologyId: "context",
+            scarId: "carbonized_spine",
+            inheritanceAbilityId: "memory",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home };
+  const incubated = runCli(
+    ["lab", "incubate", "3", "--date", "2026-06-30", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const cultureId = JSON.parse(incubated.stdout).culture.id;
+
+  const beforeResult = runCli(
+    ["creature", "--date", "2026-07-07", "--json"],
+    env,
+  );
+  assert.equal(beforeResult.status, 0, beforeResult.stderr);
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureId, "--date", "2026-07-01", "--json"],
+      env,
+    ).status,
+    0,
+  );
+  const afterResult = runCli(
+    ["creature", "--date", "2026-07-07", "--json"],
+    env,
+  );
+  const wide = runCli(["creature", "--date", "2026-07-07"], {
+    ...env,
+    COLUMNS: "120",
+  });
+  const narrow = runCli(
+    ["creature", "--date", "2026-07-07", "--lang", "en"],
+    { ...env, COLUMNS: "80" },
+  );
+
+  assert.equal(afterResult.status, 0, afterResult.stderr);
+  assert.equal(wide.status, 0, wide.stderr);
+  assert.equal(narrow.status, 0, narrow.stderr);
+  const before = JSON.parse(beforeResult.stdout);
+  const after = JSON.parse(afterResult.stdout);
+  assert.equal(before.companion, null);
+  assert.equal(after.companion.cultureId, cultureId);
+  assert.equal(after.companion.stageId, "symbiote");
+  assert.deepEqual(
+    {
+      exposure: after.exposure,
+      abilities: after.abilities,
+      malignancyRanks: after.malignancyRanks,
+      ecology: after.ecology,
+      fingerprint: after.appearance.fingerprint,
+    },
+    {
+      exposure: before.exposure,
+      abilities: before.abilities,
+      malignancyRanks: before.malignancyRanks,
+      ecology: before.ecology,
+      fingerprint: before.appearance.fingerprint,
+    },
+  );
+  assert.match(wide.stdout, /│ .*伴生异物 · #[0-9a-f]+/);
+  assert.match(wide.stdout, /污染寄生/);
+  assert.match(narrow.stdout, /SYMBIOTIC COMPANION · #[0-9a-f]+/);
+  assert.match(narrow.stdout, /POLLUTION PARASITE/);
+  assert.doesNotMatch(narrow.stdout, /[\p{Script=Han}]/u);
+  for (const [output, width] of [
+    [wide.stdout, 120],
+    [narrow.stdout, 80],
+  ]) {
+    assert.ok(
+      output
+        .trimEnd()
+        .split("\n")
+        .every((line) => terminalWidth(line) <= width),
+      output,
+    );
+  }
+});
+
+test("today week and month report companion growth without raw usage", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-periods-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 7 }, (_, index) => [
+      `2026-07-0${index + 1}`,
+      {
+        pollutionDose: 75,
+        active: true,
+        usageBand: "heavy",
+        ecologyGains: { pollution: 1, clarity: 0 },
+        traits: { context: 2, cache: 1, frenzy: 1, nuclear: 1 },
+        event: null,
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-periods",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-periods",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "polluted",
+            pathologyId: "context",
+            scarId: "carbonized_spine",
+            inheritanceAbilityId: "memory",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home, COLUMNS: "100" };
+  const incubated = runCli(
+    ["lab", "incubate", "1", "--date", "2026-06-30", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const cultureId = JSON.parse(incubated.stdout).culture.id;
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureId, "--date", "2026-07-01", "--json"],
+      env,
+    ).status,
+    0,
+  );
+  const companionResult = runCli(
+    ["lab", "companion", "--date", "2026-07-07", "--json"],
+    env,
+  );
+  assert.equal(companionResult.status, 0, companionResult.stderr);
+  const companion = JSON.parse(companionResult.stdout).companion;
+
+  const today = runCli(["today", "--date", "2026-07-07"], env);
+  const week = runCli(["week", "--date", "2026-07-07"], env);
+  const month = runCli(
+    ["month", "--date", "2026-07-07", "--lang", "en"],
+    env,
+  );
+
+  assert.equal(today.status, 0, today.stderr);
+  assert.equal(week.status, 0, week.stderr);
+  assert.equal(month.status, 0, month.stderr);
+  assert.match(today.stdout, /伴生观察\s+污染印记 · 共生异形/);
+  assert.match(
+    week.stdout,
+    /伴生病程\s+7 个印记 · 培养物 → 共生异形 · 污染寄生/,
+  );
+  assert.match(
+    month.stdout,
+    /COMPANION COURSE\s+7 IMPRINTS · POLLUTION CULTURE → SYMBIOTIC ABERRATION · POLLUTION PARASITE/,
+  );
+  assert.doesNotMatch(month.stdout, /[\p{Script=Han}]/u);
+  assert.doesNotMatch(
+    `${today.stdout}${week.stdout}${month.stdout}`,
+    /"totalTokens"|modelName|prompt|response|requestTimestamp|session\.jsonl/,
+  );
+});
+
+test("codex records companion stages and anomalies outside the fixed denominator", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-codex-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 7 }, (_, index) => [
+      `2026-07-0${index + 1}`,
+      {
+        pollutionDose: 75,
+        active: true,
+        usageBand: "heavy",
+        ecologyGains: { pollution: 1, clarity: 0 },
+        traits: { context: 2, cache: 1, frenzy: 1, nuclear: 1 },
+        event: null,
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-codex",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-companion-codex",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "polluted",
+            pathologyId: "context",
+            scarId: "carbonized_spine",
+            inheritanceAbilityId: "memory",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home };
+  const incubated = runCli(
+    ["lab", "incubate", "1", "--date", "2026-06-30", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const culture = JSON.parse(incubated.stdout).culture;
+  const cultureId = culture.id;
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureId, "--date", "2026-07-01", "--json"],
+      env,
+    ).status,
+    0,
+  );
+  const companionResult = runCli(
+    ["lab", "companion", "--date", "2026-07-07", "--json"],
+    env,
+  );
+  assert.equal(companionResult.status, 0, companionResult.stderr);
+  const companion = JSON.parse(companionResult.stdout).companion;
+
+  const first = runCli(["codex", "--date", "2026-07-07", "--json"], env);
+  const second = runCli(["codex", "--date", "2026-07-07", "--json"], env);
+  const human = runCli(["codex", "--date", "2026-07-07"], env);
+  const bondDate = runCli(
+    ["codex", "--date", "2026-07-01", "--json"],
+    env,
+  );
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(human.status, 0, human.stderr);
+  assert.equal(bondDate.status, 0, bondDate.stderr);
+  const codex = JSON.parse(first.stdout);
+  assert.deepEqual(JSON.parse(second.stdout), codex);
+  assert.equal(codex.summary.fixed.total, 50);
+  assert.deepEqual(codex.summary.companions, { discovered: 1 });
+  assert.deepEqual(codex.sections.companions, [
+    {
+      id: cultureId,
+      discoveredAt: "2026-07-01",
+      stageId: "symbiote",
+      routeId: "pollution",
+      rarity: culture.rarity,
+      anomalyIds: companion.anomalyIds,
+      fingerprint: companion.appearance.fingerprint,
+    },
+  ]);
+  assert.equal(codex.sections.companions[0].anomalyIds.length, 1);
+  assert.match(codex.sections.companions[0].fingerprint, /^[0-9a-f]{12}$/);
+  assert.match(human.stdout, /伴生异物\s+\[1\]/);
+  assert.match(human.stdout, /共生异形 · 污染寄生 · 异常 1/);
+  const bondDateCodex = JSON.parse(bondDate.stdout);
+  assert.equal(bondDateCodex.sections.companions[0].stageId, "parasite");
+  assert.deepEqual(bondDateCodex.sections.companions[0].anomalyIds, []);
+  assert.ok(
+    bondDateCodex.recent.some(
+      (entry) => entry.type === "companion" && entry.id === cultureId,
+    ),
+  );
+  assert.doesNotMatch(
+    `${first.stdout}${human.stdout}`,
+    /"totalTokens"|"modelName"|"prompt"|"response"|"requestTimestamp"|session\.jsonl/,
+  );
+});
+
+test("companion share card renders one privacy-safe growing sidekick", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-companion-card-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 7 }, (_, index) => [
+      `2026-07-0${index + 1}`,
+      {
+        pollutionDose: 75,
+        active: true,
+        usageBand: "heavy",
+        ecologyGains: { pollution: 1, clarity: 0 },
+        traits: { context: 2, cache: 1, frenzy: 1, nuclear: 1 },
+        event: null,
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 9,
+      seed: "companion-card",
+      days,
+      generations: {
+        fossils: [
+          {
+            id: "fossil-companion-card",
+            generation: 1,
+            sealedAt: "2026-06-20",
+            ecologyId: "polluted",
+            pathologyId: "context",
+            scarId: "carbonized_spine",
+          },
+        ],
+        evolutions: {},
+      },
+      casebook: { cases: [], nextAtExperience: 14 },
+      foreignSpecimens: [],
+      laboratory: { version: 1, nextBatch: 1, cultures: [] },
+    })}\n`,
+  );
+  const env = { HOME: home };
+  const incubated = runCli(
+    ["lab", "incubate", "2", "--date", "2026-06-30", "--json"],
+    env,
+  );
+  assert.equal(incubated.status, 0, incubated.stderr);
+  const cultureId = JSON.parse(incubated.stdout).culture.id;
+  assert.equal(
+    runCli(
+      ["lab", "bond", cultureId, "--date", "2026-07-01", "--json"],
+      env,
+    ).status,
+    0,
+  );
+  assert.equal(
+    runCli(
+      ["lab", "companion", "--date", "2026-07-07", "--json"],
+      env,
+    ).status,
+    0,
+  );
+
+  const first = runCli(
+    [
+      "share",
+      "--card",
+      "companion",
+      "--date",
+      "2026-07-07",
+      "--lang",
+      "en",
+    ],
+    env,
+  );
+  const repeated = runCli(
+    [
+      "share",
+      "--card",
+      "companion",
+      "--date",
+      "2026-07-07",
+      "--lang",
+      "en",
+    ],
+    env,
+  );
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  assert.equal(repeated.stdout, first.stdout);
+  assert.match(first.stdout, /<svg[^>]+width="1200"[^>]+height="630"/);
+  assert.match(first.stdout, /SYMBIOTIC COMPANION/);
+  assert.match(first.stdout, new RegExp(cultureId));
+  assert.match(first.stdout, /SYMBIOTIC ABERRATION/);
+  assert.match(first.stdout, /POLLUTION PARASITE/);
+  assert.match(first.stdout, /ANOMALIES/);
+  assert.match(first.stdout, /LOCAL-ONLY/);
+  assert.match(first.stdout, /no chats, paths, model names, or exact tokens/);
+  assert.doesNotMatch(first.stdout, /[\p{Script=Han}]/u);
+  assert.doesNotMatch(
+    first.stdout,
+    /session\.jsonl|\/Users\/|mutation-test|"totalTokens"|"requestTimestamp"/,
   );
 });
 
@@ -6256,12 +7413,12 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /schema v9.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*培养物.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
+    /schema v10.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*培养物.*伴生绑定\/离散印记\/异常 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
 
-test("explain discloses ecology, laboratory choices, and schema v9", () => {
+test("explain discloses ecology, companion guardrails, and schema v10", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
@@ -6293,7 +7450,11 @@ test("explain discloses ecology, laboratory choices, and schema v9", () => {
   );
   assert.match(
     result.stdout,
-    /schema v9.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+    /伴生异物.*每天只增加一枚印记.*高消耗、克制使用和 AI 清醒日.*成长速度相同.*寄生幼体.*共生异形.*共犯器官.*不改变主异变体的任何数值/s,
+  );
+  assert.match(
+    result.stdout,
+    /schema v10.*schema v1-v9.*不保存.*精确 Token.*模型名.*路径.*对话/s,
   );
 });
 
@@ -6326,7 +7487,11 @@ test("doctor, explain, and help support English output", () => {
     explain.stdout,
     /Pollution laboratory.*foreign specimens.*permanent fossils.*case slices.*three deterministic formulas.*does not consume materials.*does not change growth, abilities, or ecology/s,
   );
-  assert.match(explain.stdout, /schema v9.*schema v1-v8 migrate locally/s);
+  assert.match(
+    explain.stdout,
+    /symbiotic companion.*one imprint per observed day.*heavy, restrained, and AI-free days grow at.*the same rate.*PARASITIC HATCHLING.*SYMBIOTIC ABERRATION.*ACCOMPLICE ORGAN.*changes no creature numbers/s,
+  );
+  assert.match(explain.stdout, /schema v10.*schema v1-v9 migrate locally/s);
   assert.doesNotMatch(explain.stdout, /模型统计|个人基线与判词/);
 
   assert.equal(help.status, 0, help.stderr);
@@ -6482,6 +7647,44 @@ test("pollution laboratory actions expose focused bilingual help", () => {
   assert.match(share.stdout, /--id <culture-id>/);
 });
 
+test("symbiotic companion actions expose focused bilingual help", () => {
+  const zhBond = runCli(["help", "lab", "bond"]);
+  const enBond = runCli(["help", "lab", "bond", "--lang", "en"]);
+  const zhCompanion = runCli(["help", "lab", "companion"]);
+  const enCompanion = runCli([
+    "lab",
+    "companion",
+    "--help",
+    "--lang",
+    "en",
+  ]);
+  const share = runCli(["help", "share", "--lang", "en"]);
+
+  for (const result of [
+    zhBond,
+    enBond,
+    zhCompanion,
+    enCompanion,
+    share,
+  ]) {
+    assert.equal(result.status, 0, result.stderr);
+  }
+  assert.match(zhBond.stdout, /Usage: anti-ai lab bond <culture-id>/);
+  assert.match(zhBond.stdout, /建立伴生关系/);
+  assert.match(zhBond.stdout, /同一天最多形成一个印记/);
+  assert.match(enBond.stdout, /Usage: anti-ai lab bond <culture-id>/);
+  assert.match(enBond.stdout, /symbiotic bond/i);
+  assert.match(zhCompanion.stdout, /Usage: anti-ai lab companion/);
+  assert.match(zhCompanion.stdout, /寄生幼体、共生异形和共犯器官/);
+  assert.match(enCompanion.stdout, /Usage: anti-ai lab companion/);
+  assert.match(enCompanion.stdout, /--full/);
+  assert.match(enCompanion.stdout, /one imprint per observed day/i);
+  assert.match(share.stdout, /companion/);
+  assert.match(share.stdout, /growing companion card/i);
+  assert.doesNotMatch(enBond.stdout, /[\p{Script=Han}]/u);
+  assert.doesNotMatch(enCompanion.stdout, /[\p{Script=Han}]/u);
+});
+
 test("laboratory rejects unavailable materials, invalid choices, and missing cultures", (t) => {
   const emptyHome = mkdtempSync(path.join(tmpdir(), "anti-ai-lab-empty-"));
   const readyHome = mkdtempSync(path.join(tmpdir(), "anti-ai-lab-invalid-"));
@@ -6587,7 +7790,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 1.8.0\n");
+  assert.equal(result.stdout, "anti-ai 1.9.0\n");
   assert.equal(result.stderr, "");
 });
 

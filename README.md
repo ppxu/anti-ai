@@ -113,6 +113,8 @@ anti-ai lab --json
 anti-ai lab incubate 1
 anti-ai lab shelf
 anti-ai lab inspect <culture-id>
+anti-ai lab bond <culture-id>
+anti-ai lab companion
 
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
@@ -123,6 +125,7 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
+anti-ai share --card companion > anti-ai-companion.svg
 
 anti-ai creature
 anti-ai creature --full
@@ -191,7 +194,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, and laboratory cultures are collected without an artificial upper limit.
+The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, and bonded companion forms are collected without an artificial upper limit.
 
 `codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
@@ -223,11 +226,16 @@ anti-ai lab incubate 1
 anti-ai lab shelf
 anti-ai lab shelf --full
 anti-ai lab inspect <culture-id>
+anti-ai lab bond <culture-id>
+anti-ai lab companion
+anti-ai lab companion --full
 ```
 
 Each batch exposes three deterministic formulas. Viewing the laboratory cannot reroll them: the same local seed, derived material inventory, and batch always produce the same choices. Selecting one formula seals a culture with its own dish ASCII, rarity, Ecology, pathology, complication, and side effect; the other two formulas expire with that batch.
 
-Materials are references and are never consumed. Cultures do not change creature experience, abilities, Malignancy, Ecology, evolution rates, combat power, or Token rewards. The laboratory reads only derived local state and never scans raw Agent logs. See [Pollution Laboratory](./docs/laboratory.md) for formula rules, rarity, state, and privacy.
+Materials are references and are never consumed. Cultures do not change creature experience, abilities, Malignancy, Ecology, evolution rates, combat power, or Token rewards. Formula generation and incubation read only derived local state and never scan Agent logs.
+
+A sealed culture can become a symbiotic companion through `lab bond`. It receives exactly one imprint per observed day: heavy, restrained, and AI-free days grow at the same rate while shaping Pollution, Clarity, or Paradox. It advances from PARASITIC HATCHLING to SYMBIOTIC ABERRATION and ACCOMPLICE ORGAN, with deterministic anomalies and a changing ASCII body at days 7 and 21. A direct companion command settles an unseen date through the same privacy-preserving local usage accounting as `creature`; conversation content is never read. See [Pollution Laboratory](./docs/laboratory.md) for formula rules and [Symbiotic Companions](./docs/companions.md) for the full growth model.
 
 ### `share`
 
@@ -244,9 +252,10 @@ anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
+anti-ai share --card companion > anti-ai-companion.svg
 ```
 
-Creature history and the laboratory support seven privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, `prognosis` for the current three-route case, and `culture` for a sealed laboratory accident. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending; culture defaults to the latest sealed dish and accepts `--id`.
+Creature history and the laboratory support eight privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, `prognosis` for the current three-route case, `culture` for a sealed laboratory accident, and `companion` for the currently bonded growth file. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending; culture defaults to the latest sealed dish and accepts `--id`; companion becomes available after `lab bond`.
 
 Nothing is uploaded. Every card omits exact Token totals, requests, source/model names, paths, and conversation content; the destination file is controlled entirely by your shell. Creature cards require the complete data set and therefore reject `--source` filters.
 
@@ -278,7 +287,7 @@ Every 14 experience days may offer one turning-point case. Its three routes—Po
 
 The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
-Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, and [Pollution Laboratory](./docs/laboratory.md) for culture formulas and display. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md).
+Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, and [Symbiotic Companions](./docs/companions.md) for the sidekick growth model. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md).
 
 ### `doctor`
 
@@ -372,8 +381,11 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/content.mjs`: deterministic bilingual footer and share-copy pools
 - `src/reporting.mjs`: receipts, calendars, cards, and verdicts
 - `src/creature.mjs`: mutation growth rules and local state
+- `src/laboratory.mjs`: derived formulas, sealed cultures, and shelves
+- `src/companion.mjs`: companion bonds, imprints, routes, and ASCII growth
 - `src/shared.mjs`: shared language and empty-usage primitives
 - `docs/creature.md`: complete Creature system and species-capacity guide
+- `docs/companions.md`: complete Symbiotic Companion guide
 
 ## Contributing
 

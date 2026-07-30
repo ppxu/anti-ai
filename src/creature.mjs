@@ -9,6 +9,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { color } from "./reporting.mjs";
+import { companionView } from "./companion.mjs";
 
 const CREATURE_STAGES = [
   {
@@ -2204,6 +2205,20 @@ function creatureCodex(state, date) {
       rarity: entry.rarity,
       fingerprint: entry.appearance.fingerprint,
       ingredientTypes: entry.ingredients.map(({ type }) => type),
+      ...(entry.companion?.bondedAt <= date
+        ? { companion: companionView(entry, date) }
+        : {}),
+    }));
+  const companions = cultures
+    .filter((entry) => entry.companion)
+    .map((entry) => ({
+      id: entry.id,
+      discoveredAt: entry.companion.bondedAt,
+      stageId: entry.companion.stageId,
+      routeId: entry.companion.routeId,
+      rarity: entry.rarity,
+      anomalyIds: entry.companion.anomalyIds,
+      fingerprint: entry.companion.appearance.fingerprint,
     }));
   const formDiscoveries = new Map();
   for (const specimen of specimens) {
@@ -2321,6 +2336,12 @@ function creatureCodex(state, date) {
       discovered: true,
       discoveredAt: entry.discoveredAt,
     })),
+    ...companions.map((entry) => ({
+      type: "companion",
+      id: entry.id,
+      discovered: true,
+      discoveredAt: entry.discoveredAt,
+    })),
     ...fossils.map((entry) => ({
       type: "fossil",
       id: entry.id,
@@ -2364,6 +2385,7 @@ function creatureCodex(state, date) {
       foreignSpecimens: { discovered: foreignSpecimens.length },
       caseSlices: { discovered: caseSlices.length },
       cultures: { discovered: cultures.length },
+      companions: { discovered: companions.length },
       fossils: { discovered: fossils.length },
     },
     sections: {
@@ -2375,6 +2397,7 @@ function creatureCodex(state, date) {
       foreignSpecimens,
       caseSlices,
       cultures,
+      companions,
       fossils,
     },
     recent,
@@ -2590,13 +2613,24 @@ function migrateCreatureState(state) {
   state.casebook.cases ??= [];
   state.casebook.nextAtExperience ??= 14;
   state.laboratory ??= {
-    version: 1,
+    version: 2,
     nextBatch: 1,
     cultures: [],
+    activeCultureId: null,
+    bondHistory: [],
+    imprintAssignments: {},
   };
-  state.laboratory.version ??= 1;
+  state.laboratory.version = 2;
   state.laboratory.nextBatch ??= (state.laboratory.cultures?.length ?? 0) + 1;
   state.laboratory.cultures ??= [];
+  state.laboratory.activeCultureId ??= null;
+  state.laboratory.bondHistory ??= [];
+  state.laboratory.imprintAssignments ??= {};
+  for (const culture of state.laboratory.cultures) {
+    if (!culture.companion) continue;
+    culture.companion.imprints ??= {};
+    culture.companion.anomalyIds ??= [];
+  }
   let hasHatched = false;
   for (const [date, day] of Object.entries(state.days).sort(([left], [right]) =>
     left.localeCompare(right),
@@ -2622,7 +2656,7 @@ function migrateCreatureState(state) {
     );
     if (day.active) hasHatched = true;
   }
-  state.schemaVersion = 9;
+  state.schemaVersion = 10;
   return state;
 }
 
@@ -2634,7 +2668,7 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if ([1, 2, 3, 4, 5, 6, 7, 8, 9].includes(state?.schemaVersion) && state.days) {
+    if ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
       return migrateCreatureState(state);
@@ -2643,7 +2677,7 @@ async function loadCreatureState() {
     if (error.code !== "ENOENT") throw error;
   }
   return migrateCreatureState({
-    schemaVersion: 9,
+    schemaVersion: 10,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},
@@ -3164,6 +3198,10 @@ function creatureCasebook(state, startDate, endDate) {
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,
     cultures: codex.sections.cultures.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    companions: codex.sections.companions.filter(
       (entry) =>
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,

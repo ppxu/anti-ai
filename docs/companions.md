@@ -19,7 +19,7 @@ anti-ai share --card companion > anti-ai-companion.svg
 
 Run `anti-ai help lab bond` or `anti-ai help lab companion` for focused help.
 
-When the requested date has not yet been settled, `lab bond`, `lab companion`, and the companion share card first run the normal complete-source local usage accounting used by `creature`. This reads usage metadata only, never conversation content, and makes the companion commands work as standalone daily entry points.
+When the requested date has not yet been settled, `lab bond` and `lab companion` first run the normal complete-source local usage accounting used by `creature`. The companion share card derives the same current snapshot in memory but never saves it. Both paths read usage metadata only, never conversation content.
 
 ## Bonding
 

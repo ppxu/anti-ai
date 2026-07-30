@@ -1,6 +1,6 @@
 {
   "name": "anti-ai",
-  "version": "1.9.0",
+  "version": "2.0.0",
   "description": "Turn local coding-agent token usage into a satirical resource receipt, mutation creature, and symbiotic companion.",
   "type": "module",
   "bin": {
@@ -8,15 +8,17 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check bin/anti-ai.mjs && node --check src/casebook.mjs && node --check src/cli.mjs && node --check src/comparisons.mjs && node --check src/companion.mjs && node --check src/content.mjs && node --check src/creature.mjs && node --check src/encounter.mjs && node --check src/help.mjs && node --check src/laboratory.mjs && node --check src/methodology.mjs && node --check src/reporting.mjs && node --check src/scanner.mjs && node --check src/shared.mjs",
-    "verify": "npm run check && npm test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**/*.mjs\" --test-coverage-lines=90 --test-coverage-functions=90 --test-coverage-branches=75 test/*.test.mjs",
+    "test:package": "node scripts/verify-package.mjs",
+    "check": "node scripts/check.mjs",
+    "verify": "npm run check && npm run test:coverage && npm run test:package",
     "prepublishOnly": "npm run verify",
     "start": "node ./bin/anti-ai.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "better-sqlite3": "^12.11.1"
   },
   "files": [

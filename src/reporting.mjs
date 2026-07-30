@@ -91,6 +91,30 @@ function sourceBreakdownLines(sources) {
   );
 }
 
+function sourceWarningLines(reports, lang = "zh") {
+  const failures = new Map();
+  for (const report of reports) {
+    for (const warning of report.warnings ?? []) {
+      failures.set(warning.source, warning.code);
+    }
+  }
+  if (failures.size === 0) return [];
+  return [
+    color(
+      "33",
+      localized(
+        lang,
+        `  ⚠ 未计入：${[...failures]
+          .map(([source, code]) => `${source} (${code})`)
+          .join(" · ")}`,
+        `  ⚠ Not counted: ${[...failures]
+          .map(([source, code]) => `${source} (${code})`)
+          .join(" · ")}`,
+      ),
+    ),
+  ];
+}
+
 function displayModelName(model) {
   const sanitized = String(model).replace(/[\p{Cc}\p{Cf}]/gu, "�");
   const characters = Array.from(sanitized);
@@ -745,6 +769,7 @@ function renderReceipt(
     : undefined;
   const modelLines = modelBreakdownLines(report, 5, lang);
   const sourceLines = sourceBreakdownLines(sources);
+  const warningLines = sourceWarningLines([report], lang);
   const uncachedInputTokens = Math.max(
     0,
     totals.inputTokens -
@@ -759,6 +784,7 @@ function renderReceipt(
     `  ${color("1", `${formatTokens(totals.totalTokens)} tokens`)} · ${totals.requests} ${localized(lang, "次模型请求", totals.requests === 1 ? "model request" : "model requests")}`,
     "",
     ...sourceLines,
+    ...(warningLines.length > 0 ? ["", ...warningLines] : []),
     ...(modelLines.length > 0 ? ["", ...modelLines] : []),
     "",
     `  ${localized(lang, "新鲜输入   ", "Fresh input  ")} ${formatTokens(uncachedInputTokens)}`,
@@ -797,551 +823,6 @@ function renderReceipt(
     "",
   ];
   return lines.join("\n");
-}
-
-function escapeXml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function renderShareSvg(report, historicalReports = [], lang = "zh") {
-  const { date, totals } = report;
-  const resources = estimateResources(totals);
-  const comparisons = everydayComparisons(resources, "today", lang);
-  const baseline =
-    historicalReports.length > 0 ? averageTotals(historicalReports) : emptyUsage();
-  const verdict = dailyVerdict(totals, baseline, date, lang);
-  const title = localized(
-    lang,
-    `今日罪名：${verdict.title}`,
-    `TODAY'S CHARGE: ${verdict.title}`,
-  );
-  const privacy = localized(
-    lang,
-    "隐私模式：未包含对话、路径、模型名和精确 Token",
-    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
-  );
-  const methodology = rotatingCopy(date, SHARE_METHODOLOGY[lang]);
-  const tokenChange = formatChange(
-    totals.totalTokens,
-    baseline.totalTokens,
-    lang,
-  );
-  const requestChange = formatChange(
-    totals.requests,
-    baseline.requests,
-    lang,
-  );
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">${escapeXml(`YOUR AI RECEIPT · ${date}`)}</title>
-  <desc id="desc">${escapeXml(privacy)}</desc>
-  <rect width="1200" height="630" rx="28" fill="#0b0b0c"/>
-  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#343438" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="#ff4d4f"/>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .muted { fill: #8c8c94; }
-    .body { fill: #f4f4f5; }
-    .accent { fill: #ff5c5e; }
-    .warn { fill: #f5b942; }
-  </style>
-  <text x="72" y="84" class="mono accent" font-size="34" font-weight="800">YOUR AI RECEIPT</text>
-  <text x="1128" y="84" class="mono muted" font-size="22" text-anchor="end">${escapeXml(date)}</text>
-  <line x1="72" y1="116" x2="1128" y2="116" stroke="#343438" stroke-width="2"/>
-
-  <text x="72" y="164" class="mono warn" font-size="19">${escapeXml(localized(lang, "资源消耗估算", "RESOURCE USE ESTIMATE"))}</text>
-  <text x="72" y="214" class="mono body" font-size="28">⚡ ${escapeXml(formatResource(resources.energyWh, "Wh"))}</text>
-  <text x="72" y="264" class="mono body" font-size="28">💧 ${escapeXml(formatResource(resources.waterMl, "mL"))}</text>
-  <text x="72" y="314" class="mono body" font-size="28">☁️ ${escapeXml(formatResource(resources.carbonGrams, "gCO₂e"))}</text>
-
-  <text x="620" y="164" class="mono warn" font-size="19">${escapeXml(localized(lang, "生活翻译", "EVERYDAY TRANSLATION"))}</text>
-  <text x="620" y="214" class="mono body" font-size="18">${escapeXml(`${comparisons[0].icon} ${comparisons[0].label}`)}</text>
-  <text x="1128" y="214" class="mono body" font-size="18" text-anchor="end">${escapeXml(comparisons[0].value)}</text>
-  <text x="620" y="264" class="mono body" font-size="18">${escapeXml(`${comparisons[2].icon} ${comparisons[2].label}`)}</text>
-  <text x="1128" y="264" class="mono body" font-size="18" text-anchor="end">${escapeXml(comparisons[2].value)}</text>
-  <text x="620" y="314" class="mono body" font-size="18">${escapeXml(`${comparisons[4].icon} ${comparisons[4].label}`)}</text>
-  <text x="1128" y="314" class="mono body" font-size="18" text-anchor="end">${escapeXml(comparisons[4].value)}</text>
-
-  <line x1="72" y1="354" x2="1128" y2="354" stroke="#343438" stroke-width="2"/>
-  <text x="72" y="404" class="mono accent" font-size="30" font-weight="800">${escapeXml(title)}</text>
-  <text x="72" y="448" class="mono body" font-size="20">${escapeXml(verdict.detail)}</text>
-  <text x="72" y="492" class="mono muted" font-size="19">${escapeXml(localized(lang, `相对 7 日基线：Token ${tokenChange} · 请求 ${requestChange}`, `VS 7-DAY BASELINE: tokens ${tokenChange} · requests ${requestChange}`))}</text>
-
-  <line x1="72" y1="526" x2="1128" y2="526" stroke="#343438" stroke-width="2"/>
-  <text x="72" y="556" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
-  <text x="72" y="580" class="mono muted" font-size="15">${escapeXml(methodology)}</text>
-  <text x="1128" y="600" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
-</svg>
-`;
-  return svg;
-}
-
-function renderPathologyShareSvg(view, lang = "zh") {
-  const privacy = localized(
-    lang,
-    "隐私模式：无对话、路径、模型名或精确 Token",
-    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
-  );
-  const artLines = view.art
-    .replaceAll(/\u001B\[[0-9;]*m/g, "")
-    .split("\n")
-    .filter(Boolean)
-    .map(
-      (line, index) =>
-        `<tspan x="74" dy="${index === 0 ? 0 : 31}">${escapeXml(line)}</tspan>`,
-    )
-    .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">${escapeXml(localized(lang, "异变体病理报告", "MUTATION PATHOLOGY REPORT"))}</title>
-  <desc id="desc">${escapeXml(privacy)}</desc>
-  <rect width="1200" height="630" rx="28" fill="#090d0c"/>
-  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#27433a" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="#43d19e"/>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .muted { fill: #78958b; }
-    .body { fill: #ecf7f3; }
-    .accent { fill: #43d19e; }
-    .warn { fill: #f3c969; }
-  </style>
-  <text x="72" y="82" class="mono accent" font-size="32" font-weight="800">${escapeXml(localized(lang, "异变体病理报告", "MUTATION PATHOLOGY REPORT"))}</text>
-  <text x="1128" y="82" class="mono muted" font-size="20" text-anchor="end">${escapeXml(view.date)}</text>
-  <line x1="72" y1="114" x2="1128" y2="114" stroke="#27433a" stroke-width="2"/>
-
-  <text x="72" y="154" class="mono warn" font-size="18">${escapeXml(localized(lang, `标本编号 ${view.specimenId}`, `SPECIMEN ID ${view.specimenId}`))}</text>
-  <text x="74" y="202" class="mono body" font-size="22" xml:space="preserve">${artLines}</text>
-
-  <text x="610" y="164" class="mono muted" font-size="16">${escapeXml(localized(lang, "生态人格", "ECOLOGY"))}</text>
-  <text x="610" y="198" class="mono body" font-size="24">${escapeXml(view.ecology)}</text>
-  <text x="610" y="244" class="mono muted" font-size="16">${escapeXml(localized(lang, "当前形态", "CURRENT FORM"))}</text>
-  <text x="610" y="278" class="mono body" font-size="24">${escapeXml(view.form)}</text>
-  <text x="610" y="324" class="mono muted" font-size="16">${escapeXml(localized(lang, "生命阶段", "LIFE STAGE"))}</text>
-  <text x="610" y="358" class="mono body" font-size="21">${escapeXml(`${view.stage} · ${view.experience}`)}</text>
-  <text x="610" y="404" class="mono muted" font-size="16">${escapeXml(localized(lang, "病历称号", "CASEBOOK EPITHET"))}</text>
-  <text x="610" y="438" class="mono warn" font-size="19">${escapeXml(view.epithet)}</text>
-  <text x="610" y="484" class="mono muted" font-size="16">${escapeXml(localized(lang, "今日生态切片", "TODAY'S ECOLOGY SLICE"))}</text>
-  <text x="610" y="516" class="mono body" font-size="18">${escapeXml(view.ecologyGain)}</text>
-
-  <line x1="72" y1="544" x2="1128" y2="544" stroke="#27433a" stroke-width="2"/>
-  <text x="72" y="574" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
-  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
-</svg>
-`;
-}
-
-function renderEncounterShareSvg(view, lang = "zh") {
-  const title = localized(
-    lang,
-    "异变体接触事故",
-    "MUTATION CONTACT INCIDENT",
-  );
-  const privacy = localized(
-    lang,
-    "隐私模式：无对话、路径、模型名、精确 Token 或污染编码",
-    "PRIVACY MODE: no chats, paths, models, exact tokens, or pollution codes",
-  );
-  const artLines = view.art
-    .replaceAll(/\u001B\[[0-9;]*m/g, "")
-    .split("\n")
-    .filter(Boolean)
-    .map(
-      (line, index) =>
-        `<tspan x="72" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
-    )
-    .join("");
-  const detailLines = [];
-  let remainingDetail = view.detail;
-  while (remainingDetail.length > 0 && detailLines.length < 2) {
-    if (remainingDetail.length <= 52) {
-      detailLines.push(remainingDetail);
-      break;
-    }
-    const candidate = remainingDetail.slice(0, 52);
-    const splitAt =
-      lang === "en" && candidate.includes(" ")
-        ? candidate.lastIndexOf(" ")
-        : 52;
-    detailLines.push(remainingDetail.slice(0, splitAt));
-    remainingDetail = remainingDetail.slice(splitAt).trimStart();
-  }
-  const detailTspans = detailLines
-    .map(
-      (line, index) =>
-        `<tspan x="610" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
-    )
-    .join("");
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">${escapeXml(title)}</title>
-  <desc id="desc">${escapeXml(privacy)}</desc>
-  <rect width="1200" height="630" rx="28" fill="#0d0912"/>
-  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#513069" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="#bd68ff"/>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .muted { fill: #927da3; }
-    .body { fill: #f5eff9; }
-    .accent { fill: #d991ff; }
-    .warn { fill: #ffca6b; }
-  </style>
-  <text x="72" y="82" class="mono accent" font-size="32" font-weight="800">${escapeXml(title)}</text>
-  <text x="1128" y="82" class="mono muted" font-size="18" text-anchor="end">${escapeXml(view.date)} · INCIDENT #${escapeXml(view.encounterId)}</text>
-  <line x1="72" y1="114" x2="1128" y2="114" stroke="#513069" stroke-width="2"/>
-
-  <text x="72" y="154" class="mono warn" font-size="17">${escapeXml(localized(lang, `混种标本 #${view.hybridFingerprint}`, `HYBRID SPECIMEN #${view.hybridFingerprint}`))}</text>
-  <text x="72" y="190" class="mono body" font-size="17" xml:space="preserve">${artLines}</text>
-
-  <text x="610" y="158" class="mono muted" font-size="15">${escapeXml(localized(lang, "算力天气", "COMPUTE WEATHER"))}</text>
-  <text x="610" y="190" class="mono warn" font-size="20">${escapeXml(view.weather)}</text>
-  <text x="610" y="230" class="mono muted" font-size="15">${escapeXml(localized(lang, "接触类型", "CONTACT TYPE"))}</text>
-  <text x="610" y="262" class="mono accent" font-size="20">${escapeXml(view.type)}</text>
-  <text x="610" y="302" class="mono muted" font-size="15">${escapeXml(localized(lang, "亲本形态", "PARENT FORMS"))}</text>
-  <text x="610" y="334" class="mono body" font-size="16">${escapeXml(`${view.localForm} × ${view.visitorForm}`)}</text>
-  <text x="610" y="374" class="mono muted" font-size="15">${escapeXml(localized(lang, "事故产物", "ACCIDENT PRODUCT"))}</text>
-  <text x="610" y="406" class="mono body" font-size="18">${escapeXml(view.hybridForm)}</text>
-  <text x="610" y="452" class="mono body" font-size="15">${detailTspans}</text>
-
-  <line x1="72" y1="544" x2="1128" y2="544" stroke="#513069" stroke-width="2"/>
-  <text x="72" y="574" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
-  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
-</svg>
-`;
-}
-
-function renderPrognosisShareSvg(view, lang = "zh") {
-  const title = localized(
-    lang,
-    "分叉病历预演",
-    "FORKED CASEBOOK PROGNOSIS",
-  );
-  const privacy = localized(
-    lang,
-    "隐私模式：无对话、路径、模型名或精确 Token",
-    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
-  );
-  const prompt = localized(
-    lang,
-    "替它选一个无法善终的未来",
-    "PICK ONE UNTENABLE FUTURE",
-  );
-  const artLines = view.art
-    .replaceAll(/\u001B\[[0-9;]*m/g, "")
-    .split("\n")
-    .filter(Boolean)
-    .map(
-      (line, index) =>
-        `<tspan x="72" dy="${index === 0 ? 0 : 25}">${escapeXml(line)}</tspan>`,
-    )
-    .join("");
-  const optionLines = view.options
-    .map(
-      (option, index) => `
-  <text x="592" y="${236 + index * 108}" class="mono accent" font-size="21" font-weight="700">${escapeXml(`${option.slot} · ${option.label}`)}</text>
-  <text x="618" y="${270 + index * 108}" class="mono body" font-size="15">${escapeXml(option.benefit)}</text>
-  <text x="618" y="${296 + index * 108}" class="mono warn" font-size="15">${escapeXml(`${localized(lang, "代价", "COST")}: ${option.cost}`)}</text>`,
-    )
-    .join("");
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">${escapeXml(title)}</title>
-  <desc id="desc">${escapeXml(privacy)}</desc>
-  <rect width="1200" height="630" rx="28" fill="#0e0a0d"/>
-  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#5b3147" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="#ff5e8a"/>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .muted { fill: #a08391; }
-    .body { fill: #f8eef3; }
-    .accent { fill: #ff7ba1; }
-    .warn { fill: #f1bc61; }
-  </style>
-  <text x="72" y="82" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
-  <text x="1128" y="82" class="mono muted" font-size="18" text-anchor="end">${escapeXml(view.date)}</text>
-  <line x1="72" y1="114" x2="1128" y2="114" stroke="#5b3147" stroke-width="2"/>
-
-  <text x="72" y="154" class="mono warn" font-size="17">${escapeXml(`${localized(lang, "病例", "CASE")} #${view.caseId}`)}</text>
-  <text x="72" y="188" class="mono body" font-size="22">${escapeXml(view.caseLabel)}</text>
-  <text x="72" y="232" class="mono muted" font-size="15">${escapeXml(`${localized(lang, "标本编号", "SPECIMEN ID")} ${view.specimenId}`)}</text>
-  <text x="72" y="276" class="mono body" font-size="17" xml:space="preserve">${artLines}</text>
-
-  <text x="592" y="174" class="mono warn" font-size="18">${escapeXml(prompt)}</text>${optionLines}
-
-  <line x1="72" y1="544" x2="1128" y2="544" stroke="#5b3147" stroke-width="2"/>
-  <text x="72" y="574" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
-  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
-</svg>
-`;
-}
-
-function renderCreatureCollectionShareSvg(view, kind, lang = "zh") {
-  const privacy = localized(
-    lang,
-    "隐私模式：无对话、路径、模型名或精确 Token",
-    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
-  );
-  const titles = {
-    specimen: localized(lang, "异变标本卡", "MUTATION SPECIMEN CARD"),
-    wanted: localized(lang, "异变悬赏", "MUTATION WANTED"),
-    fossil: localized(
-      lang,
-      "永久化石证书",
-      "PERMANENT FOSSIL CERTIFICATE",
-    ),
-  };
-  const palettes = {
-    specimen: {
-      background: "#0a0d12",
-      border: "#27415f",
-      accent: "#5aa9ff",
-      muted: "#7f94ac",
-      body: "#edf6ff",
-      warn: "#c58cff",
-    },
-    wanted: {
-      background: "#120b08",
-      border: "#613e2b",
-      accent: "#ff8a42",
-      muted: "#a98d7b",
-      body: "#fff3e8",
-      warn: "#ffd166",
-    },
-    fossil: {
-      background: "#100e09",
-      border: "#5d5134",
-      accent: "#d8bc72",
-      muted: "#9b9070",
-      body: "#f5edd5",
-      warn: "#e48962",
-    },
-  };
-  const palette = palettes[kind];
-  const art = view.art ?? [
-    "       _______",
-    "    .-' FOSSIL '-.",
-    "   /_______________\\",
-    "      ||       ||",
-  ].join("\n");
-  const artLines = art
-    .replaceAll(/\u001B\[[0-9;]*m/g, "")
-    .split("\n")
-    .filter(Boolean)
-    .map(
-      (line, index) =>
-        `<tspan x="74" dy="${index === 0 ? 0 : 31}">${escapeXml(line)}</tspan>`,
-    )
-    .join("");
-  const headerRight =
-    kind === "fossil"
-      ? localized(
-          lang,
-          `化石编号 ${view.fossil.id}`,
-          `FOSSIL ID ${view.fossil.id}`,
-        )
-      : localized(
-          lang,
-          `标本编号 ${view.specimenId}`,
-          `SPECIMEN ID ${view.specimenId}`,
-        );
-  const fields =
-    kind === "fossil"
-      ? [
-          [
-            localized(lang, "世代", "GENERATION"),
-            String(view.fossil.generation),
-          ],
-          [
-            localized(lang, "封存日期", "SEALED"),
-            view.fossil.discoveredAt,
-          ],
-          [
-            localized(lang, "生态 / 病理", "ECOLOGY / PATHOLOGY"),
-            `${view.ecology} / ${view.pathology}`,
-          ],
-          [
-            localized(lang, "遗传 / 伤痕", "INHERITANCE / SCAR"),
-            `${view.inheritance} / ${view.scar}`,
-          ],
-        ]
-      : [
-          [
-            localized(lang, "当前形态", "CURRENT FORM"),
-            view.form,
-          ],
-          [
-            localized(lang, "生态 / 病理", "ECOLOGY / PATHOLOGY"),
-            `${view.ecology} / ${view.pathology}`,
-          ],
-          [
-            localized(lang, "生命阶段", "LIFE STAGE"),
-            `${view.stage} · ${view.experience}`,
-          ],
-          [
-            localized(lang, "病历称号", "CASEBOOK EPITHET"),
-            view.epithet,
-          ],
-        ];
-  const reward =
-    kind === "wanted"
-      ? localized(
-          lang,
-          "悬赏：一次手动思考",
-          "REWARD: ONE MANUAL THOUGHT",
-        )
-      : null;
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">${escapeXml(titles[kind])}</title>
-  <desc id="desc">${escapeXml(privacy)}</desc>
-  <rect width="1200" height="630" rx="28" fill="${palette.background}"/>
-  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="${palette.border}" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="${palette.accent}"/>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .muted { fill: ${palette.muted}; }
-    .body { fill: ${palette.body}; }
-    .accent { fill: ${palette.accent}; }
-    .warn { fill: ${palette.warn}; }
-  </style>
-  <text x="72" y="82" class="mono accent" font-size="32" font-weight="800">${escapeXml(titles[kind])}</text>
-  <text x="1128" y="82" class="mono muted" font-size="18" text-anchor="end">${escapeXml(headerRight)}</text>
-  <line x1="72" y1="114" x2="1128" y2="114" stroke="${palette.border}" stroke-width="2"/>
-
-  <text x="74" y="174" class="mono body" font-size="22" xml:space="preserve">${artLines}</text>
-  ${reward ? `<text x="72" y="482" class="mono warn" font-size="20" font-weight="800">${escapeXml(reward)}</text>` : ""}
-
-  ${fields
-    .map(
-      ([label, value], index) => `<text x="610" y="${154 + index * 92}" class="mono muted" font-size="15" aria-label="${escapeXml(`${label} ${value}`)}">${escapeXml(label)}</text>
-  <text x="610" y="${188 + index * 92}" class="mono ${index === 3 ? "warn" : "body"}" font-size="${index === 3 ? 18 : 21}">${escapeXml(value)}</text>`,
-    )
-    .join("\n  ")}
-
-  <line x1="72" y1="544" x2="1128" y2="544" stroke="${palette.border}" stroke-width="2"/>
-  <text x="72" y="574" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
-  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
-</svg>
-`;
-}
-
-function renderCultureShareSvg(view, lang = "zh") {
-  const title = localized(
-    lang,
-    "污染培养事故",
-    "POLLUTION CULTURE ACCIDENT",
-  );
-  const privacy = localized(
-    lang,
-    "本地模式：无对话、路径、模型名或精确 Token",
-    "LOCAL-ONLY: no chats, paths, model names, or exact tokens",
-  );
-  const artLines = view.art
-    .map(
-      (line, index) =>
-        `<tspan x="76" dy="${index === 0 ? 0 : 31}">${escapeXml(line)}</tspan>`,
-    )
-    .join("");
-  const fields = [
-    [localized(lang, "类型 / 稀有度", "TYPE / RARITY"), `${view.type} · ${view.rarity}`],
-    [localized(lang, "原料", "MATERIALS"), view.materials],
-    [localized(lang, "生态 / 病灶", "ECOLOGY / PATHOLOGY"), `${view.ecology} / ${view.pathology}`],
-    [localized(lang, "并发症", "COMPLICATION"), view.complication],
-    [localized(lang, "副作用", "SIDE EFFECT"), view.sideEffect],
-  ];
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">${escapeXml(title)}</title>
-  <desc id="desc">${escapeXml(privacy)}</desc>
-  <rect width="1200" height="630" rx="28" fill="#09110d"/>
-  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#24533a" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="#62ff9b"/>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .muted { fill: #729884; }
-    .body { fill: #eefcf4; }
-    .accent { fill: #62ff9b; }
-    .warn { fill: #efbf65; }
-  </style>
-  <text x="72" y="82" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
-  <text x="1128" y="82" class="mono muted" font-size="17" text-anchor="end">${escapeXml(`${view.date} · BATCH ${view.batch}`)}</text>
-  <line x1="72" y1="114" x2="1128" y2="114" stroke="#24533a" stroke-width="2"/>
-
-  <text x="72" y="154" class="mono warn" font-size="17">${escapeXml(`LOCAL-ONLY CULTURE #${view.cultureId}`)}</text>
-  <text x="76" y="208" class="mono body" font-size="22" xml:space="preserve">${artLines}</text>
-  <text x="72" y="454" class="mono muted" font-size="15">${escapeXml(localized(lang, "它没有战力，只有可追责性。", "It has no combat power, only auditability."))}</text>
-
-  ${fields
-    .map(
-      ([label, value], index) => `<text x="590" y="${150 + index * 74}" class="mono muted" font-size="14">${escapeXml(label)}</text>
-  <text x="590" y="${179 + index * 74}" class="mono ${index === 4 ? "warn" : "body"}" font-size="${index === 4 ? 17 : 18}">${escapeXml(value)}</text>`,
-    )
-    .join("\n  ")}
-
-  <line x1="72" y1="544" x2="1128" y2="544" stroke="#24533a" stroke-width="2"/>
-  <text x="72" y="574" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
-  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
-</svg>
-`;
-}
-
-function renderCompanionShareSvg(view, lang = "zh") {
-  const title = localized(lang, "伴生异物档案", "SYMBIOTIC COMPANION");
-  const privacy = localized(
-    lang,
-    "本地模式：无对话、路径、模型名或精确 Token",
-    "LOCAL-ONLY: no chats, paths, model names, or exact tokens",
-  );
-  const artLines = view.art
-    .map(
-      (line, index) =>
-        `<tspan x="76" dy="${index === 0 ? 0 : 31}">${escapeXml(line)}</tspan>`,
-    )
-    .join("");
-  const fields = [
-    [localized(lang, "类型 / 稀有度", "TYPE / RARITY"), `${view.type} · ${view.rarity}`],
-    [localized(lang, "阶段", "STAGE"), view.stage],
-    [localized(lang, "路线", "ROUTE"), view.route],
-    [localized(lang, "行为印记", "IMPRINTS"), view.imprints],
-    [localized(lang, "封存异常", "ANOMALIES"), view.anomalies],
-  ];
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">${escapeXml(title)}</title>
-  <desc id="desc">${escapeXml(privacy)}</desc>
-  <rect width="1200" height="630" rx="28" fill="#0d0a12"/>
-  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#52325f" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="#d37cff"/>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .muted { fill: #967fa0; }
-    .body { fill: #fff4ff; }
-    .accent { fill: #d37cff; }
-    .warn { fill: #ffca6b; }
-  </style>
-  <text x="72" y="82" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
-  <text x="1128" y="82" class="mono muted" font-size="17" text-anchor="end">${escapeXml(view.date)}</text>
-  <line x1="72" y1="114" x2="1128" y2="114" stroke="#52325f" stroke-width="2"/>
-
-  <text x="72" y="154" class="mono warn" font-size="17">${escapeXml(`LOCAL-ONLY COMPANION #${view.cultureId}`)}</text>
-  <text x="76" y="208" class="mono body" font-size="22" xml:space="preserve">${artLines}</text>
-  <text x="72" y="486" class="mono muted" font-size="15">${escapeXml(localized(lang, "它不加战力，只替你的工作方式作证。", "No combat bonus. It only testifies about how you work."))}</text>
-
-  ${fields
-    .map(
-      ([label, value], index) => `<text x="590" y="${150 + index * 74}" class="mono muted" font-size="14">${escapeXml(label)}</text>
-  <text x="590" y="${179 + index * 74}" class="mono ${index === 4 ? "warn" : "body"}" font-size="${index === 4 ? 17 : 18}">${escapeXml(value)}</text>`,
-    )
-    .join("\n  ")}
-
-  <line x1="72" y1="544" x2="1128" y2="544" stroke="#52325f" stroke-width="2"/>
-  <text x="72" y="574" class="mono muted" font-size="15">${escapeXml(privacy)}</text>
-  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
-</svg>
-`;
 }
 
 function shiftDate(date, days) {
@@ -1388,6 +869,7 @@ function renderWeek(dailyReports, lang = "zh", mutationSection = "") {
     return `  ${report.date.slice(5)}  ${bar.padEnd(20)}  ${formatTokens(tokens)}`;
   });
   const modelLines = combinedModelBreakdownLines(dailyReports, 5, lang);
+  const warningLines = sourceWarningLines(dailyReports, lang);
 
   return [
     color("2", "┌──────────────────────────────────────────────┐"),
@@ -1398,6 +880,7 @@ function renderWeek(dailyReports, lang = "zh", mutationSection = "") {
     "",
     `  ${color("1", localized(lang, `7 日合计  ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} 次模型请求`, `7-day total  ${formatTokens(totals.totalTokens)} tokens · ${totals.requests} ${totals.requests === 1 ? "model request" : "model requests"}`))}`,
     ...(modelLines.length > 0 ? ["", ...modelLines] : []),
+    ...(warningLines.length > 0 ? ["", ...warningLines] : []),
     "",
     ...resourceBreakdownLines(
       totals,
@@ -1484,6 +967,7 @@ function renderMonth(dailyReports, lang = "zh", mutationSection = "") {
       : currentPeak,
   );
   const modelLines = combinedModelBreakdownLines(dailyReports, 5, lang);
+  const warningLines = sourceWarningLines(dailyReports, lang);
 
   return [
     color("2", "┌──────────────────────────────────────────────┐"),
@@ -1516,6 +1000,7 @@ function renderMonth(dailyReports, lang = "zh", mutationSection = "") {
       `  Peak day      ${peak.date.slice(5)} · ${formatTokens(peak.totals.totalTokens)} tokens`,
     ),
     ...(modelLines.length > 0 ? ["", ...modelLines] : []),
+    ...(warningLines.length > 0 ? ["", ...warningLines] : []),
     "",
     ...resourceBreakdownLines(
       totals,
@@ -1534,6 +1019,10 @@ function renderMonth(dailyReports, lang = "zh", mutationSection = "") {
 }
 
 export {
+  averageTotals,
+  dailyVerdict,
+  formatChange,
+  rotatingCopy,
   addModelUsage,
   addUsage,
   color,
@@ -1542,14 +1031,7 @@ export {
   isValidDate,
   padTerminal,
   renderMonth,
-  renderCompanionShareSvg,
-  renderCultureShareSvg,
-  renderCreatureCollectionShareSvg,
-  renderEncounterShareSvg,
-  renderPathologyShareSvg,
-  renderPrognosisShareSvg,
   renderReceipt,
-  renderShareSvg,
   renderWeek,
   shiftDate,
   terminalWidth,

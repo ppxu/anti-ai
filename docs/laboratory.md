@@ -117,6 +117,6 @@ Creature state uses schema v10. The Laboratory v2 section stores only:
 - the active culture ID and privacy-safe bond history;
 - one discrete companion imprint per observed date and sealed anomaly IDs.
 
-Schema v1–v9 files migrate locally and idempotently by adding the missing empty Laboratory or companion index. Migration never invents past experiments, bonds, imprints, or anomalies.
+Schema v1–v9 files migrate sequentially and idempotently by adding the missing empty Laboratory or companion index. Migration never invents past experiments, bonds, imprints, or anomalies.
 
 The state, JSON output, Codex entry, culture card, and companion card omit exact Tokens, request counts, model and Agent names, prompts, responses, tool calls, local paths, personal baselines, and request timestamps. Everything stays in `~/.anti-ai/creature.json`.

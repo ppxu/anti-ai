@@ -1,21 +1,12 @@
 import { localized } from "./shared.mjs";
+import {
+  COMMAND_REGISTRY,
+  COMMAND_STATE_BEHAVIOR,
+  SOURCE_IDS,
+} from "./registry.mjs";
 
 const SOURCE_OPTION =
-  "--source <all|codex|claude|opencode|openclaw|hermes|pi>";
-
-const COMMANDS = [
-  ["today", "打印指定日期的 AI 资源账单", "Print one day's AI resource receipt"],
-  ["week", "打印截至指定日期的 7 天趋势", "Print the seven-day trend ending on a date"],
-  ["month", "打印本月至指定日期的用量日历", "Print the monthly calendar through a date"],
-  ["codex", "查看本地病理图鉴", "Inspect the private pathology codex"],
-  ["share", "输出隐私安全的 SVG 分享卡", "Print a privacy-safe SVG share card"],
-  ["creature", "查看和管理异变体档案", "Inspect and manage the mutation file"],
-  ["encounter", "让两只异变体在本地发生接触事故", "Run a local contact accident between two mutations"],
-  ["lab", "查看和管理污染实验室", "Inspect and manage the pollution laboratory"],
-  ["doctor", "检查本地记录来源", "Check local record sources"],
-  ["explain", "解释统计、资源换算和隐私边界", "Explain accounting, estimates, and privacy"],
-  ["help", "查看具体命令帮助", "Show help for one command"],
-];
+  `--source <all|${SOURCE_IDS.join("|")}>`;
 
 const COMMAND_HELP = {
   today: {
@@ -468,8 +459,8 @@ const ACTION_HELP = {
     usage: "anti-ai creature reset",
     summary: ["永久删除本地异变体档案。", "Permanently deletes the local mutation file."],
     output: [
-      "删除 ~/.anti-ai/creature.json；下一次结算会重新孵化。",
-      "Deletes ~/.anti-ai/creature.json; the next settlement hatches a new file.",
+      "删除 ~/.anti-ai/creature.json 及迁移备份；下一次结算会重新孵化。",
+      "Deletes ~/.anti-ai/creature.json and migration backups; the next settlement hatches a new file.",
     ],
     options: [["--json", "输出 {\"reset\":true}", "Print {\"reset\":true}"]],
     examples: ["anti-ai creature reset"],
@@ -523,6 +514,9 @@ function renderCommandHelp(target, lang = "zh") {
     : String(target ?? "").trim();
   const help = ACTION_HELP[normalized] ?? COMMAND_HELP[normalized];
   if (!help) return null;
+  const stateBehavior =
+    COMMAND_STATE_BEHAVIOR[normalized] ??
+    COMMAND_STATE_BEHAVIOR[normalized.split(" ")[0]];
 
   return [
     `Usage: ${help.usage}`,
@@ -531,6 +525,13 @@ function renderCommandHelp(target, lang = "zh") {
     "",
     localized(lang, "输出：", "Output:"),
     `  ${localized(lang, help.output[0], help.output[1])}`,
+    ...(stateBehavior
+      ? [
+          "",
+          localized(lang, "状态行为：", "State behavior:"),
+          `  ${localized(lang, stateBehavior.zh, stateBehavior.en)}`,
+        ]
+      : []),
     "",
     ...optionLines(help.options, lang),
     "",
@@ -556,9 +557,9 @@ function renderTopLevelHelp(lang = "zh") {
     ),
     "",
     localized(lang, "Commands:", "Commands:"),
-    ...COMMANDS.map(
-      ([command, zh, en]) =>
-        `  ${command.padEnd(12)} ${localized(lang, zh, en)}`,
+    ...COMMAND_REGISTRY.map(
+      ({ id, summary }) =>
+        `  ${id.padEnd(12)} ${localized(lang, summary.zh, summary.en)}`,
     ),
     "",
     localized(lang, "Global options:", "Global options:"),

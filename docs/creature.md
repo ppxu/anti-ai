@@ -318,7 +318,7 @@ The current schema is v10. It stores only:
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v9 files migrate locally and idempotently without losing existing ability points or inventing case choices, laboratory cultures, companion bonds, imprints, or anomalies. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives its collections from the same state without another migration.
+Schema v1-v9 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, laboratory cultures, companion bonds, imprints, or anomalies. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
 
 One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 
@@ -328,4 +328,4 @@ Explicitly restart the creature with:
 anti-ai creature reset
 ```
 
-Reset removes the local derived evolution history. It does not delete Agent logs.
+Reset removes the local derived evolution history and its migration backups. It does not delete Agent logs.

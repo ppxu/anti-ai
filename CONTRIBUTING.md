@@ -4,21 +4,27 @@ Thanks for helping improve `anti-ai`.
 
 ## Before opening a change
 
-- Use Node.js 20 or newer.
-- Keep runtime dependencies at zero unless a dependency clearly reduces risk or complexity.
+- Use Node.js 22 or newer.
+- Keep required runtime dependencies at zero. Native source adapters must remain optional, lazy-loaded, and safely degradable.
 - Do not add real Codex or Claude Code logs, prompts, responses, identifiers, or file paths to tests or issues.
 - Add or update a public CLI behavior test before changing user-visible behavior.
 - Document every new environmental conversion factor with its formula, scope, date, and primary source.
+- Update both the English and Simplified Chinese guide when a shared behavior changes.
+- Use a temporary `HOME` for stateful tests. Never settle or reset a contributor's real `~/.anti-ai` file.
 
 ## Local workflow
 
 ```bash
 npm test
 npm run check
+npm run test:coverage
+npm run test:package
 node ./bin/anti-ai.mjs --help
 ```
 
 Tests must observe the CLI through stdout, stderr, and exit codes. Prefer synthetic JSONL fixtures over mocks of internal code.
+
+Run `npm run verify` before requesting review. Changes to state behavior also need migration, read-only snapshot, and concurrent-write coverage as applicable.
 
 ## Pull requests
 

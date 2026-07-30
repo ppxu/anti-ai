@@ -51,7 +51,7 @@ Token counts are measurable. The electricity, water, and carbon impact of propri
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - Local records from at least one supported Agent (JSONL or SQLite)
 - Verified on macOS; the implementation uses cross-platform Node.js paths and APIs
 
@@ -328,6 +328,8 @@ OpenCode usage is read from assistant rows in its SQLite `message` or `session_m
 
 Hermes is the intentional precision exception: `anti-ai` prefers `session_model_usage`, including auxiliary calls, and falls back to aggregate `sessions` rows. Those totals span a session and are assigned to its last active day, so `doctor` labels Hermes as `session approximate`.
 
+OpenCode and Hermes use the optional `better-sqlite3` adapter. npm attempts to install it normally, but a missing or ABI-incompatible native build no longer blocks Codex, Claude Code, OpenClaw, or Pi. Run `anti-ai doctor` to see the degraded source. An `all` report keeps healthy sources and prints a privacy-safe warning; explicitly selecting the broken SQLite source exits with an actionable error.
+
 If a log does not contain a model field, the usage is grouped under `unknown`. Human-readable reports show the five highest-token source/model combinations; JSON keeps the complete breakdown.
 
 ## Environmental methodology
@@ -355,6 +357,8 @@ The remaining rounded consumer-item values are display assumptions, not environm
 - Does not store or print prompts, responses, or tool-call content
 - The default share card omits paths, model names, request counts, and exact token counts
 - Creates no usage database and starts no background process; `creature` maintains one local growth file without exact usage
+- `codex` and every `share` card derive read-only snapshots and never settle or rewrite growth state
+- Persisted schema migrations keep an exact content-addressed backup; concurrent writers are rejected instead of silently losing progress
 
 Do not attach real Agent logs or SQLite databases to public issues. Use a minimal, redacted fixture instead.
 
@@ -365,6 +369,8 @@ git clone https://github.com/ppxu/anti-ai.git
 cd anti-ai
 npm test
 npm run check
+npm run test:coverage
+npm run test:package
 node ./bin/anti-ai.mjs --help
 ```
 
@@ -373,17 +379,24 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 ## Architecture
 
 - `bin/anti-ai.mjs`: minimal executable launcher
-- `src/cli.mjs`: argument validation and command orchestration
+- `src/cli.mjs`: small command registry dispatcher
+- `src/cli/`: argument parsing, terminal rendering, and methodology explanation
+- `src/commands/`: focused Creature, Encounter, Laboratory, and Share handlers
 - `src/help.mjs`: global and command-specific help
-- `src/scanner.mjs`: six-source JSONL/SQLite scanning and accounting
+- `src/registry.mjs`: command, card, and local-source metadata
+- `src/scanner.mjs`: isolated six-source JSONL/optional-SQLite adapters
 - `src/methodology.mjs`: named public resource cases and high-side selection
 - `src/comparisons.mjs`: period-specific everyday comparisons
 - `src/content.mjs`: deterministic bilingual footer and share-copy pools
-- `src/reporting.mjs`: receipts, calendars, cards, and verdicts
-- `src/creature.mjs`: mutation growth rules and local state
+- `src/reporting.mjs`: terminal receipts, calendars, and verdicts
+- `src/renderers/svg.mjs`: privacy-safe SVG cards
+- `src/creature.mjs`: mutation growth and collection rules
+- `src/creature/`: content pools and appearance generation
+- `src/state-store.mjs`: validation-aware atomic local state storage
 - `src/laboratory.mjs`: derived formulas, sealed cultures, and shelves
 - `src/companion.mjs`: companion bonds, imprints, routes, and ASCII growth
 - `src/shared.mjs`: shared language and empty-usage primitives
+- `docs/architecture.md`: extension, state, privacy, and quality boundaries
 - `docs/creature.md`: complete Creature system and species-capacity guide
 - `docs/companions.md`: complete Symbiotic Companion guide
 

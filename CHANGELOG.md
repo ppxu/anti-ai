@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-30
+
+### Added
+
+- Added a lightweight source, command, and share-card registry so new adapters and CLI surfaces no longer require duplicated allowlists.
+- Added sequential creature-state migrations, state-envelope validation, exact pre-migration backups, atomic writes, a short-lived file lock, and optimistic conflict detection.
+- Added isolated runtime-resilience tests, domain-split test suites, built-in coverage thresholds, packed-tarball installation verification, CodeQL, and Dependabot configuration.
+- Added a standalone Architecture Guide describing extension boundaries, state semantics, privacy constraints, and quality gates.
+- Added a repository-level `AGENTS.md` with privacy, architecture, state, documentation, verification, and release boundaries for coding agents.
+
+### Changed
+
+- Split the former CLI and creature monoliths into focused command handlers, CLI argument/rendering modules, creature content and appearance modules, a state store, and an SVG renderer.
+- Made `better-sqlite3` an optional lazy-loaded adapter dependency. JSONL sources continue to work when the native driver is missing or incompatible, and `doctor` reports the degraded capability.
+- Isolated source failures when scanning `all`: healthy sources remain visible and machine-readable output includes privacy-safe source warnings.
+- Made `codex` and every `share` card true read-only snapshots. They can derive current output without creating or advancing `~/.anti-ai/creature.json`.
+- Raised the supported runtime to Node.js 22+, and updated CI to Node.js 22, 24, and 26 with immutable action pins.
+- Centralized public resource URLs, accounting boundaries, and everyday-comparison factors in the methodology registry.
+
+### Security
+
+- Future schema versions and invalid creature-state envelopes are rejected without overwriting the original file.
+- Concurrent commands now reject stale writes instead of silently losing growth, choices, cultures, or companion history.
+- Packed-package verification proves that the public JSONL CLI works without optional native code; CI also runs the official npm audit and repository CodeQL analysis.
+
 ## [1.9.0] - 2026-07-30
 
 ### Added

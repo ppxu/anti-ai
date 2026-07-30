@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-07-30
+
 ### Added
 
 - Added Symbiotic Companions: bind any sealed laboratory culture, preserve former companions when switching, and grow the active one through PARASITIC HATCHLING, SYMBIOTIC ABERRATION, and ACCOMPLICE ORGAN stages.

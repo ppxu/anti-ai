@@ -115,10 +115,15 @@ anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
+anti-ai share --card prognosis > anti-ai-prognosis.svg
 
 anti-ai creature
 anti-ai creature --full
 anti-ai creature --json
+anti-ai creature history
+anti-ai creature prognosis
+anti-ai creature intervene
+anti-ai creature intervene 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature reset
@@ -179,7 +184,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, and permanent fossils are collected without an artificial upper limit.
+The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, and sealed case slices are collected without an artificial upper limit.
 
 `codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
@@ -213,9 +218,10 @@ anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
+anti-ai share --card prognosis > anti-ai-prognosis.svg
 ```
 
-Creature history supports five privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, and `encounter` for a local contact accident. A fossil certificate becomes available after experience day 90.
+Creature history supports six privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, and `prognosis` for the current three-route case. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending.
 
 Nothing is uploaded. Every card omits exact Token totals, requests, source/model names, paths, and conversation content; the destination file is controlled entirely by your shell. Creature cards require the complete data set and therefore reject `--source` filters.
 
@@ -230,6 +236,11 @@ anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
 anti-ai creature export
+anti-ai creature history
+anti-ai creature history --full
+anti-ai creature prognosis
+anti-ai creature intervene
+anti-ai creature intervene 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 ```
@@ -238,9 +249,11 @@ Every settled day advances exactly one experience day, so high use, low use, and
 
 Regular abilities cycle through 255 visible points. Overflow becomes a lossless Malignancy rank, adds a route-specific diagnosis and evolution modifier, and is preserved in permanent fossils.
 
+Every 14 experience days may offer one turning-point case. Its three routes—Pollution, Clarity, and Paradox—always expose both a benefit and a cost; a pending case prevents a choice backlog. `history` compresses important events, while `prognosis` previews three explainable directions using qualitative labels rather than fake probabilities.
+
 The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
-Read the full [Creature Guide](./docs/creature.md) for lifecycle, capacity math, Pollution/Clarity, abilities, talents, generations, evolution costs, chromatic mutations, codex, privacy, and reset. [中文版](./docs/creature.zh-CN.md).
+Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, and [Forked Casebook](./docs/casebook.md) for history, intervention, prognosis, case slices, and privacy. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md).
 
 ### `doctor`
 

@@ -112,7 +112,7 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|pathology|specimen|wanted|fossil|encounter>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis>", "选择卡片类型", "Select card type"],
       ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
     ],
@@ -121,6 +121,7 @@ const COMMAND_HELP = {
       "anti-ai share --card pathology > pathology.svg",
       "anti-ai share --card wanted --lang en > wanted.svg",
       "anti-ai share --card encounter --with <pollution-code> > encounter.svg",
+      "anti-ai share --card prognosis > prognosis.svg",
     ],
     note: [
       "异变体收藏卡必须使用完整来源。",
@@ -143,6 +144,9 @@ const COMMAND_HELP = {
     examples: [
       "anti-ai creature",
       "anti-ai creature --full",
+      "anti-ai creature history",
+      "anti-ai creature intervene",
+      "anti-ai creature prognosis",
       "anti-ai creature evolve 2",
       "anti-ai creature reset",
     ],
@@ -150,7 +154,7 @@ const COMMAND_HELP = {
       "creature 必须使用完整来源；reset 会永久删除本地成长档案。",
       "creature requires complete sources; reset permanently deletes the local growth file.",
     ],
-    related: ["creature evolve", "creature export", "creature reset", "codex", "today"],
+    related: ["creature history", "creature intervene", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
   },
   encounter: {
     usage: "anti-ai encounter <pollution-code> [options]",
@@ -214,6 +218,82 @@ const COMMAND_HELP = {
 };
 
 const ACTION_HELP = {
+  "creature history": {
+    usage: "anti-ai creature history [options]",
+    summary: [
+      "查看压缩后的关键病程时间线。",
+      "Inspect the compressed key-event case history.",
+    ],
+    output: [
+      "默认只显示孵化、阶段、稀有突变、徽章、化石、进化和病例选择；--full 才展开每日派生记录。",
+      "Shows hatch, stage, rare mutation, badge, fossil, evolution, and case-choice events; --full alone expands daily derived records.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看截至指定日期的病程", "Inspect history through a selected date"],
+      ["--full", "附加每日隐私安全记录", "Append privacy-safe daily records"],
+      ["--json", "输出稳定机器可读时间线", "Print the stable machine-readable timeline"],
+    ],
+    examples: [
+      "anti-ai creature history",
+      "anti-ai creature history --full",
+      "anti-ai creature history --json",
+    ],
+    note: [
+      "时间线只使用派生成长状态，不包含精确 Token、模型、路径或对话。",
+      "The timeline uses derived growth state only; it contains no exact tokens, models, paths, or chats.",
+    ],
+    related: ["creature", "creature intervene", "creature prognosis"],
+  },
+  "creature intervene": {
+    usage: "anti-ai creature intervene [<1|2|3>] [options]",
+    summary: [
+      "查看或封存一个带代价的转折病例选择。",
+      "Inspect or seal one costly turning-point case choice.",
+    ],
+    output: [
+      "显示污染、清醒和悖论三条治疗路线；选择会留下本地后遗症。",
+      "Shows pollution, clarity, and paradox treatments; a choice leaves a local aftereffect.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "结算并处理指定日期", "Settle and handle a selected date"],
+      ["--json", "输出机器可读病例结果", "Print the machine-readable case result"],
+    ],
+    examples: [
+      "anti-ai creature intervene",
+      "anti-ai creature intervene 2",
+      "anti-ai share --card prognosis > prognosis.svg",
+    ],
+    note: [
+      "病例不设过期或签到；已封存选择不能改写，也不会按 Token 体量加速。",
+      "Cases have no expiry or check-in; sealed choices cannot be rewritten and never accelerate with Token volume.",
+    ],
+    related: ["creature history", "creature prognosis", "codex", "share"],
+  },
+  "creature prognosis": {
+    usage: "anti-ai creature prognosis [options]",
+    summary: [
+      "预演未来 14–30 个阅历日的三条可能病程。",
+      "Preview three possible courses across the next 14–30 experience days.",
+    ],
+    output: [
+      "用主导、可能、潜伏三级方向和可解释因素展示未来，不给出伪精确概率。",
+      "Shows leading, possible, and latent directions with explainable drivers instead of fake precision.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "基于指定日期预演", "Preview from a selected date"],
+      ["--json", "输出稳定机器可读预演", "Print the stable machine-readable prognosis"],
+    ],
+    examples: [
+      "anti-ai creature prognosis",
+      "anti-ai creature prognosis --json",
+      "anti-ai share --card prognosis > prognosis.svg",
+    ],
+    note: [
+      "预演不是任务、奖励承诺或精确预测，不要求增加或减少 Token。",
+      "A prognosis is not a task, reward promise, or precise prediction and never asks for more or fewer Tokens.",
+    ],
+    related: ["creature history", "creature intervene", "share"],
+  },
   "creature evolve": {
     usage: "anti-ai creature evolve <1|2|3>",
     summary: ["显式封存本代进化选择。", "Explicitly seal the current generation's evolution choice."],

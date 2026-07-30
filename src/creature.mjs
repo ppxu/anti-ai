@@ -2175,6 +2175,26 @@ function creatureCodex(state, date) {
       hybridFingerprint: specimen.hybrid.fingerprint,
       hybridFormId: specimen.hybrid.formId,
     }));
+  const caseSlices = (state.casebook?.cases ?? [])
+    .filter(
+      (entry) =>
+        entry.status === "selected" &&
+        entry.selectedAt !== null &&
+        entry.selectedAt <= date,
+    )
+    .map((entry) => ({
+      id: entry.id,
+      caseId: entry.caseId,
+      offeredAt: entry.offeredAt,
+      discoveredAt: entry.selectedAt,
+      routeId: ["pollution", "clarity", "paradox"][
+        entry.selectedSlot - 1
+      ],
+      markId: ["pollution", "clarity", "paradox"][
+        entry.selectedSlot - 1
+      ],
+      trigger: { ...entry.trigger },
+    }));
   const formDiscoveries = new Map();
   for (const specimen of specimens) {
     if (
@@ -2279,6 +2299,12 @@ function creatureCodex(state, date) {
       discovered: true,
       discoveredAt: entry.discoveredAt,
     })),
+    ...caseSlices.map((entry) => ({
+      type: "caseSlice",
+      id: entry.id,
+      discovered: true,
+      discoveredAt: entry.discoveredAt,
+    })),
     ...fossils.map((entry) => ({
       type: "fossil",
       id: entry.id,
@@ -2320,6 +2346,7 @@ function creatureCodex(state, date) {
       },
       specimens: { discovered: specimens.length },
       foreignSpecimens: { discovered: foreignSpecimens.length },
+      caseSlices: { discovered: caseSlices.length },
       fossils: { discovered: fossils.length },
     },
     sections: {
@@ -2329,6 +2356,7 @@ function creatureCodex(state, date) {
       scars,
       specimens,
       foreignSpecimens,
+      caseSlices,
       fossils,
     },
     recent,
@@ -2537,6 +2565,12 @@ function migrateCreatureState(state) {
   state.specimens ??= [];
   state.foreignSpecimens ??= [];
   state.generations ??= { fossils: [], evolutions: {} };
+  state.casebook ??= {
+    cases: [],
+    nextAtExperience: 14,
+  };
+  state.casebook.cases ??= [];
+  state.casebook.nextAtExperience ??= 14;
   let hasHatched = false;
   for (const [date, day] of Object.entries(state.days).sort(([left], [right]) =>
     left.localeCompare(right),
@@ -2562,7 +2596,7 @@ function migrateCreatureState(state) {
     );
     if (day.active) hasHatched = true;
   }
-  state.schemaVersion = 7;
+  state.schemaVersion = 8;
   return state;
 }
 
@@ -2574,7 +2608,7 @@ async function loadCreatureState() {
   try {
     const contents = await readFile(creatureStatePath(), "utf8");
     const state = JSON.parse(contents);
-    if ([1, 2, 3, 4, 5, 6, 7].includes(state?.schemaVersion) && state.days) {
+    if ([1, 2, 3, 4, 5, 6, 7, 8].includes(state?.schemaVersion) && state.days) {
       state.seed ??=
         process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex");
       return migrateCreatureState(state);
@@ -2583,7 +2617,7 @@ async function loadCreatureState() {
     if (error.code !== "ENOENT") throw error;
   }
   return migrateCreatureState({
-    schemaVersion: 7,
+    schemaVersion: 8,
     seed:
       process.env.ANTI_AI_CREATURE_SEED ?? randomBytes(8).toString("hex"),
     days: {},

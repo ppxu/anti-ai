@@ -1013,6 +1013,71 @@ function renderEncounterShareSvg(view, lang = "zh") {
 `;
 }
 
+function renderPrognosisShareSvg(view, lang = "zh") {
+  const title = localized(
+    lang,
+    "分叉病历预演",
+    "FORKED CASEBOOK PROGNOSIS",
+  );
+  const privacy = localized(
+    lang,
+    "隐私模式：无对话、路径、模型名或精确 Token",
+    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
+  );
+  const prompt = localized(
+    lang,
+    "替它选一个无法善终的未来",
+    "PICK ONE UNTENABLE FUTURE",
+  );
+  const artLines = view.art
+    .replaceAll(/\u001B\[[0-9;]*m/g, "")
+    .split("\n")
+    .filter(Boolean)
+    .map(
+      (line, index) =>
+        `<tspan x="72" dy="${index === 0 ? 0 : 25}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const optionLines = view.options
+    .map(
+      (option, index) => `
+  <text x="592" y="${236 + index * 108}" class="mono accent" font-size="21" font-weight="700">${escapeXml(`${option.slot} · ${option.label}`)}</text>
+  <text x="618" y="${270 + index * 108}" class="mono body" font-size="15">${escapeXml(option.benefit)}</text>
+  <text x="618" y="${296 + index * 108}" class="mono warn" font-size="15">${escapeXml(`${localized(lang, "代价", "COST")}: ${option.cost}`)}</text>`,
+    )
+    .join("");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(title)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#0e0a0d"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#5b3147" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#ff5e8a"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #a08391; }
+    .body { fill: #f8eef3; }
+    .accent { fill: #ff7ba1; }
+    .warn { fill: #f1bc61; }
+  </style>
+  <text x="72" y="82" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
+  <text x="1128" y="82" class="mono muted" font-size="18" text-anchor="end">${escapeXml(view.date)}</text>
+  <line x1="72" y1="114" x2="1128" y2="114" stroke="#5b3147" stroke-width="2"/>
+
+  <text x="72" y="154" class="mono warn" font-size="17">${escapeXml(`${localized(lang, "病例", "CASE")} #${view.caseId}`)}</text>
+  <text x="72" y="188" class="mono body" font-size="22">${escapeXml(view.caseLabel)}</text>
+  <text x="72" y="232" class="mono muted" font-size="15">${escapeXml(`${localized(lang, "标本编号", "SPECIMEN ID")} ${view.specimenId}`)}</text>
+  <text x="72" y="276" class="mono body" font-size="17" xml:space="preserve">${artLines}</text>
+
+  <text x="592" y="174" class="mono warn" font-size="18">${escapeXml(prompt)}</text>${optionLines}
+
+  <line x1="72" y1="544" x2="1128" y2="544" stroke="#5b3147" stroke-width="2"/>
+  <text x="72" y="574" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="596" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 function renderCreatureCollectionShareSvg(view, kind, lang = "zh") {
   const privacy = localized(
     lang,
@@ -1364,6 +1429,7 @@ export {
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
   renderPathologyShareSvg,
+  renderPrognosisShareSvg,
   renderReceipt,
   renderShareSvg,
   renderWeek,

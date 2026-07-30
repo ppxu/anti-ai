@@ -114,10 +114,15 @@ anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
+anti-ai share --card prognosis > anti-ai-prognosis.svg
 
 anti-ai creature
 anti-ai creature --full
 anti-ai creature --json
+anti-ai creature history
+anti-ai creature prognosis
+anti-ai creature intervene
+anti-ai creature intervene 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature reset
@@ -178,7 +183,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本和永久化石则不设人为上限。
+固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石和已封存病例切片则不设人为上限。
 
 `codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
 
@@ -212,9 +217,10 @@ anti-ai share --card specimen > anti-ai-specimen.svg
 anti-ai share --card wanted > anti-ai-wanted.svg
 anti-ai share --card fossil > anti-ai-fossil.svg
 anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
+anti-ai share --card prognosis > anti-ai-prognosis.svg
 ```
 
-成长史现在支持 5 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡。化石证书会在第 90 个阅历日后开放。
+成长史现在支持 6 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡，`prognosis` 是当前病例的三路线预演。化石证书会在第 90 个阅历日后开放；预后卡会在转折病例待处理时开放。
 
 工具不会上传卡片；所有卡片均不包含精确 Token、请求数、来源/模型名、路径或对话正文，保存位置完全由你的命令行重定向决定。异变体卡片必须使用完整数据，因此会拒绝 `--source` 过滤。
 
@@ -229,6 +235,11 @@ anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
 anti-ai creature export
+anti-ai creature history
+anti-ai creature history --full
+anti-ai creature prognosis
+anti-ai creature intervene
+anti-ai creature intervene 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 ```
@@ -237,9 +248,11 @@ anti-ai creature evolve 2
 
 普通能力按 255 点循环；溢出会无损转化为恶性阶，获得路线专属诊断和进化修正，并记录进永久化石。
 
+每 14 个阅历日最多出现一个转折病例。污染、清醒、悖论三条路线都会明示收益和代价；病例未处理时不会继续堆积选择。`history` 压缩关键成长节点，`prognosis` 使用定性标签预演三个可解释方向，不伪造精确概率。
+
 核能巨兽生成器包含 16 个核心形态家族，以及 **21,233,664 种去重后的最终 ASCII 形象**。本地稳定基因决定器官，使用病型、生态人格、伤疤、成就和异色稀有度则继续改写同一条骨架。运行 `anti-ai codex` 可以对照理论容量与个人收藏。
 
-完整规则见[异变体成长指南](./docs/creature.zh-CN.md)，包括生命周期、容量算法、污染/清醒、能力、天赋、世代、进化代价、异色能力、图鉴、隐私与重置。[English](./docs/creature.md)。
+生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程、干预、预后、病例切片和隐私规则见[分叉病历](./docs/casebook.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md)。
 
 ### `doctor`
 

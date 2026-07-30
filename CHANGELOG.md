@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-07-30
+
+### Added
+
+- Added a local Forked Casebook with 12 deterministic turning-point case skeletons and one explicit Pollution, Clarity, or Paradox intervention every 14 experience days.
+- Added `creature history` for a compressed growth timeline, with `--full` expanding privacy-safe daily usage bands without exposing exact Tokens or Agent records.
+- Added `creature prognosis`, which explains three qualitative 14–30 day directions using current Ecology, streaks, Instability, and prior choices without fake probabilities.
+- Added `share --card prognosis` for a privacy-safe three-route SVG, selected case slices in `codex`, focused bilingual help, and standalone Casebook documentation.
+
+### Changed
+
+- Creature state now uses schema v8 with local, idempotent v1-v7 migration that creates an empty Casebook without inventing historical choices.
+- Pending cases now block later offers instead of building a choice backlog, and a late intervention restarts the 14-day interval from the current experience day.
+- The default creature view keeps the intervention command visible on narrow terminals, while human-readable `history --full` now renders its daily course.
+
+### Security
+
+- Casebook state stores only stable case/route IDs, dates, discrete usage-derived trigger IDs, and the next interval—never prompts, responses, paths, model names, exact Token totals, baseline values, or request timestamps.
+- History, prognosis, intervention, Codex slices, and prognosis cards remain local-only and add no account, upload, leaderboard, check-in, combat power, or Token-spending accelerator.
+
 ## [1.6.0] - 2026-07-29
 
 ### Added

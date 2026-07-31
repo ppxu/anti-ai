@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-07-31
+
+### Added
+
+- Added low-rate living ASCII frames for the specimen and active companion, with `m` motion controls and a fully static `anti-ai tui --no-motion` mode.
+- Added Habitat anatomy inspection with ability-linked observations, deterministic replay of the latest sealed ecological event, and rare glitch frames gated by already-discovered chromatic abilities.
+
+### Changed
+
+- Expanded bilingual TUI shortcuts, contextual footer hints, command Help, READMEs, Architecture Guides, and the Agent Skill for the new interaction model.
+- Kept animation presentation-neutral and lightweight: living screens refresh at no more than 4 FPS, while Help, Laboratory, Codex, and static mode run without an animation timer.
+
+### Security
+
+- Motion, inspection, glitch frames, and replay remain read-only presentation state. They do not scan Agent logs, write the Creature file, reroll sealed outcomes, advance growth, or reward additional Token use.
+
 ## [2.2.0] - 2026-07-31
 
 ### Added

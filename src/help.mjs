@@ -102,13 +102,18 @@ const COMMAND_HELP = {
       "Open the read-only interactive containment console.",
     ],
     output: [
-      "在总览、生态舱、实验室和图鉴之间导航，并给出上下文相关的下一步命令。",
-      "Navigate Overview, Habitat, Laboratory, and Codex with context-aware next commands.",
+      "在总览、生态舱、实验室和图鉴之间导航；观察器官、回放事件，并给出上下文相关的下一步命令。",
+      "Navigate Overview, Habitat, Laboratory, and Codex; inspect anatomy, replay events, and see context-aware next commands.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
+      ["--no-motion", "以完全静态模式启动", "Start in fully static mode"],
     ],
-    examples: ["anti-ai tui", "anti-ai tui --lang en"],
+    examples: [
+      "anti-ai tui",
+      "anti-ai tui --lang en",
+      "anti-ai tui --no-motion",
+    ],
     note: [
       "需要交互式终端；自动化和 Agent 应继续使用显式命令及 --json。",
       "Requires an interactive terminal; automation and Agents should keep using explicit commands and --json.",

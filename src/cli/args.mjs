@@ -14,6 +14,7 @@ function parseArgs(argv) {
     json: false,
     full: false,
     save: false,
+    noMotion: false,
     card: undefined,
     code: undefined,
     with: undefined,
@@ -33,6 +34,8 @@ function parseArgs(argv) {
       options.full = true;
     } else if (arg === "--save") {
       options.save = true;
+    } else if (arg === "--no-motion" && command === "tui") {
+      options.noMotion = true;
     } else if (arg === "--date") {
       if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
         options.missing ??= arg;

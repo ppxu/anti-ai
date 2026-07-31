@@ -1,5 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
+
+import {
+  deriveCompanionFrame,
+  deriveEventReplay,
+  deriveObservationTargets,
+  deriveSpecimenFrame,
+  isGlitchFrame,
+  motionInterval,
+  nextMotionLevel,
+} from "../application/tui-motion.mjs";
 
 const SCREEN_IDS = ["overview", "habitat", "laboratory", "codex"];
 
@@ -73,7 +83,7 @@ function Navigation({ navigation, activeId }) {
   );
 }
 
-function OverviewScreen({ snapshot, lang }) {
+function OverviewScreen({ snapshot, lang, frame, motion, glitch }) {
   const { overview } = snapshot;
   const zh = lang === "zh";
   const ecologyColor = {
@@ -96,7 +106,11 @@ function OverviewScreen({ snapshot, lang }) {
           color={ecologyColor}
           width="48%"
         >
-          <Text color={ecologyColor}>{overview.art.join("\n")}</Text>
+          <Text color={glitch ? "magenta" : ecologyColor}>
+            {deriveSpecimenFrame(overview.art, frame, motion, {
+              glitch,
+            }).join("\n")}
+          </Text>
           <Text dimColor>#{overview.specimenId}</Text>
         </Panel>
         <Panel
@@ -148,22 +162,68 @@ function OverviewScreen({ snapshot, lang }) {
   );
 }
 
-function HabitatScreen({ snapshot, lang }) {
+function HabitatScreen({
+  snapshot,
+  lang,
+  frame,
+  motion,
+  observationTargets,
+  observationIndex,
+  glitch,
+  replay,
+}) {
   const { habitat } = snapshot;
   const zh = lang === "zh";
+  const observation = observationTargets[observationIndex] ?? null;
+  const specimenFrame = deriveSpecimenFrame(
+    habitat.specimen.art,
+    frame,
+    motion,
+    { glitch },
+  );
   return (
     <Box flexDirection="column">
       <Panel title={zh ? "生态舱状态" : "HABITAT STATUS"} color="green">
         <Box gap={2}>
           <Box flexDirection="column" width="50%">
             <Text bold>{zh ? "主标本" : "SPECIMEN"}</Text>
-            <Text color="red">{habitat.specimen.art.join("\n")}</Text>
+            {specimenFrame.map((line, lineIndex) => {
+              const selected =
+                observation?.target === "specimen" &&
+                observation.lineIndex === lineIndex;
+              return (
+                <Text
+                  key={`${lineIndex}-${line}`}
+                  bold={selected}
+                  color={selected ? "yellow" : glitch ? "magenta" : "red"}
+                >
+                  {line}
+                </Text>
+              );
+            })}
           </Box>
           <Box flexDirection="column" flexGrow={1}>
             <Text bold>{zh ? "伴生位" : "COMPANION BAY"}</Text>
             {habitat.companion ? (
               <>
-                <Text color="cyan">{habitat.companion.art.join("\n")}</Text>
+                {deriveCompanionFrame(
+                  habitat.companion.art,
+                  frame,
+                  motion,
+                ).map((line, lineIndex) => {
+                  const selected =
+                    observation?.target === "companion" &&
+                    observation.lineIndex === lineIndex;
+                  return (
+                    <Text
+                      key={`${lineIndex}-${line}`}
+                      bold={selected}
+                      color={selected ? "yellow" : "cyan"}
+                    >
+                      {line}
+                    </Text>
+                  );
+                })}
                 <Text>
                   #{habitat.companion.cultureId} ·{" "}
                   {habitat.companion.cohabitationDays}d
@@ -179,6 +239,39 @@ function HabitatScreen({ snapshot, lang }) {
           </Box>
         </Box>
       </Panel>
+      {replay ? (
+        <Panel
+          title={zh ? "事件回放" : "EVENT REPLAY"}
+          color="magenta"
+          marginTop={1}
+        >
+          <Text bold color="magenta">
+            {replay.step + 1}/{replay.total} · {replay.label}
+          </Text>
+          <Text>{replay.message}</Text>
+          <Text dimColor>
+            {zh ? "r 停止回放" : "r stops replay"}
+          </Text>
+        </Panel>
+      ) : null}
+      {observation ? (
+        <Panel
+          title={zh ? "器官观察" : "ANATOMY INSPECTION"}
+          color="yellow"
+          marginTop={1}
+        >
+          <Text bold color="yellow">
+            {observationIndex + 1}/{observationTargets.length} ·{" "}
+            {observation.name}
+          </Text>
+          <Text>{observation.detail}</Text>
+          <Text dimColor>
+            {zh
+              ? "方向键切换焦点 · Enter / esc 返回生态舱"
+              : "Arrows change focus · Enter / esc returns to habitat"}
+          </Text>
+        </Panel>
+      ) : null}
       <Box gap={1} marginTop={1}>
         <Panel
           title={zh ? "共生关系" : "RELATIONSHIP"}
@@ -363,47 +456,167 @@ function HelpOverlay({ lang }) {
     <Panel title={zh ? "控制台快捷键" : "CONSOLE SHORTCUTS"} color="yellow">
       <Text>1–4　{zh ? "切换区域" : "switch area"}</Text>
       <Text>← →　{zh ? "切换相邻区域" : "switch adjacent area"}</Text>
+      <Text>m　　{zh ? "切换动态档位" : "cycle motion level"}</Text>
+      <Text>Enter　{zh ? "在生态舱进入器官观察" : "inspect anatomy in Habitat"}</Text>
+      <Text>r　　{zh ? "在生态舱回放最近事件" : "replay the latest Habitat event"}</Text>
       <Text>?　　{zh ? "关闭本说明" : "close this help"}</Text>
-      <Text>q / esc　{zh ? "退出，不惊动标本" : "exit without disturbing specimens"}</Text>
+      <Text>
+        esc　{zh ? "返回上层；再次按下退出" : "go back; press again to exit"}
+      </Text>
+      <Text>q　　{zh ? "退出，不惊动标本" : "exit without disturbing specimens"}</Text>
     </Panel>
   );
 }
 
-function TuiApp({ snapshot, lang = "zh" }) {
+function TuiApp({ snapshot, lang = "zh", initialMotion = "low" }) {
   const { exit } = useApp();
   const [activeIndex, setActiveIndex] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
+  const [motion, setMotion] = useState(initialMotion);
+  const [frame, setFrame] = useState(0);
+  const [observationIndex, setObservationIndex] = useState(null);
+  const [replayStartFrame, setReplayStartFrame] = useState(null);
+
+  const activeId = SCREEN_IDS[activeIndex];
+  const observationTargets = deriveObservationTargets(snapshot, lang);
+  const glitch = isGlitchFrame(snapshot, frame, motion);
+  const replay = replayStartFrame === null
+    ? null
+    : deriveEventReplay(
+        snapshot,
+        Math.floor((frame - replayStartFrame) / 3),
+        lang,
+      );
+  useEffect(() => {
+    const interval = motionInterval(motion);
+    if (
+      interval === null ||
+      showHelp ||
+      !["overview", "habitat"].includes(activeId)
+    ) {
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setFrame((value) => value + 1);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [activeId, motion, showHelp]);
 
   useInput((input, key) => {
-    if (input === "q" || key.escape) {
+    if (input === "q") {
       exit();
       return;
+    }
+    if (key.escape) {
+      if (showHelp) {
+        setShowHelp(false);
+        return;
+      }
+      if (observationIndex !== null) {
+        setObservationIndex(null);
+        return;
+      }
+      if (replayStartFrame !== null) {
+        setReplayStartFrame(null);
+        return;
+      }
+      exit();
+      return;
+    }
+    if (activeId === "habitat" && observationIndex !== null) {
+      if (key.return) {
+        setObservationIndex(null);
+        return;
+      }
+      if (key.upArrow || key.leftArrow) {
+        setObservationIndex(
+          (value) =>
+            (value + observationTargets.length - 1) %
+            observationTargets.length,
+        );
+        return;
+      }
+      if (key.downArrow || key.rightArrow || key.tab) {
+        setObservationIndex(
+          (value) => (value + 1) % observationTargets.length,
+        );
+        return;
+      }
     }
     if (input === "?") {
       setShowHelp((value) => !value);
       return;
     }
+    if (input === "m") {
+      setMotion((value) => nextMotionLevel(value));
+      return;
+    }
+    if (
+      activeId === "habitat" &&
+      input === "r" &&
+      snapshot.habitat.events.length > 0
+    ) {
+      setObservationIndex(null);
+      setReplayStartFrame((value) => (value === null ? frame : null));
+      return;
+    }
+    if (
+      activeId === "habitat" &&
+      key.return &&
+      observationTargets.length > 0
+    ) {
+      setReplayStartFrame(null);
+      setObservationIndex(0);
+      return;
+    }
     const directIndex = Number(input) - 1;
     if (Number.isInteger(directIndex) && directIndex >= 0 && directIndex < 4) {
       setShowHelp(false);
+      setObservationIndex(null);
+      setReplayStartFrame(null);
       setActiveIndex(directIndex);
       return;
     }
     if (key.leftArrow) {
+      setReplayStartFrame(null);
       setActiveIndex((value) => (value + SCREEN_IDS.length - 1) % SCREEN_IDS.length);
     } else if (key.rightArrow || key.tab) {
+      setReplayStartFrame(null);
       setActiveIndex((value) => (value + 1) % SCREEN_IDS.length);
     }
   });
 
-  const activeId = SCREEN_IDS[activeIndex];
   const screen = {
-    overview: <OverviewScreen snapshot={snapshot} lang={lang} />,
-    habitat: <HabitatScreen snapshot={snapshot} lang={lang} />,
+    overview: (
+      <OverviewScreen
+        snapshot={snapshot}
+        lang={lang}
+        frame={frame}
+        motion={motion}
+        glitch={glitch}
+      />
+    ),
+    habitat: (
+      <HabitatScreen
+        snapshot={snapshot}
+        lang={lang}
+        frame={frame}
+        motion={motion}
+        observationTargets={observationTargets}
+        observationIndex={observationIndex}
+        glitch={glitch}
+        replay={replay}
+      />
+    ),
     laboratory: <LaboratoryScreen snapshot={snapshot} lang={lang} />,
     codex: <CodexScreen snapshot={snapshot} lang={lang} />,
   }[activeId];
   const zh = lang === "zh";
+  const motionLabel = {
+    off: zh ? "关闭" : "OFF",
+    low: zh ? "低频" : "LOW",
+    full: zh ? "完整" : "FULL",
+  }[motion];
 
   return (
     <Box flexDirection="column" paddingX={1}>
@@ -413,7 +626,14 @@ function TuiApp({ snapshot, lang = "zh" }) {
       <Box marginTop={1} justifyContent="space-between">
         <Text dimColor>
           1–4 {zh ? "区域" : "areas"} · ← → {zh ? "切换" : "switch"} · ?{" "}
-          {zh ? "帮助" : "help"}
+          {zh ? "帮助" : "help"} · m {zh ? "动态" : "motion"} {motionLabel}
+          {activeId === "habitat"
+            ? ` · Enter ${zh ? "观察" : "inspect"}${
+                snapshot.habitat.events.length > 0
+                  ? ` · r ${zh ? "回放" : "replay"}`
+                  : ""
+              }`
+            : ""}
         </Text>
         <Text dimColor>q {zh ? "退出" : "quit"}</Text>
       </Box>

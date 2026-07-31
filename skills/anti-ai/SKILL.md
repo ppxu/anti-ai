@@ -43,9 +43,10 @@ If the user explicitly asks to open or explore the local console, tell them to r
 
 ```bash
 anti-ai tui
+anti-ai tui --no-motion
 ```
 
-The console reads only the already-settled Creature file. It does not scan Agent records, create or migrate state, settle a day, or advance Creature or companion growth.
+The console reads only the already-settled Creature file. It does not scan Agent records, create or migrate state, settle a day, or advance Creature or companion growth. Its low-rate ASCII motion is ephemeral: `m` cycles motion levels and `--no-motion` starts fully static. In Habitat, `Enter` opens read-only anatomy inspection and `r` replays the latest sealed ecological event. These interactions must never be described as new accounting or growth.
 
 ### Exact data for an Agent
 

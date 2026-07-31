@@ -29,7 +29,9 @@ Add a local Agent by registering its metadata in `src/registry.mjs` and adding o
 
 Add a command in `src/commands/` when it owns substantial orchestration. Keep parsing and allowlists in the registry/CLI layer, domain calculations in their domain module, and formatting in `src/cli/render.mjs` or `src/renderers/`.
 
-Presentation-neutral queries belong in `src/application/`. The TUI consumes structured snapshots rather than terminal strings, and must not call state-changing command handlers. Ink and React stay in `devDependencies`; `scripts/build-tui.mjs` bundles them into `dist/tui.mjs`, so normal commands do not load the framework and installed packages keep zero required runtime dependencies. Edit `src/tui/`, never the generated bundle.
+Presentation-neutral queries belong in `src/application/`. The TUI consumes structured snapshots rather than terminal strings, and must not call state-changing command handlers. `src/application/tui-motion.mjs` owns deterministic ASCII frames, anatomy observations, rare-glitch eligibility, and event-replay scenes; it has no timer or persistence access. `src/tui/` owns ephemeral frame counters and keyboard state. Motion is capped at 4 FPS, pauses outside living screens, and can be disabled without changing the snapshot.
+
+Ink and React stay in `devDependencies`; `scripts/build-tui.mjs` bundles them into `dist/tui.mjs`, so normal commands do not load the framework and installed packages keep zero required runtime dependencies. Edit `src/tui/`, never the generated bundle.
 
 Creature content belongs in `src/creature/content.mjs`; appearance composition belongs in `src/creature/appearance.mjs`; growth and collection rules remain in `src/creature.mjs`. New mechanics must preserve the product guardrail: high use, restrained use, and AI-free days may shape different outcomes, but Token volume must not become the only upgrade path.
 

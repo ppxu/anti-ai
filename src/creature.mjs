@@ -4,6 +4,10 @@ import path from "node:path";
 
 import { companionView } from "./companion.mjs";
 import {
+  HABITAT_COPY,
+  habitatEvents,
+} from "./habitat.mjs";
+import {
   loadJsonState,
   resetJsonState,
   saveJsonState,
@@ -671,11 +675,27 @@ function creatureCodex(state, date) {
     discovered: scarDiscoveries.has(id),
     discoveredAt: scarDiscoveries.get(id) ?? null,
   }));
+  const phenomenonDiscoveries = new Map();
+  for (const event of habitatEvents(state, date)) {
+    if (!phenomenonDiscoveries.has(event.id)) {
+      phenomenonDiscoveries.set(event.id, event.discoveredAt);
+    }
+  }
+  const habitatPhenomena = Object.entries(HABITAT_COPY.events).map(
+    ([id, event]) => ({
+      id,
+      routeId: event.route,
+      decorationId: event.decorationId,
+      discovered: phenomenonDiscoveries.has(id),
+      discoveredAt: phenomenonDiscoveries.get(id) ?? null,
+    }),
+  );
   const fixedCollections = [
     ...forms,
     ...achievements,
     ...chromaticAbilities,
     ...scars,
+    ...habitatPhenomena,
   ];
   const fixedDiscovered = fixedCollections.filter(
     (entry) => entry.discovered,
@@ -688,6 +708,10 @@ function creatureCodex(state, date) {
       ...entry,
     })),
     ...scars.map((entry) => ({ type: "scar", ...entry })),
+    ...habitatPhenomena.map((entry) => ({
+      type: "habitatPhenomenon",
+      ...entry,
+    })),
     ...specimens.map((entry) => ({
       type: "specimen",
       id: entry.id,
@@ -757,6 +781,11 @@ function creatureCodex(state, date) {
         discovered: scars.filter((entry) => entry.discovered).length,
         total: scars.length,
       },
+      habitatPhenomena: {
+        discovered: habitatPhenomena.filter((entry) => entry.discovered)
+          .length,
+        total: habitatPhenomena.length,
+      },
       specimens: { discovered: specimens.length },
       foreignSpecimens: { discovered: foreignSpecimens.length },
       caseSlices: { discovered: caseSlices.length },
@@ -769,6 +798,7 @@ function creatureCodex(state, date) {
       achievements,
       chromaticAbilities,
       scars,
+      habitatPhenomena,
       specimens,
       foreignSpecimens,
       caseSlices,

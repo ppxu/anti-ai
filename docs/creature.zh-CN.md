@@ -20,6 +20,7 @@ anti-ai creature intervene
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature export
+anti-ai creature habitat
 anti-ai codex
 ```
 
@@ -266,16 +267,17 @@ min(35, 5 + min(10, floor(累计能力值 / 25))
 - 24 个成就；
 - 6 个异色能力；
 - 4 种世代伤疤；
+- 18 个路线对等的生态现象；
 - 不限数量的动态标本指纹；
 - 不限数量的外来遭遇标本；
-- 不限数量的永久化石。
-- 不限数量的已封存病例切片。
+- 不限数量的永久化石；
+- 不限数量的已封存病例切片；
 - 不限数量的已封存污染培养物；
 - 不限数量的已绑定伴生形态。
 
 未解锁的固定收藏保持 `???`。收藏系统不会偏爱高 Token：污染、清醒、AI 清醒日、成就、稀有能力、世代和显式进化选择都有独立路线。
 
-当前支持八种隐私安全的 SVG 卡片：
+当前支持九种隐私安全的 SVG 卡片：
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -286,6 +288,7 @@ anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai share --card habitat > anti-ai-habitat.svg
 ```
 
 化石证书会在第 90 个阅历日后开放。
@@ -293,6 +296,7 @@ anti-ai share --card companion > anti-ai-companion.svg
 转折病例同样完全在本地运行，并且是可选项。关键病程、干预、预后和病例切片规则见[分叉病历](./casebook.zh-CN.md)。
 污染培养同样完全在本地运行，并且是可选项。稳定配方、稀有度、培养架和培养物卡片规则见[污染实验室](./laboratory.zh-CN.md)。
 伴生异物同样完全在本地运行，并且是可选项。印记、路线、里程碑和伴生卡片规则见[伴生异物](./companions.zh-CN.md)。
+双体收容场景同样完全在本地运行，并且保持只读。七日事件、关系、场景装饰、周期摘要和 18 个固定生态现象见[收容生态舱](./habitat.zh-CN.md)。
 
 ## 档案、隐私与重置
 

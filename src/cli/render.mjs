@@ -9,6 +9,11 @@ import { encounterLabel } from "../encounter.mjs";
 import { laboratoryLabel } from "../laboratory.mjs";
 import { color, formatTokens } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
+import {
+  habitatDecorationCopy,
+  habitatEventCopy,
+  habitatRelationshipCopy,
+} from "../habitat.mjs";
 
 const ACHIEVEMENT_CATEGORY_COLORS = {
   offense: "1;31",
@@ -124,6 +129,41 @@ function renderCompanionPeriod(period, lang) {
   ].join("\n");
 }
 
+function renderHabitatPeriod(habitat, startDate, endDate, lang, kind) {
+  if (!habitat) return "";
+  const relationship = habitat.relationship
+    ? habitatRelationshipCopy(habitat.relationship.id, lang).name
+    : localized(lang, "未建立伴生关系", "NO SYMBIOTIC BOND");
+  const periodEvents = habitat.events.filter(
+    (event) =>
+      event.discoveredAt >= startDate && event.discoveredAt <= endDate,
+  );
+  const latest = habitat.events.at(-1);
+  const latestName = latest
+    ? habitatEventCopy(latest.id, lang).name
+    : localized(lang, "尚无封存事件", "NO SEALED EVENT");
+  if (kind === "today") {
+    return [
+      `  ${localized(lang, "生态舱观察", "HABITAT WATCH")}  ${relationship} · ${latestName}`,
+      `  ${localized(lang, "查看生态舱", "HABITAT")}  anti-ai creature habitat`,
+      "",
+    ].join("\n");
+  }
+  const decorations = [
+    ...new Set(
+      periodEvents.map((event) => event.decorationId),
+    ),
+  ]
+    .map((id) => habitatDecorationCopy(id, lang).name)
+    .join(" · ");
+  return [
+    `  ${localized(lang, "收容生态舱", "CONTAINMENT HABITAT")}  ${relationship} · ${localized(lang, `本期事件 ${periodEvents.length}`, `PERIOD EVENTS ${periodEvents.length}`)} · ${latestName}`,
+    `  ${localized(lang, "生态痕迹", "ECOLOGICAL TRACES")}  ${decorations || localized(lang, "本期无新增", "NONE ADDED THIS PERIOD")}`,
+    `  ${localized(lang, "查看生态舱", "HABITAT")}  anti-ai creature habitat`,
+    "",
+  ].join("\n");
+}
+
 function renderCreatureCasebook(casebook, lang) {
   const achievements = casebook.achievements
     .map((achievement) =>
@@ -231,6 +271,9 @@ function codexDiscoveryLabel(discovery, lang) {
       `SYMBIOTIC COMPANION #${discovery.id}`,
     );
   }
+  if (discovery.type === "habitatPhenomenon") {
+    return habitatEventCopy(discovery.id, lang).name;
+  }
   return localized(
     lang,
     `永久化石 #${discovery.id}`,
@@ -336,6 +379,18 @@ function renderCodex(codex, lang) {
       codex.sections.scars,
       (entry) => creatureLabel("scars", entry.id, lang),
     ),
+    ...fixedSection(
+      localized(lang, "生态现象", "HABITAT PHENOMENA"),
+      codex.sections.habitatPhenomena,
+      (entry) =>
+        `${habitatEventCopy(entry.id, lang).name} · ${habitatDecorationCopy(entry.decorationId, lang).name}`,
+      (entry) =>
+        ({
+          pollution: "1;31",
+          clarity: "1;36",
+          paradox: "1;33",
+        })[entry.routeId],
+    ),
     `${localized(lang, "动态标本", "DYNAMIC SPECIMENS")}  [${codex.summary.specimens.discovered}]`,
     ...(specimenLines.length > 0
       ? specimenLines
@@ -390,6 +445,7 @@ export {
   generationLabel,
   renderCodex,
   renderCompanionPeriod,
+  renderHabitatPeriod,
   renderCreatureAutopsy,
   renderCreatureCasebook,
   renderCreatureTodaySummary,

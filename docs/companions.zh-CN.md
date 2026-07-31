@@ -15,6 +15,8 @@ anti-ai lab companion --full
 anti-ai lab companion --json
 
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai creature habitat
+anti-ai share --card habitat > anti-ai-habitat.svg
 ```
 
 可以运行 `anti-ai help lab bond` 或 `anti-ai help lab companion` 查看分级帮助。
@@ -76,8 +78,10 @@ anti-ai share --card companion > anti-ai-companion.svg
 - `week` / `month`：展示周期内的印记与阶段变化；
 - `codex`：把每个绑定过的伴生异物收录为私有动态条目；
 - `share --card companion`：输出当前伴生异物的 1200×630 隐私安全 SVG。
+- `creature habitat`：把伴生异物与主标本放进一个只读收容场景。
 
 绑定之前无法生成伴生卡片。SVG 只写入标准输出，不会上传。
+绑定之前仍可查看生态舱及其分享卡，但伴生位会保持空置。完整规则见[收容生态舱](./habitat.zh-CN.md)。
 
 ## 成长护栏
 

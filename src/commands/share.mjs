@@ -21,16 +21,57 @@ import {
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
+  renderHabitatShareSvg,
   renderPathologyShareSvg,
   renderPrognosisShareSvg,
   renderShareSvg,
 } from "../renderers/svg.mjs";
 import { localDate, reportsForDates } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
+import { deriveHabitat } from "../habitat.mjs";
 import { runCreature } from "./creature.mjs";
 import { encounterContext, encounterErrorMessage } from "./encounter.mjs";
 
 async function runShare(options) {
+  if (options.card === "habitat") {
+    const context = await runCreature(
+      {
+        ...options,
+        action: undefined,
+        command: "creature",
+        json: false,
+      },
+      "snapshot-context",
+    );
+    if (!context) return;
+    const habitat = deriveHabitat(
+      context.state,
+      context.result,
+      context.result.date,
+      creatureArt(context.result),
+    );
+    process.stdout.write(
+      renderHabitatShareSvg(
+        habitat,
+        {
+          specimenStage: creatureLabel(
+            "stages",
+            habitat.specimen.stageId,
+            options.lang,
+          ),
+          companionStage: habitat.companion
+            ? companionLabel(
+                "stages",
+                habitat.companion.stageId,
+                options.lang,
+              )
+            : localized(options.lang, "未绑定", "UNBONDED BAY"),
+        },
+        options.lang,
+      ),
+    );
+    return;
+  }
   if (options.card === "companion") {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const date = options.date ?? localDate(new Date(), timezone);

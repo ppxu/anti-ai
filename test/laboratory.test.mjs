@@ -1270,7 +1270,7 @@ test("codex records companion stages and anomalies outside the fixed denominator
   assert.equal(bondDate.status, 0, bondDate.stderr);
   const codex = JSON.parse(first.stdout);
   assert.deepEqual(JSON.parse(second.stdout), codex);
-  assert.equal(codex.summary.fixed.total, 50);
+  assert.equal(codex.summary.fixed.total, 68);
   assert.deepEqual(codex.summary.companions, { discovered: 1 });
   assert.deepEqual(codex.sections.companions, [
     {

@@ -56,6 +56,8 @@ import {
   generationLabel,
   renderEvolutionOptions,
 } from "../cli/render.mjs";
+import { deriveHabitat } from "../habitat.mjs";
+import { renderHabitat } from "../renderers/habitat.mjs";
 
 async function runCreature(options, mode = "render") {
   if (options.action === "reset") {
@@ -65,6 +67,51 @@ async function runCreature(options, mode = "render") {
     } else {
       process.stdout.write(
         `${localized(options.lang, "异变体档案已销毁。下一枚 Token 会重新孵化它。", "Mutation file destroyed. The next token will hatch it again.")}\n`,
+      );
+    }
+    return;
+  }
+
+  if (options.action === "habitat") {
+    const context = await runCreature(
+      {
+        ...options,
+        action: undefined,
+        command: "creature",
+        json: false,
+      },
+      "snapshot-context",
+    );
+    if (!context) return;
+    const habitat = deriveHabitat(
+      context.state,
+      context.result,
+      context.result.date,
+      creatureArt(context.result),
+    );
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(habitat, null, 2)}\n`);
+    } else {
+      process.stdout.write(
+        renderHabitat(
+          habitat,
+          {
+            specimenStage: creatureLabel(
+              "stages",
+              habitat.specimen.stageId,
+              options.lang,
+            ),
+            companionStage: habitat.companion
+              ? companionLabel(
+                  "stages",
+                  habitat.companion.stageId,
+                  options.lang,
+                )
+              : null,
+          },
+          options.lang,
+          { full: options.full },
+        ),
       );
     }
     return;

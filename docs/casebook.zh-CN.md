@@ -70,7 +70,7 @@ anti-ai share --card prognosis > anti-ai-prognosis.svg
 
 ## 图鉴与持久化
 
-已封存选择会成为 `anti-ai codex` 中不限数量的病例切片。它们不会改变固定 50 项收藏的分母，也不会提供战力或 Token 分数。
+已封存选择会成为 `anti-ai codex` 中不限数量的病例切片。它们不会改变固定 68 项收藏的分母，也不会提供战力或 Token 分数。
 
 异变体档案使用 schema v10。病例只保存：
 

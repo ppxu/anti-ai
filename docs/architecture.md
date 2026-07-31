@@ -8,7 +8,7 @@
 2. `src/registry.mjs` defines supported commands, cards, and local sources.
 3. `src/scanner.mjs` runs selected source adapters and returns usage metadata by date.
 4. `src/methodology.mjs` and `src/comparisons.mjs` translate usage into named public references.
-5. focused command handlers derive reports, Creature state, encounters, cultures, or companions.
+5. focused command handlers derive reports, Creature state, encounters, cultures, companions, or read-only habitats.
 6. terminal and SVG renderers format the derived result without reading raw conversation text.
 
 Source adapters are isolated. A broken source does not hide healthy sources when scanning `all`; output receives a source ID and error code, never a local record or conversation excerpt. SQLite adapters load `better-sqlite3` only when an existing SQLite source is selected.
@@ -19,7 +19,7 @@ Source adapters are isolated. A broken source does not hide healthy sources when
 
 - Human-readable full-source `today`, `week`, and `month`, plus `creature`, `encounter`, and state-changing Laboratory actions, may settle local history.
 - Source-filtered reports and `today --json` are accounting-only.
-- `codex`, every `share` card, `doctor`, `explain`, and Help are read-only snapshots.
+- `codex`, `creature habitat`, every `share` card, `doctor`, `explain`, and Help are read-only snapshots.
 - `creature reset` is the only command that deliberately deletes the state file and its migration backups.
 
 State loading validates the schema and root state envelope before migration. Migrations run one version at a time. The first write after migration keeps an exact content-addressed backup under `~/.anti-ai/backups/`. Writes use a temporary file, atomic rename, a short-lived lock, and an optimistic fingerprint so stale concurrent commands fail instead of overwriting newer growth.

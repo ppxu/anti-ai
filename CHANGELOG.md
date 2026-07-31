@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-31
+
+### Added
+
+- Added `creature habitat`, a read-only single-screen containment scene that places the current Reactor Kaiju beside its active companion and turns existing collection history into visible scenery.
+- Added 18 deterministic ecological events on a seven-experience-day cadence, with equal Pollution, Clarity, and Paradox pools; repeated views, language, terminal width, and later Token volume cannot reroll sealed incidents.
+- Added 12 milestone-aware relationship diagnoses, 18 route-balanced duo titles, 12 habitat decorations, joint symptoms, compact period observations, and expanded `--full` event history.
+- Added 18 fixed habitat phenomena to `codex`, increasing the fixed collection from 50 to 68 entries while keeping locked discoveries private.
+- Added a privacy-safe `share --card habitat` SVG, focused bilingual Help, a standalone bilingual Containment Habitat Guide, and Agent Skill routing.
+
+### Changed
+
+- Complete-source `today`, `week`, and `month` reports now include a concise habitat observation or period incident summary without duplicating the full chamber.
+- The package version is now 2.1.0 while Creature persistence remains schema v10; habitat history is derived from existing state and requires no migration or new gameplay file.
+
+### Security
+
+- Habitat commands and cards are true read-only snapshots: they never create, migrate, settle, or rewrite the Creature file and store no view count, nickname, exact Token, request, model, path, prompt, response, tool call, or local record name.
+- Habitat events, relationships, decorations, titles, Codex discoveries, and cards change no experience, abilities, Ecology, companion imprints, rarity, score, combat power, rewards, or Token incentives.
+
 ## [2.0.0] - 2026-07-30
 
 ### Added

@@ -1,15 +1,14 @@
 # 架构说明
 
-`anti-ai` 是纯本地 CLI。2.0 继续保持一个 npm 包、一个可选原生适配器和一个隐私安全的 JSON 状态文件，不引入框架、服务器、账号、遥测或后台进程。
+`anti-ai` 是纯本地 CLI，继续保持一个 npm 包、一个可选原生适配器和一个隐私安全的 JSON 状态文件。统计与玩法内核仍不依赖框架；面向人类的 `tui` 适配层使用 Ink 与 React，并编译成一个自包含发布产物。项目仍不引入服务器、账号、遥测或后台进程，必需运行时依赖保持为零。
 
 ## 运行链路
 
 1. `bin/anti-ai.mjs` 调用导出的 CLI `main()`。
 2. `src/registry.mjs` 声明支持的命令、卡片与本地来源。
-3. `src/scanner.mjs` 运行选中的来源适配器，按日期返回用量元数据。
-4. `src/methodology.mjs` 与 `src/comparisons.mjs` 换算具名公开参照。
-5. 独立命令处理器派生账单、异变体、遭遇、培养物、伴生异物或只读生态舱。
-6. 终端和 SVG 渲染器只格式化派生结果，不读取会话正文。
+3. 显式报告与玩法命令继续经过扫描器、领域模块和现有终端或 SVG 适配层。
+4. `tui` 从 `src/application/` 加载只读应用快照，再动态导入 `dist/tui.mjs` 中已打包的 Ink 适配层。
+5. 终端、TUI 和 SVG 适配层只格式化派生结果，不读取会话正文。
 
 来源适配器彼此隔离。扫描 `all` 时，单个来源损坏不会遮蔽其他健康来源；输出只包含来源 ID 和错误码，不包含本地记录或会话片段。只有选中了实际存在的 SQLite 来源时，才会加载 `better-sqlite3`。
 
@@ -19,7 +18,7 @@
 
 - 完整来源的人类可读 `today`、`week`、`month`，以及 `creature`、`encounter` 和改变状态的实验室动作，可能结算本地成长史。
 - 带来源过滤的报告和 `today --json` 只做统计。
-- `codex`、`creature habitat`、所有 `share` 卡片、`doctor`、`explain` 与 Help 都是只读快照。
+- `tui`、`codex`、`creature habitat`、所有 `share` 卡片、`doctor`、`explain` 与 Help 都是只读快照。
 - `creature reset` 是唯一主动删除状态文件及迁移备份的命令。
 
 读取状态时会先校验 schema 和根状态外壳，再逐版本迁移。迁移后的第一次写入会在 `~/.anti-ai/backups/` 保存按内容寻址的原始副本。写入使用临时文件、原子重命名、短时文件锁和乐观指纹；过期并发命令会失败，而不会覆盖更新后的成长记录。
@@ -30,11 +29,14 @@
 
 拥有较多编排逻辑的新命令放入 `src/commands/`。参数与白名单归注册/CLI 层，领域计算归领域模块，展示归 `src/cli/render.mjs` 或 `src/renderers/`。
 
+与展示无关的查询模型放入 `src/application/`。TUI 必须消费结构化快照，不能调用会改写状态的命令处理器。Ink 与 React 只存在于 `devDependencies`，由 `scripts/build-tui.mjs` 打包为 `dist/tui.mjs`；普通命令不会加载框架，安装包仍没有必需运行时依赖。只编辑 `src/tui/`，不要直接修改生成产物。
+
 异变体语料放在 `src/creature/content.mjs`，外观组合放在 `src/creature/appearance.mjs`，成长和收藏规则留在 `src/creature.mjs`。任何新机制都必须守住产品护栏：高消耗、克制使用和 AI 清醒日可以塑造不同结果，但 Token 数量不能成为唯一升级路径。
 
 ## 质量门禁
 
 - `npm test`：快速公共行为测试。
+- `npm run build:tui`：编译自包含的 Ink/React 适配层。
 - `npm run check`：检查语法、行尾空格、缺失的相对导入、运行时循环依赖和本地 Markdown 链接。
 - `npm run test:coverage`：`src` 行覆盖率 90%、函数 90%、分支 75%。
 - `npm run test:package`：打包真实 tarball，在没有可选原生依赖时安装并运行。

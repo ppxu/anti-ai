@@ -45,6 +45,7 @@ import { runCreature } from "./commands/creature.mjs";
 import { runEncounter } from "./commands/encounter.mjs";
 import { runLaboratory } from "./commands/laboratory.mjs";
 import { runShare } from "./commands/share.mjs";
+import { runTui } from "./commands/tui.mjs";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json");
@@ -282,6 +283,7 @@ const COMMAND_HANDLERS = {
   week: runWeek,
   month: runMonth,
   codex: runCodex,
+  tui: runTui,
   share: runShare,
   creature: runCreature,
   encounter: runEncounter,
@@ -369,6 +371,15 @@ async function main(rawArgs = process.argv.slice(2)) {
     ) {
       process.stderr.write(
         `${localized(options.lang, "异变体收藏卡必须使用完整数据源；请移除 --source 过滤。", "Mutation collection cards require the complete data set; remove the --source filter.")}\n`,
+      );
+      process.exitCode = 2;
+    } else if (options.command === "tui" && options.json) {
+      process.stderr.write(
+        `${localized(
+          options.lang,
+          "tui 不支持 --json；自动化和 Agent 请使用 anti-ai today --json 或 anti-ai codex --json。",
+          "tui does not support --json; automation and Agents should use anti-ai today --json or anti-ai codex --json.",
+        )}\n`,
       );
       process.exitCode = 2;
     } else if (

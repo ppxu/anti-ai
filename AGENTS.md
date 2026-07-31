@@ -35,8 +35,10 @@ Preserve these product rules:
 - `src/registry.mjs` owns command, card, and source metadata.
 - `src/scanner.mjs` owns isolated local-source adapters.
 - `src/commands/` owns command orchestration.
+- `src/application/` owns presentation-neutral query models.
 - Domain modules own calculations and gameplay rules.
 - `src/cli/` and `src/renderers/` own terminal and SVG presentation.
+- `src/tui/` owns Ink source; `dist/tui.mjs` is generated and must not be edited directly.
 - `src/state-store.mjs` owns validation-aware state loading, backups, locking, and atomic writes.
 
 Avoid runtime import cycles. Register new public IDs centrally instead of adding duplicate allowlists.
@@ -78,6 +80,7 @@ Treat commands, options, exit codes, stdout/stderr, bilingual output, JSON field
 Run:
 
 ```bash
+npm run build:tui
 npm run check
 npm run test:coverage
 npm run test:package

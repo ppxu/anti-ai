@@ -101,6 +101,9 @@ anti-ai week --date 2026-07-23
 anti-ai month
 anti-ai month --date 2026-07-23
 
+anti-ai tui
+anti-ai tui --lang en
+
 anti-ai codex
 anti-ai codex --json
 
@@ -162,6 +165,20 @@ anti-ai explain --lang en
 ```
 
 `today --json`, `codex --json`, `creature --json`, `encounter --json`, and `lab --json` ignore presentation language and keep stable machine-readable keys.
+
+### `tui`
+
+Open the read-only containment console for human exploration:
+
+```bash
+anti-ai tui
+anti-ai tui --date 2026-07-23
+anti-ai tui --lang en
+```
+
+The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `1`–`4` or the arrow keys to switch areas, `?` for shortcuts, and `q` to leave without disturbing the specimen.
+
+TUI browsing reads only the already-settled Creature file. It does not scan Agent records, create or migrate state, settle a day, or advance Creature or companion growth. Run `anti-ai today` or another explicit settling command when you want to update the file. Scripts and Agents should continue using explicit commands and `--json`; `anti-ai tui` requires an interactive terminal.
 
 ### `today`
 
@@ -376,6 +393,7 @@ Do not attach real Agent logs or SQLite databases to public issues. Use a minima
 ```bash
 git clone https://github.com/ppxu/anti-ai.git
 cd anti-ai
+npm run build:tui
 npm test
 npm run check
 npm run test:coverage
@@ -390,7 +408,10 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `bin/anti-ai.mjs`: minimal executable launcher
 - `src/cli.mjs`: small command registry dispatcher
 - `src/cli/`: argument parsing, terminal rendering, and methodology explanation
-- `src/commands/`: focused Creature, Encounter, Laboratory, and Share handlers
+- `src/commands/`: focused Creature, Encounter, Laboratory, Share, and TUI handlers
+- `src/application/`: presentation-neutral read models shared by human adapters
+- `src/tui/`: Ink source for the read-only interactive containment console
+- `dist/tui.mjs`: generated self-contained Ink/React runtime bundle
 - `src/help.mjs`: global and command-specific help
 - `src/registry.mjs`: command, card, and local-source metadata
 - `src/scanner.mjs`: isolated six-source JSONL/optional-SQLite adapters

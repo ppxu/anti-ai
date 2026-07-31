@@ -1,17 +1,18 @@
 {
   "name": "anti-ai",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Turn local coding-agent token usage into a satirical resource receipt, mutation creature, and containment habitat.",
   "type": "module",
   "bin": {
     "anti-ai": "bin/anti-ai.mjs"
   },
   "scripts": {
+    "build:tui": "node scripts/build-tui.mjs",
     "test": "node --test test/*.test.mjs",
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**/*.mjs\" --test-coverage-lines=90 --test-coverage-functions=90 --test-coverage-branches=75 test/*.test.mjs",
-    "test:package": "node scripts/verify-package.mjs",
-    "check": "node scripts/check.mjs",
-    "verify": "npm run check && npm run test:coverage && npm run test:package",
+    "test:package": "npm run build:tui && node scripts/verify-package.mjs",
+    "check": "npm run build:tui && node scripts/check.mjs",
+    "verify": "npm run build:tui && node scripts/check.mjs && npm run test:coverage && node scripts/verify-package.mjs",
     "prepublishOnly": "npm run verify",
     "start": "node ./bin/anti-ai.mjs"
   },
@@ -23,6 +24,7 @@
   },
   "files": [
     "bin",
+    "dist",
     "src",
     "skills",
     "docs",
@@ -67,5 +69,11 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1",
+    "ink": "^7.1.1",
+    "ink-testing-library": "^4.0.0",
+    "react": "^19.2.8"
   }
 }

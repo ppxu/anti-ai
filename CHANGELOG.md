@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-07-31
+
+### Added
+
+- Added `anti-ai tui`, a bilingual read-only Ink console that unifies Overview, Habitat, Laboratory, and Codex behind number-key and arrow-key navigation.
+- Added a presentation-neutral TUI snapshot layer, focused command Help, keyboard testing with `ink-testing-library`, and a self-contained build artifact for interactive terminals.
+
+### Changed
+
+- Ink and React are bundled at development time into `dist/tui.mjs`; installed packages keep zero required runtime dependencies, and ordinary commands never load the TUI runtime.
+- Updated both READMEs, architecture guides, contributing and security guidance, and the Agent Skill with the human-only TUI workflow.
+
+### Security
+
+- TUI browsing reads only already-settled derived state. It does not scan Agent records, create or migrate the Creature file, settle days, advance growth, contact a server, or start a background process.
+
 ## [2.1.0] - 2026-07-31
 
 ### Added

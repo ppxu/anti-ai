@@ -502,6 +502,36 @@ test("command help documents only the selected command contract", () => {
   assert.match(explain.stdout, /-h, --help/);
 });
 
+test("tui has command help and fails clearly outside an interactive terminal", () => {
+  const help = runCli(["tui", "--help"]);
+  const result = runCli(["tui"]);
+
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /Usage: anti-ai tui \[options\]/);
+  assert.match(help.stdout, /只读交互式收容控制台/);
+  assert.equal(result.status, 2);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /需要交互式终端/);
+  assert.match(result.stderr, /anti-ai today/);
+});
+
+test("tui rejects source filters that cannot reshape the settled creature file", () => {
+  const result = runCli(["tui", "--source", "codex"]);
+
+  assert.equal(result.status, 2);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /tui 必须使用完整数据源/);
+});
+
+test("tui redirects machine-readable workflows to explicit JSON commands", () => {
+  const result = runCli(["tui", "--json", "--lang", "en"]);
+
+  assert.equal(result.status, 2);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /does not support --json/);
+  assert.match(result.stderr, /anti-ai today --json/);
+});
+
 test("nested creature actions expose focused help", () => {
   const evolve = runCli(["creature", "evolve", "--help"]);
   const reset = runCli(["help", "creature", "reset", "--lang", "en"]);
@@ -733,7 +763,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 2.1.0\n");
+  assert.equal(result.stdout, "anti-ai 2.2.0\n");
   assert.equal(result.stderr, "");
 });
 

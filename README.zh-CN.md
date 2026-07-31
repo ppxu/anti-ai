@@ -125,10 +125,13 @@ anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai share --card habitat > anti-ai-habitat.svg
 
 anti-ai creature
 anti-ai creature --full
 anti-ai creature --json
+anti-ai creature habitat
+anti-ai creature habitat --full
 anti-ai creature history
 anti-ai creature prognosis
 anti-ai creature intervene
@@ -169,19 +172,19 @@ anti-ai explain --lang en
 
 `--json` 按来源和具体模型输出可核对的 Token 统计，不把资源参照、个人基线或吐槽混入机器数据。Hermes 的日期归档是明确标注的会话级近似。
 
-默认的完整来源人类账单会在末尾结算当天异变体，并追加生态变化、当前形态、今日成就、新封存化石、待选择进化和当日图鉴入库反馈；`today --json` 与带 `--source` 的账单不会改动这条完整成长史。
+默认的完整来源人类账单会在末尾结算当天异变体，并追加生态变化、当前形态、今日成就、新封存化石、待选择进化、当日图鉴入库反馈和一句当前生态舱观察；`today --json` 与带 `--source` 的账单不会改动这条完整成长史。
 
 人类可读账单会直接扫描比较窗口；本地日志很多时可能需要数秒。当前版本仍不创建持久化用量索引。
 
 ### `week`
 
-打印截至指定日期的最近 7 个自然日趋势，并展示模型账单、资源账单和生活化对照。完整来源的人类可读报告还会结算成长史，追加“活体病历”：本周主症状、污染/清醒变化、阶段与世代成长、本期新化石、新徽章、新增收藏和固定轮换的主治意见。带 `--source` 的报告只展示用量，不改动完整成长史。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
+打印截至指定日期的最近 7 个自然日趋势，并展示模型账单、资源账单和生活化对照。完整来源的人类可读报告还会结算成长史，追加“活体病历”：本周主症状、污染/清醒变化、阶段与世代成长、本期新化石、新徽章、新增收藏、固定轮换的主治意见，以及当前生态舱关系与本期封存事件。带 `--source` 的报告只展示用量，不改动完整成长史。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
 
 ### `month`
 
 打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日比例（例如 `7 天 / 23 天`）、最长清醒期、最重一天、模型账单和本月资源对照。
 
-完整来源的人类可读报告还会追加“月度复诊”，汇总孵化后的有效观察期、主症状、生态人格迁移、阶段与世代成长、本月化石、成就和新增收藏；孵化前的空白日不会被误诊为戒断。
+完整来源的人类可读报告还会追加“月度复诊”，汇总孵化后的有效观察期、主症状、生态人格迁移、阶段与世代成长、本月化石、成就、新增收藏和生态舱事故；孵化前的空白日不会被误诊为戒断。
 
 ### `codex`
 
@@ -193,7 +196,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-固定收藏共 50 项：16 个形态家族、24 个成就、6 个异色能力和 4 种世代伤痕。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物和已绑定伴生形态则不设人为上限。
+固定收藏共 68 项：16 个形态家族、24 个成就、6 个异色能力、4 种世代伤痕和 18 个路线对等的生态现象。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物和已绑定伴生形态则不设人为上限。
 
 `codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
 
@@ -252,9 +255,10 @@ anti-ai share --card encounter --with <污染编码> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai share --card habitat > anti-ai-habitat.svg
 ```
 
-成长史与实验室现在支持 8 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡，`prognosis` 是当前病例的三路线预演，`culture` 是已封存培养事故，`companion` 是当前绑定伴生异物的成长档案。化石证书会在第 90 个阅历日后开放；预后卡会在转折病例待处理时开放；培养物卡默认选择最近一份，也可使用 `--id` 指定；伴生卡会在执行 `lab bond` 后开放。
+成长史与实验室现在支持 9 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡，`prognosis` 是当前病例的三路线预演，`culture` 是已封存培养事故，`companion` 是当前绑定伴生异物的成长档案，`habitat` 是双体收容场景。化石证书会在第 90 个阅历日后开放；预后卡会在转折病例待处理时开放；培养物卡默认选择最近一份，也可使用 `--id` 指定；伴生卡会在执行 `lab bond` 后开放。生态舱卡在伴生位空置时也可以生成。
 
 工具不会上传卡片；所有卡片均不包含精确 Token、请求数、来源/模型名、路径或对话正文，保存位置完全由你的命令行重定向决定。异变体卡片必须使用完整数据，因此会拒绝 `--source` 过滤。
 
@@ -268,6 +272,9 @@ anti-ai creature --date 2026-07-23
 anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
+anti-ai creature habitat
+anti-ai creature habitat --full
+anti-ai creature habitat --json
 anti-ai creature export
 anti-ai creature history
 anti-ai creature history --full
@@ -286,7 +293,9 @@ anti-ai creature evolve 2
 
 核能巨兽生成器包含 16 个核心形态家族，以及 **21,233,664 种去重后的最终 ASCII 形象**。本地稳定基因决定器官，使用病型、生态人格、伤疤、成就和异色稀有度则继续改写同一条骨架。运行 `anti-ai codex` 可以对照理论容量与个人收藏。
 
-生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md)。
+`creature habitat` 会把当前标本、活动伴生物和收藏痕迹组合成已选择的单屏收容场景。它是只读命令，每 7 个阅历日派生一个确定性事件，不能靠重复查看或增加 Token 重抽、加速。
+
+生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
 
 ### `doctor`
 
@@ -408,10 +417,12 @@ npm run test:package
 - `src/state-store.mjs`：带校验、备份和冲突保护的本地状态存储
 - `src/laboratory.mjs`：派生配方、封存培养物和培养架
 - `src/companion.mjs`：伴生绑定、印记、路线和 ASCII 成长
+- `src/habitat.mjs`：只读关系、场景装饰和七日生态事件
 - `src/shared.mjs`：共享的语言和空统计结构
 - `docs/architecture.zh-CN.md`：扩展、状态、隐私与质量边界
 - `docs/creature.zh-CN.md`：完整的异变体系统与理论物种容量指南
 - `docs/companions.zh-CN.md`：完整的伴生异物成长指南
+- `docs/habitat.zh-CN.md`：完整的收容生态舱指南
 
 ## 参与贡献
 

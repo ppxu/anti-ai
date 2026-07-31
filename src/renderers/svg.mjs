@@ -12,6 +12,12 @@ import {
   formatChange,
   rotatingCopy,
 } from "../reporting.mjs";
+import {
+  habitatDecorationCopy,
+  habitatDuoTitle,
+  habitatEventCopy,
+  habitatRelationshipCopy,
+} from "../habitat.mjs";
 
 function escapeXml(value) {
   return String(value)
@@ -558,11 +564,117 @@ function renderCompanionShareSvg(view, lang = "zh") {
 `;
 }
 
+function renderHabitatShareSvg(habitat, labels, lang = "zh") {
+  const title = localized(lang, "收容生态舱", "CONTAINMENT HABITAT");
+  const privacy = localized(
+    lang,
+    "只读模式：无对话、路径、模型名或精确 Token",
+    "READ-ONLY: no chats, paths, model names, or exact tokens",
+  );
+  const specimenArt = habitat.specimen.art
+    .map(
+      (line, index) =>
+        `<tspan x="72" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const companionLines = habitat.companion?.art ?? [
+    localized(lang, "      [ 空置伴生位 ]", "      [ UNBONDED BAY ]"),
+    "",
+    "  anti-ai lab bond <culture-id>",
+  ];
+  const companionArt = companionLines
+    .map(
+      (line, index) =>
+        `<tspan x="626" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const relationship = habitat.relationship
+    ? habitatRelationshipCopy(habitat.relationship.id, lang)
+    : null;
+  const latestEvent = habitat.events.at(-1);
+  const latest = latestEvent
+    ? habitatEventCopy(latestEvent.id, lang)
+    : null;
+  const decorationText =
+    habitat.decorations
+      .map((entry) => {
+        const copy = habitatDecorationCopy(entry.id, lang);
+        return `${copy.glyph} ${copy.name}`;
+      })
+      .join("  ·  ") ||
+    localized(lang, "尚无生态痕迹", "NO ECOLOGICAL TRACES");
+  const relationName =
+    relationship?.name ??
+    localized(lang, "未建立伴生关系", "NO SYMBIOTIC BOND");
+  const relationDetail = relationship
+    ? habitatDuoTitle(
+        habitat.relationship.routeId,
+        habitat.relationship.titleId,
+        lang,
+      )
+    : "anti-ai lab bond <culture-id>";
+  const eventName =
+    latest?.name ??
+    localized(
+      lang,
+      "尚未达到第 7 个阅历日",
+      "NOT YET AT EXPERIENCE DAY 7",
+    );
+  const eventBody =
+    latest?.body ??
+    localized(
+      lang,
+      "生态舱尚未积累足够的共同事故。",
+      "The habitat has not accumulated enough shared incidents.",
+    );
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(title)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#090d0c"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#345247" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#78e0aa"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #7e9a90; }
+    .body { fill: #edf8f4; }
+    .accent { fill: #78e0aa; }
+    .warn { fill: #f1c66f; }
+  </style>
+  <text x="72" y="78" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
+  <text x="1128" y="78" class="mono muted" font-size="17" text-anchor="end">${escapeXml(habitat.date)}</text>
+  <text x="72" y="108" class="mono muted" font-size="15">${escapeXml(localized(lang, `第 ${habitat.specimen.generation} 世代 · 阅历 ${habitat.specimen.experienceDays} 天 · 下次事件 ${habitat.cadence.daysUntilNext} 天后`, `GENERATION ${habitat.specimen.generation} · ${habitat.specimen.experienceDays} EXPERIENCE DAYS · NEXT EVENT IN ${habitat.cadence.daysUntilNext} DAYS`))}</text>
+  <line x1="72" y1="126" x2="1128" y2="126" stroke="#345247" stroke-width="2"/>
+
+  <text x="72" y="158" class="mono warn" font-size="15">${escapeXml(`${localized(lang, "标本", "SPECIMEN")} #${habitat.specimen.id} · ${labels.specimenStage}`)}</text>
+  <text x="72" y="194" class="mono body" font-size="16" xml:space="preserve">${specimenArt}</text>
+
+  <text x="626" y="158" class="mono warn" font-size="15">${escapeXml(`${localized(lang, "伴生位", "COMPANION BAY")} · ${labels.companionStage}`)}</text>
+  <text x="626" y="194" class="mono body" font-size="16" xml:space="preserve">${companionArt}</text>
+
+  <line x1="72" y1="424" x2="1128" y2="424" stroke="#345247" stroke-width="2"/>
+  <text x="72" y="456" class="mono muted" font-size="14">${escapeXml(localized(lang, "生态痕迹", "ECOLOGICAL TRACES"))}</text>
+  <text x="72" y="482" class="mono body" font-size="15">${escapeXml(decorationText)}</text>
+  <text x="72" y="516" class="mono muted" font-size="14">${escapeXml(localized(lang, "关系诊断", "RELATIONSHIP DIAGNOSIS"))}</text>
+  <text x="72" y="542" class="mono warn" font-size="17">${escapeXml(`${relationName} · ${relationDetail}`)}</text>
+
+  <text x="626" y="456" class="mono muted" font-size="14">${escapeXml(localized(lang, "最近事件", "LATEST EVENT"))}</text>
+  <text x="626" y="482" class="mono accent" font-size="17">${escapeXml(eventName)}</text>
+  <text x="626" y="510" class="mono body" font-size="14">${escapeXml(eventBody)}</text>
+
+  <line x1="72" y1="558" x2="1128" y2="558" stroke="#345247" stroke-width="2"/>
+  <text x="72" y="586" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="586" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 export {
   renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
+  renderHabitatShareSvg,
   renderPathologyShareSvg,
   renderPrognosisShareSvg,
   renderShareSvg,

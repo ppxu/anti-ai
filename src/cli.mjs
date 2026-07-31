@@ -1,7 +1,12 @@
 import { createRequire } from "node:module";
 
 import { companionPeriodSummary } from "./companion.mjs";
-import { creatureCasebook, creatureCodex } from "./creature.mjs";
+import {
+  creatureArt,
+  creatureCasebook,
+  creatureCodex,
+} from "./creature.mjs";
+import { deriveHabitat } from "./habitat.mjs";
 import { renderCommandHelp, renderTopLevelHelp } from "./help.mjs";
 import {
   color,
@@ -34,6 +39,7 @@ import {
   renderCreatureAutopsy,
   renderCreatureCasebook,
   renderCreatureTodaySummary,
+  renderHabitatPeriod,
 } from "./cli/render.mjs";
 import { runCreature } from "./commands/creature.mjs";
 import { runEncounter } from "./commands/encounter.mjs";
@@ -71,7 +77,18 @@ async function runToday(options) {
       ? creatureCodex(creatureContext.state, creature.date)
       : null;
     const mutation = creature
-      ? renderCreatureTodaySummary(creature, codex, options.lang)
+      ? `${renderCreatureTodaySummary(creature, codex, options.lang)}${renderHabitatPeriod(
+          deriveHabitat(
+            creatureContext.state,
+            creature,
+            creature.date,
+            creatureArt(creature),
+          ),
+          date,
+          date,
+          options.lang,
+          "today",
+        )}`
       : "";
     process.stdout.write(
       renderReceipt(
@@ -109,11 +126,19 @@ async function runWeek(options) {
   const companionPeriod = creatureContext
     ? companionPeriodSummary(creatureContext.state, dates[0], endDate)
     : null;
+  const habitat = creatureContext
+    ? deriveHabitat(
+        creatureContext.state,
+        creatureContext.result,
+        endDate,
+        creatureArt(creatureContext.result),
+      )
+    : null;
   process.stdout.write(
     renderWeek(
       reports,
       options.lang,
-      `${casebook ? renderCreatureCasebook(casebook, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}`,
+      `${casebook ? renderCreatureCasebook(casebook, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}${renderHabitatPeriod(habitat, dates[0], endDate, options.lang, "week")}`,
     ),
   );
 }
@@ -144,11 +169,19 @@ async function runMonth(options) {
   const companionPeriod = creatureContext
     ? companionPeriodSummary(creatureContext.state, dates[0], endDate)
     : null;
+  const habitat = creatureContext
+    ? deriveHabitat(
+        creatureContext.state,
+        creatureContext.result,
+        endDate,
+        creatureArt(creatureContext.result),
+      )
+    : null;
   process.stdout.write(
     renderMonth(
       reports,
       options.lang,
-      `${autopsy ? renderCreatureAutopsy(autopsy, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}`,
+      `${autopsy ? renderCreatureAutopsy(autopsy, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}${renderHabitatPeriod(habitat, dates[0], endDate, options.lang, "month")}`,
     ),
   );
 }

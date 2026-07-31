@@ -126,10 +126,13 @@ anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai share --card habitat > anti-ai-habitat.svg
 
 anti-ai creature
 anti-ai creature --full
 anti-ai creature --json
+anti-ai creature habitat
+anti-ai creature habitat --full
 anti-ai creature history
 anti-ai creature prognosis
 anti-ai creature intervene
@@ -170,19 +173,19 @@ Every verdict category combines 11 charge titles with 13 detail lines. The pair 
 
 `--json` returns exact token data grouped by source and model. It deliberately excludes environmental proxies, baselines, and verdicts.
 
-The default all-source human receipt also settles that creature day and appends a concise mutation update with ecology gain, current form, today's achievements, newly sealed fossils, pending evolution choices, and anything newly added to the codex. `today --json` and source-filtered receipts do not mutate the complete growth history.
+The default all-source human receipt also settles that creature day and appends a concise mutation update with ecology gain, current form, today's achievements, newly sealed fossils, pending evolution choices, anything newly added to the codex, and one current habitat observation. `today --json` and source-filtered receipts do not mutate the complete growth history.
 
 The human-readable receipt scans the comparison window directly and may take several seconds when local logs are large. The tool deliberately avoids a persistent usage index in this release.
 
 ### `week`
 
-Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. A complete-source human report also settles the creature and appends a living casebook with the primary symptom, Pollution/Clarity change, stage and generation growth, fossils sealed during the period, newly unlocked badges, collection discoveries, and a deterministic attending note. Source-filtered reports remain usage-only. The current release scans recent logs directly and does not create an index.
+Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. A complete-source human report also settles the creature and appends a living casebook with the primary symptom, Pollution/Clarity change, stage and generation growth, fossils sealed during the period, newly unlocked badges, collection discoveries, a deterministic attending note, and the current habitat relationship plus events sealed in the period. Source-filtered reports remain usage-only. The current release scans recent logs directly and does not create an index.
 
 ### `month`
 
 Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, and monthly resource comparisons.
 
-A complete-source human report also appends a monthly follow-up. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews stage/generation growth, fossils, achievements, and collection discoveries without treating pre-hatch empty days as Withdrawal.
+A complete-source human report also appends a monthly follow-up. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews stage/generation growth, fossils, achievements, collection discoveries, and habitat incidents without treating pre-hatch empty days as Withdrawal.
 
 ### `codex`
 
@@ -194,7 +197,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 50 entries: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, and bonded companion forms are collected without an artificial upper limit.
+The fixed collection contains 68 entries: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 route-balanced habitat phenomena. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, and bonded companion forms are collected without an artificial upper limit.
 
 `codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
@@ -253,9 +256,10 @@ anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai share --card habitat > anti-ai-habitat.svg
 ```
 
-Creature history and the laboratory support eight privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, `prognosis` for the current three-route case, `culture` for a sealed laboratory accident, and `companion` for the currently bonded growth file. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending; culture defaults to the latest sealed dish and accepts `--id`; companion becomes available after `lab bond`.
+Creature history and the laboratory support nine privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, `prognosis` for the current three-route case, `culture` for a sealed laboratory accident, `companion` for the currently bonded growth file, and `habitat` for the combined containment scene. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending; culture defaults to the latest sealed dish and accepts `--id`; companion becomes available after `lab bond`. The habitat card also works with an empty companion bay.
 
 Nothing is uploaded. Every card omits exact Token totals, requests, source/model names, paths, and conversation content; the destination file is controlled entirely by your shell. Creature cards require the complete data set and therefore reject `--source` filters.
 
@@ -269,6 +273,9 @@ anti-ai creature --date 2026-07-23
 anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
+anti-ai creature habitat
+anti-ai creature habitat --full
+anti-ai creature habitat --json
 anti-ai creature export
 anti-ai creature history
 anti-ai creature history --full
@@ -287,7 +294,9 @@ Every 14 experience days may offer one turning-point case. Its three routes—Po
 
 The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
-Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, and [Symbiotic Companions](./docs/companions.md) for the sidekick growth model. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md).
+`creature habitat` combines the current specimen, active companion, and collection traces into the selected single-screen containment scene. It is read-only, derives one deterministic event every seven experience days, and cannot be rerolled or accelerated with Token volume.
+
+Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, [Symbiotic Companions](./docs/companions.md) for the sidekick growth model, and [Containment Habitat](./docs/habitat.md) for relationships, scenery, events, and the fixed phenomenon catalog. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md) · [收容生态舱中文说明](./docs/habitat.zh-CN.md).
 
 ### `doctor`
 
@@ -395,10 +404,12 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/state-store.mjs`: validation-aware atomic local state storage
 - `src/laboratory.mjs`: derived formulas, sealed cultures, and shelves
 - `src/companion.mjs`: companion bonds, imprints, routes, and ASCII growth
+- `src/habitat.mjs`: read-only relationships, scenery, and seven-day ecological events
 - `src/shared.mjs`: shared language and empty-usage primitives
 - `docs/architecture.md`: extension, state, privacy, and quality boundaries
 - `docs/creature.md`: complete Creature system and species-capacity guide
 - `docs/companions.md`: complete Symbiotic Companion guide
+- `docs/habitat.md`: complete Containment Habitat guide
 
 ## Contributing
 

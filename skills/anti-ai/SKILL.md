@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, fossil, encounter, prognosis, culture, or companion share card, wants to exchange a pollution code or run a local mutation encounter, or asks about their token-fed mutation creature, pollution laboratory, symbiotic companion, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, fossil, encounter, prognosis, culture, companion, or habitat share card, wants to exchange a pollution code or run a local mutation encounter, or asks about their token-fed mutation creature, pollution laboratory, symbiotic companion, containment habitat, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 22+ and the anti-ai CLI. Reads only local usage metadata from supported Agent JSONL or optional SQLite stores.
 ---
 
@@ -58,7 +58,7 @@ anti-ai month
 
 Add `--date YYYY-MM-DD`, `--source codex|claude|opencode|openclaw|hermes|pi`, or `--lang zh|en` only when the user requests that scope. Do not run all three reports when one answers the question. Use `anti-ai help <command>` before guessing a command-specific option.
 
-The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage and generation growth, newly sealed fossils, new badges, collection discoveries, and a deterministic attending note. The complete-source human `month` report appends a monthly follow-up with post-hatch observation totals, Ecology transition, generation growth, fossils, achievements, collection discoveries, and a deterministic conclusion. Complete-source `today` also surfaces that day's collection discoveries. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
+The complete-source human `week` report settles creature history and appends a living casebook with its primary symptom, Pollution/Clarity change, stage and generation growth, newly sealed fossils, new badges, collection discoveries, a deterministic attending note, and the current containment relationship plus period events. The complete-source human `month` report appends a monthly follow-up with post-hatch observation totals, Ecology transition, generation growth, fossils, achievements, collection discoveries, habitat events, and a deterministic conclusion. Complete-source `today` also surfaces that day's collection discoveries and one current habitat observation. Source-filtered reports remain usage-only so a partial source cannot reshape the complete creature history.
 
 Daily verdicts are fixed local content, not model output. Each symptom combines eleven charge titles with thirteen detail lines, producing 143 deterministic combinations; rotation continues across month boundaries.
 
@@ -78,9 +78,10 @@ anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai share --card habitat > anti-ai-habitat.svg
 ```
 
-The default card is a resource receipt. `--card pathology` shows a clinical snapshot, `--card specimen` shows the current collected form, `--card wanted` turns the current mutation into a satirical poster, `--card fossil` certifies the latest permanent fossil, `--card encounter` shows a local contact accident, `--card prognosis` shows the current three-choice case without prediction percentages, `--card culture` renders the latest or selected laboratory culture, and `--card companion` renders the currently bonded growing companion. A fossil certificate is unavailable until the first 90-day generation is sealed. Prognosis is unavailable until a turning-point case exists, culture is unavailable until something has been incubated, and companion is unavailable until a culture has been bonded. All creature cards use the complete history and reject `--source` filters because a partial source must not reshape the creature.
+The default card is a resource receipt. `--card pathology` shows a clinical snapshot, `--card specimen` shows the current collected form, `--card wanted` turns the current mutation into a satirical poster, `--card fossil` certifies the latest permanent fossil, `--card encounter` shows a local contact accident, `--card prognosis` shows the current three-choice case without prediction percentages, `--card culture` renders the latest or selected laboratory culture, `--card companion` renders the currently bonded growing companion, and `--card habitat` renders the combined containment scene. A fossil certificate is unavailable until the first 90-day generation is sealed. Prognosis is unavailable until a turning-point case exists, culture is unavailable until something has been incubated, and companion is unavailable until a culture has been bonded. Habitat cards may render an empty companion bay. All creature cards use the complete history and reject `--source` filters because a partial source must not reshape the creature.
 
 All card types intentionally omit prompts, responses, paths, model/source names, request counts, exact token counts, and pollution codes. Tell the user where the file was saved. Do not add sensitive details back into the card.
 
@@ -131,6 +132,21 @@ Show the three formulas and let the user decide. Never choose an incubation slot
 
 Companion growth uses three visible stages: PARASITIC HATCHLING on days 1–6, SYMBIOTIC ABERRATION on days 7–20, and ACCOMPLICE ORGAN from day 21 onward. Days 7 and 21 deterministically seal rare anomalies and reshape its ASCII form; repeated commands cannot reroll them. Use `lab companion` for the compact file and `--full` for its fingerprint and privacy guardrail. Companion growth is narrative and visual only: it grants no numeric creature benefit, score, ability, combat power, or Token incentive.
 
+### Containment habitat
+
+Use the habitat when the user wants to see the main Creature, active companion, collection traces, and their current relationship as one scene:
+
+```bash
+anti-ai creature habitat
+anti-ai creature habitat --full
+anti-ai creature habitat --json
+anti-ai share --card habitat > anti-ai-habitat.svg
+```
+
+`creature habitat` is a read-only snapshot. It may derive the selected day's complete-source Creature in memory, but it never creates, migrates, settles, or rewrites the state file. `--full` expands sealed ecological incidents; JSON keeps language-neutral IDs.
+
+One deterministic event is derived per seven experience days from discrete Ecology gains, the companion route, the local seed, and existing derived collection counts. Pollution, Clarity, and Paradox each have six events, four relationship diagnoses, four decorations, and six duo titles. Token volume cannot accelerate or reroll the cadence. Repeated views, language, terminal width, and card generation change no growth, imprints, power, rarity, score, or rewards.
+
 ### Private pathology codex
 
 Use the codex when the user asks what they have collected, what was discovered today, or wants stable machine-readable collection data:
@@ -141,9 +157,9 @@ anti-ai codex --date YYYY-MM-DD --lang en
 anti-ai codex --json
 ```
 
-The codex derives 50 fixed collection entries from the existing schema v10 state: 16 form families, 24 achievements, 6 chromatic abilities, and 4 generation scars. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens, foreign specimens, permanent fossils, selected case slices, laboratory cultures, and bonded companions. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
+The codex derives 68 fixed collection entries from the existing schema v10 state: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 habitat phenomena. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens, foreign specimens, permanent fossils, selected case slices, laboratory cultures, and bonded companions. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
 
-Do not pass `--source` to `codex`. It settles the same complete supported-source creature history as `creature`. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, and explicit choices all create independent collection routes.
+Do not pass `--source` to `codex`. It derives a read-only snapshot from the complete supported-source history and never persists the in-memory result. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, explicit choices, and route-balanced habitat events all create independent collection routes.
 
 ### Token mutation creature
 
@@ -153,6 +169,7 @@ Inspect the user's locally persisted mutation creature:
 anti-ai creature
 anti-ai creature --lang en
 anti-ai creature --json
+anti-ai creature habitat
 anti-ai creature evolve
 anti-ai creature evolve <1|2|3>
 anti-ai creature evolve --json
@@ -181,7 +198,7 @@ Every 14 experience days may offer at most one turning-point case selected local
 
 Use `anti-ai creature history` for a compressed key-event timeline and add `--full` only when the user asks for the privacy-safe daily course. Use `anti-ai creature prognosis` for three explainable directional previews. Treat LEADING, POSSIBLE, and LATENT as qualitative labels with no precise probabilities, prediction guarantee, quest, or reward promise. A selected route changes later prognosis context and the collected case slice, but does not grant Token-powered combat strength.
 
-Its ASCII form grows on one continuous four-stage Reactor Kaiju anatomy. A stable local genome controls eyes, jaw, armor, reactor core, limbs, tail, and chest pattern; life stage, usage pathology, ecology, scars, achievement parts, and chromatic abilities keep reshaping that skeleton. The codex contains 50 fixed collection entries: 16 form families, 24 achievements split evenly across Offense, Sobriety, and Paradox, 6 chromatic abilities, and 4 scars. Repeatable achievements have three behavior-count tiers; meaningful appearance fingerprints are retained as private dynamic specimens. Do not describe high consumption as the primary or preferred upgrade route.
+Its ASCII form grows on one continuous four-stage Reactor Kaiju anatomy. A stable local genome controls eyes, jaw, armor, reactor core, limbs, tail, and chest pattern; life stage, usage pathology, ecology, scars, achievement parts, and chromatic abilities keep reshaping that skeleton. The codex contains 68 fixed collection entries: 16 form families, 24 achievements split evenly across Offense, Sobriety, and Paradox, 6 chromatic abilities, 4 scars, and 18 route-balanced habitat phenomena. Repeatable achievements have three behavior-count tiers; meaningful appearance fingerprints are retained as private dynamic specimens. Do not describe high consumption as the primary or preferred upgrade route.
 
 It also grows seven regular abilities from usage signals, AI-free days, seeded random gains, and events. Visible ability values cycle through 1–255; point 256 becomes `MALIGNANT I · 1/255` while lifetime totals remain lossless. Mutation talents unlock at 5, 15, 30, 60, 120, and 220. Each malignancy rank adds two percentage points to the associated evolution proc chance, and permanent fossils retain per-generation gains, the sealed ability snapshot, and malignancy changes. Instability raises the rare-event chance from 8% up to 20%. Six chromatic abilities can awaken independently on active days at R 0.50%, SR 0.10%, or SSR 0.02%, and repeated awakenings grow up to level 9.
 

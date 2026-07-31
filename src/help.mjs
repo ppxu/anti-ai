@@ -104,7 +104,7 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion|habitat>", "选择卡片类型", "Select card type"],
       ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
       ["--id <culture-id>", "指定 culture 卡的培养物", "Select the culture for a culture card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
@@ -117,6 +117,7 @@ const COMMAND_HELP = {
       "anti-ai share --card prognosis > prognosis.svg",
       "anti-ai share --card culture --id <culture-id> > culture.svg",
       "anti-ai share --card companion > companion.svg",
+      "anti-ai share --card habitat > habitat.svg",
     ],
     note: [
       "异变体收藏卡必须使用完整来源。",
@@ -140,6 +141,7 @@ const COMMAND_HELP = {
       "anti-ai creature",
       "anti-ai creature --full",
       "anti-ai creature history",
+      "anti-ai creature habitat",
       "anti-ai creature intervene",
       "anti-ai creature prognosis",
       "anti-ai creature evolve 2",
@@ -149,7 +151,7 @@ const COMMAND_HELP = {
       "creature 必须使用完整来源；reset 会永久删除本地成长档案。",
       "creature requires complete sources; reset permanently deletes the local growth file.",
     ],
-    related: ["creature history", "creature intervene", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
+    related: ["creature habitat", "creature history", "creature intervene", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
   },
   encounter: {
     usage: "anti-ai encounter <pollution-code> [options]",
@@ -241,6 +243,33 @@ const COMMAND_HELP = {
 };
 
 const ACTION_HELP = {
+  "creature habitat": {
+    usage: "anti-ai creature habitat [options]",
+    summary: [
+      "查看异变体、伴生物与收藏共同形成的只读收容场景。",
+      "Inspect the read-only containment scene formed by the mutation, companion, and collections.",
+    ],
+    output: [
+      "以单屏 ASCII 生态舱展示双体关系、生态痕迹、七日事件和联合症状。",
+      "Shows a one-screen ASCII habitat with the duo relationship, ecological traces, seven-day events, and joint symptom.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定日期的生态舱", "Inspect the habitat on a date"],
+      ["--full", "展开已封存生态事件", "Expand sealed ecological events"],
+      ["--json", "输出稳定机器可读生态快照", "Print the stable machine-readable habitat snapshot"],
+    ],
+    examples: [
+      "anti-ai creature habitat",
+      "anti-ai creature habitat --full",
+      "anti-ai creature habitat --json",
+      "anti-ai share --card habitat > habitat.svg",
+    ],
+    note: [
+      "查看生态舱不会写入档案；事件每 7 个阅历日确定一次，Token 量不能重抽或加速。",
+      "Viewing is read-only; one event is derived per seven experience days and Token volume cannot reroll or accelerate it.",
+    ],
+    related: ["creature", "lab companion", "codex", "share"],
+  },
   "lab incubate": {
     usage: "anti-ai lab incubate <1|2|3> [options]",
     summary: [

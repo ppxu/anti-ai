@@ -15,6 +15,8 @@ anti-ai lab companion --full
 anti-ai lab companion --json
 
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai creature habitat
+anti-ai share --card habitat > anti-ai-habitat.svg
 ```
 
 Run `anti-ai help lab bond` or `anti-ai help lab companion` for focused help.
@@ -76,8 +78,10 @@ The companion's ASCII form is generated from its culture, stage, route, and seal
 - `week` and `month` show imprint and stage movement for the period.
 - `codex` keeps each bonded companion as a private dynamic entry.
 - `share --card companion` prints a privacy-safe 1200×630 SVG for the active companion.
+- `creature habitat` places the companion beside the main specimen in a read-only containment scene.
 
 The share card is unavailable until a culture has been bonded. SVG is written only to stdout and is never uploaded.
+The habitat and habitat card may still render an empty companion bay before bonding. See [Containment Habitat](./habitat.md).
 
 ## Growth guardrail
 

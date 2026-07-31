@@ -361,11 +361,12 @@ test("codex --json derives a stable private collection from creature history", (
   assert.equal(report.date, "2026-07-23");
   assert.match(report.specimenId, /^[0-9a-f]{8}$/);
   assert.deepEqual(report.summary, {
-    fixed: { discovered: 1, total: 50, percent: 2 },
+    fixed: { discovered: 1, total: 68, percent: 1 },
     forms: { discovered: 1, total: 16 },
     achievements: { discovered: 0, total: 24 },
     chromaticAbilities: { discovered: 0, total: 6 },
     scars: { discovered: 0, total: 4 },
+    habitatPhenomena: { discovered: 0, total: 18 },
     specimens: { discovered: 1 },
     foreignSpecimens: { discovered: 0 },
     fossils: { discovered: 0 },
@@ -385,6 +386,7 @@ test("codex --json derives a stable private collection from creature history", (
       achievements: 24,
       chromaticAbilities: 6,
       scars: 4,
+      habitatPhenomena: 18,
       specimens: 1,
       foreignSpecimens: 0,
       fossils: 0,
@@ -545,10 +547,11 @@ test("codex renders bilingual locked and discovered collections", (t) => {
 
   assert.equal(chinese.status, 0, chinese.stderr);
   assert.match(chinese.stdout, /病理图鉴 · 2026-07-23/);
-  assert.match(chinese.stdout, /固定收藏\s+1 \/ 50 · 2%/);
+  assert.match(chinese.stdout, /固定收藏\s+1 \/ 68 · 1%/);
   assert.match(chinese.stdout, /形态家族\s+\[1 \/ 16\]/);
   assert.match(chinese.stdout, /熄火幼核/);
   assert.match(chinese.stdout, /\?\?\? × 15/);
+  assert.match(chinese.stdout, /生态现象\s+\[0 \/ 18\]/);
   assert.match(chinese.stdout, /动态标本\s+\[1\]/);
   assert.match(chinese.stdout, /今日发现\s+\[2\]/);
   assert.match(
@@ -558,9 +561,10 @@ test("codex renders bilingual locked and discovered collections", (t) => {
 
   assert.equal(english.status, 0, english.stderr);
   assert.match(english.stdout, /PATHOLOGY CODEX · 2026-07-23/);
-  assert.match(english.stdout, /FIXED COLLECTION\s+1 \/ 50 · 2%/);
+  assert.match(english.stdout, /FIXED COLLECTION\s+1 \/ 68 · 1%/);
   assert.match(english.stdout, /FORM FAMILIES\s+\[1 \/ 16\]/);
   assert.match(english.stdout, /EXTINGUISHED CORE/);
+  assert.match(english.stdout, /HABITAT PHENOMENA\s+\[0 \/ 18\]/);
   assert.match(english.stdout, /DYNAMIC SPECIMENS\s+\[1\]/);
   assert.match(english.stdout, /TODAY'S DISCOVERIES\s+\[2\]/);
   assert.doesNotMatch(english.stdout, /病理图鉴|固定收藏|形态家族/);

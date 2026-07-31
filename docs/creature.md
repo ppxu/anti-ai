@@ -20,6 +20,7 @@ anti-ai creature intervene
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature export
+anti-ai creature habitat
 anti-ai codex
 ```
 
@@ -266,16 +267,17 @@ A local seed plus the date selects one reproducible event per active day. After 
 - 24 achievements;
 - 6 chromatic abilities;
 - 4 generation scars;
+- 18 route-balanced habitat phenomena;
 - unlimited dynamic specimen fingerprints;
 - unlimited foreign encounter specimens;
-- unlimited permanent fossils.
-- unlimited sealed case slices.
+- unlimited permanent fossils;
+- unlimited sealed case slices;
 - unlimited sealed laboratory cultures;
 - unlimited bonded companion forms.
 
 Locked fixed entries remain `???`. Collection discovery does not prefer high Token use: Pollution, Clarity, AI-free days, achievements, rare abilities, generations, and explicit evolution choices all have independent routes.
 
-Eight privacy-safe SVG cards are available:
+Nine privacy-safe SVG cards are available:
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -286,6 +288,7 @@ anti-ai share --card encounter --with <pollution-code> > anti-ai-encounter.svg
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
+anti-ai share --card habitat > anti-ai-habitat.svg
 ```
 
 A fossil certificate becomes available after experience day 90.
@@ -293,6 +296,7 @@ Cross-machine collection is local and optional. Read [Local Mutation Encounters]
 Turning-point cases are also local and optional. Read [Forked Casebook](./casebook.md) for history, intervention, prognosis, and case-slice behavior.
 Laboratory cultures are local and optional. Read [Pollution Laboratory](./laboratory.md) for stable formula, rarity, shelf, and culture-card behavior.
 Bonded companions are local and optional. Read [Symbiotic Companions](./companions.md) for imprints, routes, milestones, and companion-card behavior.
+The combined containment scene is local and read-only. Read [Containment Habitat](./habitat.md) for seven-day events, relationships, scenery, period summaries, and the 18 fixed phenomena.
 
 ## State, privacy, and reset
 

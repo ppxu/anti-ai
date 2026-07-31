@@ -139,12 +139,14 @@ const SHARE_CARD_IDS = Object.freeze([
   "prognosis",
   "culture",
   "companion",
+  "habitat",
 ]);
 
 const CREATURE_ACTION_IDS = Object.freeze([
   "reset",
   "evolve",
   "export",
+  "habitat",
   "history",
   "intervene",
   "prognosis",
@@ -204,6 +206,10 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
   creature: {
     zh: "结算并写入本地成长档案；reset 会删除该档案。",
     en: "Settles and writes the local growth file; reset deletes it.",
+  },
+  "creature habitat": {
+    zh: "只读快照；不会创建、迁移、推进或改写成长档案。",
+    en: "Read-only snapshot; it does not create, migrate, advance, or rewrite the growth file.",
   },
   encounter: {
     zh: "结算本地异变体；只有 --save 会额外收藏混种。",

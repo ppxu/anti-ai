@@ -103,6 +103,7 @@ anti-ai month --date 2026-07-23
 
 anti-ai tui
 anti-ai tui --lang en
+anti-ai tui --no-motion
 
 anti-ai codex
 anti-ai codex --json
@@ -174,9 +175,12 @@ Open the read-only containment console for human exploration:
 anti-ai tui
 anti-ai tui --date 2026-07-23
 anti-ai tui --lang en
+anti-ai tui --no-motion
 ```
 
-The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `1`–`4` or the arrow keys to switch areas, `?` for shortcuts, and `q` to leave without disturbing the specimen.
+The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
+
+Press `1`–`4` or the arrow keys to switch areas. In Habitat, press `Enter` to inspect visible organs and connect them to existing ability values; press `r` to replay the latest sealed ecological event. A rare chromatic glitch frame can appear only after a chromatic ability has already been discovered. Press `?` for shortcuts, `esc` to leave a focused mode, and `q` to leave without disturbing the specimen.
 
 TUI browsing reads only the already-settled Creature file. It does not scan Agent records, create or migrate state, settle a day, or advance Creature or companion growth. Run `anti-ai today` or another explicit settling command when you want to update the file. Scripts and Agents should continue using explicit commands and `--json`; `anti-ai tui` requires an interactive terminal.
 

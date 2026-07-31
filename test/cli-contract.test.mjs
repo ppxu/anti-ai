@@ -504,15 +504,24 @@ test("command help documents only the selected command contract", () => {
 
 test("tui has command help and fails clearly outside an interactive terminal", () => {
   const help = runCli(["tui", "--help"]);
+  const englishHelp = runCli(["help", "tui", "--lang", "en"]);
   const result = runCli(["tui"]);
+  const staticResult = runCli(["tui", "--no-motion"]);
 
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /Usage: anti-ai tui \[options\]/);
   assert.match(help.stdout, /只读交互式收容控制台/);
+  assert.match(help.stdout, /--no-motion/);
+  assert.equal(englishHelp.status, 0, englishHelp.stderr);
+  assert.match(englishHelp.stdout, /Start in fully static mode/);
   assert.equal(result.status, 2);
   assert.equal(result.stdout, "");
   assert.match(result.stderr, /需要交互式终端/);
   assert.match(result.stderr, /anti-ai today/);
+  assert.equal(staticResult.status, 2);
+  assert.equal(staticResult.stdout, "");
+  assert.match(staticResult.stderr, /需要交互式终端/);
+  assert.doesNotMatch(staticResult.stderr, /未知选项.*--no-motion/);
 });
 
 test("tui rejects source filters that cannot reshape the settled creature file", () => {
@@ -763,16 +772,20 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 2.2.0\n");
+  assert.equal(result.stdout, "anti-ai 2.3.0\n");
   assert.equal(result.stderr, "");
 });
 
 test("an unknown option fails with a useful error", () => {
   const result = runCli(["today", "--wat"]);
+  const tuiOnly = runCli(["today", "--no-motion"]);
 
   assert.equal(result.status, 2);
   assert.equal(result.stderr, "未知参数：--wat\n");
   assert.equal(result.stdout, "");
+  assert.equal(tuiOnly.status, 2);
+  assert.equal(tuiOnly.stderr, "未知参数：--no-motion\n");
+  assert.equal(tuiOnly.stdout, "");
 });
 
 test("an option that needs a value fails when the value is missing", () => {

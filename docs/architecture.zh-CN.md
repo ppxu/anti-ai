@@ -29,7 +29,9 @@
 
 拥有较多编排逻辑的新命令放入 `src/commands/`。参数与白名单归注册/CLI 层，领域计算归领域模块，展示归 `src/cli/render.mjs` 或 `src/renderers/`。
 
-与展示无关的查询模型放入 `src/application/`。TUI 必须消费结构化快照，不能调用会改写状态的命令处理器。Ink 与 React 只存在于 `devDependencies`，由 `scripts/build-tui.mjs` 打包为 `dist/tui.mjs`；普通命令不会加载框架，安装包仍没有必需运行时依赖。只编辑 `src/tui/`，不要直接修改生成产物。
+与展示无关的查询模型放入 `src/application/`。TUI 必须消费结构化快照，不能调用会改写状态的命令处理器。`src/application/tui-motion.mjs` 负责确定性的 ASCII 帧、器官观察、稀有故障资格和事件回放场景，本身不能访问计时器或持久化；`src/tui/` 只保存临时帧计数与键盘状态。动态刷新最高 4 FPS，离开活体页面后暂停，也能在不改变快照的前提下彻底关闭。
+
+Ink 与 React 只存在于 `devDependencies`，由 `scripts/build-tui.mjs` 打包为 `dist/tui.mjs`；普通命令不会加载框架，安装包仍没有必需运行时依赖。只编辑 `src/tui/`，不要直接修改生成产物。
 
 异变体语料放在 `src/creature/content.mjs`，外观组合放在 `src/creature/appearance.mjs`，成长和收藏规则留在 `src/creature.mjs`。任何新机制都必须守住产品护栏：高消耗、克制使用和 AI 清醒日可以塑造不同结果，但 Token 数量不能成为唯一升级路径。
 

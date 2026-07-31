@@ -5,7 +5,11 @@ import { TuiApp } from "./app.jsx";
 
 function startTui(snapshot, options = {}) {
   return render(
-    <TuiApp snapshot={snapshot} lang={options.lang ?? "zh"} />,
+    <TuiApp
+      snapshot={snapshot}
+      lang={options.lang ?? "zh"}
+      initialMotion={options.motion ?? "low"}
+    />,
     {
       exitOnCtrlC: true,
       patchConsole: false,

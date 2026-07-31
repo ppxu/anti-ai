@@ -29,7 +29,10 @@ async function runTui(options) {
     return;
   }
   const { startTui } = await import("../../dist/tui.mjs");
-  startTui(snapshot, { lang: options.lang });
+  startTui(snapshot, {
+    lang: options.lang,
+    motion: options.noMotion ? "off" : "low",
+  });
 }
 
 export { runTui };

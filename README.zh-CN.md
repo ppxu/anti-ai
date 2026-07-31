@@ -100,6 +100,9 @@ anti-ai week --date 2026-07-23
 anti-ai month
 anti-ai month --date 2026-07-23
 
+anti-ai tui
+anti-ai tui --lang en
+
 anti-ai codex
 anti-ai codex --json
 
@@ -161,6 +164,20 @@ anti-ai explain --lang en
 ```
 
 `today --json`、`codex --json`、`creature --json`、`encounter --json` 和 `lab --json` 不受展示语言影响，字段名和结构保持稳定。
+
+### `tui`
+
+为人类打开只读的收容控制台：
+
+```bash
+anti-ai tui
+anti-ai tui --date 2026-07-23
+anti-ai tui --lang en
+```
+
+控制台把总览、生态舱、实验室和图鉴放进同一个键盘交互界面。使用 `1`–`4` 或方向键切换区域，按 `?` 查看快捷键，按 `q` 退出且不惊动标本。
+
+TUI 只读取已经结算的异变体档案，不会扫描 Agent 记录、创建或迁移状态、结算日期，也不会推进异变体或伴生物成长。需要更新档案时，仍应显式运行 `anti-ai today` 等结算命令。脚本与 Agent 应继续使用明确命令和 `--json`；`anti-ai tui` 必须在交互式终端中运行。
 
 ### `today`
 

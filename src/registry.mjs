@@ -79,6 +79,13 @@ const COMMAND_REGISTRY = Object.freeze([
     },
   },
   {
+    id: "tui",
+    summary: {
+      zh: "打开只读交互式收容控制台",
+      en: "Open the read-only interactive containment console",
+    },
+  },
+  {
     id: "share",
     summary: {
       zh: "输出隐私安全的 SVG 分享卡",
@@ -173,6 +180,7 @@ const FULL_SOURCE_COMMAND_IDS = Object.freeze([
   "encounter",
   "lab",
   "codex",
+  "tui",
 ]);
 
 const FULL_SOURCE_SHARE_CARD_IDS = Object.freeze(
@@ -198,6 +206,10 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
   codex: {
     zh: "只读快照，不会创建、迁移或推进异变体档案。",
     en: "Read-only snapshot; it does not create, migrate, or advance the mutation file.",
+  },
+  tui: {
+    zh: "只读快照；不会扫描 Agent 记录、结算成长或改写异变体档案。",
+    en: "Read-only snapshot; it does not scan Agent records, settle growth, or rewrite the mutation file.",
   },
   share: {
     zh: "只读快照；所有卡片都不会推进成长或培养物。",

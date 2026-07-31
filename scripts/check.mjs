@@ -17,7 +17,7 @@ function javascriptFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) return javascriptFiles(target);
-    return entry.isFile() && entry.name.endsWith(".mjs") ? [target] : [];
+    return entry.isFile() && /\.(?:mjs|jsx)$/.test(entry.name) ? [target] : [];
   });
 }
 
@@ -26,9 +26,11 @@ const files = sourceRoots
   .sort();
 
 for (const file of files) {
-  execFileSync(process.execPath, ["--check", file], {
-    stdio: "inherit",
-  });
+  if (file.endsWith(".mjs")) {
+    execFileSync(process.execPath, ["--check", file], {
+      stdio: "inherit",
+    });
+  }
   const lines = readFileSync(file, "utf8").split("\n");
   const trailingWhitespace = lines.findIndex((line) => /[ \t]+$/.test(line));
   if (trailingWhitespace >= 0) {

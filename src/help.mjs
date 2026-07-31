@@ -95,6 +95,26 @@ const COMMAND_HELP = {
     ],
     related: ["creature", "lab", "share"],
   },
+  tui: {
+    usage: "anti-ai tui [options]",
+    summary: [
+      "打开只读交互式收容控制台。",
+      "Open the read-only interactive containment console.",
+    ],
+    output: [
+      "在总览、生态舱、实验室和图鉴之间导航，并给出上下文相关的下一步命令。",
+      "Navigate Overview, Habitat, Laboratory, and Codex with context-aware next commands.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
+    ],
+    examples: ["anti-ai tui", "anti-ai tui --lang en"],
+    note: [
+      "需要交互式终端；自动化和 Agent 应继续使用显式命令及 --json。",
+      "Requires an interactive terminal; automation and Agents should keep using explicit commands and --json.",
+    ],
+    related: ["today", "creature habitat", "lab", "codex"],
+  },
   share: {
     usage: "anti-ai share [options]",
     summary: ["将账单或收藏输出为 1200×630 SVG。", "Print a receipt or collection card as a 1200×630 SVG."],

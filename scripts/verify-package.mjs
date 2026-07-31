@@ -1,5 +1,6 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -56,10 +57,22 @@ try {
   const packageJson = JSON.parse(
     readFileSync(path.join(projectRoot, "package.json"), "utf8"),
   );
+  if (Object.keys(packageJson.dependencies ?? {}).length > 0) {
+    throw new Error("Published package must keep zero required dependencies");
+  }
+  const installedPackage = path.join(workspace, "node_modules", "anti-ai");
+  if (!existsSync(path.join(installedPackage, "dist", "tui.mjs"))) {
+    throw new Error("Packed CLI is missing the bundled TUI runtime");
+  }
+  if (
+    !existsSync(
+      path.join(installedPackage, "dist", "THIRD_PARTY_NOTICES.txt"),
+    )
+  ) {
+    throw new Error("Packed CLI is missing TUI third-party notices");
+  }
   const cli = path.join(
-    workspace,
-    "node_modules",
-    "anti-ai",
+    installedPackage,
     "bin",
     "anti-ai.mjs",
   );
@@ -96,6 +109,29 @@ try {
   );
   if (report.totals.totalTokens !== 0) {
     throw new Error("Packed CLI returned unexpected usage");
+  }
+
+  const tuiHelp = execFileSync(
+    process.execPath,
+    [cli, "tui", "--help", "--lang", "en"],
+    { cwd: workspace, encoding: "utf8" },
+  );
+  if (!tuiHelp.includes("Usage: anti-ai tui [options]")) {
+    throw new Error("Packed CLI is missing TUI command help");
+  }
+  const pipedTui = spawnSync(process.execPath, [cli, "tui", "--lang", "en"], {
+    cwd: workspace,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      HOME: path.join(workspace, "home"),
+    },
+  });
+  if (
+    pipedTui.status !== 2 ||
+    !pipedTui.stderr.includes("requires an interactive terminal")
+  ) {
+    throw new Error("Packed TUI did not fail safely outside a terminal");
   }
 
   process.stdout.write(

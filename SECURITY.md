@@ -18,3 +18,5 @@ Include only the minimum reproduction needed. Redact all local AI logs and use s
 SQLite support is optional and lazy-loaded. A missing or incompatible native driver does not prevent JSONL sources from running.
 
 Creature schema and its state envelope are validated before use. Future schemas are rejected, migrations keep an exact local backup under `~/.anti-ai/backups/`, and stale concurrent writes are cancelled instead of overwriting newer state. Backups contain the same privacy-safe derived data as the main Creature file and should still be treated as personal local files. An explicit `anti-ai creature reset` removes both the current state and these backups.
+
+The interactive `anti-ai tui` is a read-only view of the already-settled Creature file. Opening or navigating it does not scan Agent records, create or migrate state, settle a date, or advance Creature or companion growth. Ink and React are bundled locally; the console makes no network request and starts no background service.

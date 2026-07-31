@@ -15,6 +15,7 @@ Thanks for helping improve `anti-ai`.
 ## Local workflow
 
 ```bash
+npm run build:tui
 npm test
 npm run check
 npm run test:coverage
@@ -23,6 +24,8 @@ node ./bin/anti-ai.mjs --help
 ```
 
 Tests must observe the CLI through stdout, stderr, and exit codes. Prefer synthetic JSONL fixtures over mocks of internal code.
+
+The TUI source lives in `src/tui/`; do not edit `dist/tui.mjs` directly. Ink and React are development dependencies bundled into that generated artifact so the published CLI keeps zero required runtime dependencies. TUI tests should exercise rendered frames and keyboard input through `ink-testing-library`.
 
 Run `npm run verify` before requesting review. Changes to state behavior also need migration, read-only snapshot, and concurrent-write coverage as applicable.
 

@@ -54,7 +54,7 @@ function runCli(args, env = {}) {
 }
 
 function writeCodexUsage(root, usages, date = "2026-07-23") {
-  const dayStart = new Date(`${date}T00:00:00+08:00`).getTime();
+  const dayStart = new Date(`${date}T12:00:00Z`).getTime();
   const records = usages.flatMap((usage, index) => [
     {
       timestamp: new Date(dayStart + index * 60_000).toISOString(),

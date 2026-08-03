@@ -35,13 +35,17 @@ Preserve these product rules:
 - `src/registry.mjs` owns command, card, and source metadata.
 - `src/scanner.mjs` owns isolated local-source adapters.
 - `src/commands/` owns command orchestration.
-- `src/application/` owns presentation-neutral query models.
+- `src/application/` owns presentation-neutral query and action models.
+- `src/application/action-catalog.mjs` derives action availability and disabled reasons.
+- `src/application/actions.mjs` owns shared preview, confirmation, execution, and session orchestration.
+- `src/application/settlement.mjs` owns the settlement pipeline shared by CLI and TUI.
 - Domain modules own calculations and gameplay rules.
 - `src/cli/` and `src/renderers/` own terminal and SVG presentation.
 - `src/tui/` owns Ink source; `dist/tui.mjs` is generated and must not be edited directly.
 - `src/state-store.mjs` owns validation-aware state loading, backups, locking, and atomic writes.
 
 Avoid runtime import cycles. Register new public IDs centrally instead of adding duplicate allowlists.
+TUI actions must call application services, never command handlers or arbitrary shell commands. Browsing and cancellation stay read-only; all mutations require an explicit confirmation screen.
 
 ## State invariants
 

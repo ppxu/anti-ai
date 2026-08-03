@@ -98,12 +98,12 @@ const COMMAND_HELP = {
   tui: {
     usage: "anti-ai tui [options]",
     summary: [
-      "打开只读交互式收容控制台。",
-      "Open the read-only interactive containment console.",
+      "打开受控交互式收容控制台。",
+      "Open the controlled interactive containment console.",
     ],
     output: [
-      "在总览、生态舱、实验室和图鉴之间导航；观察器官、回放事件，并给出上下文相关的下一步命令。",
-      "Navigate Overview, Habitat, Laboratory, and Codex; inspect anatomy, replay events, and see context-aware next commands.",
+      "在四个区域中浏览，并通过行动中心预览、确认和执行结算、干预、进化、孵化或缔结。",
+      "Browse four areas, then preview, confirm, and run settlement, intervention, evolution, incubation, or bonding from the action center.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
@@ -115,8 +115,8 @@ const COMMAND_HELP = {
       "anti-ai tui --no-motion",
     ],
     note: [
-      "需要交互式终端；自动化和 Agent 应继续使用显式命令及 --json。",
-      "Requires an interactive terminal; automation and Agents should keep using explicit commands and --json.",
+      "浏览与取消不扫描、不写入；结算预览可能扫描用量元数据，只有明确确认才写入。Agent 应使用显式命令及 --json。",
+      "Browsing and cancellation do not scan or write; settlement preview may scan usage metadata, and only explicit confirmation writes. Agents should use explicit commands and --json.",
     ],
     related: ["today", "creature habitat", "lab", "codex"],
   },

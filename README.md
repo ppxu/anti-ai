@@ -169,7 +169,7 @@ anti-ai explain --lang en
 
 ### `tui`
 
-Open the read-only containment console for human exploration:
+Open the controlled containment console for human exploration and deliberate local actions:
 
 ```bash
 anti-ai tui
@@ -178,11 +178,13 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
+The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `a` anywhere to open the action center, or press `Enter` on a contextual primary action. It can settle today's work aftermath, resolve a turning case, choose a generation evolution, incubate a culture, or bond a companion. Every workflow follows preview → explicit confirmation → result → refreshed file; `Enter` or `y` confirms, while `Esc` or `n` cancels.
+
+The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
 
 Press `1`–`4` or the arrow keys to switch areas. In Habitat, press `Enter` to inspect visible organs and connect them to existing ability values; press `r` to replay the latest sealed ecological event. A rare chromatic glitch frame can appear only after a chromatic ability has already been discovered. Press `?` for shortcuts, `esc` to leave a focused mode, and `q` to leave without disturbing the specimen.
 
-TUI browsing reads only the already-settled Creature file. It does not scan Agent records, create or migrate state, settle a day, or advance Creature or companion growth. Run `anti-ai today` or another explicit settling command when you want to update the file. Scripts and Agents should continue using explicit commands and `--json`; `anti-ai tui` requires an interactive terminal.
+Browsing, replaying, inspecting, and cancelling remain read-only and do not scan Agent records. Opening the daily-settlement impact preview may scan supported usage metadata so it can show the exact local impact before confirmation; it does not write. Only an explicit confirmation writes the Creature file, through the same action service and atomic conflict checks used by CLI commands. Scripts and Agents should continue using explicit commands and `--json`; `anti-ai tui` is a human-only interactive surface.
 
 ### `today`
 
@@ -388,6 +390,7 @@ The remaining rounded consumer-item values are display assumptions, not environm
 - The default share card omits paths, model names, request counts, and exact token counts
 - Creates no usage database and starts no background process; `creature` maintains one local growth file without exact usage
 - `codex` and every `share` card derive read-only snapshots and never settle or rewrite growth state
+- TUI browsing and cancellation are read-only; settlement preview may scan usage metadata, and every write requires explicit confirmation
 - Persisted schema migrations keep an exact content-addressed backup; concurrent writers are rejected instead of silently losing progress
 
 Do not attach real Agent logs or SQLite databases to public issues. Use a minimal, redacted fixture instead.
@@ -413,8 +416,8 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/cli.mjs`: small command registry dispatcher
 - `src/cli/`: argument parsing, terminal rendering, and methodology explanation
 - `src/commands/`: focused Creature, Encounter, Laboratory, Share, and TUI handlers
-- `src/application/`: presentation-neutral read models shared by human adapters
-- `src/tui/`: Ink source for the read-only interactive containment console
+- `src/application/`: presentation-neutral read models and shared action orchestration
+- `src/tui/`: Ink source for the controlled interactive containment console
 - `dist/tui.mjs`: generated self-contained Ink/React runtime bundle
 - `src/help.mjs`: global and command-specific help
 - `src/registry.mjs`: command, card, and local-source metadata

@@ -10,6 +10,13 @@ import {
   motionInterval,
   nextMotionLevel,
 } from "../application/tui-motion.mjs";
+import {
+  ActionMenu,
+  ActionPreview,
+  ActionResult,
+  ActionStatus,
+} from "./action-views.jsx";
+import { Panel } from "./panel.jsx";
 
 const SCREEN_IDS = ["overview", "habitat", "laboratory", "codex"];
 
@@ -25,23 +32,6 @@ function ProgressBar({ value, width = 18, color = "cyan" }) {
   );
 }
 
-function Panel({ title, color = "gray", children, ...props }) {
-  return (
-    <Box
-      borderStyle="round"
-      borderColor={color}
-      flexDirection="column"
-      paddingX={1}
-      {...props}
-    >
-      <Text bold color={color}>
-        {title}
-      </Text>
-      {children}
-    </Box>
-  );
-}
-
 function Header({ snapshot, lang }) {
   const zh = lang === "zh";
   return (
@@ -51,13 +41,13 @@ function Header({ snapshot, lang }) {
           {zh ? "ANTI-AI · 收容控制台" : "ANTI-AI · CONTAINMENT CONSOLE"}
         </Text>
         <Text color="yellow">
-          {zh ? "只读" : "READ ONLY"} · {snapshot.date}
+          {zh ? "本地 · 受控" : "LOCAL · CONTROLLED"} · {snapshot.date}
         </Text>
       </Box>
       <Text dimColor>
         {zh
-          ? `已结算档案：${snapshot.lastSettledDate ?? "尚无"} · 页面不会扫描日志或推进成长`
-          : `Last settled: ${snapshot.lastSettledDate ?? "none"} · Browsing never scans logs or advances growth`}
+          ? `已结算档案：${snapshot.lastSettledDate ?? "尚无"} · 影响预览可能扫描，确认后才会写入`
+          : `Last settled: ${snapshot.lastSettledDate ?? "none"} · Preview may scan; only confirmation writes`}
       </Text>
     </Box>
   );
@@ -150,13 +140,21 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch }) {
         color="yellow"
         marginTop={1}
       >
-        {overview.actions.map((action, index) => (
-          <Box key={action.id}>
-            <Text color="yellow">{`${index + 1}. `}</Text>
-            <Text>{action.label}</Text>
-            <Text dimColor>{`  ${action.command}`}</Text>
-          </Box>
-        ))}
+        {overview.actions.length > 0 ? (
+          overview.actions.map((action, index) => (
+            <Box key={action.id}>
+              <Text color="yellow">{`${index + 1}. `}</Text>
+              <Text>{action.label}</Text>
+              <Text dimColor>{`  ${action.command}`}</Text>
+            </Box>
+          ))
+        ) : (
+          <Text dimColor>
+            {zh
+              ? "当前没有待办。可以观察标本，不必制造事故。"
+              : "Nothing is pending. Observation does not require an incident."}
+          </Text>
+        )}
       </Panel>
     </Box>
   );
@@ -457,6 +455,7 @@ function HelpOverlay({ lang }) {
       <Text>1–4　{zh ? "切换区域" : "switch area"}</Text>
       <Text>← →　{zh ? "切换相邻区域" : "switch adjacent area"}</Text>
       <Text>m　　{zh ? "切换动态档位" : "cycle motion level"}</Text>
+      <Text>a　　{zh ? "打开收容协议行动中心" : "open containment actions"}</Text>
       <Text>Enter　{zh ? "在生态舱进入器官观察" : "inspect anatomy in Habitat"}</Text>
       <Text>r　　{zh ? "在生态舱回放最近事件" : "replay the latest Habitat event"}</Text>
       <Text>?　　{zh ? "关闭本说明" : "close this help"}</Text>
@@ -468,14 +467,26 @@ function HelpOverlay({ lang }) {
   );
 }
 
-function TuiApp({ snapshot, lang = "zh", initialMotion = "low" }) {
+function TuiApp({
+  snapshot: initialSnapshot,
+  lang = "zh",
+  initialMotion = "low",
+  actionController = null,
+}) {
   const { exit } = useApp();
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [motion, setMotion] = useState(initialMotion);
   const [frame, setFrame] = useState(0);
   const [observationIndex, setObservationIndex] = useState(null);
   const [replayStartFrame, setReplayStartFrame] = useState(null);
+  const [actionMode, setActionMode] = useState(null);
+  const [actionIndex, setActionIndex] = useState(0);
+  const [actionPreview, setActionPreview] = useState(null);
+  const [actionChoiceIndex, setActionChoiceIndex] = useState(0);
+  const [actionResult, setActionResult] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   const activeId = SCREEN_IDS[activeIndex];
   const observationTargets = deriveObservationTargets(snapshot, lang);
@@ -487,11 +498,71 @@ function TuiApp({ snapshot, lang = "zh", initialMotion = "low" }) {
         Math.floor((frame - replayStartFrame) / 3),
         lang,
       );
+  const actions = snapshot.actions ?? [];
+
+  const openActionMenu = () => {
+    const primaryIndex = snapshot.primaryAction
+      ? actions.findIndex(({ id }) => id === snapshot.primaryAction.id)
+      : actions.findIndex(({ available }) => available);
+    setActionIndex(Math.max(0, primaryIndex));
+    setActionPreview(null);
+    setActionResult(null);
+    setActionError(null);
+    setActionMode("menu");
+  };
+
+  const openActionPreview = async (action) => {
+    if (!action?.available) return;
+    if (!actionController?.preview) {
+      setActionError(
+        lang === "zh" ? "当前控制台没有行动执行器。" : "No action executor is attached.",
+      );
+      setActionMode("error");
+      return;
+    }
+    setActionMode("loading");
+    try {
+      const preview = await actionController.preview(action.id);
+      if (!preview.available) {
+        setActionError(preview.reasonLabel ?? preview.reason);
+        setActionMode("error");
+        return;
+      }
+      setActionPreview(preview);
+      setActionChoiceIndex(0);
+      setActionMode("preview");
+    } catch (error) {
+      setActionError(error?.message ?? String(error));
+      setActionMode("error");
+    }
+  };
+
+  const executeAction = async () => {
+    if (!actionPreview || !actionController?.execute) return;
+    const choice = actionPreview.choices[actionChoiceIndex]?.id;
+    setActionMode("loading");
+    try {
+      const result = await actionController.execute(actionPreview.id, choice);
+      if (result.status !== "completed") {
+        if (result.snapshot) setSnapshot(result.snapshot);
+        setActionError(result.reasonLabel ?? result.reason);
+        setActionMode("error");
+        return;
+      }
+      if (result.snapshot) setSnapshot(result.snapshot);
+      setActionResult(result);
+      setActionMode("result");
+    } catch (error) {
+      setActionError(error?.message ?? String(error));
+      setActionMode("error");
+    }
+  };
   useEffect(() => {
     const interval = motionInterval(motion);
     if (
       interval === null ||
       showHelp ||
+      actionMode !== null ||
       !["overview", "habitat"].includes(activeId)
     ) {
       return undefined;
@@ -500,9 +571,67 @@ function TuiApp({ snapshot, lang = "zh", initialMotion = "low" }) {
       setFrame((value) => value + 1);
     }, interval);
     return () => clearInterval(timer);
-  }, [activeId, motion, showHelp]);
+  }, [activeId, motion, showHelp, actionMode]);
 
   useInput((input, key) => {
+    if (actionMode !== null) {
+      if (actionMode === "loading") return;
+      if (
+        key.escape ||
+        input === "q" ||
+        (actionMode === "preview" && input === "n")
+      ) {
+        if (["preview", "result", "error"].includes(actionMode)) {
+          setActionMode("menu");
+        } else {
+          setActionMode(null);
+        }
+        return;
+      }
+      if (actionMode === "menu") {
+        if (input === "a") {
+          setActionMode(null);
+          return;
+        }
+        if (key.upArrow) {
+          setActionIndex((value) => (value + actions.length - 1) % actions.length);
+          return;
+        }
+        if (key.downArrow || key.tab) {
+          setActionIndex((value) => (value + 1) % actions.length);
+          return;
+        }
+        if (key.return) {
+          void openActionPreview(actions[actionIndex]);
+          return;
+        }
+      }
+      if (actionMode === "preview") {
+        const choiceCount = actionPreview?.choices.length ?? 0;
+        if (choiceCount > 0 && (key.upArrow || key.leftArrow)) {
+          setActionChoiceIndex((value) => (value + choiceCount - 1) % choiceCount);
+          return;
+        }
+        if (
+          choiceCount > 0 &&
+          (key.downArrow || key.rightArrow || key.tab)
+        ) {
+          setActionChoiceIndex((value) => (value + 1) % choiceCount);
+          return;
+        }
+        if (key.return || input === "y") {
+          void executeAction();
+          return;
+        }
+      }
+      if (actionMode === "result" && key.return) {
+        setActionMode(null);
+        setActionPreview(null);
+        setActionResult(null);
+        return;
+      }
+      return;
+    }
     if (input === "q") {
       exit();
       return;
@@ -550,6 +679,27 @@ function TuiApp({ snapshot, lang = "zh", initialMotion = "low" }) {
     if (input === "m") {
       setMotion((value) => nextMotionLevel(value));
       return;
+    }
+    if (input === "a") {
+      openActionMenu();
+      return;
+    }
+    if (
+      activeId === "overview" &&
+      key.return &&
+      snapshot.primaryAction?.available
+    ) {
+      void openActionPreview(snapshot.primaryAction);
+      return;
+    }
+    if (activeId === "laboratory" && key.return) {
+      const laboratoryAction =
+        actions.find(({ id, available }) => id === "incubate" && available) ??
+        actions.find(({ id, available }) => id === "bond" && available);
+      if (laboratoryAction) {
+        void openActionPreview(laboratoryAction);
+        return;
+      }
     }
     if (
       activeId === "habitat" &&
@@ -617,25 +767,56 @@ function TuiApp({ snapshot, lang = "zh", initialMotion = "low" }) {
     low: zh ? "低频" : "LOW",
     full: zh ? "完整" : "FULL",
   }[motion];
+  const actionOverlay = {
+    menu: (
+      <ActionMenu actions={actions} selectedIndex={actionIndex} lang={lang} />
+    ),
+    preview: actionPreview ? (
+      <ActionPreview
+        preview={actionPreview}
+        selectedChoiceIndex={actionChoiceIndex}
+        lang={lang}
+      />
+    ) : null,
+    result: actionResult ? <ActionResult result={actionResult} lang={lang} /> : null,
+    loading: <ActionStatus mode="loading" lang={lang} />,
+    error: <ActionStatus mode="error" error={actionError} lang={lang} />,
+  }[actionMode];
 
   return (
     <Box flexDirection="column" paddingX={1}>
       <Header snapshot={snapshot} lang={lang} />
       <Navigation navigation={snapshot.navigation} activeId={activeId} />
-      {showHelp ? <HelpOverlay lang={lang} /> : screen}
+      {showHelp ? <HelpOverlay lang={lang} /> : actionOverlay ?? screen}
       <Box marginTop={1} justifyContent="space-between">
         <Text dimColor>
-          1–4 {zh ? "区域" : "areas"} · ← → {zh ? "切换" : "switch"} · ?{" "}
-          {zh ? "帮助" : "help"} · m {zh ? "动态" : "motion"} {motionLabel}
-          {activeId === "habitat"
-            ? ` · Enter ${zh ? "观察" : "inspect"}${
-                snapshot.habitat.events.length > 0
-                  ? ` · r ${zh ? "回放" : "replay"}`
-                  : ""
-              }`
-            : ""}
+          {actionMode !== null
+            ? zh
+              ? "收容协议 · 所有写入都需要明确确认"
+              : "Containment protocol · every write requires confirmation"
+            : `1–4 ${zh ? "区域" : "areas"} · ← → ${zh ? "切换" : "switch"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${zh ? "动态" : "motion"} ${motionLabel}${
+                activeId === "habitat"
+                  ? ` · Enter ${zh ? "观察" : "inspect"}${
+                      snapshot.habitat.events.length > 0
+                        ? ` · r ${zh ? "回放" : "replay"}`
+                        : ""
+                    }`
+                  : activeId === "overview" && snapshot.primaryAction
+                    ? ` · Enter ${zh ? "处理" : "act"}`
+                    : activeId === "laboratory" &&
+                        actions.some(
+                          ({ id, available }) =>
+                            available && ["incubate", "bond"].includes(id),
+                        )
+                      ? ` · Enter ${zh ? "执行实验" : "run protocol"}`
+                    : ""
+              }`}
         </Text>
-        <Text dimColor>q {zh ? "退出" : "quit"}</Text>
+        <Text dimColor>
+          {actionMode !== null
+            ? `Esc ${zh ? "返回" : "back"}`
+            : `q ${zh ? "退出" : "quit"}`}
+        </Text>
       </Box>
     </Box>
   );

@@ -1,0 +1,430 @@
+import {
+  casebookLabel,
+  currentCreatureIntervention,
+  selectCreatureIntervention,
+} from "../casebook.mjs";
+import {
+  bondLaboratoryCompanion,
+  companionLabel,
+} from "../companion.mjs";
+import {
+  creatureEvolutionSummary,
+  creatureLabel,
+  deriveCreature,
+  loadCreatureState,
+  saveCreatureState,
+  selectCreatureEvolution,
+} from "../creature.mjs";
+import {
+  incubateLaboratoryCulture,
+  laboratoryLabel,
+  laboratoryShelf,
+  laboratoryView,
+} from "../laboratory.mjs";
+import { localDate } from "../scanner.mjs";
+import { localized } from "../shared.mjs";
+import { StateConflictError } from "../state-store.mjs";
+import { deriveContainmentActions } from "./action-catalog.mjs";
+import { settleCreatureState } from "./settlement.mjs";
+import { deriveTuiSnapshot } from "./tui.mjs";
+
+function actionDate(options) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return {
+    date: options.date ?? localDate(new Date(), timezone),
+    timezone,
+  };
+}
+
+function actionContext(state, date, lang) {
+  const creature = deriveCreature(state, date);
+  const laboratory = laboratoryView(state, date);
+  const actions = deriveContainmentActions(
+    state,
+    date,
+    creature,
+    laboratory,
+    lang,
+  );
+  return {
+    creature,
+    laboratory,
+    actions,
+    actionById: new Map(actions.map((action) => [action.id, action])),
+  };
+}
+
+function cloneState(state) {
+  return JSON.parse(JSON.stringify(state));
+}
+
+function activeSourceCount(report) {
+  return Object.values(report.sources).filter(
+    (source) => source.requests > 0 || source.totalTokens > 0,
+  ).length;
+}
+
+function settleImpact(report, creature) {
+  const day = creature.today;
+  return {
+    date: report.date,
+    totalTokens: report.totals.totalTokens,
+    requests: report.totals.requests,
+    activeSources: activeSourceCount(report),
+    usageBand: day.usageBand,
+    ecologyGains: day.ecologyGains,
+  };
+}
+
+async function settlePreview(state, date, timezone, options, action) {
+  const projected = cloneState(state);
+  const settled = await settleCreatureState(projected, date, options, timezone);
+  const today = settled.state.days[date];
+  const creature = {
+    ...settled.creature,
+    today: {
+      usageBand: today.usageBand,
+      ecologyGains: today.ecologyGains,
+    },
+  };
+  const impact = settleImpact(settled.report, creature);
+  return {
+    ...action,
+    title: localized(options.lang, "结算工作后遗症", "SETTLE WORK AFTERMATH"),
+    summary: localized(
+      options.lang,
+      `将扫描 ${impact.activeSources} 个有记录的数据源，并把 ${impact.date} 封存为一次本地成长。`,
+      `Scans ${impact.activeSources} active source(s) and seals ${impact.date} as one local growth record.`,
+    ),
+    warning: localized(
+      options.lang,
+      "确认后会写入本地异变体档案；不会保存模型名、路径、对话或精确 Token。",
+      "Confirmation writes the local mutation file; models, paths, chats, and exact Tokens are not stored.",
+    ),
+    irreversible: true,
+    choices: [],
+    impact,
+  };
+}
+
+function interventionPreview(state, date, lang, action) {
+  const intervention = currentCreatureIntervention(state, date);
+  return {
+    ...action,
+    title: localized(lang, "处理转折病例", "RESOLVE TURNING CASE"),
+    summary: localized(
+      lang,
+      `病例 #${intervention.id} 将永久保留一次治疗选择。`,
+      `Case #${intervention.id} permanently records one treatment choice.`,
+    ),
+    warning: localized(
+      lang,
+      "选择封存后不能改选；三条路线提供不同收益与代价。",
+      "A sealed choice cannot be changed; every route carries a different benefit and cost.",
+    ),
+    irreversible: true,
+    choices: intervention.options.map((option) => ({
+      id: String(option.slot),
+      route: option.route,
+      label: casebookLabel("routes", option.route, lang),
+      detail: localized(
+        lang,
+        `作用：${casebookLabel("benefits", option.benefitId, lang)} · 代价：${casebookLabel("costs", option.costId, lang)}`,
+        `Effect: ${casebookLabel("benefits", option.benefitId, lang)} · Cost: ${casebookLabel("costs", option.costId, lang)}`,
+      ),
+    })),
+    impact: { caseId: intervention.id },
+  };
+}
+
+function evolutionPreview(state, date, lang, action) {
+  const evolution = creatureEvolutionSummary(state, date);
+  return {
+    ...action,
+    title: localized(lang, "选择世代进化", "SELECT GENERATION EVOLUTION"),
+    summary: localized(
+      lang,
+      `第 ${evolution.generation} 代将继承一条长期病理规则。`,
+      `Generation ${evolution.generation} inherits one long-term pathology rule.`,
+    ),
+    warning: localized(
+      lang,
+      "进化封存后不能改选；高消耗不会获得额外选项。",
+      "A sealed evolution cannot be changed; heavier use grants no extra choices.",
+    ),
+    irreversible: true,
+    choices: evolution.options.map((option) => ({
+      id: String(option.slot),
+      category: option.category,
+      label: `[${creatureLabel("evolutionCategories", option.category, lang)}] ${creatureLabel("evolutions", option.id, lang)}`,
+      detail: localized(
+        lang,
+        `${creatureLabel("evolutionBenefits", option.benefitId, lang)} +${option.benefitPoints} · ${creatureLabel("evolutionCosts", option.costId, lang)} +${option.costPoints} · 触发 ${option.procChancePercent}%`,
+        `${creatureLabel("evolutionBenefits", option.benefitId, lang)} +${option.benefitPoints} · ${creatureLabel("evolutionCosts", option.costId, lang)} +${option.costPoints} · proc ${option.procChancePercent}%`,
+      ),
+    })),
+    impact: { generation: evolution.generation },
+  };
+}
+
+function incubationPreview(laboratory, lang, action) {
+  return {
+    ...action,
+    title: localized(lang, "孵化污染培养物", "INCUBATE POLLUTION CULTURE"),
+    summary: localized(
+      lang,
+      `第 ${laboratory.batch} 批提供三份由本地收藏派生的稳定配方。`,
+      `Batch ${laboratory.batch} offers three stable formulas derived from local collections.`,
+    ),
+    warning: localized(
+      lang,
+      "确认后会新增一份培养物；配方不会消耗或删除原始收藏。",
+      "Confirmation adds one culture; formulas never consume or delete their source collections.",
+    ),
+    irreversible: true,
+    choices: laboratory.proposals.map((proposal) => ({
+      id: String(proposal.slot),
+      rarity: proposal.rarity,
+      label: `${laboratoryLabel("types", proposal.typeId, lang)} · ${proposal.rarity.toUpperCase()}`,
+      detail: `${creatureLabel("ecologies", proposal.ecologyId, lang)} / ${creatureLabel("branches", proposal.pathologyId, lang)} · ${laboratoryLabel("complications", proposal.complicationId, lang)}`,
+    })),
+    impact: { batch: laboratory.batch },
+  };
+}
+
+function bondPreview(state, date, lang, action) {
+  const shelf = laboratoryShelf(state, date);
+  return {
+    ...action,
+    title: localized(lang, "建立伴生关系", "ESTABLISH SYMBIOTIC BOND"),
+    summary: localized(
+      lang,
+      "选择一份已封存培养物放入生态舱；切换不会丢失既有成长。",
+      "Choose a sealed culture for the habitat; switching preserves prior growth.",
+    ),
+    warning: localized(
+      lang,
+      "同一自然日只保留最后一次绑定选择，不能借此重复获得印记。",
+      "Only the final bond for a calendar day is kept; rebonding cannot duplicate imprints.",
+    ),
+    irreversible: false,
+    choices: shelf.cultures.map((culture) => ({
+      id: culture.id,
+      rarity: culture.rarity,
+      label: `#${culture.id} · ${laboratoryLabel("types", culture.typeId, lang)}`,
+      detail: localized(
+        lang,
+        `${culture.rarity.toUpperCase()} · 封存于 ${culture.createdAt}`,
+        `${culture.rarity.toUpperCase()} · sealed ${culture.createdAt}`,
+      ),
+    })),
+    impact: { cultures: shelf.total },
+  };
+}
+
+async function previewContainmentAction(actionId, options = {}, session = {}) {
+  const { date, timezone } = actionDate(options);
+  const lang = options.lang ?? "zh";
+  const state = session.state ?? await loadCreatureState();
+  const context = actionContext(state, date, lang);
+  const action = context.actionById.get(actionId);
+  if (!action) {
+    return { id: actionId, available: false, reason: "unknown_action" };
+  }
+  if (!action.available) return { ...action, choices: [] };
+  if (actionId === "settle_today") {
+    return settlePreview(state, date, timezone, { ...options, lang }, action);
+  }
+  if (actionId === "choose_intervention") {
+    return interventionPreview(state, date, lang, action);
+  }
+  if (actionId === "choose_evolution") {
+    return evolutionPreview(state, date, lang, action);
+  }
+  if (actionId === "incubate") {
+    return incubationPreview(context.laboratory, lang, action);
+  }
+  return bondPreview(state, date, lang, action);
+}
+
+function failedAction(actionId, error) {
+  return {
+    id: actionId,
+    status: "unavailable",
+    reason: error === "invalid" ? "invalid_choice" : error,
+  };
+}
+
+function applyContainmentAction(state, date, actionId, choice) {
+  if (actionId === "choose_intervention") {
+    return selectCreatureIntervention(
+      state,
+      date,
+      choice,
+      deriveCreature(state, date).experienceDays,
+    );
+  }
+  if (actionId === "choose_evolution") {
+    return selectCreatureEvolution(state, date, choice);
+  }
+  if (actionId === "incubate") {
+    return incubateLaboratoryCulture(state, date, choice);
+  }
+  if (actionId === "bond") {
+    return bondLaboratoryCompanion(state, date, choice);
+  }
+  return { error: "unknown_action" };
+}
+
+async function completeAction(actionId, state, date, lang, result, message) {
+  await saveCreatureState(state);
+  return {
+    id: actionId,
+    status: "completed",
+    message: localized(lang, ...message),
+    result,
+    snapshot: deriveTuiSnapshot(state, date, lang),
+  };
+}
+
+async function executeContainmentAction(actionId, options = {}, session = {}) {
+  const { date, timezone } = actionDate(options);
+  const lang = options.lang ?? "zh";
+  const state = session.state ?? await loadCreatureState();
+  const context = actionContext(state, date, lang);
+  const action = context.actionById.get(actionId);
+  if (!action?.available) {
+    return {
+      id: actionId,
+      status: "unavailable",
+      reason: action?.reason ?? "unknown_action",
+    };
+  }
+  if (actionId === "settle_today") {
+    const settled = await settleCreatureState(
+      state,
+      date,
+      { ...options, lang },
+      timezone,
+    );
+    await saveCreatureState(settled.state);
+    const day = settled.state.days[date];
+    const impact = settleImpact(settled.report, {
+      today: {
+        usageBand: day.usageBand,
+        ecologyGains: day.ecologyGains,
+      },
+    });
+    return {
+      id: actionId,
+      status: "completed",
+      message: localized(
+        lang,
+        `${date} 已封存。异变体声称这只是正常进食。`,
+        `${date} sealed. The specimen insists this was normal feeding.`,
+      ),
+      impact,
+      snapshot: deriveTuiSnapshot(settled.state, date, lang),
+    };
+  }
+  if (actionId === "choose_intervention") {
+    const selected = applyContainmentAction(
+      state,
+      date,
+      actionId,
+      options.choice,
+    );
+    if (selected.error) return failedAction(actionId, selected.error);
+    return completeAction(actionId, state, date, lang, selected.value, [
+      "病例选择已封存。异变体拒绝提供第二诊疗意见。",
+      "The case choice is sealed. The specimen refuses a second opinion.",
+    ]);
+  }
+  if (actionId === "choose_evolution") {
+    const selected = applyContainmentAction(
+      state,
+      date,
+      actionId,
+      options.choice,
+    );
+    if (selected.error) return failedAction(actionId, selected.error);
+    return completeAction(actionId, state, date, lang, selected.value, [
+      "世代进化已封存。遗传错误正式转为家族传统。",
+      "Evolution sealed. The hereditary defect is now a family tradition.",
+    ]);
+  }
+  if (actionId === "incubate") {
+    const selected = applyContainmentAction(
+      state,
+      date,
+      actionId,
+      options.choice,
+    );
+    if (selected.error) return failedAction(actionId, selected.error);
+    return completeAction(actionId, state, date, lang, selected.value, [
+      "培养事故已入架。实验室再次把意外写成了流程。",
+      "The incubation accident is shelved. The lab has documented surprise as procedure.",
+    ]);
+  }
+  const selected = applyContainmentAction(
+    state,
+    date,
+    actionId,
+    options.choice,
+  );
+  if (selected.error) return failedAction(actionId, selected.error);
+  return completeAction(actionId, state, date, lang, selected.value, [
+    `伴生关系已建立：${companionLabel("stages", selected.value.companion.stageId, lang)}。`,
+    `Symbiotic bond established: ${companionLabel("stages", selected.value.companion.stageId, lang)}.`,
+  ]);
+}
+
+async function createContainmentSession(options = {}) {
+  const { date } = actionDate(options);
+  const lang = options.lang ?? "zh";
+  let state = await loadCreatureState();
+  return {
+    snapshot: deriveTuiSnapshot(state, date, lang),
+    actionController: {
+      preview: (actionId) =>
+        previewContainmentAction(actionId, options, { state }),
+      execute: async (actionId, choice) => {
+        try {
+          return await executeContainmentAction(
+            actionId,
+            { ...options, choice },
+            { state },
+          );
+        } catch (error) {
+          state = await loadCreatureState();
+          const conflict = error instanceof StateConflictError;
+          return {
+            id: actionId,
+            status: "failed",
+            reason: conflict ? "state_conflict" : "execution_failed",
+            reasonLabel: conflict
+              ? localized(
+                  lang,
+                  "异变体档案刚被另一个进程更新。本次操作已取消，并重新载入最新档案。",
+                  "Another process updated the mutation file. This action was cancelled and the latest file was reloaded.",
+                )
+              : localized(
+                  lang,
+                  "收容协议执行失败，档案未被覆盖。请返回后重试。",
+                  "The containment protocol failed without overwriting the file. Return and retry.",
+                ),
+            snapshot: deriveTuiSnapshot(state, date, lang),
+          };
+        }
+      },
+    },
+  };
+}
+
+export {
+  applyContainmentAction,
+  createContainmentSession,
+  deriveContainmentActions,
+  executeContainmentAction,
+  previewContainmentAction,
+};

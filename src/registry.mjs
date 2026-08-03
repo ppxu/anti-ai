@@ -81,8 +81,8 @@ const COMMAND_REGISTRY = Object.freeze([
   {
     id: "tui",
     summary: {
-      zh: "打开只读交互式收容控制台",
-      en: "Open the read-only interactive containment console",
+      zh: "打开受控交互式收容控制台",
+      en: "Open the controlled interactive containment console",
     },
   },
   {
@@ -208,8 +208,8 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
     en: "Read-only snapshot; it does not create, migrate, or advance the mutation file.",
   },
   tui: {
-    zh: "只读快照；不会扫描 Agent 记录、结算成长或改写异变体档案。",
-    en: "Read-only snapshot; it does not scan Agent records, settle growth, or rewrite the mutation file.",
+    zh: "浏览和取消保持只读；影响预览可能扫描元数据，明确确认后才执行现有本地动作。",
+    en: "Browsing and cancellation stay read-only; impact preview may scan metadata, and only explicit confirmation runs an existing local action.",
   },
   share: {
     zh: "只读快照；所有卡片都不会推进成长或培养物。",

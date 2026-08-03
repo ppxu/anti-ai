@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-08-03
+
+### Added
+
+- Added a bilingual TUI action center with contextual primary actions and a preview, confirm, result, and refresh flow for daily settlement, turning-case intervention, generation evolution, culture incubation, and companion bonding.
+- Added presentation-neutral action availability, preview, execution, and session services with keyboard coverage for cancellation, three-way choices, direct Laboratory actions, first-run identity stability, and concurrent-state conflicts.
+
+### Changed
+
+- Shared the same settlement and choice-action services between explicit CLI commands and the TUI instead of duplicating gameplay rules or invoking command handlers from the interface.
+- Updated command Help, both READMEs, architecture and security guidance, contributor guidance, and the Agent Skill for the controlled interaction model.
+
+### Security
+
+- TUI browsing and cancellation remain zero-write operations. Daily settlement preview scans only supported usage metadata, while every state mutation requires explicit confirmation and uses the existing atomic, optimistic-concurrency state store.
+- Added no network access, background process, required runtime dependency, raw-content handling, or Token-volume reward path.
+
 ## [2.3.0] - 2026-07-31
 
 ### Added

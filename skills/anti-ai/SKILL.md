@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, fossil, encounter, prognosis, culture, companion, or habitat share card, wants to exchange a pollution code or run a local mutation encounter, wants the read-only containment console, or asks about their token-fed mutation creature, pollution laboratory, symbiotic companion, containment habitat, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak, wants a privacy-safe resource, specimen, wanted, pathology, fossil, encounter, prognosis, culture, companion, or habitat share card, wants to exchange a pollution code or run a local mutation encounter, wants the interactive containment console, or asks about their token-fed mutation creature, pollution laboratory, symbiotic companion, containment habitat, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 22+ and the anti-ai CLI. Reads only local usage metadata from supported Agent JSONL or optional SQLite stores.
 ---
 
@@ -37,7 +37,7 @@ Use the `anti-ai` CLI as the single source of truth for local token accounting a
 
 ### Human-only interactive console
 
-`anti-ai tui` is a read-only keyboard interface for a person sitting at an interactive terminal. Do not invoke it from an Agent, subprocess pipe, automation, or a workflow that needs parseable output. Use explicit commands and `--json` instead.
+`anti-ai tui` is a human-only keyboard interface for a person sitting at an interactive terminal. Do not invoke it from an Agent, subprocess pipe, automation, or a workflow that needs parseable output. Use explicit commands and `--json` instead.
 
 If the user explicitly asks to open or explore the local console, tell them to run:
 
@@ -46,7 +46,7 @@ anti-ai tui
 anti-ai tui --no-motion
 ```
 
-The console reads only the already-settled Creature file. It does not scan Agent records, create or migrate state, settle a day, or advance Creature or companion growth. Its low-rate ASCII motion is ephemeral: `m` cycles motion levels and `--no-motion` starts fully static. In Habitat, `Enter` opens read-only anatomy inspection and `r` replays the latest sealed ecological event. These interactions must never be described as new accounting or growth.
+Browsing, inspection, replay, and cancellation read only the already-settled Creature file. Pressing `a` opens the action center; a person may preview and explicitly confirm daily settlement, a turning-case intervention, generation evolution, culture incubation, or companion bonding. Daily-settlement preview may scan supported usage metadata without writing; only confirmation performs the action through the same local service used by explicit CLI commands. Its low-rate ASCII motion is ephemeral: `m` cycles motion levels and `--no-motion` starts fully static. In Habitat, `Enter` opens read-only anatomy inspection and `r` replays the latest sealed ecological event. Never drive or automate these interactive choices as an Agent.
 
 ### Exact data for an Agent
 

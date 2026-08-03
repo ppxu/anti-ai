@@ -9,6 +9,7 @@ function startTui(snapshot, options = {}) {
       snapshot={snapshot}
       lang={options.lang ?? "zh"}
       initialMotion={options.motion ?? "low"}
+      actionController={options.actionController ?? null}
     />,
     {
       exitOnCtrlC: true,

@@ -1,5 +1,5 @@
 import { localized } from "../shared.mjs";
-import { loadTuiSnapshot } from "../application/tui.mjs";
+import { createContainmentSession } from "../application/actions.mjs";
 
 async function runTui(options) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
@@ -14,9 +14,9 @@ async function runTui(options) {
     return;
   }
 
-  let snapshot;
+  let session;
   try {
-    snapshot = await loadTuiSnapshot(options);
+    session = await createContainmentSession(options);
   } catch {
     process.stderr.write(
       `${localized(
@@ -29,9 +29,10 @@ async function runTui(options) {
     return;
   }
   const { startTui } = await import("../../dist/tui.mjs");
-  startTui(snapshot, {
+  startTui(session.snapshot, {
     lang: options.lang,
     motion: options.noMotion ? "off" : "low",
+    actionController: session.actionController,
   });
 }
 

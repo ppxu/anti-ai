@@ -20,6 +20,7 @@ import {
 } from "../laboratory.mjs";
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
+import { deriveContainmentActions } from "./action-catalog.mjs";
 
 const ANSI_PATTERN = /\u001B\[[0-9;]*m/g;
 
@@ -50,45 +51,6 @@ function overviewStatus(state, creature, date) {
   const day = state.days?.[date];
   if (day === undefined) return "awaiting";
   return day.active ? "active" : "quiet";
-}
-
-function snapshotActions(creature, laboratory, codex, date, lang) {
-  const actions = [
-    {
-      id: "settle_today",
-      label: localized(lang, "结算今天的工作后遗症", "Settle today's work aftermath"),
-      command: `anti-ai today --date ${date}`,
-    },
-  ];
-  if (creature.evolution?.status === "pending") {
-    actions.push({
-      id: "choose_evolution",
-      label: localized(lang, "处理待定世代进化", "Resolve the pending evolution"),
-      command: "anti-ai creature evolve",
-    });
-  }
-  if (laboratory.status === "ready") {
-    actions.push({
-      id: "incubate",
-      label: localized(lang, "从三份事故配方中选一份", "Choose one of three accident formulas"),
-      command: "anti-ai lab incubate <1|2|3>",
-    });
-  }
-  if (laboratory.cultures > 0 && laboratory.companion === null) {
-    actions.push({
-      id: "bond",
-      label: localized(lang, "给生态舱绑定一只伴生异物", "Bond a companion into the habitat"),
-      command: "anti-ai lab shelf",
-    });
-  }
-  if (codex.recent.length > 0) {
-    actions.push({
-      id: "inspect_codex",
-      label: localized(lang, "查看最近入库的病理收藏", "Inspect recent pathology discoveries"),
-      command: "anti-ai codex",
-    });
-  }
-  return actions.slice(0, 3);
 }
 
 function codexRecentLabel(entry, lang) {
@@ -187,12 +149,21 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     })),
     recent,
   };
+  const actions = deriveContainmentActions(
+    state,
+    date,
+    creature,
+    laboratoryModel,
+    lang,
+  );
 
   return {
     version: 1,
     date,
     lastSettledDate: latestSettledDate(state, date),
     readOnly: true,
+    actions,
+    primaryAction: actions.find(({ available }) => available) ?? null,
     navigation: tuiCopy(lang).navigation,
     overview: {
       status,
@@ -217,13 +188,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       generation: creature.generation,
       abilities: creature.abilities,
       art,
-      actions: snapshotActions(
-        creature,
-        laboratoryModel,
-        codexModel,
-        date,
-        lang,
-      ),
+      actions: actions.filter(({ available }) => available).slice(0, 3),
     },
     habitat: {
       ...habitat,

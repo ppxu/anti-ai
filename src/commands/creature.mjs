@@ -1,5 +1,4 @@
 import {
-  applyCreatureEvolutionEffect,
   CREATURE_ABILITY_KEYS,
   CREATURE_ABILITY_MAX,
   CREATURE_COPY,
@@ -7,35 +6,24 @@ import {
   CREATURE_RARE_ABILITY_MAX,
   CREATURE_RARE_ABILITY_RANKS,
   creatureAbilityBar,
-  creatureAbilityGains,
   creatureArt,
-  creatureEvent,
-  creatureEvolutionEffect,
   creatureEvolutionSummary,
   creatureLabel,
   creatureMalignancyRankLabel,
   creatureMood,
-  creatureRareAbilityGain,
   creatureTitle,
-  dailyCreatureRecord,
   deriveCreature,
   loadCreatureState,
-  roundCreature,
   resetCreatureState,
   saveCreatureState,
-  selectCreatureEvolution,
-  syncCreatureAchievements,
-  syncCreatureGenerations,
-  syncCreatureSpecimen,
 } from "../creature.mjs";
 import {
   color,
-  inclusiveDateRange,
   padTerminal,
   shiftDate,
   terminalWidth,
 } from "../reporting.mjs";
-import { localDate, reportsForDates } from "../scanner.mjs";
+import { localDate } from "../scanner.mjs";
 import { exportSpecimenCode } from "../encounter.mjs";
 import { localized } from "../shared.mjs";
 import {
@@ -43,13 +31,10 @@ import {
   creatureHistory,
   creaturePrognosis,
   currentCreatureIntervention,
-  selectCreatureIntervention,
-  syncCreatureInterventions,
 } from "../casebook.mjs";
 import {
   companionLabel,
   laboratoryCompanion,
-  syncLaboratoryCompanion,
 } from "../companion.mjs";
 import {
   achievementLabel,
@@ -58,6 +43,8 @@ import {
 } from "../cli/render.mjs";
 import { deriveHabitat } from "../habitat.mjs";
 import { renderHabitat } from "../renderers/habitat.mjs";
+import { settleCreatureState } from "../application/settlement.mjs";
+import { applyContainmentAction } from "../application/actions.mjs";
 
 async function runCreature(options, mode = "render") {
   if (options.action === "reset") {
@@ -130,83 +117,9 @@ async function runCreature(options, mode = "render") {
     process.exitCode = 1;
     return;
   }
-  const defaultStart = shiftDate(date, -29);
-  const observedDates = Object.keys(state.days);
-  const latestObservedDate = observedDates
-    .filter((entryDate) => entryDate < date)
-    .sort()
-    .at(-1);
-  const startDate = state.days[date]
-    ? date
-    : latestObservedDate
-      ? shiftDate(latestObservedDate, 1)
-      : defaultStart;
-  const dates = inclusiveDateRange(startDate, date);
-  const scanDates = inclusiveDateRange(shiftDate(startDate, -7), date);
-  const scannedReports = await reportsForDates(options, scanDates, timezone);
-  const reportsByDate = new Map(
-    scannedReports.map((report) => [report.date, report]),
-  );
-  const reports = dates.map((entryDate) => reportsByDate.get(entryDate));
-
-  for (const report of reports) {
-    const previousCreature = deriveCreature(
-      state,
-      shiftDate(report.date, -1),
-    );
-    const historicalReports = Array.from({ length: 7 }, (_, index) =>
-      reportsByDate.get(shiftDate(report.date, index - 7)),
-    );
-    const record = dailyCreatureRecord(report, historicalReports);
-    const evolutionEffect = creatureEvolutionEffect(
-      state,
-      report.date,
-      record,
-      previousCreature,
-    );
-    if (record.active) {
-      const event = creatureEvent(
-        state.seed,
-        report.date,
-        previousCreature.abilityTotals.instability,
-        evolutionEffect?.triggered &&
-          evolutionEffect.category === "paradox"
-          ? evolutionEffect.benefitPoints * 2
-          : 0,
-      );
-      record.traits[event.trait] = roundCreature(
-        record.traits[event.trait] + event.delta,
-      );
-      record.event = {
-        id: event.id,
-        rarity: event.rarity,
-      };
-    } else {
-      record.event = null;
-    }
-    record.abilityGains = creatureAbilityGains(
-      state.seed,
-      report.date,
-      record,
-      record.event,
-      previousCreature.activeDays > 0,
-    );
-    applyCreatureEvolutionEffect(record, evolutionEffect);
-    record.rareAbilityGain = creatureRareAbilityGain(
-      state.seed,
-      report.date,
-      record.active,
-    );
-    state.days[report.date] = record;
-  }
-  syncCreatureAchievements(state, date);
-  syncCreatureGenerations(state, date);
-  let creature = deriveCreature(state, date);
-  if (syncCreatureSpecimen(state, creature, date)) {
-    creature = deriveCreature(state, date);
-  }
-  syncCreatureInterventions(state, date, creature);
-  syncLaboratoryCompanion(state, date);
+  const settlement = await settleCreatureState(state, date, options, timezone);
+  state = settlement.state;
+  let creature = settlement.creature;
   let evolutionAction = null;
   if (options.action === "evolve") {
     if (options.choice === undefined) {
@@ -216,9 +129,10 @@ async function runCreature(options, mode = "render") {
           ? { error: "unavailable" }
           : { value: evolution };
     } else {
-      evolutionAction = selectCreatureEvolution(
+      evolutionAction = applyContainmentAction(
         state,
         date,
+        "choose_evolution",
         options.choice,
       );
     }
@@ -258,11 +172,11 @@ async function runCreature(options, mode = "render") {
           ? { error: "unavailable" }
           : { value: intervention };
     } else {
-      interventionAction = selectCreatureIntervention(
+      interventionAction = applyContainmentAction(
         state,
         date,
+        "choose_intervention",
         options.choice,
-        creature.experienceDays,
       );
     }
     if (interventionAction.error) {

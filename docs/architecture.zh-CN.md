@@ -7,7 +7,7 @@
 1. `bin/anti-ai.mjs` 调用导出的 CLI `main()`。
 2. `src/registry.mjs` 声明支持的命令、卡片与本地来源。
 3. 显式报告与玩法命令继续经过扫描器、领域模块和现有终端或 SVG 适配层。
-4. `tui` 从 `src/application/` 加载只读应用快照，再动态导入 `dist/tui.mjs` 中已打包的 Ink 适配层。
+4. `tui` 从 `src/application/` 加载与展示无关的快照和会话级动作控制器，再动态导入 `dist/tui.mjs` 中已打包的 Ink 适配层。
 5. 终端、TUI 和 SVG 适配层只格式化派生结果，不读取会话正文。
 
 来源适配器彼此隔离。扫描 `all` 时，单个来源损坏不会遮蔽其他健康来源；输出只包含来源 ID 和错误码，不包含本地记录或会话片段。只有选中了实际存在的 SQLite 来源时，才会加载 `better-sqlite3`。
@@ -18,7 +18,8 @@
 
 - 完整来源的人类可读 `today`、`week`、`month`，以及 `creature`、`encounter` 和改变状态的实验室动作，可能结算本地成长史。
 - 带来源过滤的报告和 `today --json` 只做统计。
-- `tui`、`codex`、`creature habitat`、所有 `share` 卡片、`doctor`、`explain` 与 Help 都是只读快照。
+- TUI 的浏览、观察、回放与取消操作保持只读。每日结算的影响预览可能扫描受支持的用量元数据但不会写入；只有明确确认的动作才能通过共享动作服务更新状态。
+- `codex`、`creature habitat`、所有 `share` 卡片、`doctor`、`explain` 与 Help 仍是只读快照。
 - `creature reset` 是唯一主动删除状态文件及迁移备份的命令。
 
 读取状态时会先校验 schema 和根状态外壳，再逐版本迁移。迁移后的第一次写入会在 `~/.anti-ai/backups/` 保存按内容寻址的原始副本。写入使用临时文件、原子重命名、短时文件锁和乐观指纹；过期并发命令会失败，而不会覆盖更新后的成长记录。
@@ -29,7 +30,9 @@
 
 拥有较多编排逻辑的新命令放入 `src/commands/`。参数与白名单归注册/CLI 层，领域计算归领域模块，展示归 `src/cli/render.mjs` 或 `src/renderers/`。
 
-与展示无关的查询模型放入 `src/application/`。TUI 必须消费结构化快照，不能调用会改写状态的命令处理器。`src/application/tui-motion.mjs` 负责确定性的 ASCII 帧、器官观察、稀有故障资格和事件回放场景，本身不能访问计时器或持久化；`src/tui/` 只保存临时帧计数与键盘状态。动态刷新最高 4 FPS，离开活体页面后暂停，也能在不改变快照的前提下彻底关闭。
+与展示无关的查询模型和动作编排放入 `src/application/`：`action-catalog.mjs` 派生可用性与禁用原因，`actions.mjs` 负责预览和执行会话，`settlement.mjs` 保存共享结算链路。CLI 命令和 TUI 调用这些服务，不重复实现领域规则；TUI 不能调用命令处理器或执行任意 Shell 命令，异变规则仍只能由领域模块负责。
+
+TUI 必须消费结构化快照，不能解析终端文案。`src/application/tui-motion.mjs` 负责确定性的 ASCII 帧、器官观察、稀有故障资格和事件回放场景，本身不能访问计时器或持久化；`src/tui/` 只保存临时帧计数、键盘状态和确认状态。动态刷新最高 4 FPS，离开活体页面后暂停，也能在不改变快照的前提下彻底关闭。
 
 Ink 与 React 只存在于 `devDependencies`，由 `scripts/build-tui.mjs` 打包为 `dist/tui.mjs`；普通命令不会加载框架，安装包仍没有必需运行时依赖。只编辑 `src/tui/`，不要直接修改生成产物。
 

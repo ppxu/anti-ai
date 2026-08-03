@@ -1,5 +1,4 @@
 import {
-  bondLaboratoryCompanion,
   companionLabel,
   laboratoryCompanion,
   syncLaboratoryCompanion,
@@ -10,7 +9,6 @@ import {
   saveCreatureState,
 } from "../creature.mjs";
 import {
-  incubateLaboratoryCulture,
   laboratoryCulture,
   laboratoryLabel,
   laboratoryShelf,
@@ -21,6 +19,7 @@ import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
 import { CODEX_RARITY_COLORS } from "../cli/render.mjs";
 import { runCreature } from "./creature.mjs";
+import { applyContainmentAction } from "../application/actions.mjs";
 
 async function runLaboratory(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -113,7 +112,12 @@ async function runLaboratory(options) {
     return;
   }
   if (options.action === "bond") {
-    const result = bondLaboratoryCompanion(state, date, options.id);
+    const result = applyContainmentAction(
+      state,
+      date,
+      "bond",
+      options.id,
+    );
     if (result.error === "not_found") {
       process.stderr.write(
         `${localized(options.lang, `未找到培养物：${options.id ?? ""}`, `Culture not found: ${options.id ?? ""}`)}\n`,
@@ -225,9 +229,10 @@ async function runLaboratory(options) {
     return;
   }
   if (options.action === "incubate") {
-    const selection = incubateLaboratoryCulture(
+    const selection = applyContainmentAction(
       state,
       date,
+      "incubate",
       options.choice,
     );
     if (selection.error === "unavailable") {

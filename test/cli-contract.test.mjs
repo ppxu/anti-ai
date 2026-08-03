@@ -510,7 +510,7 @@ test("tui has command help and fails clearly outside an interactive terminal", (
 
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /Usage: anti-ai tui \[options\]/);
-  assert.match(help.stdout, /只读交互式收容控制台/);
+  assert.match(help.stdout, /受控交互式收容控制台/);
   assert.match(help.stdout, /--no-motion/);
   assert.equal(englishHelp.status, 0, englishHelp.stderr);
   assert.match(englishHelp.stdout, /Start in fully static mode/);
@@ -772,7 +772,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 2.3.0\n");
+  assert.equal(result.stdout, "anti-ai 2.4.0\n");
   assert.equal(result.stderr, "");
 });
 

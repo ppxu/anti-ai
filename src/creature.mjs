@@ -12,6 +12,7 @@ import {
   resetJsonState,
   saveJsonState,
 } from "./state-store.mjs";
+import { ensureIncidentState } from "./incidents.mjs";
 import {
   CREATURE_STAGES,
   CREATURE_FORMS,
@@ -62,7 +63,7 @@ import {
   roundCreature,
 } from "./creature/appearance.mjs";
 
-const CREATURE_STATE_SCHEMA_VERSION = 10;
+const CREATURE_STATE_SCHEMA_VERSION = 11;
 
 function emptyCreatureAbilities() {
   return Object.fromEntries(CREATURE_ABILITY_KEYS.map((key) => [key, 0]));
@@ -576,6 +577,26 @@ function creatureCodex(state, date) {
       ],
       trigger: { ...entry.trigger },
     }));
+  const incidentReports = (state.incidents?.records ?? [])
+    .filter(
+      (entry) =>
+        entry.status === "resolved" &&
+        entry.aftermath?.resolvedAt !== null &&
+        entry.aftermath.resolvedAt <= date,
+    )
+    .map((entry) => ({
+      id: entry.id,
+      incidentId: entry.incidentId,
+      offeredAt: entry.offeredAt,
+      discoveredAt: entry.aftermath.resolvedAt,
+      stanceId: ["quarantine", "observe", "resonate"][
+        entry.selectedSlot - 1
+      ],
+      outcomeId: entry.aftermath.outcomeId,
+      chainId: entry.chainId,
+      chainDepth: entry.chainDepth ?? 1,
+      parentIncidentId: entry.parentIncidentId ?? null,
+    }));
   const cultures = (state.laboratory?.cultures ?? [])
     .filter((entry) => entry.createdAt <= date)
     .map((entry) => ({
@@ -730,6 +751,12 @@ function creatureCodex(state, date) {
       discovered: true,
       discoveredAt: entry.discoveredAt,
     })),
+    ...incidentReports.map((entry) => ({
+      type: "incidentReport",
+      id: entry.id,
+      discovered: true,
+      discoveredAt: entry.discoveredAt,
+    })),
     ...cultures.map((entry) => ({
       type: "culture",
       id: entry.id,
@@ -789,6 +816,7 @@ function creatureCodex(state, date) {
       specimens: { discovered: specimens.length },
       foreignSpecimens: { discovered: foreignSpecimens.length },
       caseSlices: { discovered: caseSlices.length },
+      incidentReports: { discovered: incidentReports.length },
       cultures: { discovered: cultures.length },
       companions: { discovered: companions.length },
       fossils: { discovered: fossils.length },
@@ -802,6 +830,7 @@ function creatureCodex(state, date) {
       specimens,
       foreignSpecimens,
       caseSlices,
+      incidentReports,
       cultures,
       companions,
       fossils,
@@ -1096,6 +1125,7 @@ const CREATURE_STATE_MIGRATIONS = new Map([
   [7, ensureCasebookState],
   [8, ensureLaboratoryState],
   [9, ensureCompanionState],
+  [10, ensureIncidentState],
 ]);
 
 function migrateCreatureState(state) {
@@ -1119,6 +1149,7 @@ function migrateCreatureState(state) {
   ensureCasebookState(state);
   ensureLaboratoryState(state);
   ensureCompanionState(state);
+  ensureIncidentState(state);
   ensureDailyGrowthState(state);
   return state;
 }
@@ -1687,6 +1718,10 @@ function creatureCasebook(state, startDate, endDate) {
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,
     companions: codex.sections.companions.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    incidentReports: codex.sections.incidentReports.filter(
       (entry) =>
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,

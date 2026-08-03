@@ -140,6 +140,8 @@ anti-ai creature history
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature intervene 2
+anti-ai creature incident
+anti-ai creature incident 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature reset
@@ -177,7 +179,7 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-控制台把总览、生态舱、实验室和图鉴放进同一个键盘交互界面。在任意区域按 `a` 可打开行动中心，也可在出现上下文主行动时直接按 `Enter`。当前支持结算今日工作后遗症、处理转折病例、选择世代进化、孵化培养物和缔结伴生关系；每条流程都遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”，`Enter` 或 `y` 确认，`Esc` 或 `n` 取消。
+控制台把总览、生态舱、实验室和图鉴放进同一个键盘交互界面。在任意区域按 `a` 可打开行动中心，也可在出现上下文主行动时直接按 `Enter`。当前支持结算今日工作后遗症、响应收容事故、处理转折病例、选择世代进化、孵化培养物和缔结伴生关系；每条流程都遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”，`Enter` 或 `y` 确认，`Esc` 或 `n` 取消。
 
 异变体与当前伴生物会以刻意克制的默认频率呼吸、眨眼和脉动。按 `m` 在“低频 / 完整 / 关闭”之间切换，也可以用 `--no-motion` 直接进入完全静态模式；动态效果不会改变成长或存档。
 
@@ -219,7 +221,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-固定收藏共 68 项：16 个形态家族、24 个成就、6 个异色能力、4 种世代伤痕和 18 个路线对等的生态现象。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物和已绑定伴生形态则不设人为上限。
+固定收藏共 68 项：16 个形态家族、24 个成就、6 个异色能力、4 种世代伤痕和 18 个路线对等的生态现象。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物、已绑定伴生形态和已结案事故报告则不设人为上限。
 
 `codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
 
@@ -304,6 +306,8 @@ anti-ai creature history --full
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature intervene 2
+anti-ai creature incident
+anti-ai creature incident 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 ```
@@ -314,11 +318,13 @@ anti-ai creature evolve 2
 
 每 14 个阅历日最多出现一个转折病例。污染、清醒、悖论三条路线都会明示收益和代价；病例未处理时不会继续堆积选择。`history` 压缩关键成长节点，`prognosis` 使用定性标签预演三个可解释方向，不伪造精确概率。
 
+每 7 个阅历日还可能出现一场收容事故。紧急隔离、继续观察和允许共振都会封存一组公开的收益与代价；延迟后果会在 3 个阅历日后揭晓，并可能开启一个确定性后续章节。待处理事故不会堆积，响应也不会增加能力、阅历、生态点或 Token 奖励。
+
 核能巨兽生成器包含 16 个核心形态家族，以及 **21,233,664 种去重后的最终 ASCII 形象**。本地稳定基因决定器官，使用病型、生态人格、伤疤、成就和异色稀有度则继续改写同一条骨架。运行 `anti-ai codex` 可以对照理论容量与个人收藏。
 
 `creature habitat` 会把当前标本、活动伴生物和收藏痕迹组合成已选择的单屏收容场景。它是只读命令，每 7 个阅历日派生一个确定性事件，不能靠重复查看或增加 Token 重抽、加速。
 
-生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
+生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
 
 ### `doctor`
 

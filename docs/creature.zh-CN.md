@@ -17,6 +17,7 @@ anti-ai creature --full
 anti-ai creature history
 anti-ai creature prognosis
 anti-ai creature intervene
+anti-ai creature incident
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature export
@@ -294,6 +295,7 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 化石证书会在第 90 个阅历日后开放。
 跨机器收藏完全在本地完成，并且是可选项。污染编码和外来标本规则见[本地异变体遭遇](./encounters.zh-CN.md)。
 转折病例同样完全在本地运行，并且是可选项。关键病程、干预、预后和病例切片规则见[分叉病历](./casebook.zh-CN.md)。
+收容事故是纯本地的延迟事件链。事故节奏、响应、后果和事故报告收藏规则见[收容事故](./incidents.zh-CN.md)。
 污染培养同样完全在本地运行，并且是可选项。稳定配方、稀有度、培养架和培养物卡片规则见[污染实验室](./laboratory.zh-CN.md)。
 伴生异物同样完全在本地运行，并且是可选项。印记、路线、里程碑和伴生卡片规则见[伴生异物](./companions.zh-CN.md)。
 双体收容场景同样完全在本地运行，并且保持只读。七日事件、关系、场景装饰、周期摘要和 18 个固定生态现象见[收容生态舱](./habitat.zh-CN.md)。
@@ -306,7 +308,7 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 ~/.anti-ai/creature.json
 ```
 
-当前使用 schema v10，只保存：
+当前使用 schema v11，只保存：
 
 - 离散用量带与派生生态点；
 - 稳定基因和部件 ID；
@@ -315,6 +317,7 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 - 含每代能力增量、封存快照和恶性阶变化的永久化石；
 - 已封存进化选择；
 - 转折病例 ID、隐私安全的触发摘要和已封存路线；
+- 收容事故、响应、后果和事件链 ID，以及隐私安全的触发摘要与响应倾向计数；
 - 已保存遭遇的派生亲本/形态 ID 与混种外观 ID；
 - 实验室批次，以及培养物的派生原料、诊断、稀有度和外观 ID；
 - 伴生绑定、离散每日印记和已封存异常 ID；
@@ -322,7 +325,7 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 
 它**不会**保存 Prompt、回复、路径、模型名、精确 Token、个人基线数值或逐请求时间。
 
-schema v1-v9 会在本地逐版本幂等迁移，并无损保留已有能力点，也不会凭空生成病例选择、培养物、伴生绑定、印记或异常。第一次持久化迁移会在 `~/.anti-ai/backups/` 保留原始档案的精确副本。旧档案的每日加点会重新解释为 255 点循环，例如原来的 267 点会变成`恶性 I · 12/255`，而不是被截断。`anti-ai codex` 只在内存中派生只读快照，不会持久化额外迁移。
+schema v1-v10 会在本地逐版本幂等迁移，并无损保留已有能力点，也不会凭空生成病例选择、收容事故、培养物、伴生绑定、印记或异常。第一次持久化迁移会在 `~/.anti-ai/backups/` 保留原始档案的精确副本。旧档案的每日加点会重新解释为 255 点循环，例如原来的 267 点会变成`恶性 I · 12/255`，而不是被截断。`anti-ai codex` 只在内存中派生只读快照，不会持久化额外迁移。
 
 一条成长史始终使用全部受支持数据源，因此 `creature`、`codex` 和 `lab` 都拒绝 `--source` 过滤。
 

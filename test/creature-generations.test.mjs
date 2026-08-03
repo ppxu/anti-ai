@@ -686,8 +686,8 @@ test("v0.6 creature files migrate without losing stored ability growth", (t) => 
   assert.ok(report.collections.rareAbilitiesUnlocked >= 0);
 });
 
-test("schema v1-v9 creature files migrate idempotently without inventing companion history", (t) => {
-  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9]) {
+test("schema v1-v10 creature files migrate idempotently without inventing companion or incident history", (t) => {
+  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
     const home = mkdtempSync(
       path.join(tmpdir(), `anti-ai-schema-${schemaVersion}-`),
     );
@@ -748,7 +748,7 @@ test("schema v1-v9 creature files migrate idempotently without inventing compani
     const saved = JSON.parse(
       readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
     );
-    assert.equal(saved.schemaVersion, 10);
+    assert.equal(saved.schemaVersion, 11);
     assert.equal(saved.appearance.version, 1);
     assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
     assert.equal(saved.specimens.length, 1);
@@ -775,6 +775,16 @@ test("schema v1-v9 creature files migrate idempotently without inventing compani
       activeCultureId: null,
       bondHistory: [],
       imprintAssignments: {},
+    });
+    assert.deepEqual(saved.incidents, {
+      version: 1,
+      records: [],
+      nextAtExperience: 7,
+      dispositions: {
+        quarantine: 0,
+        observe: 0,
+        resonate: 0,
+      },
     });
     assert.doesNotMatch(
       JSON.stringify(saved),
@@ -841,7 +851,7 @@ test("schema v9 cultures remain unbound after companion migration", (t) => {
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 10);
+  assert.equal(saved.schemaVersion, 11);
   assert.deepEqual(saved.laboratory, {
     version: 2,
     nextBatch: 2,

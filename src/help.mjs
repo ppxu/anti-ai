@@ -102,8 +102,8 @@ const COMMAND_HELP = {
       "Open the controlled interactive containment console.",
     ],
     output: [
-      "在四个区域中浏览，并通过行动中心预览、确认和执行结算、干预、进化、孵化或缔结。",
-      "Browse four areas, then preview, confirm, and run settlement, intervention, evolution, incubation, or bonding from the action center.",
+      "在四个区域中浏览，并通过行动中心预览、确认和执行结算、事故响应、干预、进化、孵化或缔结。",
+      "Browse four areas, then preview, confirm, and run settlement, incident response, intervention, evolution, incubation, or bonding from the action center.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
@@ -168,6 +168,7 @@ const COMMAND_HELP = {
       "anti-ai creature history",
       "anti-ai creature habitat",
       "anti-ai creature intervene",
+      "anti-ai creature incident",
       "anti-ai creature prognosis",
       "anti-ai creature evolve 2",
       "anti-ai creature reset",
@@ -176,7 +177,7 @@ const COMMAND_HELP = {
       "creature 必须使用完整来源；reset 会永久删除本地成长档案。",
       "creature requires complete sources; reset permanently deletes the local growth file.",
     ],
-    related: ["creature habitat", "creature history", "creature intervene", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
+    related: ["creature habitat", "creature history", "creature intervene", "creature incident", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
   },
   encounter: {
     usage: "anti-ai encounter <pollution-code> [options]",
@@ -422,8 +423,8 @@ const ACTION_HELP = {
       "Inspect the compressed key-event case history.",
     ],
     output: [
-      "默认只显示孵化、阶段、稀有突变、徽章、化石、进化和病例选择；--full 才展开每日派生记录。",
-      "Shows hatch, stage, rare mutation, badge, fossil, evolution, and case-choice events; --full alone expands daily derived records.",
+      "默认只显示孵化、阶段、稀有突变、徽章、化石、进化、病例与事故；--full 才展开每日派生记录。",
+      "Shows hatch, stage, rare mutation, badge, fossil, evolution, case, and incident events; --full alone expands daily derived records.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看截至指定日期的病程", "Inspect history through a selected date"],
@@ -439,7 +440,7 @@ const ACTION_HELP = {
       "时间线只使用派生成长状态，不包含精确 Token、模型、路径或对话。",
       "The timeline uses derived growth state only; it contains no exact tokens, models, paths, or chats.",
     ],
-    related: ["creature", "creature intervene", "creature prognosis"],
+    related: ["creature", "creature intervene", "creature incident", "creature prognosis"],
   },
   "creature intervene": {
     usage: "anti-ai creature intervene [<1|2|3>] [options]",
@@ -465,6 +466,31 @@ const ACTION_HELP = {
       "Cases have no expiry or check-in; sealed choices cannot be rewritten and never accelerate with Token volume.",
     ],
     related: ["creature history", "creature prognosis", "codex", "share"],
+  },
+  "creature incident": {
+    usage: "anti-ai creature incident [<1|2|3>] [options]",
+    summary: [
+      "查看或封存一场带延迟后果的收容事故响应。",
+      "Inspect or seal a containment-incident response with delayed aftermath.",
+    ],
+    output: [
+      "显示紧急隔离、继续观察和允许共振三种响应；后果会在 3 个阅历日后揭晓。",
+      "Shows quarantine, observation, and resonance responses; the aftermath appears three experience days later.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "结算并处理指定日期", "Settle and handle a selected date"],
+      ["--json", "输出机器可读事故状态", "Print the machine-readable incident state"],
+    ],
+    examples: [
+      "anti-ai creature incident",
+      "anti-ai creature incident 2",
+      "anti-ai creature history",
+    ],
+    note: [
+      "每 7 个阅历日最多出现一场事故；高消耗、低消耗和 AI 清醒日等速触发，响应不会增加能力、阅历或 Token 奖励。",
+      "At most one incident appears per seven experience days; heavy, restrained, and AI-free days advance equally, and responses grant no abilities, experience, or Token rewards.",
+    ],
+    related: ["creature", "creature history", "codex", "tui"],
   },
   "creature prognosis": {
     usage: "anti-ai creature prognosis [options]",

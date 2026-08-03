@@ -155,6 +155,7 @@ const CREATURE_ACTION_IDS = Object.freeze([
   "export",
   "habitat",
   "history",
+  "incident",
   "intervene",
   "prognosis",
 ]);

@@ -107,7 +107,7 @@ anti-ai share --card companion
 
 ## 档案与隐私
 
-异变体档案使用 schema v10。Laboratory v2 只保存：
+异变体档案使用 schema v11。Laboratory v2 只保存：
 
 - 实验室格式版本和下一批次；
 - 稳定培养物与原料 ID；
@@ -117,6 +117,6 @@ anti-ai share --card companion
 - 活动培养物编号和隐私安全的绑定历史；
 - 每个观察日期的一项离散伴生印记和已封存异常 ID。
 
-schema v1–v9 会在本地逐版本幂等迁移，只补充缺失的空实验室或伴生索引，不会虚构历史实验、绑定、印记或异常。
+schema v1–v10 会在本地逐版本幂等迁移，保留或补充缺失的空实验室、伴生或事故索引，不会虚构历史实验、绑定、印记、异常或事故。
 
 状态、JSON、图鉴、培养物卡片和伴生卡片都不会包含精确 Token、请求数、模型与 Agent 名、Prompt、回复、工具调用、本地路径、个人基线或逐请求时间。所有内容仍保存在 `~/.anti-ai/creature.json`。

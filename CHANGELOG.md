@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-08-03
+
+### Added
+
+- Added deterministic containment incidents every seven experience days, with contextual pathology, Ecology, companion, and fossil roots plus response-specific follow-up chapters.
+- Added three visible response stances—Emergency Quarantine, Continue Observation, and Allow Resonance—with sealed trade-offs and aftermaths revealed after three more experience days.
+- Added `creature incident [<1|2|3>]`, focused bilingual Help, TUI preview/confirm support, history events, Codex incident reports, period discovery counts, and a standalone bilingual Incident Guide.
+
+### Changed
+
+- Creature schema is now v11. Local v1-v10 migrations add an empty incident index without inventing past incidents, responses, aftermaths, or dispositions.
+- The normal Creature file, key history, Codex, weekly/monthly reports, READMEs, methodology, architecture/security guidance, and Agent Skill now expose the same incident state and navigation paths.
+
+### Security
+
+- Incident state stores only stable IDs, dates, discrete experience thresholds, privacy-safe trigger summaries, response dispositions, and chain references—never exact Tokens, requests, models, source paths, prompts, responses, or per-request timestamps.
+- Heavy, restrained, and AI-free days advance incident eligibility equally; responses grant no abilities, experience, Ecology, rarity, score, or Token reward, and pending incidents never create a backlog or check-in pressure.
+
 ## [2.4.0] - 2026-08-03
 
 ### Added

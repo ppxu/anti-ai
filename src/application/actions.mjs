@@ -23,6 +23,12 @@ import {
 } from "../laboratory.mjs";
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
+import {
+  INCIDENT_AFTERMATH_DELAY,
+  currentCreatureIncident,
+  incidentLabel,
+  selectCreatureIncident,
+} from "../incidents.mjs";
 import { StateConflictError } from "../state-store.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
 import { settleCreatureState } from "./settlement.mjs";
@@ -137,6 +143,39 @@ function interventionPreview(state, date, lang, action) {
   };
 }
 
+function incidentPreview(state, date, lang, action) {
+  const incident = currentCreatureIncident(state, date);
+  return {
+    ...action,
+    title: localized(lang, "响应收容事故", "RESPOND TO CONTAINMENT INCIDENT"),
+    summary: localized(
+      lang,
+      `事故 #${incident.id} 将封存一条响应，并在 ${INCIDENT_AFTERMATH_DELAY} 个阅历日后结算后果。`,
+      `Incident #${incident.id} seals one response and resolves its aftermath after ${INCIDENT_AFTERMATH_DELAY} experience days.`,
+    ),
+    warning: localized(
+      lang,
+      "响应封存后不能改选；结果只改变本地事件链，不增加能力、阅历或 Token 奖励。",
+      "A sealed response cannot be changed; the result affects only the local event chain, never abilities, experience, or Token rewards.",
+    ),
+    irreversible: true,
+    choices: incident.options.map((option) => ({
+      id: String(option.slot),
+      stance: option.stance,
+      label: incidentLabel("stances", option.stance, lang),
+      detail: localized(
+        lang,
+        `作用：${incidentLabel("benefits", option.benefitId, lang)} · 代价：${incidentLabel("costs", option.costId, lang)}`,
+        `Effect: ${incidentLabel("benefits", option.benefitId, lang)} · Cost: ${incidentLabel("costs", option.costId, lang)}`,
+      ),
+    })),
+    impact: {
+      incidentId: incident.id,
+      delayExperienceDays: INCIDENT_AFTERMATH_DELAY,
+    },
+  };
+}
+
 function evolutionPreview(state, date, lang, action) {
   const evolution = creatureEvolutionSummary(state, date);
   return {
@@ -238,6 +277,9 @@ async function previewContainmentAction(actionId, options = {}, session = {}) {
   if (actionId === "choose_intervention") {
     return interventionPreview(state, date, lang, action);
   }
+  if (actionId === "resolve_incident") {
+    return incidentPreview(state, date, lang, action);
+  }
   if (actionId === "choose_evolution") {
     return evolutionPreview(state, date, lang, action);
   }
@@ -266,6 +308,14 @@ function applyContainmentAction(state, date, actionId, choice) {
   }
   if (actionId === "choose_evolution") {
     return selectCreatureEvolution(state, date, choice);
+  }
+  if (actionId === "resolve_incident") {
+    return selectCreatureIncident(
+      state,
+      date,
+      choice,
+      deriveCreature(state, date).experienceDays,
+    );
   }
   if (actionId === "incubate") {
     return incubateLaboratoryCulture(state, date, choice);
@@ -338,6 +388,19 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
     return completeAction(actionId, state, date, lang, selected.value, [
       "病例选择已封存。异变体拒绝提供第二诊疗意见。",
       "The case choice is sealed. The specimen refuses a second opinion.",
+    ]);
+  }
+  if (actionId === "resolve_incident") {
+    const selected = applyContainmentAction(
+      state,
+      date,
+      actionId,
+      options.choice,
+    );
+    if (selected.error) return failedAction(actionId, selected.error);
+    return completeAction(actionId, state, date, lang, selected.value, [
+      "事故响应已封存。后果正在后台假装与选择无关。",
+      "Incident response sealed. The aftermath is pretending to be unrelated.",
     ]);
   }
   if (actionId === "choose_evolution") {

@@ -40,6 +40,7 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /anti-ai creature export/);
   assert.match(skill, /anti-ai creature history/);
   assert.match(skill, /anti-ai creature intervene <1\|2\|3>/);
+  assert.match(skill, /anti-ai creature incident <1\|2\|3>/);
   assert.match(skill, /anti-ai creature prognosis/);
   assert.match(skill, /anti-ai encounter <pollution-code>/);
   assert.match(skill, /anti-ai creature evolve <1\|2\|3>/);
@@ -53,7 +54,7 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
-  assert.match(skill, /schema v10/);
+  assert.match(skill, /schema v11/);
   assert.match(skill, /PARASITIC HATCHLING.*SYMBIOTIC ABERRATION.*ACCOMPLICE ORGAN/is);
   assert.match(skill, /one imprint per observed day/i);
   assert.match(skill, /heavy.*restrained.*AI-free.*same rate/is);

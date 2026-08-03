@@ -15,13 +15,17 @@ anti-ai creature intervene
 anti-ai creature intervene <1|2|3>
 anti-ai creature intervene --json
 
+anti-ai creature incident
+anti-ai creature incident <1|2|3>
+anti-ai creature incident --json
+
 anti-ai creature prognosis
 anti-ai creature prognosis --json
 
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 ```
 
-运行 `anti-ai help creature history`、`anti-ai help creature intervene` 或 `anti-ai help creature prognosis` 可以查看对应帮助。
+运行 `anti-ai help creature history`、`anti-ai help creature intervene`、`anti-ai help creature incident` 或 `anti-ai help creature prognosis` 可以查看对应帮助。完整延迟事件链规则见[收容事故](./incidents.zh-CN.md)。
 
 ## 关键病程
 
@@ -31,7 +35,8 @@ anti-ai share --card prognosis > anti-ai-prognosis.svg
 - 稀有突变与异色觉醒；
 - 新解锁的成就；
 - 永久化石与已封存进化选择；
-- 转折病例与已封存选择。
+- 转折病例与已封存选择；
+- 收容事故、已封存响应与已揭晓后果。
 
 `--full` 会额外展开每个阅历日，但每行只包含日期、阅历日序号、活跃/休眠状态、离散用量带和事件 ID。它不会暴露精确 Token、模型、路径、Prompt、回复或逐请求时间。
 
@@ -72,13 +77,14 @@ anti-ai share --card prognosis > anti-ai-prognosis.svg
 
 已封存选择会成为 `anti-ai codex` 中不限数量的病例切片。它们不会改变固定 68 项收藏的分母，也不会提供战力或 Token 分数。
 
-异变体档案使用 schema v10。病例只保存：
+异变体档案使用 schema v11。病例与事故只保存：
 
 - 稳定的病例与路线 ID；
 - 出现日期和选择日期；
 - 作为触发摘要的阅历日、生态、病型与能力 ID；
 - 下一次病例间隔。
+- 稳定的事故、响应、后果和事件链 ID，以及隐私安全的触发摘要与日期。
 
-schema v1–v9 会在本地逐版本幂等迁移。迁移会保留病历，并在需要时建立空实验室与伴生索引，不会虚构历史选择、实验或绑定。
+schema v1–v10 会在本地逐版本幂等迁移。迁移会保留病历，并在需要时建立空事故、实验室与伴生索引，不会虚构历史选择、事故、实验或绑定。
 
 所有内容仍保存在 `~/.anti-ai/creature.json`。没有账号、服务器、上传、排行榜、每日签到或 Token 消耗加速器。

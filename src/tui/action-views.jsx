@@ -48,6 +48,8 @@ function impactLabel(key, lang) {
     generation: ["世代", "GENERATION"],
     batch: ["批次", "BATCH"],
     cultures: ["可选培养物", "AVAILABLE CULTURES"],
+    incidentId: ["事故", "INCIDENT"],
+    delayExperienceDays: ["延迟阅历日", "DELAYED EXPERIENCE DAYS"],
   };
   return labels[key]?.[lang === "zh" ? 0 : 1] ?? key;
 }

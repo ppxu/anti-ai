@@ -13,6 +13,7 @@ import {
 } from "../creature.mjs";
 import { syncCreatureInterventions } from "../casebook.mjs";
 import { syncLaboratoryCompanion } from "../companion.mjs";
+import { syncCreatureIncidents } from "../incidents.mjs";
 import { inclusiveDateRange, shiftDate } from "../reporting.mjs";
 import { reportsForDates } from "../scanner.mjs";
 
@@ -86,6 +87,7 @@ async function settleCreatureState(state, date, options, timezone) {
     creature = deriveCreature(state, date);
   }
   syncCreatureInterventions(state, date, creature);
+  syncCreatureIncidents(state, date, creature);
   syncLaboratoryCompanion(state, date);
   return {
     state,

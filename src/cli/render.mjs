@@ -7,6 +7,7 @@ import {
 } from "../creature.mjs";
 import { encounterLabel } from "../encounter.mjs";
 import { laboratoryLabel } from "../laboratory.mjs";
+import { incidentLabel } from "../incidents.mjs";
 import { color, formatTokens } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
 import {
@@ -184,7 +185,7 @@ function renderCreatureCasebook(casebook, lang) {
     `  ${localized(lang, "成长记录", "GROWTH RECORD")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "新增徽章", "NEW BADGES")}  ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions} · 事故 ${casebook.discoveries.incidentReports}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions} · incidents ${casebook.discoveries.incidentReports}`)}`,
     `  ${localized(lang, "主治意见", "ATTENDING NOTE")}  ${creatureClinicalNote(casebook, lang, "week")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -215,7 +216,7 @@ function renderCreatureAutopsy(casebook, lang) {
     `  ${localized(lang, "成长回顾", "GROWTH REVIEW")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "成就回顾", "ACHIEVEMENT REVIEW")}  [${casebook.achievementIds.length}] ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions} · 事故 ${casebook.discoveries.incidentReports}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions} · incidents ${casebook.discoveries.incidentReports}`)}`,
     `  ${localized(lang, "复诊意见", "FOLLOW-UP NOTE")}  ${creatureClinicalNote(casebook, lang, "month")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -255,6 +256,13 @@ function codexDiscoveryLabel(discovery, lang) {
       lang,
       `病例切片 #${discovery.id}`,
       `CASE SLICE #${discovery.id}`,
+    );
+  }
+  if (discovery.type === "incidentReport") {
+    return localized(
+      lang,
+      `事故报告 #${discovery.id}`,
+      `INCIDENT REPORT #${discovery.id}`,
     );
   }
   if (discovery.type === "culture") {
@@ -318,6 +326,10 @@ function renderCodex(codex, lang) {
   const caseSliceLines = codex.sections.caseSlices.slice(-5).map(
     (entry) =>
       `  #${entry.id} · ${casebookLabel("cases", entry.caseId, lang)} · ${casebookLabel("routes", entry.routeId, lang)} · ${casebookLabel("marks", entry.markId, lang)} · ${entry.discoveredAt}`,
+  );
+  const incidentReportLines = codex.sections.incidentReports.slice(-5).map(
+    (entry) =>
+      `  #${entry.id} · ${incidentLabel("incidents", entry.incidentId, lang)} · ${incidentLabel("stances", entry.stanceId, lang)} · ${entry.discoveredAt}`,
   );
   const cultureLines = codex.sections.cultures.slice(-5).map(
     (entry) =>
@@ -406,6 +418,13 @@ function renderCodex(codex, lang) {
       ? caseSliceLines
       : [
           `  ${localized(lang, "尚无 · 它还没有接受任何不可靠治疗。", "NONE · no unreliable treatment has been accepted yet.")}`,
+        ]),
+    "",
+    `${localized(lang, "事故报告", "INCIDENT REPORTS")}  [${codex.summary.incidentReports.discovered}]`,
+    ...(incidentReportLines.length > 0
+      ? incidentReportLines
+      : [
+          `  ${localized(lang, "尚无 · 所有事故仍在等待一个足够正式的后果。", "NONE · every incident is still waiting for a sufficiently official aftermath.")}`,
         ]),
     "",
     `${localized(lang, "污染培养物", "POLLUTION CULTURES")}  [${codex.summary.cultures.discovered}]`,

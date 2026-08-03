@@ -34,7 +34,7 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 - 同一天不能重复获得两份印记；
 - 已封存的异常和外观不能重抽。
 
-从 schema v1–v9 迁移的档案默认没有活动伴生异物，也不会擅自绑定已有培养物。
+从 schema v1–v10 迁移的档案不会虚构活动伴生异物，也不会擅自绑定已有培养物。
 
 ## 一天一枚印记
 
@@ -96,11 +96,11 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 
 ## 档案与隐私
 
-异变体档案使用 schema v10，Laboratory v2 只会额外保存：
+异变体档案使用 schema v11，Laboratory v2 只会额外保存：
 
 - 活动培养物编号和隐私安全的绑定历史；
 - 每个观察日期的一项离散印记 ID；
 - 已封存异常 ID；
 - 原有派生培养物 ID 和本地确定性种子。
 
-它不会保存精确 Token、请求数、模型、Agent 名、Prompt、回复、工具调用、路径、个人基线或逐请求时间。schema v1–v9 迁移只增加空的伴生索引，不会虚构绑定、印记或异常。
+它不会保存精确 Token、请求数、模型、Agent 名、Prompt、回复、工具调用、路径、个人基线或逐请求时间。schema v1–v10 迁移会保留或增加空伴生索引，不会虚构绑定、印记或异常。

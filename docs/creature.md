@@ -17,6 +17,7 @@ anti-ai creature --full
 anti-ai creature history
 anti-ai creature prognosis
 anti-ai creature intervene
+anti-ai creature incident
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature export
@@ -294,6 +295,7 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 A fossil certificate becomes available after experience day 90.
 Cross-machine collection is local and optional. Read [Local Mutation Encounters](./encounters.md) for pollution-code and foreign-specimen behavior.
 Turning-point cases are also local and optional. Read [Forked Casebook](./casebook.md) for history, intervention, prognosis, and case-slice behavior.
+Containment incidents are local delayed event chains. Read [Containment Incidents](./incidents.md) for cadence, responses, aftermaths, and incident-report collection behavior.
 Laboratory cultures are local and optional. Read [Pollution Laboratory](./laboratory.md) for stable formula, rarity, shelf, and culture-card behavior.
 Bonded companions are local and optional. Read [Symbiotic Companions](./companions.md) for imprints, routes, milestones, and companion-card behavior.
 The combined containment scene is local and read-only. Read [Containment Habitat](./habitat.md) for seven-day events, relationships, scenery, period summaries, and the 18 fixed phenomena.
@@ -306,7 +308,7 @@ State lives at:
 ~/.anti-ai/creature.json
 ```
 
-The current schema is v10. It stores only:
+The current schema is v11. It stores only:
 
 - discrete usage bands and derived Ecology points;
 - stable gene and part IDs;
@@ -315,6 +317,7 @@ The current schema is v10. It stores only:
 - permanent fossils with per-generation ability gains, sealed snapshots, and malignancy changes;
 - sealed evolution choices;
 - turning-point case IDs, privacy-safe triggers, and sealed route choices;
+- containment incident, response, aftermath, and chain IDs with privacy-safe trigger summaries and disposition counts;
 - saved foreign encounters as derived parent/form and hybrid appearance IDs;
 - laboratory batches and cultures as derived material, diagnosis, rarity, and appearance IDs;
 - companion bonds, discrete daily imprints, and sealed anomaly IDs;
@@ -322,7 +325,7 @@ The current schema is v10. It stores only:
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v9 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, laboratory cultures, companion bonds, imprints, or anomalies. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
+Schema v1-v10 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, laboratory cultures, companion bonds, imprints, or anomalies. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
 
 One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 

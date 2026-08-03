@@ -15,13 +15,17 @@ anti-ai creature intervene
 anti-ai creature intervene <1|2|3>
 anti-ai creature intervene --json
 
+anti-ai creature incident
+anti-ai creature incident <1|2|3>
+anti-ai creature incident --json
+
 anti-ai creature prognosis
 anti-ai creature prognosis --json
 
 anti-ai share --card prognosis > anti-ai-prognosis.svg
 ```
 
-Use `anti-ai help creature history`, `anti-ai help creature intervene`, or `anti-ai help creature prognosis` for focused help.
+Use `anti-ai help creature history`, `anti-ai help creature intervene`, `anti-ai help creature incident`, or `anti-ai help creature prognosis` for focused help. See [Containment Incidents](./incidents.md) for the complete delayed-event-chain rules.
 
 ## Key history
 
@@ -31,7 +35,8 @@ Use `anti-ai help creature history`, `anti-ai help creature intervene`, or `anti
 - rare mutations and chromatic awakenings;
 - newly unlocked achievements;
 - permanent fossils and sealed evolution choices;
-- turning-point cases and sealed choices.
+- turning-point cases and sealed choices;
+- containment incidents, sealed responses, and revealed aftermaths.
 
 `--full` additionally prints one privacy-safe row per experience day. Each row contains only the date, experience-day number, active/dormant status, discrete usage band, and event ID. It does not expose exact Tokens, models, paths, prompts, responses, or request timestamps.
 
@@ -72,13 +77,14 @@ The prognosis share card shows the current case and its three visible trade-offs
 
 Sealed choices become unlimited case slices in `anti-ai codex`. They do not change the fixed 68-entry collection denominator and do not grant combat power or Token-based score.
 
-Creature state uses schema v10. Casebook records contain only:
+Creature state uses schema v11. Casebook and incident records contain only:
 
 - stable case and route IDs;
 - offered and selected dates;
 - experience-day, Ecology, pathology, and ability IDs used as the trigger summary;
 - the next experience-day interval.
+- stable incident, stance, aftermath, and chain IDs with privacy-safe trigger summaries and dates.
 
-Schema v1–v9 files migrate sequentially and idempotently. Migration preserves the casebook, adds empty laboratory and companion indexes when needed, and never invents a past choice, experiment, or bond.
+Schema v1–v10 files migrate sequentially and idempotently. Migration preserves the casebook and adds empty incident, laboratory, and companion indexes when needed; it never invents a past choice, incident, experiment, or bond.
 
 Everything stays in `~/.anti-ai/creature.json`. There is no account, server, upload, leaderboard, daily check-in, or Token-spending accelerator.

@@ -27,6 +27,10 @@ import { localDate } from "../scanner.mjs";
 import { exportSpecimenCode } from "../encounter.mjs";
 import { localized } from "../shared.mjs";
 import {
+  currentCreatureIncident,
+  incidentLabel,
+} from "../incidents.mjs";
+import {
   casebookLabel,
   creatureHistory,
   creaturePrognosis,
@@ -203,7 +207,106 @@ async function runCreature(options, mode = "render") {
       return;
     }
   }
+  let incidentAction = null;
+  if (options.action === "incident") {
+    if (options.choice === undefined) {
+      const incident = currentCreatureIncident(state, date);
+      incidentAction =
+        incident === null
+          ? { error: "unavailable" }
+          : { value: incident };
+    } else {
+      incidentAction = applyContainmentAction(
+        state,
+        date,
+        "resolve_incident",
+        options.choice,
+      );
+    }
+    if (incidentAction.error) {
+      const message =
+        incidentAction.error === "locked"
+          ? localized(
+              options.lang,
+              "事故响应已经封存，不能临时改口。",
+              "The incident response is sealed and cannot be rewritten.",
+            )
+          : incidentAction.error === "invalid"
+            ? localized(
+                options.lang,
+                "事故响应必须是 1、2 或 3。",
+                "Incident response must be 1, 2, or 3.",
+              )
+            : localized(
+                options.lang,
+                "当前没有可处理的收容事故。",
+                "No containment incident is currently available.",
+              );
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 2;
+      return;
+    }
+  }
   if (!mode.startsWith("snapshot-")) await saveCreatureState(state);
+
+  if (options.action === "incident") {
+    const incident = incidentAction.value;
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(incident, null, 2)}\n`);
+      return;
+    }
+    const optionLines = incident.options.flatMap((option) => [
+      `  ${option.slot}. ${incidentLabel("stances", option.stance, options.lang)}`,
+      `     ${localized(options.lang, "作用", "EFFECT")}  ${incidentLabel("benefits", option.benefitId, options.lang)}`,
+      `     ${localized(options.lang, "代价", "COST")}  ${incidentLabel("costs", option.costId, options.lang)}`,
+    ]);
+    const statusLabel = {
+      pending: localized(options.lang, "待响应", "PENDING"),
+      awaiting_aftermath: localized(
+        options.lang,
+        "等待延迟后果",
+        "AWAITING AFTERMATH",
+      ),
+      resolved: localized(options.lang, "已结案", "RESOLVED"),
+    }[incident.status];
+    process.stdout.write(
+      [
+        localized(
+          options.lang,
+          "收容事故 · 事件链",
+          "CONTAINMENT INCIDENT · EVENT CHAIN",
+        ),
+        `${localized(options.lang, "事故", "INCIDENT")} #${incident.id} · ${incidentLabel("incidents", incident.incidentId, options.lang)}`,
+        `${localized(options.lang, "状态", "STATUS")}  ${statusLabel}`,
+        `  ${incidentLabel("bodies", incident.incidentId, options.lang)}`,
+        "",
+        ...(incident.status === "pending"
+          ? optionLines
+          : [
+              `${localized(options.lang, "已选择", "SELECTED")}  ${incident.selected.slot}. ${incidentLabel("stances", incident.selected.stance, options.lang)}`,
+              ...(incident.status === "awaiting_aftermath"
+                ? [
+                    `${localized(options.lang, "延迟后果", "DELAYED AFTERMATH")}  ${localized(options.lang, `将在阅历 ${incident.aftermath.dueAtExperience} 结算`, `settles at experience ${incident.aftermath.dueAtExperience}`)}`,
+                  ]
+                : [
+                    `${localized(options.lang, "延迟后果", "DELAYED AFTERMATH")}  ${incidentLabel("aftermaths", incident.aftermath.outcomeId, options.lang)}`,
+                  ]),
+            ]),
+        "",
+        ...(incident.status === "pending"
+          ? [
+              localized(
+                options.lang,
+                "运行 anti-ai creature incident <1|2|3> 封存响应。",
+                "Run anti-ai creature incident <1|2|3> to seal a response.",
+              ),
+            ]
+          : []),
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
 
   if (options.action === "intervene") {
     const intervention = interventionAction.value;
@@ -268,8 +371,14 @@ async function runCreature(options, mode = "render") {
         label = `${localized(options.lang, "进化封存", "EVOLUTION SEALED")} · ${generationLabel(event.generation, options.lang)} · ${creatureLabel("evolutions", event.evolutionId, options.lang)}`;
       } else if (event.type === "case_offered") {
         label = `${localized(options.lang, "转折病例", "TURNING CASE")} · ${casebookLabel("cases", event.caseId, options.lang)}`;
-      } else {
+      } else if (event.type === "case_selected") {
         label = `${localized(options.lang, "选择封存", "SEALED CHOICE")} · ${casebookLabel("routes", event.routeId, options.lang)} · ${casebookLabel("marks", event.markId, options.lang)}`;
+      } else if (event.type === "incident_opened") {
+        label = `${localized(options.lang, "收容事故", "CONTAINMENT INCIDENT")} · ${incidentLabel("incidents", event.incidentId, options.lang)}`;
+      } else if (event.type === "incident_selected") {
+        label = `${localized(options.lang, "事故响应", "INCIDENT RESPONSE")} · ${incidentLabel("stances", event.stanceId, options.lang)}`;
+      } else {
+        label = `${localized(options.lang, "延迟后果", "DELAYED AFTERMATH")} · ${incidentLabel("aftermaths", event.outcomeId, options.lang)}`;
       }
       return `  ${event.date}  ${label}`;
     });
@@ -381,6 +490,7 @@ async function runCreature(options, mode = "render") {
 
   const previousCreature = deriveCreature(state, shiftDate(date, -1));
   const today = state.days[date];
+  const currentIncident = currentCreatureIncident(state, date);
   const newTalents = creature.talents.filter(
     (talent) => !previousCreature.talents.includes(talent),
   );
@@ -408,6 +518,19 @@ async function runCreature(options, mode = "render") {
           entry.selectedAt !== null &&
           entry.selectedAt <= date,
       ).length,
+    },
+    incident: {
+      current: currentIncident,
+      resolvedCount: (state.incidents?.records ?? []).filter(
+        (entry) =>
+          entry.aftermath?.status === "resolved" &&
+          entry.aftermath.resolvedAt <= date,
+      ).length,
+      dispositions: {
+        quarantine: state.incidents?.dispositions?.quarantine ?? 0,
+        observe: state.incidents?.dispositions?.observe ?? 0,
+        resonate: state.incidents?.dispositions?.resonate ?? 0,
+      },
     },
     companion: laboratoryCompanion(state, date).companion,
   };
@@ -614,6 +737,23 @@ async function runCreature(options, mode = "render") {
         : [
             `${localized(lang, "病例后遗症", "CASE AFTEREFFECT")}  ${casebookLabel("marks", result.casebook.current.selected.markId, lang)}`,
           ];
+  const incidentLines =
+    result.incident.current === null
+      ? []
+      : result.incident.current.status === "pending"
+        ? [
+            `${localized(lang, "收容事故", "CONTAINMENT INCIDENT")}  ${localized(lang, "待响应", "PENDING")} · ${incidentLabel("incidents", result.incident.current.incidentId, lang)}`,
+            `${localized(lang, "事故响应", "INCIDENT RESPONSE")}  anti-ai creature incident`,
+          ]
+        : result.incident.current.status === "awaiting_aftermath"
+          ? [
+              `${localized(lang, "收容事故", "CONTAINMENT INCIDENT")}  ${localized(lang, "等待延迟后果", "AWAITING AFTERMATH")} · ${incidentLabel("incidents", result.incident.current.incidentId, lang)}`,
+              `${localized(lang, "延迟后果", "DELAYED AFTERMATH")}  ${localized(lang, `将在阅历 ${result.incident.current.aftermath.dueAtExperience} 结算`, `settles at experience ${result.incident.current.aftermath.dueAtExperience}`)}`,
+            ]
+          : [
+              `${localized(lang, "事故结论", "INCIDENT OUTCOME")}  ${incidentLabel("aftermaths", result.incident.current.aftermath.outcomeId, lang)}`,
+              `${localized(lang, "事故响应", "INCIDENT RESPONSE")}  ${incidentLabel("stances", result.incident.current.selected.stance, lang)} · ${localized(lang, "已封存", "SEALED")}`,
+            ];
   const companionRouteColor = {
     unformed: "2",
     pollution: "1;31",
@@ -664,6 +804,7 @@ async function runCreature(options, mode = "render") {
       ...fossilLines,
       ...evolutionLines,
       ...casebookLines,
+      ...incidentLines,
       `${localized(lang, "徽章", "BADGES")}  [${result.achievements.unlocked.length}] ${achievementPreview || localized(lang, "尚未解锁", "LOCKED")}`,
       `${localized(lang, "今日成就", "TODAY'S ACHIEVEMENTS")}  ${recentAchievementPreview || localized(lang, "无", "NONE")}`,
       "",
@@ -770,6 +911,7 @@ async function runCreature(options, mode = "render") {
     `${localized(lang, "异色能力", "CHROMATIC ABILITIES")}  [${rareAbilityEntries.length}] · ${localized(lang, "今日", "TODAY")} ${rareAbilityGain}`,
     ...eventLines,
     ...casebookLines,
+    ...incidentLines,
     `${localized(lang, "完整病历", "FULL CASEBOOK")}  anti-ai creature --full`,
     localized(
       lang,

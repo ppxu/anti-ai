@@ -34,7 +34,7 @@ You may switch to another culture later. Switching:
 - cannot award two imprints on the same date;
 - cannot reroll an existing anomaly or appearance.
 
-A migrated v1–v9 file starts with no active companion. Existing cultures are never auto-bonded.
+A migrated v1–v10 file starts with no invented active companion. Existing cultures are never auto-bonded.
 
 ## One day, one imprint
 
@@ -96,11 +96,11 @@ Using more AI creates more Pollution-shaped evidence; using less AI or taking AI
 
 ## State and privacy
 
-Creature state uses schema v10. The Laboratory v2 section stores only:
+Creature state uses schema v11. The Laboratory v2 section stores only:
 
 - the active culture ID and privacy-safe bond history;
 - one discrete imprint ID per observed date;
 - sealed anomaly IDs;
 - the existing derived culture IDs and local deterministic seed.
 
-It does not store exact Tokens, request counts, models, Agent names, prompts, responses, tool calls, paths, personal baselines, or per-request timestamps. Schema v1–v9 migration adds an empty companion index and does not invent bonds, imprints, or anomalies.
+It does not store exact Tokens, request counts, models, Agent names, prompts, responses, tool calls, paths, personal baselines, or per-request timestamps. Schema v1–v10 migration preserves or adds an empty companion index and does not invent bonds, imprints, or anomalies.

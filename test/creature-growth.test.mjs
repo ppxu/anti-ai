@@ -252,6 +252,15 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
       current: null,
       selectedCount: 0,
     },
+    incident: {
+      current: null,
+      resolvedCount: 0,
+      dispositions: {
+        quarantine: 0,
+        observe: 0,
+        resonate: 0,
+      },
+    },
     companion: null,
   });
 });
@@ -1028,7 +1037,7 @@ test("creature rolls legacy ability points into 255-point malignancy ranks witho
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 10);
+  assert.equal(saved.schemaVersion, 11);
   assert.equal(saved.days["2026-07-22"].abilityGains.appetite, 267);
 });
 

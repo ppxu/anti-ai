@@ -63,6 +63,9 @@ function codexRecentLabel(entry, lang) {
   if (entry.type === "habitatPhenomenon") {
     return habitatEventCopy(entry.id, lang).name;
   }
+  if (entry.type === "incidentReport") {
+    return localized(lang, `事故报告 #${entry.id}`, `INCIDENT REPORT #${entry.id}`);
+  }
   const section = creatureSections[entry.type];
   return section ? creatureLabel(section, entry.id, lang) : `#${entry.id}`;
 }
@@ -139,6 +142,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       ["specimens", "本地标本", "Local specimens"],
       ["foreignSpecimens", "外来标本", "Foreign specimens"],
       ["caseSlices", "病例切片", "Case slices"],
+      ["incidentReports", "事故报告", "Incident reports"],
       ["cultures", "培养物", "Cultures"],
       ["companions", "伴生形态", "Companions"],
       ["fossils", "永久化石", "Fossils"],

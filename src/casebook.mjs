@@ -560,6 +560,45 @@ function creatureHistory(state, date, { full = false } = {}) {
       });
     }
   }
+  for (const incident of state.incidents?.records ?? []) {
+    if (incident.offeredAt > date) continue;
+    events.push({
+      date: incident.offeredAt,
+      type: "incident_opened",
+      id: incident.id,
+      incidentId: incident.incidentId,
+      chainId: incident.chainId,
+      chainDepth: incident.chainDepth ?? 1,
+    });
+    if (incident.selectedAt !== null && incident.selectedAt <= date) {
+      const stanceId = ["quarantine", "observe", "resonate"][
+        incident.selectedSlot - 1
+      ];
+      events.push({
+        date: incident.selectedAt,
+        type: "incident_selected",
+        id: incident.id,
+        incidentId: incident.incidentId,
+        stanceId,
+        chainId: incident.chainId,
+        chainDepth: incident.chainDepth ?? 1,
+      });
+    }
+    if (
+      incident.aftermath?.status === "resolved" &&
+      incident.aftermath.resolvedAt <= date
+    ) {
+      events.push({
+        date: incident.aftermath.resolvedAt,
+        type: "incident_aftermath",
+        id: incident.aftermath.id,
+        incidentId: incident.incidentId,
+        outcomeId: incident.aftermath.outcomeId,
+        chainId: incident.chainId,
+        chainDepth: incident.chainDepth ?? 1,
+      });
+    }
+  }
   const eventOrder = {
     hatch: 0,
     stage: 1,
@@ -570,6 +609,9 @@ function creatureHistory(state, date, { full = false } = {}) {
     evolution_selected: 6,
     case_offered: 7,
     case_selected: 8,
+    incident_opened: 9,
+    incident_selected: 10,
+    incident_aftermath: 11,
   };
   events.sort(
     (left, right) =>

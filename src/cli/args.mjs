@@ -86,7 +86,7 @@ function parseArgs(argv) {
       options.action = arg;
     } else if (
       command === "creature" &&
-      ["evolve", "intervene"].includes(options.action) &&
+      ["evolve", "incident", "intervene"].includes(options.action) &&
       options.choice === undefined &&
       !arg.startsWith("-")
     ) {

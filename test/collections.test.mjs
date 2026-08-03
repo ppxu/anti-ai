@@ -373,6 +373,7 @@ test("codex --json derives a stable private collection from creature history", (
     caseSlices: { discovered: 0 },
     cultures: { discovered: 0 },
     companions: { discovered: 0 },
+    incidentReports: { discovered: 0 },
   });
   assert.deepEqual(
     Object.fromEntries(
@@ -393,6 +394,7 @@ test("codex --json derives a stable private collection from creature history", (
       caseSlices: 0,
       cultures: 0,
       companions: 0,
+      incidentReports: 0,
     },
   );
   assert.deepEqual(

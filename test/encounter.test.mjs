@@ -329,7 +329,7 @@ test("encounter save bottles one privacy-safe foreign specimen in the codex", (t
     "utf8",
   );
   const state = JSON.parse(savedState);
-  assert.equal(state.schemaVersion, 10);
+  assert.equal(state.schemaVersion, 11);
   assert.equal(state.foreignSpecimens.length, 1);
   assert.doesNotMatch(
     savedState,

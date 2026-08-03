@@ -107,6 +107,7 @@ test("the TUI distinguishes a settled AI-free day from an unsettled date", (t) =
     })),
     [
       { id: "settle_today", available: true, reason: null },
+      { id: "resolve_incident", available: false, reason: "no_pending_incident" },
       { id: "choose_intervention", available: false, reason: "no_pending_case" },
       { id: "choose_evolution", available: false, reason: "no_pending_evolution" },
       { id: "incubate", available: false, reason: "no_material" },
@@ -260,7 +261,7 @@ test("a stale containment session reloads the latest file instead of keeping a p
   assert.match(result.reasonLabel, /another process updated/i);
 });
 
-test("choice actions preview stable options and execute intervention, evolution, incubation, and bonding", async (t) => {
+test("choice actions preview stable options and execute incidents, intervention, evolution, incubation, and bonding", async (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-actions-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
   const home = path.join(workspace, "home");
@@ -308,6 +309,25 @@ test("choice actions preview stable options and execute intervention, evolution,
     }
   });
   const options = { date: endDate, lang: "en", source: "all" };
+
+  const incident = await previewContainmentAction(
+    "resolve_incident",
+    options,
+  );
+  assert.deepEqual(
+    incident.choices.map(({ id, stance }) => ({ id, stance })),
+    [
+      { id: "1", stance: "quarantine" },
+      { id: "2", stance: "observe" },
+      { id: "3", stance: "resonate" },
+    ],
+  );
+  const incidentResolved = await executeContainmentAction(
+    "resolve_incident",
+    { ...options, choice: "3" },
+  );
+  assert.equal(incidentResolved.status, "completed");
+  assert.equal(incidentResolved.result.selected.stance, "resonate");
 
   const intervention = await previewContainmentAction(
     "choose_intervention",

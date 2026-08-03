@@ -353,12 +353,12 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /schema v10.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*培养物.*伴生绑定\/离散印记\/异常 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
+    /schema v11.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*收容事故.*培养物.*伴生绑定\/离散印记\/异常 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
 
-test("explain discloses ecology, companion guardrails, and schema v10", () => {
+test("explain discloses ecology, incidents, companion guardrails, and schema v11", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
@@ -386,6 +386,10 @@ test("explain discloses ecology, companion guardrails, and schema v10", () => {
   );
   assert.match(
     result.stdout,
+    /每 7 个阅历日.*收容事故.*紧急隔离.*继续观察.*允许共振.*3 个阅历日.*不会增加能力、阅历或 Token 奖励/s,
+  );
+  assert.match(
+    result.stdout,
     /污染实验室.*外来标本.*永久化石.*病例切片.*三份确定性配方.*不会消耗素材.*不会改变成长、能力或生态/s,
   );
   assert.match(
@@ -394,7 +398,7 @@ test("explain discloses ecology, companion guardrails, and schema v10", () => {
   );
   assert.match(
     result.stdout,
-    /schema v10.*schema v1-v9.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+    /schema v11.*schema v1-v10.*不保存.*精确 Token.*模型名.*路径.*对话/s,
   );
 });
 
@@ -433,7 +437,11 @@ test("doctor, explain, and help support English output", () => {
   );
   assert.match(
     explain.stdout,
-    /schema v10.*schema v1-v9 migrate sequentially.*local backup/s,
+    /Every 7 experience days.*containment incident.*EMERGENCY QUARANTINE.*CONTINUE OBSERVATION.*ALLOW RESONANCE.*3 experience days.*no abilities, experience, or Token rewards/s,
+  );
+  assert.match(
+    explain.stdout,
+    /schema v11.*schema v1-v10 migrate sequentially.*local backup/s,
   );
   assert.doesNotMatch(explain.stdout, /模型统计|个人基线与判词/);
 
@@ -565,6 +573,7 @@ test("forked casebook actions expose focused bilingual help", () => {
   const expectations = [
     ["history", "Usage: anti-ai creature history [options]"],
     ["intervene", "Usage: anti-ai creature intervene [<1|2|3>] [options]"],
+    ["incident", "Usage: anti-ai creature incident [<1|2|3>] [options]"],
     ["prognosis", "Usage: anti-ai creature prognosis [options]"],
   ];
   for (const [action, usage] of expectations) {
@@ -772,7 +781,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 2.4.0\n");
+  assert.equal(result.stdout, "anti-ai 2.5.0\n");
   assert.equal(result.stderr, "");
 });
 

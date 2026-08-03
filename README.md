@@ -141,6 +141,8 @@ anti-ai creature history
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature intervene 2
+anti-ai creature incident
+anti-ai creature incident 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 anti-ai creature reset
@@ -178,7 +180,7 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `a` anywhere to open the action center, or press `Enter` on a contextual primary action. It can settle today's work aftermath, resolve a turning case, choose a generation evolution, incubate a culture, or bond a companion. Every workflow follows preview → explicit confirmation → result → refreshed file; `Enter` or `y` confirms, while `Esc` or `n` cancels.
+The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `a` anywhere to open the action center, or press `Enter` on a contextual primary action. It can settle today's work aftermath, respond to a containment incident, resolve a turning case, choose a generation evolution, incubate a culture, or bond a companion. Every workflow follows preview → explicit confirmation → result → refreshed file; `Enter` or `y` confirms, while `Esc` or `n` cancels.
 
 The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
 
@@ -220,7 +222,7 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 68 entries: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 route-balanced habitat phenomena. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, and bonded companion forms are collected without an artificial upper limit.
+The fixed collection contains 68 entries: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 route-balanced habitat phenomena. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, bonded companion forms, and resolved incident reports are collected without an artificial upper limit.
 
 `codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
 
@@ -305,6 +307,8 @@ anti-ai creature history --full
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature intervene 2
+anti-ai creature incident
+anti-ai creature incident 2
 anti-ai creature evolve
 anti-ai creature evolve 2
 ```
@@ -315,11 +319,13 @@ Regular abilities cycle through 255 visible points. Overflow becomes a lossless 
 
 Every 14 experience days may offer one turning-point case. Its three routes—Pollution, Clarity, and Paradox—always expose both a benefit and a cost; a pending case prevents a choice backlog. `history` compresses important events, while `prognosis` previews three explainable directions using qualitative labels rather than fake probabilities.
 
+Every 7 experience days may also offer one containment incident. Emergency Quarantine, Continue Observation, and Allow Resonance each seal a visible trade-off; the aftermath appears 3 experience days later and may open one deterministic follow-up chapter. Pending incidents never build a backlog, and responses grant no abilities, experience, Ecology, or Token rewards.
+
 The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
 `creature habitat` combines the current specimen, active companion, and collection traces into the selected single-screen containment scene. It is read-only, derives one deterministic event every seven experience days, and cannot be rerolled or accelerated with Token volume.
 
-Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, [Symbiotic Companions](./docs/companions.md) for the sidekick growth model, and [Containment Habitat](./docs/habitat.md) for relationships, scenery, events, and the fixed phenomenon catalog. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md) · [收容生态舱中文说明](./docs/habitat.zh-CN.md).
+Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, [Containment Incidents](./docs/incidents.md) for delayed event chains, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, [Symbiotic Companions](./docs/companions.md) for the sidekick growth model, and [Containment Habitat](./docs/habitat.md) for relationships, scenery, events, and the fixed phenomenon catalog. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [收容事故中文说明](./docs/incidents.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md) · [收容生态舱中文说明](./docs/habitat.zh-CN.md).
 
 ### `doctor`
 

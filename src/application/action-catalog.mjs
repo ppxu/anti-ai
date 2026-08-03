@@ -1,4 +1,5 @@
 import { currentCreatureIntervention } from "../casebook.mjs";
+import { currentCreatureIncident } from "../incidents.mjs";
 import { localized } from "../shared.mjs";
 
 const ACTION_DEFINITIONS = Object.freeze([
@@ -8,6 +9,13 @@ const ACTION_DEFINITIONS = Object.freeze([
     target: "daily_record",
     command: ({ date }) => `anti-ai today --date ${date}`,
     label: ["结算今天的工作后遗症", "Settle today's work aftermath"],
+  },
+  {
+    id: "resolve_incident",
+    actor: "specimen",
+    target: "incident_chain",
+    command: () => "anti-ai creature incident",
+    label: ["响应待定收容事故", "Respond to the pending incident"],
   },
   {
     id: "choose_intervention",
@@ -41,6 +49,7 @@ const ACTION_DEFINITIONS = Object.freeze([
 
 const REASON_COPY = Object.freeze({
   already_settled: ["本日已经结算", "This date is already settled"],
+  no_pending_incident: ["当前没有待响应事故", "No incident is pending"],
   no_pending_case: ["当前没有待处理病例", "No turning case is pending"],
   no_pending_evolution: ["当前没有待选择进化", "No evolution is pending"],
   no_material: ["实验室没有可用原料", "The laboratory has no usable material"],
@@ -57,6 +66,11 @@ function actionAvailability(id, state, date, creature, laboratory) {
     return currentCreatureIntervention(state, date)?.status === "pending"
       ? { available: true, reason: null }
       : { available: false, reason: "no_pending_case" };
+  }
+  if (id === "resolve_incident") {
+    return currentCreatureIncident(state, date)?.status === "pending"
+      ? { available: true, reason: null }
+      : { available: false, reason: "no_pending_incident" };
   }
   if (id === "choose_evolution") {
     return creature.evolution?.status === "pending"

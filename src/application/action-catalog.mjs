@@ -32,6 +32,27 @@ const ACTION_DEFINITIONS = Object.freeze([
     label: ["处理待定世代进化", "Resolve the pending evolution"],
   },
   {
+    id: "observe_specimen",
+    actor: "observer",
+    target: "habitat",
+    command: () => null,
+    label: ["记录一次今日观察", "Record today's observation"],
+  },
+  {
+    id: "contact_specimen",
+    actor: "observer",
+    target: "habitat",
+    command: () => null,
+    label: ["进行一次克制接触", "Make one restrained contact"],
+  },
+  {
+    id: "curate_display",
+    actor: "curator",
+    target: "cabinet",
+    command: () => null,
+    label: ["调整后果陈列柜", "Curate the consequence cabinet"],
+  },
+  {
     id: "incubate",
     actor: "laboratory",
     target: "culture",
@@ -52,6 +73,11 @@ const REASON_COPY = Object.freeze({
   no_pending_incident: ["当前没有待响应事故", "No incident is pending"],
   no_pending_case: ["当前没有待处理病例", "No turning case is pending"],
   no_pending_evolution: ["当前没有待选择进化", "No evolution is pending"],
+  date_not_settled: ["请先结算当前日期", "Settle this date first"],
+  unhatched: ["异变体尚未孵化", "The specimen has not hatched"],
+  already_observed: ["今日观察已经记录", "Today's observation is already recorded"],
+  already_contacted: ["今日接触已经记录", "Today's contact is already recorded"],
+  no_collection: ["还没有可陈列的收藏", "No discovered collection can be displayed"],
   no_material: ["实验室没有可用原料", "The laboratory has no usable material"],
   no_culture: ["培养架尚无封存标本", "The culture shelf is empty"],
 });
@@ -76,6 +102,27 @@ function actionAvailability(id, state, date, creature, laboratory) {
     return creature.evolution?.status === "pending"
       ? { available: true, reason: null }
       : { available: false, reason: "no_pending_evolution" };
+  }
+  if (["observe_specimen", "contact_specimen"].includes(id)) {
+    if (!state.days?.[date]) {
+      return { available: false, reason: "date_not_settled" };
+    }
+    if (creature.activeDays === 0) {
+      return { available: false, reason: "unhatched" };
+    }
+    const interaction = id === "observe_specimen" ? "observe" : "contact";
+    const reason = interaction === "observe" ? "already_observed" : "already_contacted";
+    return state.days[date].interactions?.[interaction]
+      ? { available: false, reason }
+      : { available: true, reason: null };
+  }
+  if (id === "curate_display") {
+    const discovered = (state.specimens ?? []).some(
+      (entry) => entry.recordedAt <= date,
+    );
+    return discovered
+      ? { available: true, reason: null }
+      : { available: false, reason: "no_collection" };
   }
   if (id === "incubate") {
     return laboratory.status === "ready"

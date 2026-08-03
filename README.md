@@ -60,7 +60,7 @@ Token counts are measurable. The electricity, water, and carbon impact of propri
 ```bash
 npm install -g anti-ai
 anti-ai doctor
-anti-ai today
+anti-ai
 ```
 
 ### Install the Agent Skill
@@ -84,6 +84,7 @@ The Skill tells an Agent when to use exact JSON, when to show a human receipt, h
 ## Commands
 
 ```bash
+anti-ai
 anti-ai today
 anti-ai today --date 2026-07-23
 anti-ai today --source codex
@@ -180,13 +181,13 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `a` anywhere to open the action center, or press `Enter` on a contextual primary action. It can settle today's work aftermath, respond to a containment incident, resolve a turning case, choose a generation evolution, incubate a culture, or bond a companion. Every workflow follows preview → explicit confirmation → result → refreshed file; `Enter` or `y` confirms, while `Esc` or `n` cancels.
+Running `anti-ai` with no arguments opens the console in an interactive terminal; a pipe or other non-interactive launch prints grouped Help instead. The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `a` anywhere to open the available-now action center, or press `Enter` on a contextual primary action. Every write follows preview → explicit confirmation → result → refreshed file; `Enter` or `y` confirms, while `Esc` or `n` cancels.
 
 The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
 
-Press `1`–`4` or the arrow keys to switch areas. In Habitat, press `Enter` to inspect visible organs and connect them to existing ability values; press `r` to replay the latest sealed ecological event. A rare chromatic glitch frame can appear only after a chromatic ability has already been discovered. Press `?` for shortcuts, `esc` to leave a focused mode, and `q` to leave without disturbing the specimen.
+Press `1`–`4`, the arrow keys, or contextual `Tab` focus to move through the console. In Codex, choose a category, open an entry, inspect its stable ID, rarity and discovery date, then press `d` to preview placing a discovered record in one of three Consequence Cabinet slots. In Laboratory, select a visible formula before pressing `Enter`. In Habitat, press `Enter` for read-only anatomy inspection, `r` to replay the latest sealed ecological event, `o` for today's Observation, or `c` for today's restrained Contact. Observation and Contact are each limited to once per settled day and create deterministic narrative only—no stats, rarity, or rewards.
 
-Browsing, replaying, inspecting, and cancelling remain read-only and do not scan Agent records. Opening the daily-settlement impact preview may scan supported usage metadata so it can show the exact local impact before confirmation; it does not write. Only an explicit confirmation writes the Creature file, through the same action service and atomic conflict checks used by CLI commands. Scripts and Agents should continue using explicit commands and `--json`; `anti-ai tui` is a human-only interactive surface.
+Browsing, replaying, inspecting, and cancelling remain read-only and do not scan Agent records. Opening the daily-settlement impact preview may scan supported usage metadata so it can show the exact local impact before confirmation; it does not write. Only explicit confirmation writes the Creature file through the same action service and atomic conflict checks used by CLI commands. Scripts and Agents should continue using explicit commands and `--json`; the TUI is a human-only interactive surface.
 
 ### `today`
 
@@ -224,7 +225,7 @@ anti-ai codex --json
 
 The fixed collection contains 68 entries: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 route-balanced habitat phenomena. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, bonded companion forms, and resolved incident reports are collected without an artificial upper limit.
 
-`codex --json` exposes stable IDs, discovery state and dates, collection counts, and the selected day's `recent` discoveries. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters. It stores no new state and does not turn Token volume into a preferred collection route.
+`codex --json` exposes stable IDs, discovery state and dates, collection counts, the selected day's `recent` discoveries, and the current three-slot Cabinet references. The TUI adds category → entry → detail navigation with locked silhouettes and an explicitly confirmed display action. Displaying a record changes only Codex, Habitat, and share presentation. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters and does not turn Token volume into a preferred collection route.
 
 The human view also reports the generator's **21,233,664 deduplicated final ASCII forms**. This is a theoretical species-space estimate, not collection progress. See the [Creature Guide](./docs/creature.md) for the capacity calculation and visual precedence rules.
 
@@ -323,7 +324,7 @@ Every 7 experience days may also offer one containment incident. Emergency Quara
 
 The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
-`creature habitat` combines the current specimen, active companion, and collection traces into the selected single-screen containment scene. It is read-only, derives one deterministic event every seven experience days, and cannot be rerolled or accelerated with Token volume.
+`creature habitat` combines the current specimen, active companion, collection traces, and Consequence Cabinet into the selected single-screen containment scene. The Habitat snapshot is read-only, derives one deterministic event every seven experience days, and cannot be rerolled or accelerated with Token volume. Cabinet curation and the two daily light interactions happen only after explicit TUI confirmation and never alter growth values.
 
 Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, [Containment Incidents](./docs/incidents.md) for delayed event chains, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, [Symbiotic Companions](./docs/companions.md) for the sidekick growth model, and [Containment Habitat](./docs/habitat.md) for relationships, scenery, events, and the fixed phenomenon catalog. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [收容事故中文说明](./docs/incidents.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md) · [收容生态舱中文说明](./docs/habitat.zh-CN.md).
 
@@ -435,6 +436,7 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/renderers/svg.mjs`: privacy-safe SVG cards
 - `src/creature.mjs`: mutation growth and collection rules
 - `src/creature/`: content pools and appearance generation
+- `src/consequence-cabinet.mjs`: three-slot displays and deterministic daily narrative interactions
 - `src/state-store.mjs`: validation-aware atomic local state storage
 - `src/laboratory.mjs`: derived formulas, sealed cultures, and shelves
 - `src/companion.mjs`: companion bonds, imprints, routes, and ASCII growth

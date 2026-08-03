@@ -3,34 +3,46 @@ import { Box, Text } from "ink";
 
 import { Panel } from "./panel.jsx";
 
-function ActionMenu({ actions, selectedIndex, lang }) {
+function ActionMenu({ actions, unavailableCount = 0, selectedIndex, lang }) {
   const zh = lang === "zh";
   return (
     <Panel
-      title={zh ? "待执行收容协议" : "AVAILABLE CONTAINMENT PROTOCOLS"}
+      title={zh ? "行动中心" : "ACTION CENTER"}
       color="yellow"
     >
+      <Text bold color="green">
+        {zh ? "立即可用" : "AVAILABLE NOW"} · {actions.length}
+      </Text>
       {actions.map((action, index) => {
         const selected = index === selectedIndex;
         return (
           <Box key={action.id} flexDirection="column" marginBottom={1}>
             <Text
               bold={selected}
-              color={selected ? "yellow" : action.available ? "white" : "gray"}
+              color={selected ? "yellow" : "white"}
             >
               {selected ? "> " : "  "}
               {action.label}
             </Text>
-            <Text dimColor>
-              {action.available ? action.command : action.reasonLabel}
-            </Text>
           </Box>
         );
       })}
+      {actions.length === 0 ? (
+        <Text dimColor>
+          {zh ? "当前没有需要处理的协议。观察本身不需要制造事故。" : "No protocol needs attention. Observation does not require an incident."}
+        </Text>
+      ) : null}
+      {unavailableCount > 0 ? (
+        <Text dimColor>
+          {zh
+            ? `${unavailableCount} 项当前不可用 · 已折叠`
+            : `${unavailableCount} unavailable · collapsed`}
+        </Text>
+      ) : null}
       <Text dimColor>
         {zh
-          ? "Enter 影响预览 · ↑↓ 选择 · Esc 返回"
-          : "Enter previews impact · ↑↓ selects · Esc returns"}
+          ? "Enter 影响预览 · ↑↓ / Tab 选择 · Esc 返回"
+          : "Enter previews impact · ↑↓ / Tab selects · Esc returns"}
       </Text>
     </Panel>
   );
@@ -50,6 +62,9 @@ function impactLabel(key, lang) {
     cultures: ["可选培养物", "AVAILABLE CULTURES"],
     incidentId: ["事故", "INCIDENT"],
     delayExperienceDays: ["延迟阅历日", "DELAYED EXPERIENCE DAYS"],
+    dailyLimit: ["每日额度", "DAILY LIMIT"],
+    numericRewards: ["数值奖励", "NUMERIC REWARDS"],
+    displaySlots: ["展示位", "DISPLAY SLOTS"],
   };
   return labels[key]?.[lang === "zh" ? 0 : 1] ?? key;
 }

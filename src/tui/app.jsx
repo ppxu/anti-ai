@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Text, useApp, useInput } from "ink";
+import { Box, Text, useApp, useInput, useStdout } from "ink";
 
 import {
   deriveCompanionFrame,
@@ -41,13 +41,14 @@ function Header({ snapshot, lang }) {
           {zh ? "ANTI-AI · 收容控制台" : "ANTI-AI · CONTAINMENT CONSOLE"}
         </Text>
         <Text color="yellow">
-          {zh ? "本地 · 受控" : "LOCAL · CONTROLLED"} · {snapshot.date}
+          {zh ? "查看日期" : "VIEW"} · {snapshot.date}
         </Text>
       </Box>
       <Text dimColor>
-        {zh
-          ? `已结算档案：${snapshot.lastSettledDate ?? "尚无"} · 影响预览可能扫描，确认后才会写入`
-          : `Last settled: ${snapshot.lastSettledDate ?? "none"} · Preview may scan; only confirmation writes`}
+        {zh ? "状态截止" : "STATE THROUGH"} · {snapshot.lastSettledDate ?? (zh ? "尚无" : "NONE")} ·{" "}
+        {snapshot.overview.status === "awaiting"
+          ? zh ? "当前日期待结算" : "VIEW DATE NOT SETTLED"
+          : zh ? "当前日期已结算" : "VIEW DATE SETTLED"}
       </Text>
     </Box>
   );
@@ -73,7 +74,7 @@ function Navigation({ navigation, activeId }) {
   );
 }
 
-function OverviewScreen({ snapshot, lang, frame, motion, glitch }) {
+function OverviewScreen({ snapshot, lang, frame, motion, glitch, compact }) {
   const { overview } = snapshot;
   const zh = lang === "zh";
   const ecologyColor = {
@@ -90,11 +91,11 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch }) {
   }[overview.status];
   return (
     <Box flexDirection="column">
-      <Box gap={1}>
+      <Box gap={1} flexDirection={compact ? "column" : "row"}>
         <Panel
           title={zh ? "当前异变体" : "CURRENT SPECIMEN"}
           color={ecologyColor}
-          width="48%"
+          width={compact ? undefined : "48%"}
         >
           <Text color={glitch ? "magenta" : ecologyColor}>
             {deriveSpecimenFrame(overview.art, frame, motion, {
@@ -130,22 +131,25 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch }) {
             color={ecologyColor}
           />
           <Text dimColor>
-            {zh ? "污染 / 清醒" : "Pollution / Clarity"}　
+            {zh ? "污染 / 清醒" : "Pollution / Clarity"}{"  "}
             {overview.ecology.pollution} / {overview.ecology.clarity}
           </Text>
         </Panel>
       </Box>
       <Panel
-        title={zh ? "建议下一步" : "RECOMMENDED NEXT"}
+        title={zh ? "今天可做" : "AVAILABLE TODAY"}
         color="yellow"
         marginTop={1}
       >
         {overview.actions.length > 0 ? (
           overview.actions.map((action, index) => (
             <Box key={action.id}>
-              <Text color="yellow">{`${index + 1}. `}</Text>
+              <Text color={index === 0 ? "yellow" : "cyan"}>
+                {index === 0
+                  ? zh ? "主要 · " : "PRIMARY · "
+                  : zh ? "次要 · " : "SECONDARY · "}
+              </Text>
               <Text>{action.label}</Text>
-              <Text dimColor>{`  ${action.command}`}</Text>
             </Box>
           ))
         ) : (
@@ -169,6 +173,7 @@ function HabitatScreen({
   observationIndex,
   glitch,
   replay,
+  compact,
 }) {
   const { habitat } = snapshot;
   const zh = lang === "zh";
@@ -182,8 +187,8 @@ function HabitatScreen({
   return (
     <Box flexDirection="column">
       <Panel title={zh ? "生态舱状态" : "HABITAT STATUS"} color="green">
-        <Box gap={2}>
-          <Box flexDirection="column" width="50%">
+        <Box gap={2} flexDirection={compact ? "column" : "row"}>
+          <Box flexDirection="column" width={compact ? undefined : "50%"}>
             <Text bold>{zh ? "主标本" : "SPECIMEN"}</Text>
             {specimenFrame.map((line, lineIndex) => {
               const selected =
@@ -224,7 +229,9 @@ function HabitatScreen({
                 })}
                 <Text>
                   #{habitat.companion.cultureId} ·{" "}
-                  {habitat.companion.cohabitationDays}d
+                  {zh
+                    ? `${habitat.companion.cohabitationDays} 天`
+                    : `${habitat.companion.cohabitationDays}d`}
                 </Text>
               </>
             ) : (
@@ -270,11 +277,11 @@ function HabitatScreen({
           </Text>
         </Panel>
       ) : null}
-      <Box gap={1} marginTop={1}>
+      <Box gap={1} marginTop={1} flexDirection={compact ? "column" : "row"}>
         <Panel
           title={zh ? "共生关系" : "RELATIONSHIP"}
           color="cyan"
-          width="50%"
+          width={compact ? undefined : "50%"}
         >
           {habitat.relationship ? (
             <>
@@ -288,7 +295,9 @@ function HabitatScreen({
           )}
           <Text dimColor>
             {zh ? "下次生态记录" : "Next ecology record"} ·{" "}
-            {habitat.cadence.daysUntilNext}d
+            {zh
+              ? `${habitat.cadence.daysUntilNext} 天`
+              : `${habitat.cadence.daysUntilNext}d`}
           </Text>
         </Panel>
         <Panel
@@ -309,11 +318,12 @@ function HabitatScreen({
           )}
         </Panel>
       </Box>
+      <CabinetSlots cabinet={habitat.cabinet} lang={lang} showInteractions />
     </Box>
   );
 }
 
-function LaboratoryScreen({ snapshot, lang }) {
+function LaboratoryScreen({ snapshot, lang, selectedProposalIndex, compact }) {
   const { laboratory } = snapshot;
   const zh = lang === "zh";
   return (
@@ -338,18 +348,22 @@ function LaboratoryScreen({ snapshot, lang }) {
           </Text>
         </Box>
       </Panel>
-      <Box gap={1} marginTop={1}>
+      <Box gap={1} marginTop={1} flexDirection={compact ? "column" : "row"}>
         <Panel
           title={`${zh ? "第" : "BATCH"} ${laboratory.batch} ${zh ? "批配方" : "FORMULAS"}`}
           color="red"
-          width="60%"
+          width={compact ? undefined : "60%"}
         >
           {laboratory.proposals.length > 0 ? (
-            laboratory.proposals.map((proposal) => (
+            laboratory.proposals.map((proposal, index) => (
               <Box key={proposal.id} flexDirection="column" marginBottom={1}>
-                <Text bold>
-                  {proposal.slot}. {proposal.type}{" "}
-                  <Text color="yellow">{proposal.rarity.toUpperCase()}</Text>
+                <Text bold={index === selectedProposalIndex} color={index === selectedProposalIndex ? "yellow" : "white"}>
+                  {index === selectedProposalIndex ? "> " : "  "}{proposal.slot}. {proposal.type}{" "}
+                  <Text color="yellow">
+                    {zh
+                      ? ({ common: "常见", uncommon: "罕见", rare: "稀有", epic: "史诗", mythic: "神话" }[proposal.rarity] ?? proposal.rarity)
+                      : proposal.rarity.toUpperCase()}
+                  </Text>
                 </Text>
                 <Text dimColor>
                   {proposal.ecology} / {proposal.pathology} ·{" "}
@@ -364,6 +378,11 @@ function LaboratoryScreen({ snapshot, lang }) {
                 : "No material. The lab is culturing air."}
             </Text>
           )}
+          {laboratory.proposals.length > 0 ? (
+            <Text dimColor>
+              {zh ? "↑↓ / Tab 选择配方 · Enter 预览" : "↑↓ / Tab selects formula · Enter previews"}
+            </Text>
+          ) : null}
         </Panel>
         <Panel
           title={zh ? "最近封存" : "RECENT CULTURES"}
@@ -385,9 +404,125 @@ function LaboratoryScreen({ snapshot, lang }) {
   );
 }
 
-function CodexScreen({ snapshot, lang }) {
+const RARITY_COLORS = {
+  common: "white",
+  uncommon: "cyan",
+  rare: "magenta",
+  epic: "yellow",
+  mythic: "red",
+};
+
+function CabinetSlots({ cabinet, lang, showInteractions = false }) {
+  const zh = lang === "zh";
+  return (
+    <Panel title={zh ? "后果陈列柜" : "CONSEQUENCE CABINET"} color="magenta" marginTop={1}>
+      <Box gap={2}>
+        {cabinet.slots.map((entry, index) => (
+          <Text key={entry?.key ?? `empty-${index}`} color={entry ? RARITY_COLORS[entry.rarity] : "gray"}>
+            {index + 1}. {entry?.label ?? (zh ? "空置" : "VACANT")}
+          </Text>
+        ))}
+      </Box>
+      {showInteractions ? (
+        <>
+          <Text dimColor>
+            {cabinet.interactions.observe
+              ? `${zh ? "今日观察" : "OBSERVATION"} · ${cabinet.interactions.observe.text}`
+              : zh ? "o 今日观察 · 尚未使用" : "o observation · available"}
+          </Text>
+          <Text dimColor>
+            {cabinet.interactions.contact
+              ? `${zh ? "今日接触" : "CONTACT"} · ${cabinet.interactions.contact.text}`
+              : zh ? "c 今日接触 · 尚未使用" : "c contact · available"}
+          </Text>
+        </>
+      ) : null}
+    </Panel>
+  );
+}
+
+function CodexScreen({ snapshot, lang, mode, categoryIndex, entryIndex, compact }) {
   const { codex } = snapshot;
   const zh = lang === "zh";
+  const category = codex.categories[categoryIndex] ?? codex.categories[0];
+  const entry = category?.entries[entryIndex] ?? null;
+  if (mode === "detail" && entry) {
+    return (
+      <Box flexDirection="column">
+        <Panel title={zh ? "条目档案" : "COLLECTION RECORD"} color={RARITY_COLORS[entry.rarity]}>
+          <Text bold color={RARITY_COLORS[entry.rarity]}>
+            {entry.discovered ? "◆" : "▒"} {entry.label}
+          </Text>
+          <Text>{entry.detail}</Text>
+          <Text color={RARITY_COLORS[entry.rarity]}>
+            {zh ? "稀有性" : "RARITY"}　{entry.rarityLabel}
+          </Text>
+          <Text>
+            {zh ? "稳定编号" : "STABLE ID"}　{entry.discovered ? entry.key : `${entry.type}:locked`}
+          </Text>
+          <Text>
+            {zh ? "发现于" : "DISCOVERED"}　{entry.discoveredAt ?? (zh ? "尚未发现" : "LOCKED")}
+          </Text>
+          <Text dimColor>
+            {entry.discovered
+              ? zh
+                ? "d 陈列 · Esc 返回条目"
+                : "d display · Esc returns to entries"
+              : zh
+                ? "锁定条目不会泄露名称或解锁条件 · Esc 返回"
+                : "Locked records reveal neither names nor hidden conditions · Esc returns"}
+          </Text>
+        </Panel>
+        <CabinetSlots cabinet={codex.cabinet} lang={lang} />
+      </Box>
+    );
+  }
+  if (mode === "entries") {
+    return (
+      <Box flexDirection="column">
+        <Panel title={`${zh ? "收藏条目" : "COLLECTION ENTRIES"} · ${category.label}`} color="cyan">
+          {category.entries.length > 0 ? (
+            category.entries.map((candidate, index) => (
+              <Box key={candidate.key} justifyContent="space-between">
+                <Text
+                  bold={index === entryIndex}
+                  color={index === entryIndex ? "yellow" : candidate.discovered ? RARITY_COLORS[candidate.rarity] : "gray"}
+                >
+                  {index === entryIndex ? "> " : "  "}
+                  {candidate.discovered ? "◆" : "▒"} {candidate.label}
+                </Text>
+                <Text color={candidate.discovered ? RARITY_COLORS[candidate.rarity] : "gray"}>
+                  {candidate.discovered ? candidate.rarityLabel : zh ? "未发现" : "LOCKED"}
+                </Text>
+              </Box>
+            ))
+          ) : (
+            <Text dimColor>{zh ? "这个分类还没有个人收藏。" : "No personal records in this category yet."}</Text>
+          )}
+          <Text dimColor>
+            {zh ? "↑↓ / Tab 选择 · Enter 查看 · Esc 返回分类" : "↑↓ / Tab select · Enter opens · Esc returns to categories"}
+          </Text>
+        </Panel>
+        <CabinetSlots cabinet={codex.cabinet} lang={lang} />
+      </Box>
+    );
+  }
+  const fixed = codex.categories.filter(({ group }) => group === "fixed");
+  const dynamic = codex.categories.filter(({ group }) => group === "dynamic");
+  const categoryRow = (item) => {
+    const index = codex.categories.findIndex(({ id }) => id === item.id);
+    const selected = index === categoryIndex;
+    return (
+      <Box key={item.id} justifyContent="space-between">
+        <Text bold={selected} color={selected ? "yellow" : "white"}>
+          {selected ? "> " : "  "}{item.label}
+        </Text>
+        <Text color="cyan">
+          {item.group === "fixed" ? `${item.discovered} / ${item.total}` : item.discovered}
+        </Text>
+      </Box>
+    );
+  };
   return (
     <Box flexDirection="column">
       <Panel title={zh ? "病理图鉴" : "PATHOLOGY CODEX"} color="yellow">
@@ -399,32 +534,20 @@ function CodexScreen({ snapshot, lang }) {
           <ProgressBar value={codex.fixed.percent} color="yellow" width={24} />
         </Box>
       </Panel>
-      <Box gap={1} marginTop={1}>
+      <Box gap={1} marginTop={1} flexDirection={compact ? "column" : "row"}>
         <Panel
-          title={zh ? "固定分类" : "FIXED COLLECTIONS"}
+          title={zh ? "基础图鉴" : "BASE CODEX"}
           color="cyan"
-          width="50%"
+          width={compact ? undefined : "50%"}
         >
-          {codex.categories.map((category) => (
-            <Box key={category.id} justifyContent="space-between">
-              <Text>{category.label}</Text>
-              <Text color="cyan">
-                {category.discovered} / {category.total}
-              </Text>
-            </Box>
-          ))}
+          {fixed.map(categoryRow)}
         </Panel>
         <Panel
-          title={zh ? "动态档案" : "DYNAMIC FILES"}
+          title={zh ? "个人收藏" : "PERSONAL COLLECTION"}
           color="green"
           flexGrow={1}
         >
-          {codex.dynamic.map((category) => (
-            <Box key={category.id} justifyContent="space-between">
-              <Text>{category.label}</Text>
-              <Text color="green">{category.discovered}</Text>
-            </Box>
-          ))}
+          {dynamic.map(categoryRow)}
         </Panel>
       </Box>
       <Panel
@@ -444,20 +567,47 @@ function CodexScreen({ snapshot, lang }) {
           </Text>
         )}
       </Panel>
+      <Text dimColor>
+        {zh ? "↑↓ 选择分类 · Enter 浏览条目" : "↑↓ selects a category · Enter browses entries"}
+      </Text>
+      <CabinetSlots cabinet={codex.cabinet} lang={lang} />
     </Box>
   );
 }
 
-function HelpOverlay({ lang }) {
+function HelpOverlay({ lang, activeId, codexMode }) {
   const zh = lang === "zh";
+  const contextual = {
+    overview: [
+      ["Enter", zh ? "处理当前主要行动" : "open the primary action"],
+    ],
+    habitat: [
+      ["Enter", zh ? "进入只读器官观察" : "open read-only anatomy inspection"],
+      ["o / c", zh ? "今日观察 / 今日接触" : "today's observation / contact"],
+      ["r", zh ? "回放最近生态事件" : "replay the latest habitat event"],
+    ],
+    laboratory: [
+      ["↑↓ / Tab", zh ? "选择配方" : "select a formula"],
+      ["Enter", zh ? "预览所选实验" : "preview the selected experiment"],
+    ],
+    codex: [
+      ["↑↓ / Tab", zh ? "选择分类或条目" : "select category or entry"],
+      ["Enter", zh ? "进入下一级" : "open the next level"],
+      ["d", zh ? "陈列已发现条目" : "display a discovered entry"],
+      ["Esc", zh ? `${codexMode === "categories" ? "退出" : "返回上一级"}` : codexMode === "categories" ? "exit" : "go up one level"],
+    ],
+  }[activeId] ?? [];
   return (
     <Panel title={zh ? "控制台快捷键" : "CONSOLE SHORTCUTS"} color="yellow">
       <Text>1–4　{zh ? "切换区域" : "switch area"}</Text>
       <Text>← →　{zh ? "切换相邻区域" : "switch adjacent area"}</Text>
+      <Text>Tab　 {zh ? "切换区域或当前焦点" : "switch area or current focus"}</Text>
       <Text>m　　{zh ? "切换动态档位" : "cycle motion level"}</Text>
       <Text>a　　{zh ? "打开收容协议行动中心" : "open containment actions"}</Text>
-      <Text>Enter　{zh ? "在生态舱进入器官观察" : "inspect anatomy in Habitat"}</Text>
-      <Text>r　　{zh ? "在生态舱回放最近事件" : "replay the latest Habitat event"}</Text>
+      <Text bold color="cyan">{zh ? "当前页面" : "CURRENT PAGE"}</Text>
+      {contextual.map(([key, description]) => (
+        <Text key={`${key}-${description}`}>{key}　{description}</Text>
+      ))}
       <Text>?　　{zh ? "关闭本说明" : "close this help"}</Text>
       <Text>
         esc　{zh ? "返回上层；再次按下退出" : "go back; press again to exit"}
@@ -472,8 +622,12 @@ function TuiApp({
   lang = "zh",
   initialMotion = "low",
   actionController = null,
+  terminalColumns = undefined,
 }) {
   const { exit } = useApp();
+  const { stdout } = useStdout();
+  const columns = terminalColumns ?? stdout?.columns ?? 80;
+  const compact = columns <= 80;
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
@@ -487,6 +641,11 @@ function TuiApp({
   const [actionChoiceIndex, setActionChoiceIndex] = useState(0);
   const [actionResult, setActionResult] = useState(null);
   const [actionError, setActionError] = useState(null);
+  const [actionOrigin, setActionOrigin] = useState("menu");
+  const [codexMode, setCodexMode] = useState("categories");
+  const [codexCategoryIndex, setCodexCategoryIndex] = useState(0);
+  const [codexEntryIndex, setCodexEntryIndex] = useState(0);
+  const [laboratoryProposalIndex, setLaboratoryProposalIndex] = useState(0);
 
   const activeId = SCREEN_IDS[activeIndex];
   const observationTargets = deriveObservationTargets(snapshot, lang);
@@ -499,19 +658,21 @@ function TuiApp({
         lang,
       );
   const actions = snapshot.actions ?? [];
+  const menuActions = actions.filter(({ available }) => available);
 
   const openActionMenu = () => {
     const primaryIndex = snapshot.primaryAction
-      ? actions.findIndex(({ id }) => id === snapshot.primaryAction.id)
-      : actions.findIndex(({ available }) => available);
+      ? menuActions.findIndex(({ id }) => id === snapshot.primaryAction.id)
+      : 0;
     setActionIndex(Math.max(0, primaryIndex));
     setActionPreview(null);
     setActionResult(null);
     setActionError(null);
+    setActionOrigin("menu");
     setActionMode("menu");
   };
 
-  const openActionPreview = async (action) => {
+  const openActionPreview = async (action, target = undefined, origin = "screen") => {
     if (!action?.available) return;
     if (!actionController?.preview) {
       setActionError(
@@ -521,15 +682,19 @@ function TuiApp({
       return;
     }
     setActionMode("loading");
+    setActionOrigin(origin);
     try {
-      const preview = await actionController.preview(action.id);
+      const preview = await actionController.preview(action.id, target);
       if (!preview.available) {
         setActionError(preview.reasonLabel ?? preview.reason);
         setActionMode("error");
         return;
       }
       setActionPreview(preview);
-      setActionChoiceIndex(0);
+      const preferredChoice = target
+        ? preview.choices.findIndex(({ id }) => id === target)
+        : 0;
+      setActionChoiceIndex(Math.max(0, preferredChoice));
       setActionMode("preview");
     } catch (error) {
       setActionError(error?.message ?? String(error));
@@ -582,7 +747,7 @@ function TuiApp({
         (actionMode === "preview" && input === "n")
       ) {
         if (["preview", "result", "error"].includes(actionMode)) {
-          setActionMode("menu");
+          setActionMode(actionOrigin === "menu" ? "menu" : null);
         } else {
           setActionMode(null);
         }
@@ -594,15 +759,21 @@ function TuiApp({
           return;
         }
         if (key.upArrow) {
-          setActionIndex((value) => (value + actions.length - 1) % actions.length);
+          if (menuActions.length > 0) {
+            setActionIndex(
+              (value) => (value + menuActions.length - 1) % menuActions.length,
+            );
+          }
           return;
         }
         if (key.downArrow || key.tab) {
-          setActionIndex((value) => (value + 1) % actions.length);
+          if (menuActions.length > 0) {
+            setActionIndex((value) => (value + 1) % menuActions.length);
+          }
           return;
         }
         if (key.return) {
-          void openActionPreview(actions[actionIndex]);
+          void openActionPreview(menuActions[actionIndex], undefined, "menu");
           return;
         }
       }
@@ -649,6 +820,11 @@ function TuiApp({
         setReplayStartFrame(null);
         return;
       }
+      if (activeId === "codex" && codexMode !== "categories") {
+        if (codexMode === "detail") setCodexMode("entries");
+        else setCodexMode("categories");
+        return;
+      }
       exit();
       return;
     }
@@ -684,6 +860,52 @@ function TuiApp({
       openActionMenu();
       return;
     }
+    if (activeId === "codex") {
+      const categories = snapshot.codex.categories;
+      const category = categories[codexCategoryIndex];
+      const entries = category?.entries ?? [];
+      if (codexMode === "categories") {
+        if (key.upArrow) {
+          setCodexCategoryIndex(
+            (value) => (value + categories.length - 1) % categories.length,
+          );
+          setCodexEntryIndex(0);
+          return;
+        }
+        if (key.downArrow) {
+          setCodexCategoryIndex((value) => (value + 1) % categories.length);
+          setCodexEntryIndex(0);
+          return;
+        }
+        if (key.return) {
+          setCodexEntryIndex(0);
+          setCodexMode("entries");
+          return;
+        }
+      } else if (codexMode === "entries") {
+        if (entries.length > 0 && key.upArrow) {
+          setCodexEntryIndex(
+            (value) => (value + entries.length - 1) % entries.length,
+          );
+          return;
+        }
+        if (entries.length > 0 && (key.downArrow || key.tab)) {
+          setCodexEntryIndex((value) => (value + 1) % entries.length);
+          return;
+        }
+        if (entries.length > 0 && key.return) {
+          setCodexMode("detail");
+          return;
+        }
+      } else if (codexMode === "detail" && input === "d") {
+        const entry = entries[codexEntryIndex];
+        const displayAction = actions.find(({ id }) => id === "curate_display");
+        if (entry?.discovered && displayAction?.available) {
+          void openActionPreview(displayAction, entry.key, "screen");
+        }
+        return;
+      }
+    }
     if (
       activeId === "overview" &&
       key.return &&
@@ -697,9 +919,29 @@ function TuiApp({
         actions.find(({ id, available }) => id === "incubate" && available) ??
         actions.find(({ id, available }) => id === "bond" && available);
       if (laboratoryAction) {
-        void openActionPreview(laboratoryAction);
+        const target = laboratoryAction.id === "incubate"
+          ? String(snapshot.laboratory.proposals[laboratoryProposalIndex]?.slot ?? "1")
+          : undefined;
+        void openActionPreview(laboratoryAction, target, "screen");
         return;
       }
+    }
+    if (
+      activeId === "laboratory" &&
+      snapshot.laboratory.proposals.length > 0 &&
+      (key.upArrow || key.downArrow || key.tab)
+    ) {
+      const count = snapshot.laboratory.proposals.length;
+      setLaboratoryProposalIndex((value) =>
+        key.upArrow ? (value + count - 1) % count : (value + 1) % count,
+      );
+      return;
+    }
+    if (activeId === "habitat" && ["o", "c"].includes(input)) {
+      const actionId = input === "o" ? "observe_specimen" : "contact_specimen";
+      const action = actions.find(({ id }) => id === actionId);
+      if (action?.available) void openActionPreview(action, undefined, "screen");
+      return;
     }
     if (
       activeId === "habitat" &&
@@ -744,6 +986,7 @@ function TuiApp({
         frame={frame}
         motion={motion}
         glitch={glitch}
+        compact={compact}
       />
     ),
     habitat: (
@@ -756,10 +999,27 @@ function TuiApp({
         observationIndex={observationIndex}
         glitch={glitch}
         replay={replay}
+        compact={compact}
       />
     ),
-    laboratory: <LaboratoryScreen snapshot={snapshot} lang={lang} />,
-    codex: <CodexScreen snapshot={snapshot} lang={lang} />,
+    laboratory: (
+      <LaboratoryScreen
+        snapshot={snapshot}
+        lang={lang}
+        selectedProposalIndex={laboratoryProposalIndex}
+        compact={compact}
+      />
+    ),
+    codex: (
+      <CodexScreen
+        snapshot={snapshot}
+        lang={lang}
+        mode={codexMode}
+        categoryIndex={codexCategoryIndex}
+        entryIndex={codexEntryIndex}
+        compact={compact}
+      />
+    ),
   }[activeId];
   const zh = lang === "zh";
   const motionLabel = {
@@ -767,9 +1027,32 @@ function TuiApp({
     low: zh ? "低频" : "LOW",
     full: zh ? "完整" : "FULL",
   }[motion];
+  const contextualFooter = activeId === "habitat"
+    ? ` · Enter ${zh ? "观察" : "inspect"}${
+        snapshot.habitat.events.length > 0
+          ? ` · r ${zh ? "回放" : "replay"}`
+          : ""
+      }`
+    : activeId === "overview" && snapshot.primaryAction
+      ? ` · Enter ${zh ? "处理" : "act"}`
+      : activeId === "laboratory" &&
+          actions.some(
+            ({ id, available }) =>
+              available && ["incubate", "bond"].includes(id),
+          )
+        ? ` · Enter ${zh ? "执行实验" : "run protocol"}`
+        : "";
+  const navigationFooter = compact
+    ? `1–4 ${zh ? "区域" : "areas"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${motionLabel}`
+    : `1–4 ${zh ? "区域" : "areas"} · ← → ${zh ? "切换" : "switch"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${zh ? "动态" : "motion"} ${motionLabel}`;
   const actionOverlay = {
     menu: (
-      <ActionMenu actions={actions} selectedIndex={actionIndex} lang={lang} />
+      <ActionMenu
+        actions={menuActions}
+        unavailableCount={actions.length - menuActions.length}
+        selectedIndex={actionIndex}
+        lang={lang}
+      />
     ),
     preview: actionPreview ? (
       <ActionPreview
@@ -784,33 +1067,22 @@ function TuiApp({
   }[actionMode];
 
   return (
-    <Box flexDirection="column" paddingX={1}>
+    <Box flexDirection="column" paddingX={1} width={columns}>
       <Header snapshot={snapshot} lang={lang} />
-      <Navigation navigation={snapshot.navigation} activeId={activeId} />
-      {showHelp ? <HelpOverlay lang={lang} /> : actionOverlay ?? screen}
+      <Navigation
+        navigation={snapshot.navigation}
+        activeId={showHelp || actionMode !== null ? null : activeId}
+      />
+      {showHelp ? (
+        <HelpOverlay lang={lang} activeId={activeId} codexMode={codexMode} />
+      ) : actionOverlay ?? screen}
       <Box marginTop={1} justifyContent="space-between">
         <Text dimColor>
           {actionMode !== null
             ? zh
               ? "收容协议 · 所有写入都需要明确确认"
               : "Containment protocol · every write requires confirmation"
-            : `1–4 ${zh ? "区域" : "areas"} · ← → ${zh ? "切换" : "switch"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${zh ? "动态" : "motion"} ${motionLabel}${
-                activeId === "habitat"
-                  ? ` · Enter ${zh ? "观察" : "inspect"}${
-                      snapshot.habitat.events.length > 0
-                        ? ` · r ${zh ? "回放" : "replay"}`
-                        : ""
-                    }`
-                  : activeId === "overview" && snapshot.primaryAction
-                    ? ` · Enter ${zh ? "处理" : "act"}`
-                    : activeId === "laboratory" &&
-                        actions.some(
-                          ({ id, available }) =>
-                            available && ["incubate", "bond"].includes(id),
-                        )
-                      ? ` · Enter ${zh ? "执行实验" : "run protocol"}`
-                    : ""
-              }`}
+            : `${navigationFooter}${contextualFooter}`}
         </Text>
         <Text dimColor>
           {actionMode !== null

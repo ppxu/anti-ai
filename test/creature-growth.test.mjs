@@ -1037,7 +1037,7 @@ test("creature rolls legacy ability points into 255-point malignancy ranks witho
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 11);
+  assert.equal(saved.schemaVersion, 12);
   assert.equal(saved.days["2026-07-22"].abilityGains.appetite, 267);
 });
 

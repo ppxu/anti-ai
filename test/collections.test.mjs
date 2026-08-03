@@ -360,6 +360,7 @@ test("codex --json derives a stable private collection from creature history", (
   assert.deepEqual(JSON.parse(second.stdout), report);
   assert.equal(report.date, "2026-07-23");
   assert.match(report.specimenId, /^[0-9a-f]{8}$/);
+  assert.deepEqual(report.cabinet, { featured: [] });
   assert.deepEqual(report.summary, {
     fixed: { discovered: 1, total: 68, percent: 1 },
     forms: { discovered: 1, total: 16 },

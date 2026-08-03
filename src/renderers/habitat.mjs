@@ -89,6 +89,27 @@ function joinArt(left, right, width) {
   );
 }
 
+function cabinetEntryLabel(key, lang) {
+  const separator = String(key).indexOf(":");
+  const type = separator === -1 ? "collection" : String(key).slice(0, separator);
+  const id = separator === -1 ? String(key) : String(key).slice(separator + 1);
+  const labels = {
+    form: ["形态", "FORM"],
+    achievement: ["徽章", "BADGE"],
+    chromaticAbility: ["异色", "CHROMATIC"],
+    scar: ["伤痕", "SCAR"],
+    habitatPhenomenon: ["现象", "PHENOMENON"],
+    specimen: ["标本", "SPECIMEN"],
+    foreignSpecimen: ["外来标本", "FOREIGN SPECIMEN"],
+    caseSlice: ["病例切片", "CASE SLICE"],
+    incidentReport: ["事故报告", "INCIDENT REPORT"],
+    culture: ["培养物", "CULTURE"],
+    companion: ["伴生", "COMPANION"],
+    fossil: ["化石", "FOSSIL"],
+  };
+  return `${localized(lang, ...(labels[type] ?? ["收藏", "COLLECTION"]))} #${id}`;
+}
+
 function renderHabitat(habitat, labels, lang = "zh", options = {}) {
   const configuredWidth =
     Number(process.env.COLUMNS) || process.stdout.columns || 80;
@@ -157,6 +178,12 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
             `${copy.glyph} ${copy.name}`,
           );
         });
+  const cabinetLines = Array.from({ length: 3 }, (_, index) => {
+    const key = habitat.cabinet?.featured?.[index];
+    return key
+      ? `${index + 1}. ${cabinetEntryLabel(key, lang)}`
+      : `${index + 1}. ${localized(lang, "空置", "VACANT")}`;
+  });
   const latestEvent = habitat.events.at(-1);
   const latestCopy = latestEvent
     ? habitatEventCopy(latestEvent.id, lang)
@@ -226,6 +253,9 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
     ...rows(artHeaderLines),
     ...rows([""]),
     ...rows(artLines),
+    middle,
+    row(localized(lang, "后果陈列柜", "CONSEQUENCE CABINET")),
+    ...rows(cabinetLines),
     middle,
     row(localized(lang, "生态痕迹", "ECOLOGICAL TRACES")),
     ...rows(decorationLines),

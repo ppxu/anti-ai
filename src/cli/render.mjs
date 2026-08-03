@@ -359,6 +359,7 @@ function renderCodex(codex, lang) {
     `  ${localized(lang, "标本编号", "SPECIMEN ID")}  ${codex.specimenId}`,
     `  ${localized(lang, "理论物种容量", "THEORETICAL SPECIES CAPACITY")}  ${formatTokens(codex.capacity.finalAsciiForms)} · ${localized(lang, "去重后的最终 ASCII 形象", "DEDUPLICATED FINAL ASCII FORMS")}`,
     `  ${localized(lang, "固定收藏", "FIXED COLLECTION")}  ${codex.summary.fixed.discovered} / ${codex.summary.fixed.total} · ${codex.summary.fixed.percent}%`,
+    `  ${localized(lang, "后果陈列柜", "CONSEQUENCE CABINET")}  ${codex.cabinet.featured.length > 0 ? codex.cabinet.featured.join(" · ") : localized(lang, "空置", "VACANT")}`,
     "",
     ...fixedSection(
       localized(lang, "形态家族", "FORM FAMILIES"),

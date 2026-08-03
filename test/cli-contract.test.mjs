@@ -353,12 +353,12 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /schema v11.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*收容事故.*培养物.*伴生绑定\/离散印记\/异常 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
+    /schema v12.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*收容事故.*培养物.*伴生绑定\/离散印记\/异常 ID.*陈列条目 ID.*每日轻互动 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
 
-test("explain discloses ecology, incidents, companion guardrails, and schema v11", () => {
+test("explain discloses ecology, incidents, companion guardrails, and schema v12", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
@@ -398,7 +398,7 @@ test("explain discloses ecology, incidents, companion guardrails, and schema v11
   );
   assert.match(
     result.stdout,
-    /schema v11.*schema v1-v10.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+    /schema v12.*schema v1-v11.*不保存.*精确 Token.*模型名.*路径.*对话/s,
   );
 });
 
@@ -441,7 +441,7 @@ test("doctor, explain, and help support English output", () => {
   );
   assert.match(
     explain.stdout,
-    /schema v11.*schema v1-v10 migrate sequentially.*local backup/s,
+    /schema v12.*schema v1-v11 migrate sequentially.*local backup/s,
   );
   assert.doesNotMatch(explain.stdout, /模型统计|个人基线与判词/);
 
@@ -471,6 +471,48 @@ test("--help documents public commands and routes command-specific options", () 
   assert.match(result.stdout, /--lang <zh\|en>/);
   assert.match(result.stdout, /anti-ai help <command>/);
   assert.doesNotMatch(result.stdout, /--source|--json|--card/);
+});
+
+test("a non-interactive no-argument launch prints grouped help as a successful entry point", () => {
+  const result = runCli([]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, "");
+  assert.match(result.stdout, /开始使用/u);
+  assert.match(result.stdout, /用量账单/u);
+  assert.match(result.stdout, /异变体与收藏/u);
+  assert.match(result.stdout, /诊断与说明/u);
+  assert.ok(result.stdout.indexOf("anti-ai tui") < result.stdout.indexOf("anti-ai today"));
+  assert.match(result.stdout, /anti-ai help <command>/);
+});
+
+test("an interactive no-argument launch routes directly to the containment console", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-no-arg-tui-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  const stateDirectory = path.join(home, ".anti-ai");
+  mkdirSync(stateDirectory, { recursive: true });
+  writeFileSync(path.join(stateDirectory, "creature.json"), "{broken");
+  const script = `
+    import { pathToFileURL } from "node:url";
+    Object.defineProperty(process.stdin, "isTTY", { value: true });
+    Object.defineProperty(process.stdout, "isTTY", { value: true });
+    const { main } = await import(pathToFileURL(${JSON.stringify(path.join(projectDir, "src", "cli.mjs"))}).href);
+    await main([]);
+  `;
+  const result = spawnSync(
+    process.execPath,
+    ["--input-type=module", "--eval", script],
+    {
+      encoding: "utf8",
+      env: { ...process.env, HOME: home, NO_COLOR: "1" },
+    },
+  );
+
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /异变体档案无法读取/u);
+  assert.doesNotMatch(result.stderr, /开始使用|Usage:/u);
 });
 
 test("command help documents only the selected command contract", () => {
@@ -781,7 +823,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 2.5.0\n");
+  assert.equal(result.stdout, "anti-ai 2.6.0\n");
   assert.equal(result.stderr, "");
 });
 

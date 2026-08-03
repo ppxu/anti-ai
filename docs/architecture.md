@@ -18,7 +18,7 @@ Source adapters are isolated. A broken source does not hide healthy sources when
 
 - Human-readable full-source `today`, `week`, and `month`, plus `creature`, `encounter`, and state-changing Laboratory actions, may settle local history.
 - Source-filtered reports and `today --json` are accounting-only.
-- TUI browsing, inspection, replay, and cancellation are read-only. Daily-settlement preview may scan supported usage metadata without writing; only an explicitly confirmed action may update state through the shared action service.
+- TUI browsing, inspection, replay, and cancellation are read-only. Daily-settlement preview may scan supported usage metadata without writing. Consequence Cabinet curation plus the once-per-day Observation and Contact actions write only stable collection/interaction IDs after explicit confirmation; all writes use the shared action service.
 - `codex`, `creature habitat`, every `share` card, `doctor`, `explain`, and Help remain read-only snapshots.
 - `creature reset` is the only command that deliberately deletes the state file and its migration backups.
 
@@ -32,7 +32,7 @@ Add a command in `src/commands/` when it owns substantial orchestration. Keep pa
 
 Presentation-neutral queries and action orchestration belong in `src/application/`. `action-catalog.mjs` derives availability and disabled reasons, `actions.mjs` owns preview/execute sessions, and `settlement.mjs` contains the shared settlement pipeline. CLI commands and the TUI call these services instead of duplicating domain rules; the TUI must not call command handlers or execute arbitrary shell commands. Domain modules remain the only owners of mutation rules. `src/incidents.mjs` owns deterministic incident eligibility, contextual selection, sealed responses, delayed aftermaths, and two-chapter chains; adapters only present or invoke those rules.
 
-The TUI consumes structured snapshots rather than terminal strings. `src/application/tui-motion.mjs` owns deterministic ASCII frames, anatomy observations, rare-glitch eligibility, and event-replay scenes; it has no timer or persistence access. `src/tui/` owns ephemeral frame counters, keyboard state, and confirmation state. Motion is capped at 4 FPS, pauses outside living screens, and can be disabled without changing the snapshot.
+The TUI consumes structured snapshots rather than terminal strings. `src/consequence-cabinet.mjs` owns the three-slot display references and deterministic daily narrative reactions. The schema v12 migration adds an empty Cabinet and never invents past displays or interactions. `src/application/tui-motion.mjs` owns deterministic ASCII frames, anatomy observations, rare-glitch eligibility, and event-replay scenes; it has no timer or persistence access. `src/tui/` owns ephemeral frame counters, keyboard focus, compact layout, and confirmation state. Motion is capped at 4 FPS, pauses outside living screens, and can be disabled without changing the snapshot.
 
 Ink and React stay in `devDependencies`; `scripts/build-tui.mjs` bundles them into `dist/tui.mjs`, so normal commands do not load the framework and installed packages keep zero required runtime dependencies. Edit `src/tui/`, never the generated bundle.
 

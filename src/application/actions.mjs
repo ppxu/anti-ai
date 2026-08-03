@@ -6,8 +6,16 @@ import {
 import {
   bondLaboratoryCompanion,
   companionLabel,
+  laboratoryCompanion,
 } from "../companion.mjs";
 import {
+  cabinetInteractionCopy,
+  codexCollectionEntries,
+  featureCabinetEntry,
+  recordCabinetInteraction,
+} from "../consequence-cabinet.mjs";
+import {
+  creatureCodex,
   creatureEvolutionSummary,
   creatureLabel,
   deriveCreature,
@@ -261,6 +269,117 @@ function bondPreview(state, date, lang, action) {
   };
 }
 
+function availableInteractionTargets(state, date, kind) {
+  const hasCompanion = laboratoryCompanion(state, date).companion !== null;
+  if (kind === "observe") {
+    return [
+      "specimen",
+      ...(hasCompanion ? ["companion"] : []),
+      ...((state.cabinet?.featured?.length ?? 0) > 0 ? ["cabinet"] : []),
+    ];
+  }
+  return ["glass", ...(hasCompanion ? ["companion"] : []), "light"];
+}
+
+function interactionTargetCopy(targetId, lang) {
+  const copy = {
+    specimen: ["主标本", "Main specimen"],
+    companion: ["伴生异物", "Symbiotic companion"],
+    cabinet: ["后果陈列柜", "Consequence cabinet"],
+    glass: ["轻敲舱壁", "Tap the habitat glass"],
+    light: ["调整舱内照明", "Adjust habitat lighting"],
+  }[targetId];
+  return localized(lang, ...(copy ?? [targetId, targetId]));
+}
+
+function interactionPreview(state, date, lang, action, kind) {
+  const targets = availableInteractionTargets(state, date, kind);
+  const observe = kind === "observe";
+  return {
+    ...action,
+    title: localized(
+      lang,
+      observe ? "记录今日观察" : "进行克制接触",
+      observe ? "RECORD TODAY'S OBSERVATION" : "MAKE RESTRAINED CONTACT",
+    ),
+    summary: localized(
+      lang,
+      observe
+        ? "选择一个对象，封存一条今天固定不变的观察记录。"
+        : "选择一种接触方式，封存今天唯一一次接触反馈。",
+      observe
+        ? "Choose a target and seal one deterministic observation for today."
+        : "Choose a contact method and seal today's only contact response.",
+    ),
+    warning: localized(
+      lang,
+      "只改变当天姿态与叙事；不增加能力、阅历、稀有率或 Token 收益。",
+      "This changes only today's pose and narrative; no abilities, experience, rarity, or Token rewards are added.",
+    ),
+    irreversible: false,
+    choices: targets.map((targetId) => ({
+      id: targetId,
+      label: interactionTargetCopy(targetId, lang),
+      detail: localized(
+        lang,
+        "结果由本地种子与日期确定，重复查看不能重抽。",
+        "The local seed and date fix the result; reopening cannot reroll it.",
+      ),
+    })),
+    impact: {
+      date,
+      dailyLimit: localized(lang, "今日 1 次", "1 today"),
+      numericRewards: localized(lang, "无", "NONE"),
+    },
+  };
+}
+
+function collectionChoiceLabel(entry, lang) {
+  if (entry.type === "form") return creatureLabel("ecologyForms", entry.id, lang);
+  if (entry.type === "achievement") return creatureLabel("achievements", entry.id, lang);
+  if (entry.type === "chromaticAbility") return creatureLabel("rareAbilities", entry.id, lang);
+  if (entry.type === "scar") return creatureLabel("scars", entry.id, lang);
+  return localized(
+    lang,
+    `${entry.sectionId} #${entry.id}`,
+    `${entry.sectionId.toUpperCase()} #${entry.id}`,
+  );
+}
+
+function displayPreview(state, date, lang, action, target) {
+  const codex = creatureCodex(state, date);
+  const discovered = codexCollectionEntries(codex).filter(
+    (entry) => entry.discovered,
+  );
+  const selected = target
+    ? discovered.filter((entry) => entry.key === target)
+    : discovered.slice(-8).reverse();
+  return {
+    ...action,
+    title: localized(lang, "调整后果陈列柜", "CURATE CONSEQUENCE CABINET"),
+    summary: localized(
+      lang,
+      "把一项已发现收藏放进生态舱展示位；最近选择排在最前。",
+      "Place one discovered collection in the habitat display; the latest choice comes first.",
+    ),
+    warning: localized(
+      lang,
+      "陈列只改变控制台、生态舱与分享展示，不改变数值、概率或成长路线。",
+      "Display changes only console, habitat, and sharing presentation—not stats, probability, or growth routes.",
+    ),
+    irreversible: false,
+    choices: selected.map((entry) => ({
+      id: entry.key,
+      label: collectionChoiceLabel(entry, lang),
+      detail: `${entry.sectionId} · ${entry.discoveredAt ?? date}`,
+    })),
+    impact: {
+      displaySlots: 3,
+      numericRewards: localized(lang, "无", "NONE"),
+    },
+  };
+}
+
 async function previewContainmentAction(actionId, options = {}, session = {}) {
   const { date, timezone } = actionDate(options);
   const lang = options.lang ?? "zh";
@@ -285,6 +404,15 @@ async function previewContainmentAction(actionId, options = {}, session = {}) {
   }
   if (actionId === "incubate") {
     return incubationPreview(context.laboratory, lang, action);
+  }
+  if (actionId === "observe_specimen") {
+    return interactionPreview(state, date, lang, action, "observe");
+  }
+  if (actionId === "contact_specimen") {
+    return interactionPreview(state, date, lang, action, "contact");
+  }
+  if (actionId === "curate_display") {
+    return displayPreview(state, date, lang, action, options.target);
   }
   return bondPreview(state, date, lang, action);
 }
@@ -322,6 +450,27 @@ function applyContainmentAction(state, date, actionId, choice) {
   }
   if (actionId === "bond") {
     return bondLaboratoryCompanion(state, date, choice);
+  }
+  if (actionId === "curate_display") {
+    return featureCabinetEntry(state, creatureCodex(state, date), choice);
+  }
+  if (actionId === "observe_specimen") {
+    return recordCabinetInteraction(
+      state,
+      date,
+      "observe",
+      choice,
+      availableInteractionTargets(state, date, "observe"),
+    );
+  }
+  if (actionId === "contact_specimen") {
+    return recordCabinetInteraction(
+      state,
+      date,
+      "contact",
+      choice,
+      availableInteractionTargets(state, date, "contact"),
+    );
   }
   return { error: "unknown_action" };
 }
@@ -429,6 +578,34 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
       "The incubation accident is shelved. The lab has documented surprise as procedure.",
     ]);
   }
+  if (actionId === "curate_display") {
+    const selected = applyContainmentAction(
+      state,
+      date,
+      actionId,
+      options.choice,
+    );
+    if (selected.error) return failedAction(actionId, selected.error);
+    return completeAction(actionId, state, date, lang, selected.value, [
+      "收藏已进入后果陈列柜。它没有变强，只是更难装作没发生过。",
+      "The collection entered the consequence cabinet. It gained no power, only visibility.",
+    ]);
+  }
+  if (["observe_specimen", "contact_specimen"].includes(actionId)) {
+    const kind = actionId === "observe_specimen" ? "observe" : "contact";
+    const selected = applyContainmentAction(
+      state,
+      date,
+      actionId,
+      options.choice,
+    );
+    if (selected.error) return failedAction(actionId, selected.error);
+    const reaction = cabinetInteractionCopy(kind, selected.value, lang);
+    return completeAction(actionId, state, date, lang, selected.value, [
+      `${kind === "observe" ? "观察记录" : "接触记录"}已封存：${reaction}`,
+      `${kind === "observe" ? "Observation" : "Contact"} sealed: ${reaction}`,
+    ]);
+  }
   const selected = applyContainmentAction(
     state,
     date,
@@ -449,8 +626,8 @@ async function createContainmentSession(options = {}) {
   return {
     snapshot: deriveTuiSnapshot(state, date, lang),
     actionController: {
-      preview: (actionId) =>
-        previewContainmentAction(actionId, options, { state }),
+      preview: (actionId, target) =>
+        previewContainmentAction(actionId, { ...options, target }, { state }),
       execute: async (actionId, choice) => {
         try {
           return await executeContainmentAction(

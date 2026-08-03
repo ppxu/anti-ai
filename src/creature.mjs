@@ -13,6 +13,7 @@ import {
   saveJsonState,
 } from "./state-store.mjs";
 import { ensureIncidentState } from "./incidents.mjs";
+import { ensureConsequenceCabinetState } from "./consequence-cabinet.mjs";
 import {
   CREATURE_STAGES,
   CREATURE_FORMS,
@@ -63,7 +64,7 @@ import {
   roundCreature,
 } from "./creature/appearance.mjs";
 
-const CREATURE_STATE_SCHEMA_VERSION = 11;
+const CREATURE_STATE_SCHEMA_VERSION = 12;
 
 function emptyCreatureAbilities() {
   return Object.fromEntries(CREATURE_ABILITY_KEYS.map((key) => [key, 0]));
@@ -782,6 +783,9 @@ function creatureCodex(state, date) {
   return {
     date,
     specimenId: creature.appearance.specimenId,
+    cabinet: {
+      featured: [...(state.cabinet?.featured ?? [])].slice(0, 3),
+    },
     capacity: creatureAppearanceCapacity(),
     summary: {
       fixed: {
@@ -1126,6 +1130,7 @@ const CREATURE_STATE_MIGRATIONS = new Map([
   [8, ensureLaboratoryState],
   [9, ensureCompanionState],
   [10, ensureIncidentState],
+  [11, ensureConsequenceCabinetState],
 ]);
 
 function migrateCreatureState(state) {
@@ -1150,6 +1155,7 @@ function migrateCreatureState(state) {
   ensureLaboratoryState(state);
   ensureCompanionState(state);
   ensureIncidentState(state);
+  ensureConsequenceCabinetState(state);
   ensureDailyGrowthState(state);
   return state;
 }

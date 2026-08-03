@@ -46,6 +46,7 @@
 ```bash
 npm install -g anti-ai
 anti-ai doctor
+anti-ai
 ```
 
 ### 安装 Agent Skill
@@ -83,6 +84,7 @@ npm uninstall -g anti-ai
 ## 命令
 
 ```bash
+anti-ai
 anti-ai today
 anti-ai today --date 2026-07-23
 anti-ai today --source codex
@@ -179,11 +181,11 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-控制台把总览、生态舱、实验室和图鉴放进同一个键盘交互界面。在任意区域按 `a` 可打开行动中心，也可在出现上下文主行动时直接按 `Enter`。当前支持结算今日工作后遗症、响应收容事故、处理转折病例、选择世代进化、孵化培养物和缔结伴生关系；每条流程都遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”，`Enter` 或 `y` 确认，`Esc` 或 `n` 取消。
+在交互终端中无参数运行 `anti-ai` 会直接打开控制台；通过管道或其他非交互方式运行时，则成功输出分组 Help。控制台把总览、生态舱、实验室和图鉴放进同一个键盘界面。在任意区域按 `a` 可打开“立即可用”的行动中心，也可在出现上下文主行动时直接按 `Enter`。所有写入都遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”，`Enter` 或 `y` 确认，`Esc` 或 `n` 取消。
 
 异变体与当前伴生物会以刻意克制的默认频率呼吸、眨眼和脉动。按 `m` 在“低频 / 完整 / 关闭”之间切换，也可以用 `--no-motion` 直接进入完全静态模式；动态效果不会改变成长或存档。
 
-使用 `1`–`4` 或方向键切换区域。在生态舱中按 `Enter` 可逐个观察可见器官，并查看它们与既有能力值的关系；按 `r` 可回放最近一次已封存生态事件。只有已经发现异色能力的档案，才有极低概率出现异色故障帧。按 `?` 查看快捷键，按 `esc` 离开当前观察模式，按 `q` 退出且不惊动标本。
+使用 `1`–`4`、方向键和页面内 `Tab` 焦点移动。图鉴支持“分类 → 条目 → 详情”，会展示锁定剪影、稳定编号、稀有度和发现日期；对已发现条目按 `d` 可预览放入 3 个“后果陈列柜”展示位。实验室会先明确选中配方，再由 `Enter` 打开预览。生态舱中 `Enter` 是只读器官观察，`r` 回放最近事件，`o` 记录今日观察，`c` 进行今日接触；观察和接触每个已结算日各最多一次，只增加确定性叙事，不增加数值、稀有率或奖励。
 
 浏览、回放、观察和取消操作都保持只读，不会扫描 Agent 记录。打开“今日结算”的影响预览时，控制台可能扫描受支持的用量元数据，以便在确认前展示准确影响，但不会写入；只有明确确认后，才会通过与 CLI 相同的动作服务和原子并发检查更新异变体档案。脚本与 Agent 应继续使用明确命令和 `--json`；`anti-ai tui` 是面向人类的交互界面。
 
@@ -223,7 +225,7 @@ anti-ai codex --json
 
 固定收藏共 68 项：16 个形态家族、24 个成就、6 个异色能力、4 种世代伤痕和 18 个路线对等的生态现象。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物、已绑定伴生形态和已结案事故报告则不设人为上限。
 
-`codex --json` 提供稳定 ID、发现状态与日期、收藏计数，以及指定日期的 `recent` 新发现。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤；它不新增状态，也不会把多烧 Token 变成首选收集路线。
+`codex --json` 提供稳定 ID、发现状态与日期、收藏计数、指定日期的 `recent` 新发现，以及当前 3 个陈列位引用。TUI 提供分类、条目和详情浏览，陈列动作必须明确确认；陈列只改变图鉴、生态舱和分享展示。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤，也不会把多烧 Token 变成首选收集路线。
 
 人类可读图鉴还会展示生成器的 **21,233,664 种去重后的最终 ASCII 形象**。这是理论物种空间，不是个人收集进度。容量算法与视觉覆盖优先级详见[异变体成长指南](./docs/creature.zh-CN.md)。
 
@@ -322,7 +324,7 @@ anti-ai creature evolve 2
 
 核能巨兽生成器包含 16 个核心形态家族，以及 **21,233,664 种去重后的最终 ASCII 形象**。本地稳定基因决定器官，使用病型、生态人格、伤疤、成就和异色稀有度则继续改写同一条骨架。运行 `anti-ai codex` 可以对照理论容量与个人收藏。
 
-`creature habitat` 会把当前标本、活动伴生物和收藏痕迹组合成已选择的单屏收容场景。它是只读命令，每 7 个阅历日派生一个确定性事件，不能靠重复查看或增加 Token 重抽、加速。
+`creature habitat` 会把当前标本、活动伴生物、收藏痕迹和后果陈列柜组合成单屏收容场景。生态舱快照保持只读，每 7 个阅历日派生一个确定性事件，不能靠重复查看或增加 Token 重抽、加速；陈列与两项每日轻互动只会在 TUI 明确确认后写入，且不会改变成长数值。
 
 生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
 
@@ -447,6 +449,7 @@ npm run test:package
 - `src/renderers/svg.mjs`：隐私安全的 SVG 卡片
 - `src/creature.mjs`：异变体成长和收藏规则
 - `src/creature/`：内容池与外观生成
+- `src/consequence-cabinet.mjs`：三个陈列位与确定性的每日叙事互动
 - `src/state-store.mjs`：带校验、备份和冲突保护的本地状态存储
 - `src/laboratory.mjs`：派生配方、封存培养物和培养架
 - `src/companion.mjs`：伴生绑定、印记、路线和 ASCII 成长

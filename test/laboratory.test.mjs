@@ -301,7 +301,7 @@ test("lab incubate seals one culture without changing creature growth", (t) => {
     "utf8",
   );
   const saved = JSON.parse(savedText);
-  assert.equal(saved.schemaVersion, 11);
+  assert.equal(saved.schemaVersion, 12);
   assert.equal(saved.laboratory.nextBatch, 2);
   assert.deepEqual(saved.laboratory.cultures, [result.culture]);
   assert.deepEqual(saved.days, initialState.days);

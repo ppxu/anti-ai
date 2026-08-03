@@ -11,6 +11,7 @@ import {
   writeFileSync,
   projectDir,
   runCli,
+  terminalWidth,
   writeCodexUsage,
 } from "./helpers.mjs";
 import { pathToFileURL } from "node:url";
@@ -72,8 +73,129 @@ test("the TUI snapshot unifies four product areas without mutating state", (t) =
   assert.equal(snapshot.habitat.companion, null);
   assert.equal(snapshot.laboratory.cultures, 0);
   assert.equal(snapshot.codex.fixed.total, 68);
-  assert.equal(snapshot.overview.actions.length, 0);
+  assert.equal(snapshot.codex.categories[0].entries.length, 16);
+  assert.match(snapshot.codex.categories[0].entries[0].key, /^form:/);
+  assert.ok(
+    snapshot.codex.categories[0].entries.some(
+      (entry) => !entry.discovered && entry.label === "???",
+    ),
+  );
+  assert.deepEqual(snapshot.codex.cabinet.slots, [null, null, null]);
+  assert.deepEqual(
+    snapshot.overview.actions.map(({ id }) => id),
+    ["observe_specimen", "contact_specimen"],
+  );
   assert.equal(JSON.stringify(state), original);
+});
+
+test("the consequence cabinet and daily interactions persist only explicit narrative choices", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-cabinet-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  const codex = path.join(workspace, "codex");
+  writeCodexUsage(codex, [
+    {
+      input_tokens: 2_000,
+      cached_input_tokens: 500,
+      output_tokens: 200,
+      total_tokens: 2_200,
+    },
+  ]);
+  const environment = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: codex,
+    ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
+    ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
+    ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
+    ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
+    ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+    ANTI_AI_CREATURE_SEED: "tui-cabinet-seed",
+  };
+  assert.equal(
+    runCli(["creature", "--date", "2026-07-23", "--json"], environment).status,
+    0,
+  );
+  const statePath = path.join(home, ".anti-ai", "creature.json");
+  const before = JSON.parse(readFileSync(statePath, "utf8"));
+  const beforeDay = structuredClone(before.days["2026-07-23"]);
+  const previousEnvironment = Object.fromEntries(
+    Object.keys(environment).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, environment);
+  t.after(() => {
+    for (const [key, value] of Object.entries(previousEnvironment)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  const initial = deriveTuiSnapshot(before, "2026-07-23", "zh");
+  const displayKey = initial.codex.categories
+    .flatMap((category) => category.entries)
+    .find((entry) => entry.discovered).key;
+  const displayPreview = await previewContainmentAction("curate_display", {
+    date: "2026-07-23",
+    lang: "zh",
+    target: displayKey,
+  });
+  assert.deepEqual(displayPreview.choices.map(({ id }) => id), [displayKey]);
+  const displayed = await executeContainmentAction("curate_display", {
+    date: "2026-07-23",
+    lang: "zh",
+    choice: displayKey,
+  });
+  assert.equal(displayed.status, "completed");
+  assert.equal(displayed.snapshot.codex.cabinet.slots[0].key, displayKey);
+  assert.equal(displayed.snapshot.habitat.cabinet.slots[0].key, displayKey);
+
+  const observed = await executeContainmentAction("observe_specimen", {
+    date: "2026-07-23",
+    lang: "zh",
+    choice: "specimen",
+  });
+  const contacted = await executeContainmentAction("contact_specimen", {
+    date: "2026-07-23",
+    lang: "zh",
+    choice: "glass",
+  });
+  assert.equal(observed.status, "completed");
+  assert.equal(contacted.status, "completed");
+  assert.match(observed.message, /观察记录/);
+  assert.match(contacted.message, /接触记录/);
+
+  const repeated = await executeContainmentAction("observe_specimen", {
+    date: "2026-07-23",
+    lang: "zh",
+    choice: "specimen",
+  });
+  assert.equal(repeated.status, "unavailable");
+  assert.equal(repeated.reason, "already_observed");
+
+  const after = JSON.parse(readFileSync(statePath, "utf8"));
+  assert.equal(after.schemaVersion, 12);
+  assert.equal(after.cabinet.featured[0], displayKey);
+  assert.equal(after.days["2026-07-23"].interactions.observe.targetId, "specimen");
+  assert.equal(after.days["2026-07-23"].interactions.contact.targetId, "glass");
+  const { interactions, ...afterDay } = after.days["2026-07-23"];
+  assert.deepEqual(afterDay, beforeDay);
+
+  const habitat = runCli(
+    ["creature", "habitat", "--date", "2026-07-23"],
+    environment,
+  );
+  const habitatJson = runCli(
+    ["creature", "habitat", "--date", "2026-07-23", "--json"],
+    environment,
+  );
+  const habitatCard = runCli(
+    ["share", "--card", "habitat", "--date", "2026-07-23"],
+    environment,
+  );
+  assert.equal(habitat.status, 0, habitat.stderr);
+  assert.match(habitat.stdout, /后果陈列柜[\s\S]*1\. 形态/u);
+  assert.deepEqual(JSON.parse(habitatJson.stdout).cabinet.featured, [displayKey]);
+  assert.match(habitatCard.stdout, /后果陈列柜/u);
+  assert.match(habitatCard.stdout, /form #[^<]+/u);
 });
 
 test("the TUI distinguishes a settled AI-free day from an unsettled date", (t) => {
@@ -110,6 +232,9 @@ test("the TUI distinguishes a settled AI-free day from an unsettled date", (t) =
       { id: "resolve_incident", available: false, reason: "no_pending_incident" },
       { id: "choose_intervention", available: false, reason: "no_pending_case" },
       { id: "choose_evolution", available: false, reason: "no_pending_evolution" },
+      { id: "observe_specimen", available: false, reason: "date_not_settled" },
+      { id: "contact_specimen", available: false, reason: "date_not_settled" },
+      { id: "curate_display", available: true, reason: null },
       { id: "incubate", available: false, reason: "no_material" },
       { id: "bond", available: false, reason: "no_culture" },
     ],
@@ -440,7 +565,9 @@ test("the containment console navigates all four product areas by keyboard", asy
   t.after(() => screen.unmount());
 
   assert.match(screen.lastFrame(), /收容控制台/u);
-  assert.match(screen.lastFrame(), /当前没有待办/u);
+  assert.match(screen.lastFrame(), /今天可做/u);
+  assert.match(screen.lastFrame(), /记录一次今日观察/u);
+  assert.doesNotMatch(screen.lastFrame(), /null/u);
   assert.match(screen.lastFrame(), /动态 关闭/u);
   const staticFrame = screen.lastFrame();
   await new Promise((resolve) => setTimeout(resolve, 450));
@@ -456,6 +583,7 @@ test("the containment console navigates all four product areas by keyboard", asy
   screen.stdin.write("2");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /生态舱状态/u);
+  assert.match(screen.lastFrame(), /Enter 观察 · r 回放\s+q 退出/u);
   screen.stdin.write("\r");
   await waitForFrame(screen, /器官观察/u);
   assert.match(screen.lastFrame(), /监测复眼/u);
@@ -480,14 +608,100 @@ test("the containment console navigates all four product areas by keyboard", asy
   assert.match(screen.lastFrame(), /病理图鉴/u);
   screen.stdin.write("1");
   await new Promise((resolve) => setImmediate(resolve));
-  assert.match(screen.lastFrame(), /当前没有待办/u);
+  assert.match(screen.lastFrame(), /今天可做/u);
   screen.stdin.write("?");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /m.*动态档位/u);
   assert.match(screen.lastFrame(), /a.*收容协议行动中心/u);
-  assert.match(screen.lastFrame(), /Enter.*器官观察/u);
-  assert.match(screen.lastFrame(), /r.*回放最近事件/u);
+  assert.match(screen.lastFrame(), /Tab.*切换区域或当前焦点/u);
+  assert.match(screen.lastFrame(), /Enter.*处理当前主要行动/u);
+  assert.doesNotMatch(screen.lastFrame(), /回放最近事件/u);
   assert.equal(readFileSync(statePath, "utf8"), originalStateFile);
+});
+
+test("the Codex drills into discovered entries and opens display preview for the focused record", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-codex-ui-"));
+  const buildDirectory = mkdtempSync(
+    path.join(projectDir, ".anti-ai-tui-codex-test-"),
+  );
+  t.after(() => {
+    rmSync(workspace, { recursive: true, force: true });
+    rmSync(buildDirectory, { recursive: true, force: true });
+  });
+  const home = path.join(workspace, "home");
+  mkdirSync(home, { recursive: true });
+  assert.equal(
+    runCli(["creature", "--date", "2026-07-23", "--json"], {
+      HOME: home,
+      ANTI_AI_CREATURE_SEED: "tui-codex-ui-seed",
+    }).status,
+    0,
+  );
+  const state = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  const snapshot = deriveTuiSnapshot(state, "2026-07-23", "zh");
+  let previewTarget = null;
+  const actionController = {
+    preview: async (id, target) => {
+      previewTarget = target;
+      const entry = snapshot.codex.categories
+        .flatMap((category) => category.entries)
+        .find((candidate) => candidate.key === target);
+      return {
+        ...snapshot.actions.find((action) => action.id === id),
+        title: "调整后果陈列柜",
+        summary: "将当前收藏放入展示位。",
+        warning: "只改变展示，不改变成长。",
+        irreversible: false,
+        impact: { displaySlots: 3 },
+        choices: [{ id: target, label: entry.label, detail: entry.detail }],
+      };
+    },
+  };
+  const output = path.join(buildDirectory, "app.mjs");
+  await build({
+    entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
+    outfile: output,
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    external: ["ink", "react"],
+  });
+  const { TuiApp } = await import(pathToFileURL(output).href);
+  const screen = render(
+    React.createElement(TuiApp, {
+      snapshot,
+      lang: "zh",
+      initialMotion: "off",
+      actionController,
+      terminalColumns: 80,
+    }),
+  );
+  t.after(() => screen.unmount());
+
+  screen.stdin.write("4");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /基础图鉴/u);
+  assert.match(screen.lastFrame(), /个人收藏/u);
+  assert.ok(
+    screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
+  );
+  screen.stdin.write("\r");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /收藏条目/u);
+  assert.match(screen.lastFrame(), /\?\?\?/u);
+  screen.stdin.write("\r");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /条目档案/u);
+  assert.match(screen.lastFrame(), /发现于/u);
+  assert.match(screen.lastFrame(), /d 陈列/u);
+  assert.ok(
+    screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
+  );
+  screen.stdin.write("d");
+  await waitForFrame(screen, /影响预览 · 调整后果陈列柜/u);
+  assert.match(previewTarget, /^form:/u);
 });
 
 test("the containment console previews, cancels, confirms, and refreshes one action", async (t) => {
@@ -560,8 +774,8 @@ test("the containment console previews, cancels, confirms, and refreshes one act
 
   screen.stdin.write("a");
   await new Promise((resolve) => setImmediate(resolve));
-  assert.match(screen.lastFrame(), /待执行收容协议/u);
-  assert.match(screen.lastFrame(), /本日已经结算|处理待定/u);
+  assert.match(screen.lastFrame(), /行动中心/u);
+  assert.match(screen.lastFrame(), /立即可用/u);
 
   screen.stdin.write("\r");
   await waitForFrame(screen, /影响预览 · 结算工作后遗症/u);
@@ -571,13 +785,13 @@ test("the containment console previews, cancels, confirms, and refreshes one act
   assert.equal(executions, 0);
 
   screen.stdin.write("n");
-  await waitForFrame(screen, /待执行收容协议/u);
+  await waitForFrame(screen, /行动中心/u);
   assert.equal(executions, 0);
 
   screen.stdin.write("\r");
   await waitForFrame(screen, /影响预览 · 结算工作后遗症/u);
   screen.stdin.write("\u001B");
-  await waitForFrame(screen, /待执行收容协议/u);
+  await waitForFrame(screen, /行动中心/u);
   assert.equal(executions, 0);
 
   screen.stdin.write("\r");

@@ -573,6 +573,9 @@ function deriveHabitat(state, creature, date, specimenArt) {
           ? HABITAT_EVENT_CADENCE_DAYS
           : HABITAT_EVENT_CADENCE_DAYS - remainder,
     },
+    cabinet: {
+      featured: [...(state.cabinet?.featured ?? [])].slice(0, 3),
+    },
     decorations: habitatDecorations(events, companion),
     events,
   };

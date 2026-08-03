@@ -158,6 +158,8 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 
 `creature habitat` is a read-only snapshot. It may derive the selected day's complete-source Creature in memory, but it never creates, migrates, settles, or rewrites the state file. `--full` expands sealed ecological incidents; JSON keeps language-neutral IDs.
 
+The habitat also presents the three-slot Consequence Cabinet. Display changes are explicit collection curation only: they grant no score, growth, rarity, or Token reward.
+
 One deterministic event is derived per seven experience days from discrete Ecology gains, the companion route, the local seed, and existing derived collection counts. Pollution, Clarity, and Paradox each have six events, four relationship diagnoses, four decorations, and six duo titles. Token volume cannot accelerate or reroll the cadence. Repeated views, language, terminal width, and card generation change no growth, imprints, power, rarity, score, or rewards.
 
 ### Private pathology codex
@@ -170,9 +172,11 @@ anti-ai codex --date YYYY-MM-DD --lang en
 anti-ai codex --json
 ```
 
-The codex derives 68 fixed collection entries from the existing schema v11 state: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 habitat phenomena. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens, foreign specimens, permanent fossils, selected case slices, laboratory cultures, bonded companions, and resolved incident reports. JSON keeps stable IDs, discovery booleans and dates, counts, and the selected day's `recent` discoveries; `--lang` never changes JSON keys or IDs.
+The codex derives 68 fixed collection entries from the existing schema v12 state: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 habitat phenomena. Human output reveals discovered names while locked entries remain `???`. It also lists private dynamic specimens, foreign specimens, permanent fossils, selected case slices, laboratory cultures, bonded companions, and resolved incident reports. JSON keeps stable IDs, discovery booleans and dates, counts, the selected day's `recent` discoveries, and the three language-neutral `cabinet.featured` keys; `--lang` never changes JSON keys or IDs.
 
 Do not pass `--source` to `codex`. It derives a read-only snapshot from the complete supported-source history and never persists the in-memory result. Summarize progress without encouraging Token spending: Pollution, Clarity, AI-free behavior, rare chance, generations, explicit choices, and route-balanced habitat events all create independent collection routes.
+
+In the interactive console, Codex navigation is category → entry → detail. `d` opens an explicit display preview for a discovered entry. `o` observes the main specimen and `c` contacts the bonded companion; each is available at most once per settled day and produces deterministic narrative text with no numeric effect. Never drive those interactive choices on the user's behalf.
 
 ### Token mutation creature
 
@@ -221,7 +225,7 @@ It also grows seven regular abilities from usage signals, AI-free days, seeded r
 
 When reporting a creature, summarize its specimen ID, generation, life stage and experience, latest fossil, inherited ability and scar, current evolution choice and benefit/cost totals, ecology and today's ecology gain, form and title, badges, level, dominant ability, temperament, mood, latest daily gains, newly visible talents, chromatic abilities, rare-mutation chance, and the active companion's stage and route when one is bonded. Describe this as a satirical growth system, not a resource measurement or productivity score, and do not imply that a high level is productive, healthy, or environmentally measured.
 
-The creature state is stored at `~/.anti-ai/creature.json` with schema v11. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils with derived ability snapshots, sealed evolution choices, turning-point case IDs with privacy-safe triggers and selections, containment incident/response/aftermath/chain IDs with discrete trigger summaries and disposition counts, saved foreign encounters as derived appearance IDs, derived laboratory cultures and their ingredient references, companion bond dates, daily discrete imprint bands, anomaly IDs, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1-v10 files migrate sequentially and idempotently without inventing choices, incidents, cultures, bonds, or companion growth; the first persisted migration keeps an exact local backup. Do not open or edit the state file directly.
+The creature state is stored at `~/.anti-ai/creature.json` with schema v12. It contains only discrete usage bands, derived ecology points, stable gene/part IDs, achievements, appearance fingerprints, pollution doses, traits, regular/chromatic ability gains, event IDs, permanent fossils with derived ability snapshots, sealed evolution choices, turning-point case IDs with privacy-safe triggers and selections, containment incident/response/aftermath/chain IDs with discrete trigger summaries and disposition counts, saved foreign encounters as derived appearance IDs, derived laboratory cultures and their ingredient references, companion bond dates, daily discrete imprint bands, anomaly IDs, up to three displayed collection keys, daily observe/contact target and reaction IDs, and a local deterministic seed—never prompts, responses, paths, model names, exact Token totals, personal-baseline values, or request timestamps. Schema v1-v11 files migrate sequentially and idempotently without inventing choices, incidents, cultures, bonds, companion growth, displays, or interactions; the first persisted migration keeps an exact local backup. Do not open or edit the state file directly.
 
 Only destroy the mutation history when the user explicitly asks to reset or restart it:
 

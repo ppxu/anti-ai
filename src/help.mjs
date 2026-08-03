@@ -102,8 +102,8 @@ const COMMAND_HELP = {
       "Open the controlled interactive containment console.",
     ],
     output: [
-      "在四个区域中浏览，并通过行动中心预览、确认和执行结算、事故响应、干预、进化、孵化或缔结。",
-      "Browse four areas, then preview, confirm, and run settlement, incident response, intervention, evolution, incubation, or bonding from the action center.",
+      "在四个区域中浏览图鉴与生态舱，陈列收藏，并通过行动中心预览、确认结算、轻互动、事故响应、干预、进化、孵化或缔结。",
+      "Browse the Codex and Habitat, display collections, and preview or confirm settlement, light interactions, incident responses, interventions, evolution, incubation, or bonding.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
@@ -115,8 +115,8 @@ const COMMAND_HELP = {
       "anti-ai tui --no-motion",
     ],
     note: [
-      "浏览与取消不扫描、不写入；结算预览可能扫描用量元数据，只有明确确认才写入。Agent 应使用显式命令及 --json。",
-      "Browsing and cancellation do not scan or write; settlement preview may scan usage metadata, and only explicit confirmation writes. Agents should use explicit commands and --json.",
+      "无参数 anti-ai 在交互终端会打开本界面；浏览与取消只读。每日观察和接触各一次，只写叙事记录且不增加数值。Agent 应使用显式命令及 --json。",
+      "A no-argument interactive launch opens this console; browsing and cancellation are read-only. Observation and contact are each limited to once per day and add narrative only. Agents should use explicit commands and --json.",
     ],
     related: ["today", "creature habitat", "lab", "codex"],
   },
@@ -627,6 +627,15 @@ function renderCommandHelp(target, lang = "zh") {
 }
 
 function renderTopLevelHelp(lang = "zh") {
+  const registry = new Map(COMMAND_REGISTRY.map((entry) => [entry.id, entry]));
+  const commandGroup = (title, ids) => [
+    title,
+    ...ids.map((id) => {
+      const entry = registry.get(id);
+      return `  ${entry.id.padEnd(12)} ${localized(lang, entry.summary.zh, entry.summary.en)}`;
+    }),
+    "",
+  ];
   return [
     "Usage: anti-ai <command> [options]",
     "",
@@ -636,21 +645,32 @@ function renderTopLevelHelp(lang = "zh") {
       "Turn local AI tokens into an uncomfortable resource bill.",
     ),
     "",
-    localized(lang, "Commands:", "Commands:"),
-    ...COMMAND_REGISTRY.map(
-      ({ id, summary }) =>
-        `  ${id.padEnd(12)} ${localized(lang, summary.zh, summary.en)}`,
-    ),
-    "",
+    ...commandGroup(localized(lang, "开始使用", "START"), ["tui", "help"]),
+    ...commandGroup(localized(lang, "用量账单", "RECEIPTS"), [
+      "today",
+      "week",
+      "month",
+      "share",
+    ]),
+    ...commandGroup(localized(lang, "异变体与收藏", "CREATURE & COLLECTIONS"), [
+      "creature",
+      "codex",
+      "lab",
+      "encounter",
+    ]),
+    ...commandGroup(localized(lang, "诊断与说明", "DIAGNOSTICS & METHODS"), [
+      "doctor",
+      "explain",
+    ]),
     localized(lang, "Global options:", "Global options:"),
     `  ${"--lang <zh|en>".padEnd(22)} ${localized(lang, "选择输出语言（默认 zh）", "Select output language (default: zh)")}`,
     `  ${"-v, --version".padEnd(22)} ${localized(lang, "显示版本", "Show version")}`,
     `  ${"-h, --help".padEnd(22)} ${localized(lang, "显示顶层帮助", "Show top-level help")}`,
     "",
     localized(lang, "Examples:", "Examples:"),
+    "  anti-ai tui",
     "  anti-ai today",
     "  anti-ai creature",
-    "  anti-ai lab",
     "  anti-ai help today",
     "",
     `${localized(lang, "具体命令帮助", "Command help")}  anti-ai help <command>`,

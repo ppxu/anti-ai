@@ -77,7 +77,7 @@ The prognosis share card shows the current case and its three visible trade-offs
 
 Sealed choices become unlimited case slices in `anti-ai codex`. They do not change the fixed 68-entry collection denominator and do not grant combat power or Token-based score.
 
-Creature state uses schema v11. Casebook and incident records contain only:
+Creature state uses schema v12. Casebook and incident records contain only:
 
 - stable case and route IDs;
 - offered and selected dates;
@@ -85,6 +85,6 @@ Creature state uses schema v11. Casebook and incident records contain only:
 - the next experience-day interval.
 - stable incident, stance, aftermath, and chain IDs with privacy-safe trigger summaries and dates.
 
-Schema v1–v10 files migrate sequentially and idempotently. Migration preserves the casebook and adds empty incident, laboratory, and companion indexes when needed; it never invents a past choice, incident, experiment, or bond.
+Schema v1–v11 files migrate sequentially and idempotently. Migration preserves the casebook and adds empty incident, laboratory, companion, and consequence-cabinet indexes when needed; it never invents a past choice, incident, experiment, bond, display, or interaction.
 
 Everything stays in `~/.anti-ai/creature.json`. There is no account, server, upload, leaderboard, daily check-in, or Token-spending accelerator.

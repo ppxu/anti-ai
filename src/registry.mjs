@@ -209,8 +209,8 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
     en: "Read-only snapshot; it does not create, migrate, or advance the mutation file.",
   },
   tui: {
-    zh: "浏览和取消保持只读；影响预览可能扫描元数据，明确确认后才执行现有本地动作。",
-    en: "Browsing and cancellation stay read-only; impact preview may scan metadata, and only explicit confirmation runs an existing local action.",
+    zh: "浏览和取消保持只读；影响预览可能扫描元数据，陈列或每日叙事动作仅在明确确认后写入稳定 ID。",
+    en: "Browsing and cancellation stay read-only; impact preview may scan metadata, and displays or daily narrative actions write stable IDs only after explicit confirmation.",
   },
   share: {
     zh: "只读快照；所有卡片都不会推进成长或培养物。",

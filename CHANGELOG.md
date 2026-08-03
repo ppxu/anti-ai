@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-08-03
+
+### Added
+
+- Added the three-slot Consequence Cabinet, with Codex category/entry/detail navigation, locked silhouettes, stable IDs, discovery dates, rarity labels, and an explicit preview-confirm display action.
+- Added one deterministic Observation and one restrained Contact per settled day. Both record local narrative reactions without abilities, experience, Ecology, rarity, scores, or Token rewards.
+- Added displayed collection references to Codex JSON, Habitat JSON and terminal output, the interactive Habitat, and the privacy-safe Habitat share card.
+
+### Changed
+
+- A no-argument interactive launch now opens the TUI, while pipes and other non-interactive launches print grouped Help successfully. The top-level Help now separates Start, Receipts, Creature & Collections, and Diagnostics & Methods.
+- Refined the TUI around one primary and at most one secondary action, a standalone available-now Action Center, contextual Help, selectable Laboratory formulas, localized rarity/day labels, clearer view-date and settled-state headers, and an explicit 80-column compact layout.
+- Creature schema is now v12. Local v1-v11 migrations add an empty Cabinet without inventing displays or past interactions, and preserve the original file through the existing content-addressed backup flow.
+
+### Security
+
+- Cabinet state stores only stable collection keys; daily interactions store only a target ID and deterministic reaction ID in an already-settled day. No exact Tokens, requests, models, sources, prompts, responses, paths, or per-request timestamps are added.
+- Browsing remains read-only. Display, Observation, and Contact require explicit confirmation, cannot be rerolled, create no backlog or missed-day pressure, and never reward higher Token consumption.
+
 ## [2.5.0] - 2026-08-03
 
 ### Added

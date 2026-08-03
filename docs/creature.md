@@ -278,6 +278,8 @@ A local seed plus the date selects one reproducible event per active day. After 
 
 Locked fixed entries remain `???`. Collection discovery does not prefer high Token use: Pollution, Clarity, AI-free days, achievements, rare abilities, generations, and explicit evolution choices all have independent routes.
 
+Inside the TUI, Codex supports category → entry → detail navigation. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. The cabinet changes Codex, Habitat, and Habitat-card presentation only; it adds no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
+
 Nine privacy-safe SVG cards are available:
 
 ```bash
@@ -308,7 +310,7 @@ State lives at:
 ~/.anti-ai/creature.json
 ```
 
-The current schema is v11. It stores only:
+The current schema is v12. It stores only:
 
 - discrete usage bands and derived Ecology points;
 - stable gene and part IDs;
@@ -321,11 +323,13 @@ The current schema is v11. It stores only:
 - saved foreign encounters as derived parent/form and hybrid appearance IDs;
 - laboratory batches and cultures as derived material, diagnosis, rarity, and appearance IDs;
 - companion bonds, discrete daily imprints, and sealed anomaly IDs;
+- up to three stable Consequence Cabinet collection keys;
+- at most one Observation target/reaction ID and one Contact target/reaction ID per settled day;
 - a local seed.
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v10 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, laboratory cultures, companion bonds, imprints, or anomalies. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
+Schema v1-v11 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, or anomalies. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
 
 One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 

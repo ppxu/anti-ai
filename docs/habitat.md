@@ -81,11 +81,17 @@ All 18 habitat phenomena are fixed Codex entries. The fixed denominator is now 6
 
 A phenomenon becomes discovered on the date its corresponding seven-day event is first derived. Locked entries remain `???`.
 
+## Consequence Cabinet and light contact
+
+The TUI Codex can place up to three already-discovered entries in the Habitat's Consequence Cabinet. Category browsing, entry details, locked silhouettes, and cancellation are read-only; pressing `d` on a discovered detail opens a separate impact preview, and only explicit confirmation changes the display. The cabinet stores stable collection keys and changes terminal/TUI/Habitat-card presentation only.
+
+In Habitat, `o` records one deterministic Observation and `c` records one restrained Contact per settled day. Available targets reflect the specimen, bonded companion, lighting, and displayed collection context. The local seed, date, interaction kind, and target fix the response, so reopening cannot reroll it. Observation and Contact add no experience, abilities, Ecology, rarity, score, reward, or missed-day pressure.
+
 ## Period reports and sharing
 
 - `today` adds one current habitat observation.
 - `week` and `month` show the current relationship, events sealed in the period, and new scenery without duplicating the full chamber.
-- `share --card habitat` prints a 1200×630 SVG containing the two bays, current diagnosis, scenery, and latest incident.
+- `share --card habitat` prints a 1200×630 SVG containing the two bays, current diagnosis, displayed Cabinet when occupied, or scenery when it is empty, plus the latest incident.
 
 The card is written only to stdout. It omits exact Tokens, requests, source/model names, paths, prompts, responses, tool calls, and local record names.
 

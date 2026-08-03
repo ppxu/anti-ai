@@ -603,6 +603,13 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
       })
       .join("  ·  ") ||
     localized(lang, "尚无生态痕迹", "NO ECOLOGICAL TRACES");
+  const cabinetText = (habitat.cabinet?.featured ?? [])
+    .map((key, index) => `${index + 1}. ${String(key).replace(":", " #")}`)
+    .join("  ·  ");
+  const displayLabel = cabinetText
+    ? localized(lang, "后果陈列柜", "CONSEQUENCE CABINET")
+    : localized(lang, "生态痕迹", "ECOLOGICAL TRACES");
+  const displayText = cabinetText || decorationText;
   const relationName =
     relationship?.name ??
     localized(lang, "未建立伴生关系", "NO SYMBIOTIC BOND");
@@ -653,8 +660,8 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
   <text x="626" y="194" class="mono body" font-size="16" xml:space="preserve">${companionArt}</text>
 
   <line x1="72" y1="424" x2="1128" y2="424" stroke="#345247" stroke-width="2"/>
-  <text x="72" y="456" class="mono muted" font-size="14">${escapeXml(localized(lang, "生态痕迹", "ECOLOGICAL TRACES"))}</text>
-  <text x="72" y="482" class="mono body" font-size="15">${escapeXml(decorationText)}</text>
+  <text x="72" y="456" class="mono muted" font-size="14">${escapeXml(displayLabel)}</text>
+  <text x="72" y="482" class="mono body" font-size="15">${escapeXml(displayText)}</text>
   <text x="72" y="516" class="mono muted" font-size="14">${escapeXml(localized(lang, "关系诊断", "RELATIONSHIP DIAGNOSIS"))}</text>
   <text x="72" y="542" class="mono warn" font-size="17">${escapeXml(`${relationName} · ${relationDetail}`)}</text>
 

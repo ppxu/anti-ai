@@ -1,4 +1,10 @@
-import { laboratoryCompanion } from "../companion.mjs";
+import { casebookLabel } from "../casebook.mjs";
+import { companionLabel, laboratoryCompanion } from "../companion.mjs";
+import {
+  cabinetInteractionCopy,
+  codexCollectionEntries,
+  consequenceCabinetView,
+} from "../consequence-cabinet.mjs";
 import {
   creatureArt,
   creatureCodex,
@@ -13,6 +19,8 @@ import {
   habitatEventCopy,
   habitatRelationshipCopy,
 } from "../habitat.mjs";
+import { encounterLabel } from "../encounter.mjs";
+import { incidentLabel } from "../incidents.mjs";
 import {
   laboratoryLabel,
   laboratoryShelf,
@@ -70,6 +78,91 @@ function codexRecentLabel(entry, lang) {
   return section ? creatureLabel(section, entry.id, lang) : `#${entry.id}`;
 }
 
+function rarityLabel(rarity, lang) {
+  const labels = {
+    common: ["常见", "COMMON"],
+    uncommon: ["罕见", "UNCOMMON"],
+    rare: ["稀有", "RARE"],
+    epic: ["史诗", "EPIC"],
+    mythic: ["神话", "MYTHIC"],
+  };
+  return localized(lang, ...(labels[rarity] ?? labels.common));
+}
+
+function codexEntryPresentation(entry, lang) {
+  if (!entry.discovered) {
+    const rarity = entry.rarity ?? "common";
+    return {
+      ...entry,
+      label: "???",
+      detail: localized(
+        lang,
+        "尚未收录 · 剪影保留，名字拒绝提前剧透",
+        "LOCKED · silhouette retained; the diagnosis refuses spoilers",
+      ),
+      rarity,
+      rarityLabel: rarityLabel(rarity, lang),
+    };
+  }
+  let label = `#${entry.id}`;
+  let detail = localized(lang, "本地派生收藏", "Locally derived collection");
+  let rarity = entry.rarity ?? "common";
+  if (entry.type === "form") {
+    label = creatureLabel("ecologyForms", entry.id, lang);
+    detail = `${creatureLabel("ecologies", entry.ecologyId, lang)} · ${creatureLabel("branches", entry.pathologyId, lang)}`;
+  } else if (entry.type === "achievement") {
+    label = creatureLabel("achievements", entry.id, lang);
+    detail = localized(
+      lang,
+      `${entry.category.toUpperCase()} 行为证据`,
+      `${entry.category.toUpperCase()} behavioral evidence`,
+    );
+  } else if (entry.type === "chromaticAbility") {
+    label = creatureLabel("rareAbilities", entry.id, lang);
+    detail = `Lv.${entry.level}`;
+  } else if (entry.type === "scar") {
+    label = creatureLabel("scars", entry.id, lang);
+    detail = localized(lang, "世代封存伤痕", "Generation-sealed scar");
+    rarity = "rare";
+  } else if (entry.type === "habitatPhenomenon") {
+    label = habitatEventCopy(entry.id, lang).name;
+    detail = habitatDecorationCopy(entry.decorationId, lang).name;
+    rarity = "uncommon";
+  } else if (entry.type === "specimen") {
+    label = localized(lang, `本地标本 #${entry.id}`, `LOCAL SPECIMEN #${entry.id}`);
+    detail = `${creatureLabel("ecologyForms", entry.formId, lang)} · ${localized(lang, `阅历 ${entry.experienceDays} 天`, `${entry.experienceDays} experience days`)}`;
+  } else if (entry.type === "foreignSpecimen") {
+    label = localized(lang, `外来标本 #${entry.id}`, `FOREIGN SPECIMEN #${entry.id}`);
+    detail = `${encounterLabel("type", entry.typeId, lang)} · ${creatureLabel("ecologyForms", entry.hybridFormId, lang)}`;
+    rarity = "rare";
+  } else if (entry.type === "caseSlice") {
+    label = localized(lang, `病例切片 #${entry.id}`, `CASE SLICE #${entry.id}`);
+    detail = `${casebookLabel("cases", entry.caseId, lang)} · ${casebookLabel("routes", entry.routeId, lang)}`;
+    rarity = "rare";
+  } else if (entry.type === "incidentReport") {
+    label = localized(lang, `事故报告 #${entry.id}`, `INCIDENT REPORT #${entry.id}`);
+    detail = `${incidentLabel("incidents", entry.incidentId, lang)} · ${incidentLabel("stances", entry.stanceId, lang)}`;
+    rarity = "rare";
+  } else if (entry.type === "culture") {
+    label = `${laboratoryLabel("types", entry.typeId, lang)} #${entry.id}`;
+    detail = localized(lang, "污染培养物", "Pollution culture");
+  } else if (entry.type === "companion") {
+    label = localized(lang, `伴生异物 #${entry.id}`, `SYMBIOTIC COMPANION #${entry.id}`);
+    detail = `${companionLabel("stages", entry.stageId, lang)} · ${companionLabel("routes", entry.routeId, lang)}`;
+  } else if (entry.type === "fossil") {
+    label = localized(lang, `永久化石 #${entry.id}`, `PERMANENT FOSSIL #${entry.id}`);
+    detail = `${localized(lang, `第 ${entry.generation} 代`, `GENERATION ${entry.generation}`)} · ${creatureLabel("scars", entry.scarId, lang)}`;
+    rarity = "epic";
+  }
+  return {
+    ...entry,
+    label,
+    detail,
+    rarity,
+    rarityLabel: rarityLabel(rarity, lang),
+  };
+}
+
 function deriveTuiSnapshot(state, date, lang = "zh") {
   const creature = deriveCreature(state, date);
   const companion = laboratoryCompanion(state, date).companion;
@@ -111,6 +204,31 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     ...entry,
     label: codexRecentLabel(entry, lang),
   }));
+  const collectionEntries = codexCollectionEntries(codex).map((entry) =>
+    codexEntryPresentation(entry, lang),
+  );
+  const collectionBySection = new Map();
+  for (const entry of collectionEntries) {
+    const entries = collectionBySection.get(entry.sectionId) ?? [];
+    entries.push(entry);
+    collectionBySection.set(entry.sectionId, entries);
+  }
+  const cabinet = consequenceCabinetView(state, codex);
+  const cabinetModel = {
+    ...cabinet,
+    slots: cabinet.slots.map((entry) =>
+      entry ? codexEntryPresentation(entry, lang) : null,
+    ),
+    interactions: Object.fromEntries(
+      Object.entries(cabinet.interactions).map(([kind, record]) => [
+        kind,
+        {
+          ...record,
+          text: cabinetInteractionCopy(kind, record, lang),
+        },
+      ]),
+    ),
+  };
   const laboratoryModel = {
     status: laboratory.status,
     batch: laboratory.batch,
@@ -128,15 +246,28 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
   const codexModel = {
     fixed: codex.summary.fixed,
     categories: [
-      ["forms", "形态", "Forms"],
-      ["achievements", "徽章", "Badges"],
-      ["chromaticAbilities", "异色能力", "Chromatics"],
-      ["scars", "世代伤痕", "Scars"],
-      ["habitatPhenomena", "生态现象", "Phenomena"],
-    ].map(([id, zh, en]) => ({
+      ["forms", "形态", "Forms", "fixed"],
+      ["achievements", "徽章", "Badges", "fixed"],
+      ["chromaticAbilities", "异色能力", "Chromatics", "fixed"],
+      ["scars", "世代伤痕", "Scars", "fixed"],
+      ["habitatPhenomena", "生态现象", "Phenomena", "fixed"],
+      ["specimens", "本地标本", "Local specimens", "dynamic"],
+      ["foreignSpecimens", "外来标本", "Foreign specimens", "dynamic"],
+      ["caseSlices", "病例切片", "Case slices", "dynamic"],
+      ["incidentReports", "事故报告", "Incident reports", "dynamic"],
+      ["cultures", "培养物", "Cultures", "dynamic"],
+      ["companions", "伴生形态", "Companions", "dynamic"],
+      ["fossils", "永久化石", "Fossils", "dynamic"],
+    ].map(([id, zh, en, group]) => ({
       id,
       label: localized(lang, zh, en),
+      group,
       ...codex.summary[id],
+      entries: [...(collectionBySection.get(id) ?? [])].sort(
+        (left, right) =>
+          Number(right.discovered) - Number(left.discovered) ||
+          String(left.id).localeCompare(String(right.id)),
+      ),
     })),
     dynamic: [
       ["specimens", "本地标本", "Local specimens"],
@@ -152,6 +283,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       discovered: codex.summary[id].discovered,
     })),
     recent,
+    cabinet: cabinetModel,
   };
   const actions = deriveContainmentActions(
     state,
@@ -192,10 +324,11 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       generation: creature.generation,
       abilities: creature.abilities,
       art,
-      actions: actions.filter(({ available }) => available).slice(0, 3),
+      actions: actions.filter(({ available }) => available).slice(0, 2),
     },
     habitat: {
       ...habitat,
+      cabinet: cabinetModel,
       relationship: habitat.relationship
         ? {
             ...habitat.relationship,

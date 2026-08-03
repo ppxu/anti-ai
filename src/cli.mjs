@@ -295,6 +295,14 @@ const COMMAND_HANDLERS = {
 async function main(rawArgs = process.argv.slice(2)) {
   try {
     const options = parseArgs(rawArgs);
+    if (rawArgs.length === 0) {
+      if (process.stdin.isTTY && process.stdout.isTTY) {
+        await runTui(options);
+      } else {
+        runHelp([], options.lang);
+      }
+      return;
+    }
     const helpAlias = options.command === "help";
     const helpTarget = helpAlias
       ? rawArgs

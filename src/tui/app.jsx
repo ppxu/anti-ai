@@ -235,11 +235,23 @@ function HabitatScreen({
                 </Text>
               </>
             ) : (
-              <Text dimColor>
-                {zh
-                  ? "空置 · 先在实验室培养并绑定一只事故"
-                  : "VACANT · culture and bond an accident in the lab"}
-              </Text>
+              <Box flexDirection="column">
+                <Text bold color="yellow">
+                  {zh ? "伴生收容进度" : "COMPANION INTAKE"} ·{" "}
+                  {snapshot.laboratory.workflow.completed} /{" "}
+                  {snapshot.laboratory.workflow.total}
+                </Text>
+                <Text>{snapshot.laboratory.workflow.next.label}</Text>
+                <Text dimColor>
+                  {snapshot.laboratory.workflow.next.id === "bond"
+                    ? zh
+                      ? "b 选择并绑定伴生物 · l 查看实验室"
+                      : "b selects a companion to bond · l opens the lab"
+                    : zh
+                      ? "l 前往实验室查看下一步"
+                      : "l opens the laboratory for the next step"}
+                </Text>
+              </Box>
             )}
           </Box>
         </Box>
@@ -323,9 +335,98 @@ function HabitatScreen({
   );
 }
 
-function LaboratoryScreen({ snapshot, lang, selectedProposalIndex, compact }) {
+const RARITY_COLORS = {
+  common: "white",
+  uncommon: "cyan",
+  rare: "magenta",
+  epic: "yellow",
+  mythic: "red",
+};
+
+function LaboratoryScreen({
+  snapshot,
+  lang,
+  focus,
+  selectedProposalIndex,
+  selectedCultureIndex,
+  inspectingCulture,
+  compact,
+}) {
   const { laboratory } = snapshot;
   const zh = lang === "zh";
+  const selectedCulture = laboratory.shelf[selectedCultureIndex] ?? null;
+  if (inspectingCulture && selectedCulture) {
+    return (
+      <Box flexDirection="column">
+        <Panel
+          title={`${zh ? "培养物档案" : "CULTURE FILE"} · #${selectedCulture.id}`}
+          color={RARITY_COLORS[selectedCulture.rarity]}
+        >
+          <Box gap={2} flexDirection={compact ? "column" : "row"}>
+            <Box flexDirection="column" width={compact ? undefined : "42%"}>
+              <Text color={RARITY_COLORS[selectedCulture.rarity]}>
+                {selectedCulture.art.join("\n")}
+              </Text>
+              <Text dimColor>
+                {zh ? "外观指纹" : "APPEARANCE"} · {selectedCulture.fingerprint}
+              </Text>
+            </Box>
+            <Box flexDirection="column" flexGrow={1}>
+              <Text bold color={RARITY_COLORS[selectedCulture.rarity]}>
+                {selectedCulture.type} · {selectedCulture.rarity.toUpperCase()}
+              </Text>
+              <Text>
+                {zh ? "原料" : "MATERIALS"}　
+                {selectedCulture.ingredients
+                  .map(({ label, id }) => `${label} #${id}`)
+                  .join(" × ")}
+              </Text>
+              <Text>
+                {zh ? "诊断" : "DIAGNOSIS"}　{selectedCulture.ecology} /{" "}
+                {selectedCulture.pathology}
+              </Text>
+              <Text>
+                {zh ? "并发症" : "COMPLICATION"}　{selectedCulture.complication}
+              </Text>
+              <Text>
+                {zh ? "副作用" : "SIDE EFFECT"}　{selectedCulture.sideEffect}
+              </Text>
+              <Text>
+                {zh ? "封存日期" : "SEALED"}　{selectedCulture.createdAt}
+              </Text>
+              <Text dimColor>
+                {selectedCulture.active
+                  ? zh
+                    ? "● 当前伴生物 · Esc 返回培养架"
+                    : "● ACTIVE COMPANION · Esc returns to shelf"
+                  : zh
+                    ? "b 绑定为伴生物 · Esc 返回培养架"
+                    : "b bonds as companion · Esc returns to shelf"}
+              </Text>
+            </Box>
+          </Box>
+        </Panel>
+      </Box>
+    );
+  }
+  const shelfWindowSize = 5;
+  const shelfStart = Math.max(
+    0,
+    Math.min(
+      selectedCultureIndex - shelfWindowSize + 1,
+      laboratory.shelf.length - shelfWindowSize,
+    ),
+  );
+  const visibleShelf = laboratory.shelf.slice(
+    shelfStart,
+    shelfStart + shelfWindowSize,
+  );
+  const formulaTitle = `${zh ? "第" : "BATCH"} ${laboratory.batch} ${
+    zh ? "批配方" : "FORMULAS"
+  }${focus === "formulas" ? (zh ? " · 已聚焦" : " · FOCUSED") : ""}`;
+  const shelfTitle = `${zh ? "培养架" : "CULTURE SHELF"}${
+    focus === "shelf" ? (zh ? " · 已聚焦" : " · FOCUSED") : ""
+  }`;
   return (
     <Box flexDirection="column">
       <Panel title={zh ? "污染实验室" : "POLLUTION LABORATORY"} color="magenta">
@@ -347,18 +448,37 @@ function LaboratoryScreen({ snapshot, lang, selectedProposalIndex, compact }) {
             <Text color="green">{laboratory.cultures}</Text>
           </Text>
         </Box>
+        <Text bold color="yellow">
+          {zh ? "培养流程" : "CULTURE WORKFLOW"} ·{" "}
+          {laboratory.workflow.completed} / {laboratory.workflow.total}
+        </Text>
+        <Text>
+          {laboratory.workflow.steps.map((step) =>
+            `${step.complete ? "●" : "○"} ${step.label}`,
+          ).join("  →  ")}
+        </Text>
       </Panel>
       <Box gap={1} marginTop={1} flexDirection={compact ? "column" : "row"}>
         <Panel
-          title={`${zh ? "第" : "BATCH"} ${laboratory.batch} ${zh ? "批配方" : "FORMULAS"}`}
-          color="red"
+          title={formulaTitle}
+          color={focus === "formulas" ? "yellow" : "red"}
           width={compact ? undefined : "60%"}
         >
           {laboratory.proposals.length > 0 ? (
             laboratory.proposals.map((proposal, index) => (
               <Box key={proposal.id} flexDirection="column" marginBottom={1}>
-                <Text bold={index === selectedProposalIndex} color={index === selectedProposalIndex ? "yellow" : "white"}>
-                  {index === selectedProposalIndex ? "> " : "  "}{proposal.slot}. {proposal.type}{" "}
+                <Text
+                  bold={focus === "formulas" && index === selectedProposalIndex}
+                  color={
+                    focus === "formulas" && index === selectedProposalIndex
+                      ? "yellow"
+                      : "white"
+                  }
+                >
+                  {focus === "formulas" && index === selectedProposalIndex
+                    ? "> "
+                    : "  "}
+                  {proposal.slot}. {proposal.type}{" "}
                   <Text color="yellow">
                     {zh
                       ? ({ common: "常见", uncommon: "罕见", rare: "稀有", epic: "史诗", mythic: "神话" }[proposal.rarity] ?? proposal.rarity)
@@ -372,45 +492,68 @@ function LaboratoryScreen({ snapshot, lang, selectedProposalIndex, compact }) {
               </Box>
             ))
           ) : (
-            <Text dimColor>
-              {zh
-                ? "原料不足。这里暂时只能培养空气。"
-                : "No material. The lab is culturing air."}
-            </Text>
+            <Box flexDirection="column">
+              <Text bold color="yellow">{laboratory.workflow.next.label}</Text>
+              <Text dimColor>
+                {zh
+                  ? "外来标本 · anti-ai encounter <污染编码> --save"
+                  : "Foreign specimen · anti-ai encounter <pollution-code> --save"}
+              </Text>
+              <Text dimColor>
+                {zh
+                  ? "病例切片 · 在待处理病例出现后，从行动中心选择路线"
+                  : "Case slice · choose a route in Actions when a case appears"}
+              </Text>
+              <Text dimColor>
+                {zh
+                  ? "永久化石 · 每个 90 日世代自动封存"
+                  : "Permanent fossil · sealed after each 90-day generation"}
+              </Text>
+            </Box>
           )}
           {laboratory.proposals.length > 0 ? (
             <Text dimColor>
-              {zh ? "↑↓ / Tab 选择配方 · Enter 预览" : "↑↓ / Tab selects formula · Enter previews"}
+              {zh
+                ? "↑↓ 选择配方 · Tab 切换区域 · Enter 培养"
+                : "↑↓ selects · Tab changes pane · Enter incubates"}
             </Text>
           ) : null}
         </Panel>
         <Panel
-          title={zh ? "最近封存" : "RECENT CULTURES"}
-          color="green"
+          title={shelfTitle}
+          color={focus === "shelf" ? "yellow" : "green"}
           flexGrow={1}
         >
-          {laboratory.shelf.length > 0 ? (
-            laboratory.shelf.map((culture) => (
-              <Text key={culture.id}>
-                #{culture.id} · {culture.type}
-              </Text>
-            ))
+          {visibleShelf.length > 0 ? (
+            visibleShelf.map((culture, visibleIndex) => {
+              const index = shelfStart + visibleIndex;
+              const selected = focus === "shelf" && index === selectedCultureIndex;
+              return (
+                <Text
+                  key={culture.id}
+                  bold={selected}
+                  color={selected ? "yellow" : RARITY_COLORS[culture.rarity]}
+                >
+                  {selected ? "> " : "  "}#{culture.id} · {culture.type}
+                  {culture.active ? (zh ? " · 当前" : " · ACTIVE") : ""}
+                </Text>
+              );
+            })
           ) : (
             <Text dimColor>{zh ? "培养架空空如也。" : "The shelf is empty."}</Text>
           )}
+          {laboratory.shelf.length > 0 ? (
+            <Text dimColor>
+              {zh
+                ? "↑↓ 选择 · Tab 切换区域 · Enter 查看 · b 绑定"
+                : "↑↓ selects · Tab changes pane · Enter inspects · b bonds"}
+            </Text>
+          ) : null}
         </Panel>
       </Box>
     </Box>
   );
 }
-
-const RARITY_COLORS = {
-  common: "white",
-  uncommon: "cyan",
-  rare: "magenta",
-  epic: "yellow",
-  mythic: "red",
-};
 
 function CabinetSlots({ cabinet, lang, showInteractions = false }) {
   const zh = lang === "zh";
@@ -585,10 +728,15 @@ function HelpOverlay({ lang, activeId, codexMode }) {
       ["Enter", zh ? "进入只读器官观察" : "open read-only anatomy inspection"],
       ["o / c", zh ? "今日观察 / 今日接触" : "today's observation / contact"],
       ["r", zh ? "回放最近生态事件" : "replay the latest habitat event"],
+      ["l", zh ? "前往污染实验室" : "open the pollution laboratory"],
+      ["b", zh ? "选择或切换伴生物" : "bond or switch a companion"],
     ],
     laboratory: [
-      ["↑↓ / Tab", zh ? "选择配方" : "select a formula"],
-      ["Enter", zh ? "预览所选实验" : "preview the selected experiment"],
+      ["Tab", zh ? "切换配方与培养架" : "switch formulas and shelf"],
+      ["↑↓", zh ? "选择配方或培养物" : "select a formula or culture"],
+      ["Enter", zh ? "培养所选配方或查看培养物" : "incubate or inspect selection"],
+      ["b", zh ? "绑定所选培养物" : "bond the selected culture"],
+      ["Esc", zh ? "从培养物档案返回" : "return from a culture file"],
     ],
     codex: [
       ["↑↓ / Tab", zh ? "选择分类或条目" : "select category or entry"],
@@ -645,7 +793,12 @@ function TuiApp({
   const [codexMode, setCodexMode] = useState("categories");
   const [codexCategoryIndex, setCodexCategoryIndex] = useState(0);
   const [codexEntryIndex, setCodexEntryIndex] = useState(0);
+  const [laboratoryFocus, setLaboratoryFocus] = useState(
+    initialSnapshot.laboratory.proposals.length > 0 ? "formulas" : "shelf",
+  );
   const [laboratoryProposalIndex, setLaboratoryProposalIndex] = useState(0);
+  const [laboratoryCultureIndex, setLaboratoryCultureIndex] = useState(0);
+  const [inspectingCulture, setInspectingCulture] = useState(false);
 
   const activeId = SCREEN_IDS[activeIndex];
   const observationTargets = deriveObservationTargets(snapshot, lang);
@@ -825,6 +978,10 @@ function TuiApp({
         else setCodexMode("categories");
         return;
       }
+      if (activeId === "laboratory" && inspectingCulture) {
+        setInspectingCulture(false);
+        return;
+      }
       exit();
       return;
     }
@@ -858,6 +1015,31 @@ function TuiApp({
     }
     if (input === "a") {
       openActionMenu();
+      return;
+    }
+    if (activeId === "habitat" && input === "l") {
+      setObservationIndex(null);
+      setReplayStartFrame(null);
+      setLaboratoryFocus(
+        snapshot.laboratory.proposals.length > 0 ? "formulas" : "shelf",
+      );
+      setActiveIndex(SCREEN_IDS.indexOf("laboratory"));
+      return;
+    }
+    if (activeId === "habitat" && input === "b") {
+      const bondAction = actions.find(({ id }) => id === "bond");
+      const cultureId = snapshot.laboratory.shelf[0]?.id;
+      if (bondAction?.available && cultureId) {
+        void openActionPreview(bondAction, cultureId, "screen");
+      }
+      return;
+    }
+    if (activeId === "laboratory" && input === "b") {
+      const bondAction = actions.find(({ id }) => id === "bond");
+      const culture = snapshot.laboratory.shelf[laboratoryCultureIndex];
+      if (bondAction?.available && culture && !culture.active) {
+        void openActionPreview(bondAction, culture.id, "screen");
+      }
       return;
     }
     if (activeId === "codex") {
@@ -915,26 +1097,60 @@ function TuiApp({
       return;
     }
     if (activeId === "laboratory" && key.return) {
-      const laboratoryAction =
-        actions.find(({ id, available }) => id === "incubate" && available) ??
-        actions.find(({ id, available }) => id === "bond" && available);
-      if (laboratoryAction) {
-        const target = laboratoryAction.id === "incubate"
-          ? String(snapshot.laboratory.proposals[laboratoryProposalIndex]?.slot ?? "1")
-          : undefined;
-        void openActionPreview(laboratoryAction, target, "screen");
+      if (inspectingCulture) {
+        setInspectingCulture(false);
+        return;
+      }
+      if (laboratoryFocus === "shelf") {
+        if (snapshot.laboratory.shelf[laboratoryCultureIndex]) {
+          setInspectingCulture(true);
+        }
+        return;
+      }
+      const incubationAction = actions.find(
+        ({ id, available }) => id === "incubate" && available,
+      );
+      if (incubationAction) {
+        const target = String(
+          snapshot.laboratory.proposals[laboratoryProposalIndex]?.slot ?? "1",
+        );
+        void openActionPreview(incubationAction, target, "screen");
         return;
       }
     }
     if (
       activeId === "laboratory" &&
-      snapshot.laboratory.proposals.length > 0 &&
-      (key.upArrow || key.downArrow || key.tab)
+      !inspectingCulture &&
+      key.tab
     ) {
-      const count = snapshot.laboratory.proposals.length;
-      setLaboratoryProposalIndex((value) =>
-        key.upArrow ? (value + count - 1) % count : (value + 1) % count,
-      );
+      const hasProposals = snapshot.laboratory.proposals.length > 0;
+      const hasCultures = snapshot.laboratory.shelf.length > 0;
+      if (hasProposals && hasCultures) {
+        setLaboratoryFocus((value) =>
+          value === "formulas" ? "shelf" : "formulas",
+        );
+      } else if (hasCultures) {
+        setLaboratoryFocus("shelf");
+      } else if (hasProposals) {
+        setLaboratoryFocus("formulas");
+      }
+      return;
+    }
+    if (
+      activeId === "laboratory" &&
+      !inspectingCulture &&
+      (key.upArrow || key.downArrow)
+    ) {
+      const count = laboratoryFocus === "shelf"
+        ? snapshot.laboratory.shelf.length
+        : snapshot.laboratory.proposals.length;
+      if (count > 0) {
+        const update = key.upArrow
+          ? (value) => (value + count - 1) % count
+          : (value) => (value + 1) % count;
+        if (laboratoryFocus === "shelf") setLaboratoryCultureIndex(update);
+        else setLaboratoryProposalIndex(update);
+      }
       return;
     }
     if (activeId === "habitat" && ["o", "c"].includes(input)) {
@@ -966,6 +1182,12 @@ function TuiApp({
       setShowHelp(false);
       setObservationIndex(null);
       setReplayStartFrame(null);
+      setInspectingCulture(false);
+      if (SCREEN_IDS[directIndex] === "laboratory") {
+        setLaboratoryFocus(
+          snapshot.laboratory.proposals.length > 0 ? "formulas" : "shelf",
+        );
+      }
       setActiveIndex(directIndex);
       return;
     }
@@ -1006,7 +1228,10 @@ function TuiApp({
       <LaboratoryScreen
         snapshot={snapshot}
         lang={lang}
+        focus={laboratoryFocus}
         selectedProposalIndex={laboratoryProposalIndex}
+        selectedCultureIndex={laboratoryCultureIndex}
+        inspectingCulture={inspectingCulture}
         compact={compact}
       />
     ),
@@ -1035,12 +1260,13 @@ function TuiApp({
       }`
     : activeId === "overview" && snapshot.primaryAction
       ? ` · Enter ${zh ? "处理" : "act"}`
-      : activeId === "laboratory" &&
-          actions.some(
-            ({ id, available }) =>
-              available && ["incubate", "bond"].includes(id),
-          )
-        ? ` · Enter ${zh ? "执行实验" : "run protocol"}`
+      : activeId === "laboratory" && inspectingCulture
+        ? ` · b ${zh ? "绑定" : "bond"} · Esc ${zh ? "返回" : "back"}`
+        : activeId === "laboratory" && laboratoryFocus === "shelf"
+          ? ` · Enter ${zh ? "查看" : "inspect"} · b ${zh ? "绑定" : "bond"}`
+          : activeId === "laboratory" &&
+              actions.some(({ id, available }) => id === "incubate" && available)
+            ? ` · Enter ${zh ? "培养" : "incubate"}`
         : "";
   const navigationFooter = compact
     ? `1–4 ${zh ? "区域" : "areas"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${motionLabel}`

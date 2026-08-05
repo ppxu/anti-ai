@@ -27,6 +27,8 @@ When the requested date has not yet been settled, `lab bond` and `lab companion`
 
 Only an already sealed culture can become a companion. `lab bond` records the active culture and its first bond date; it does not consume the culture or remove it from the shelf.
 
+In `anti-ai tui`, the empty Habitat bay reports whether material, incubation, or bonding is still missing. Press `l` to open Laboratory, use `Tab` to focus the culture shelf, `Enter` to inspect a culture, and `b` to preview the bond. When a sealed culture already exists, `b` is also available directly from the empty Habitat bay.
+
 You may switch to another culture later. Switching:
 
 - preserves every former companion and all of its imprints;

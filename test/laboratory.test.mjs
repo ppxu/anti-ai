@@ -603,7 +603,7 @@ test("lab companion settles an unseen day while share only previews the next imp
     env,
   );
   assert.equal(card.status, 0, card.stderr);
-  assert.match(card.stdout, /pollution 3 · clarity 0 · neutral 0/);
+  assert.match(card.stdout, /pollution 2 · clarity 0 · neutral 1/);
   const afterCard = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
@@ -1281,6 +1281,12 @@ test("codex records companion stages and anomalies outside the fixed denominator
       rarity: culture.rarity,
       anomalyIds: companion.anomalyIds,
       fingerprint: companion.appearance.fingerprint,
+      provenance: {
+        firstDiscoveredAt: "2026-07-01",
+        sourceType: "companion_bond",
+        sourceId: cultureId,
+        relatedId: "pollution",
+      },
     },
   ]);
   assert.equal(codex.sections.companions[0].anomalyIds.length, 1);
@@ -1549,6 +1555,12 @@ test("codex collects sealed laboratory cultures without creating duplicates", (t
       rarity: culture.rarity,
       fingerprint: culture.appearance.fingerprint,
       ingredientTypes: culture.ingredients.map(({ type }) => type),
+      provenance: {
+        firstDiscoveredAt: "2026-07-30",
+        sourceType: "laboratory_culture",
+        sourceId: culture.id,
+        relatedId: culture.typeId,
+      },
     },
   ]);
   assert.ok(

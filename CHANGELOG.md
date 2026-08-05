@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-08-05
+
+### Added
+
+- Added a TUI containment brief with the selected day's settled state, pathology changes, discoveries, local records, next milestone, and the existing primary/secondary actions.
+- Added a 7/30-day Containment Archive inside Codex, with keyboard date browsing and read-only daily records for Ecology gains, discoveries, incidents, cases, laboratory changes, and interactions.
+- Added collection provenance and Cabinet status to Codex detail records without exposing locked names or unlock conditions.
+- Added contextual `s` sharing from Overview, Habitat, discovered Codex details, and daily archive details, with a local-only privacy preview and explicit confirmation before creating a non-overwriting SVG file.
+
+### Changed
+
+- Versioned Creature balance rules as v2: growth baselines now use the median of up to 28 prior non-zero days, current Ecology uses the latest 28 experience days, and lifetime Pollution/Clarity totals remain available as history.
+- Removed the high-dose extra Appetite point. Raw volume can still add negative Pollution pressure at dose 75+, but never grants faster stages or bonus ability growth.
+- Updated bilingual TUI copy, Help, READMEs, Creature and architecture guides, methodology, and the Agent Skill for the same archive, provenance, sharing, and balance behavior.
+
+### Security
+
+- Archive, provenance, and share previews derive from the existing local state and remain read-only. A TUI share export writes only the explicitly previewed SVG path after confirmation and never overwrites an existing file.
+- No server, account, telemetry, background process, new gameplay file, required runtime dependency, raw conversation field, or Token-powered upgrade shortcut was added.
+
 ## [2.7.0] - 2026-08-05
 
 ### Changed

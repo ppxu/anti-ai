@@ -7,7 +7,7 @@
 1. `bin/anti-ai.mjs` calls the exported CLI `main()`.
 2. `src/registry.mjs` defines supported commands, cards, and local sources.
 3. explicit report and gameplay commands continue through scanners, domain modules, and the existing terminal or SVG adapters.
-4. `tui` loads a presentation-neutral snapshot and a session-scoped action controller from `src/application/`, then dynamically imports the bundled Ink adapter from `dist/tui.mjs`.
+4. `tui` loads a presentation-neutral snapshot, a session-scoped action controller, and a local share-export controller from `src/application/`, then dynamically imports the bundled Ink adapter from `dist/tui.mjs`.
 5. terminal, TUI, and SVG adapters format derived results without reading raw conversation text.
 
 Source adapters are isolated. A broken source does not hide healthy sources when scanning `all`; output receives a source ID and error code, never a local record or conversation excerpt. SQLite adapters load `better-sqlite3` only when an existing SQLite source is selected.
@@ -18,7 +18,7 @@ Source adapters are isolated. A broken source does not hide healthy sources when
 
 - Human-readable full-source `today`, `week`, and `month`, plus `creature`, `encounter`, and state-changing Laboratory actions, may settle local history.
 - Source-filtered reports and `today --json` are accounting-only.
-- TUI browsing, inspection, replay, and cancellation are read-only. Daily-settlement preview may scan supported usage metadata without writing. Consequence Cabinet curation plus the once-per-day Observation and Contact actions write only stable collection/interaction IDs after explicit confirmation; all writes use the shared action service.
+- TUI browsing, archive inspection, replay, share preview, and cancellation are read-only. Daily-settlement preview may scan supported usage metadata without writing. Consequence Cabinet curation plus the once-per-day Observation and Contact actions write only stable collection/interaction IDs after explicit confirmation; all writes use the shared action service. Confirming a share preview writes only a new SVG with no-overwrite semantics and never changes gameplay state.
 - `codex`, `creature habitat`, every `share` card, `doctor`, `explain`, and Help remain read-only snapshots.
 - `creature reset` is the only command that deliberately deletes the state file and its migration backups.
 
@@ -30,13 +30,13 @@ Add a local Agent by registering its metadata in `src/registry.mjs` and adding o
 
 Add a command in `src/commands/` when it owns substantial orchestration. Keep parsing and allowlists in the registry/CLI layer, domain calculations in their domain module, and formatting in `src/cli/render.mjs` or `src/renderers/`.
 
-Presentation-neutral queries and action orchestration belong in `src/application/`. `action-catalog.mjs` derives availability and disabled reasons, `actions.mjs` owns preview/execute sessions, and `settlement.mjs` contains the shared settlement pipeline. CLI commands and the TUI call these services instead of duplicating domain rules; the TUI must not call command handlers or execute arbitrary shell commands. Domain modules remain the only owners of mutation rules. `src/incidents.mjs` owns deterministic incident eligibility, contextual selection, sealed responses, delayed aftermaths, and two-chapter chains; adapters only present or invoke those rules.
+Presentation-neutral queries and action orchestration belong in `src/application/`. `action-catalog.mjs` derives availability and disabled reasons, `actions.mjs` owns preview/execute sessions, `settlement.mjs` contains the shared settlement pipeline, and `archive.mjs` derives the post-hatch daily containment record. `share-export.mjs` prepares a context-specific SVG from already settled state in memory and writes it only after confirmation. CLI commands and the TUI call these services instead of duplicating domain rules; the TUI must not call command handlers or execute arbitrary shell commands. Domain modules remain the only owners of mutation rules. `src/incidents.mjs` owns deterministic incident eligibility, contextual selection, sealed responses, delayed aftermaths, and two-chapter chains; adapters only present or invoke those rules.
 
 The TUI consumes structured snapshots rather than terminal strings. `src/consequence-cabinet.mjs` owns the three-slot display references and deterministic daily narrative reactions. The schema v12 migration adds an empty Cabinet and never invents past displays or interactions. `src/application/tui-motion.mjs` owns deterministic ASCII frames, anatomy observations, rare-glitch eligibility, and event-replay scenes; it has no timer or persistence access. `src/tui/` owns ephemeral frame counters, keyboard focus, compact layout, and confirmation state. Motion is capped at 4 FPS, pauses outside living screens, and can be disabled without changing the snapshot.
 
 Ink and React stay in `devDependencies`; `scripts/build-tui.mjs` bundles them into `dist/tui.mjs`, so normal commands do not load the framework and installed packages keep zero required runtime dependencies. Edit `src/tui/`, never the generated bundle.
 
-Creature content belongs in `src/creature/content.mjs`; appearance composition belongs in `src/creature/appearance.mjs`; growth and collection rules remain in `src/creature.mjs`. New mechanics must preserve the product guardrail: high use, restrained use, and AI-free days may shape different outcomes, but Token volume must not become the only upgrade path.
+Creature content belongs in `src/creature/content.mjs`; appearance composition belongs in `src/creature/appearance.mjs`; the versioned daily-growth policy belongs in `src/creature/balance.mjs`; aggregate growth and collection rules remain in `src/creature.mjs`. Balance v2 compares active days with the median of up to 28 prior non-zero days, treats very high absolute dose as pollution rather than bonus ability points, and classifies the current ecology from a recent 28-experience-day window while retaining lifetime totals for records. New mechanics must preserve the product guardrail: high use, restrained use, and AI-free days may shape different outcomes, but Token volume must not become the only upgrade path.
 
 ## Quality gates
 

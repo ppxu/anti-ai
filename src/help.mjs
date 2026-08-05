@@ -102,8 +102,8 @@ const COMMAND_HELP = {
       "Open the controlled interactive containment console.",
     ],
     output: [
-      "在四个区域中浏览图鉴与生态舱，陈列收藏，并直接从实验室选择配方、查看培养架、检查培养物和绑定伴生物。",
-      "Browse the Codex and Habitat, display collections, and directly select formulas, inspect the culture shelf, open culture files, and bond companions in Laboratory.",
+      "在四个区域中浏览今日收容简报、7/30 天档案、收藏来源与生态舱，并直接完成主要实验室操作。",
+      "Browse today's containment brief, the 7/30-day archive, collection provenance, and Habitat, while completing the main Laboratory actions directly.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
@@ -115,8 +115,8 @@ const COMMAND_HELP = {
       "anti-ai tui --no-motion",
     ],
     note: [
-      "无参数 anti-ai 在交互终端会打开本界面；伴生位会引导原料、培养和绑定，所有写入仍需影响预览与明确确认。Agent 应使用显式命令及 --json。",
-      "A no-argument interactive launch opens this console; the companion bay guides material, incubation, and bonding, while every write still requires preview and confirmation. Agents should use explicit commands and --json.",
+      "h 打开图鉴内的收容档案，s 预览本地 SVG；浏览不写入，分享与玩法写入都需要明确确认。Agent 应使用显式命令及 --json。",
+      "Press h for the Codex archive and s to preview a local SVG; browsing never writes, while sharing and gameplay writes require explicit confirmation. Agents should use explicit commands and --json.",
     ],
     related: ["today", "creature habitat", "lab", "codex"],
   },

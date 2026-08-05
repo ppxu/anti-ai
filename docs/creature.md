@@ -37,7 +37,7 @@ Every settled calendar day after hatching adds exactly `1` experience day:
 - low use advances one day and tends to grow Clarity;
 - an AI-free day advances one day, adds Clarity, and grows Withdrawal.
 
-Daily Token totals are compressed logarithmically into a capped pollution dose from `1–100`. Dose shapes pathology, abilities, and events, but never accelerates stages.
+Daily Token totals are compressed logarithmically into a capped pollution dose from `1–100`. Dose shapes pathology and events, while dose `75+` also applies at least one point of negative Pollution pressure. It never accelerates stages or grants an extra ability point.
 
 Each 90-day generation has four stages:
 
@@ -122,13 +122,13 @@ Pathology affects the kaiju crest, dominant ability growth, events, and core for
 
 ## Ecology: Pollution and Clarity
 
-Relative to the prior seven-calendar-day personal baseline:
+Growth balance v2 compares an active day with the median of up to 28 prior non-zero days. AI-free days do not drag the personal baseline downward, and one spike cannot inflate the following week into false restraint:
 
 - high use adds `1–3` Pollution;
 - low use adds `1–2` Clarity;
 - an AI-free day adds `3` Clarity.
 
-The two values coexist and produce four ecologies:
+Lifetime Pollution and Clarity totals remain in the case history. The visible current identity is derived from the latest 28 experience days, so a creature can change course without erasing what shaped it. The two current-window values produce four ecologies:
 
 | Ecology | Meaning |
 |---|---|
@@ -278,7 +278,7 @@ A local seed plus the date selects one reproducible event per active day. After 
 
 Locked fixed entries remain `???`. Collection discovery does not prefer high Token use: Pollution, Clarity, AI-free days, achievements, rare abilities, generations, and explicit evolution choices all have independent routes.
 
-Inside the TUI, Codex supports category → entry → detail navigation. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. The cabinet changes Codex, Habitat, and Habitat-card presentation only; it adds no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
+Inside the TUI, Codex supports category → entry → detail navigation. Details show first discovery, provenance, a related record, and Cabinet status without leaking locked names or conditions. Press `h` for the nested Containment Archive, `t` to toggle 7/30 days, and `Enter` for a daily record. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. Press `s` from Overview, Habitat, a discovered record, or a daily archive detail to preview and explicitly export an existing privacy-safe SVG card. The cabinet and exported files add no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
 
 Nine privacy-safe SVG cards are available:
 

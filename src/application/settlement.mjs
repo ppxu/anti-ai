@@ -16,6 +16,7 @@ import { syncLaboratoryCompanion } from "../companion.mjs";
 import { syncCreatureIncidents } from "../incidents.mjs";
 import { inclusiveDateRange, shiftDate } from "../reporting.mjs";
 import { reportsForDates } from "../scanner.mjs";
+import { CREATURE_BASELINE_WINDOW } from "../creature/balance.mjs";
 
 async function settleCreatureState(state, date, options, timezone) {
   const defaultStart = shiftDate(date, -29);
@@ -30,7 +31,10 @@ async function settleCreatureState(state, date, options, timezone) {
       ? shiftDate(latestObservedDate, 1)
       : defaultStart;
   const dates = inclusiveDateRange(startDate, date);
-  const scanDates = inclusiveDateRange(shiftDate(startDate, -7), date);
+  const scanDates = inclusiveDateRange(
+    shiftDate(startDate, -CREATURE_BASELINE_WINDOW),
+    date,
+  );
   const scannedReports = await reportsForDates(options, scanDates, timezone);
   const reportsByDate = new Map(
     scannedReports.map((report) => [report.date, report]),
@@ -38,8 +42,12 @@ async function settleCreatureState(state, date, options, timezone) {
 
   for (const report of dates.map((entryDate) => reportsByDate.get(entryDate))) {
     const previousCreature = deriveCreature(state, shiftDate(report.date, -1));
-    const historicalReports = Array.from({ length: 7 }, (_, index) =>
-      reportsByDate.get(shiftDate(report.date, index - 7)),
+    const historicalReports = Array.from(
+      { length: CREATURE_BASELINE_WINDOW },
+      (_, index) =>
+        reportsByDate.get(
+          shiftDate(report.date, index - CREATURE_BASELINE_WINDOW),
+        ),
     );
     const record = dailyCreatureRecord(report, historicalReports);
     const evolutionEffect = creatureEvolutionEffect(

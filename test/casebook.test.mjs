@@ -224,7 +224,7 @@ test("creature history promotes rare mutations, chromatic gains, and badges to k
     badgeEvents.some(
       (event) =>
         event.type === "achievement" &&
-        event.id === "baseline_arsonist",
+        event.id === "desk_reactor",
     ),
   );
   assert.ok(

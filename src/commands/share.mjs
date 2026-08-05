@@ -32,7 +32,15 @@ import { deriveHabitat } from "../habitat.mjs";
 import { runCreature } from "./creature.mjs";
 import { encounterContext, encounterErrorMessage } from "./encounter.mjs";
 
-async function runShare(options) {
+function shareFailure(message, status = 2) {
+  return { status, error: message, svg: null };
+}
+
+function shareSuccess(svg) {
+  return { status: 0, error: null, svg };
+}
+
+async function renderShareCard(options) {
   if (options.card === "habitat") {
     const context = await runCreature(
       {
@@ -50,7 +58,7 @@ async function runShare(options) {
       context.result.date,
       creatureArt(context.result),
     );
-    process.stdout.write(
+    return shareSuccess(
       renderHabitatShareSvg(
         habitat,
         {
@@ -70,7 +78,6 @@ async function runShare(options) {
         options.lang,
       ),
     );
-    return;
   }
   if (options.card === "companion") {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -79,11 +86,10 @@ async function runShare(options) {
     try {
       state = await loadCreatureState();
     } catch {
-      process.stderr.write(
-        `${localized(options.lang, "伴生异物分享卡无法读取异变体档案。", "The companion card cannot read the mutation file.")}\n`,
+      return shareFailure(
+        localized(options.lang, "伴生异物分享卡无法读取异变体档案。", "The companion card cannot read the mutation file."),
+        1,
       );
-      process.exitCode = 1;
-      return;
     }
     if (!state.days?.[date]) {
       const creatureContext = await runCreature(
@@ -101,14 +107,12 @@ async function runShare(options) {
     syncLaboratoryCompanion(state, date);
     const view = laboratoryCompanion(state, date);
     if (!view.companion) {
-      process.stderr.write(
-        `${localized(options.lang, "当前没有可分享的伴生异物。", "No symbiotic companion is available to share.")}\n`,
+      return shareFailure(
+        localized(options.lang, "当前没有可分享的伴生异物。", "No symbiotic companion is available to share."),
       );
-      process.exitCode = 2;
-      return;
     }
     const companion = view.companion;
-    process.stdout.write(
+    return shareSuccess(
       renderCompanionShareSvg(
         {
           date,
@@ -131,7 +135,6 @@ async function runShare(options) {
         options.lang,
       ),
     );
-    return;
   }
   if (options.card === "culture") {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -140,24 +143,21 @@ async function runShare(options) {
     try {
       state = await loadCreatureState();
     } catch {
-      process.stderr.write(
-        `${localized(options.lang, "培养物分享卡无法读取异变体档案。", "The culture card cannot read the mutation file.")}\n`,
+      return shareFailure(
+        localized(options.lang, "培养物分享卡无法读取异变体档案。", "The culture card cannot read the mutation file."),
+        1,
       );
-      process.exitCode = 1;
-      return;
     }
     const shelf = laboratoryShelf(state, date);
     const culture = options.id
       ? laboratoryCulture(state, date, options.id)
       : shelf.cultures.at(-1);
     if (!culture) {
-      process.stderr.write(
-        `${localized(options.lang, "当前没有可分享的污染培养物。", "No pollution culture is available to share.")}\n`,
+      return shareFailure(
+        localized(options.lang, "当前没有可分享的污染培养物。", "No pollution culture is available to share."),
       );
-      process.exitCode = 2;
-      return;
     }
-    process.stdout.write(
+    return shareSuccess(
       renderCultureShareSvg(
         {
           date: culture.createdAt,
@@ -196,7 +196,6 @@ async function runShare(options) {
         options.lang,
       ),
     );
-    return;
   }
   if (options.card === "prognosis") {
     const context = await runCreature(
@@ -214,13 +213,11 @@ async function runShare(options) {
       context.result.date,
     );
     if (!intervention || intervention.status !== "pending") {
-      process.stderr.write(
-        `${localized(options.lang, "当前没有可分享的待处理转折病例。", "No pending turning-point case is available to share.")}\n`,
+      return shareFailure(
+        localized(options.lang, "当前没有可分享的待处理转折病例。", "No pending turning-point case is available to share."),
       );
-      process.exitCode = 2;
-      return;
     }
-    process.stdout.write(
+    return shareSuccess(
       renderPrognosisShareSvg(
         {
           date: context.result.date,
@@ -246,7 +243,6 @@ async function runShare(options) {
         options.lang,
       ),
     );
-    return;
   }
   if (options.card === "encounter") {
     let context;
@@ -260,13 +256,11 @@ async function runShare(options) {
       );
     } catch (error) {
       if (!(error instanceof SpecimenCodeError)) throw error;
-      process.stderr.write(`${encounterErrorMessage(error, options.lang)}\n`);
-      process.exitCode = 2;
-      return;
+      return shareFailure(encounterErrorMessage(error, options.lang));
     }
     if (!context) return;
     const { encounter } = context;
-    process.stdout.write(
+    return shareSuccess(
       renderEncounterShareSvg(
         {
           date: encounter.date,
@@ -299,7 +293,6 @@ async function runShare(options) {
         options.lang,
       ),
     );
-    return;
   }
   if (
     ["pathology", "specimen", "wanted", "fossil"].includes(options.card)
@@ -314,13 +307,12 @@ async function runShare(options) {
       "snapshot-result",
     );
     if (!creature) {
-      process.stderr.write(
-        `${options.card === "pathology"
+      return shareFailure(
+        options.card === "pathology"
           ? localized(options.lang, "病理报告无法读取异变体档案。运行 anti-ai creature reset 后可重新孵化。", "The pathology card cannot read the mutation file. Run anti-ai creature reset to hatch again.")
-          : localized(options.lang, "收藏卡无法读取异变体档案。运行 anti-ai creature reset 后可重新孵化。", "The collection card cannot read the mutation file. Run anti-ai creature reset to hatch again.")}\n`,
+          : localized(options.lang, "收藏卡无法读取异变体档案。运行 anti-ai creature reset 后可重新孵化。", "The collection card cannot read the mutation file. Run anti-ai creature reset to hatch again."),
+        1,
       );
-      process.exitCode = 1;
-      return;
     }
     const ecologyGain = [
       creature.today.ecologyGains.pollution > 0
@@ -370,19 +362,14 @@ async function runShare(options) {
         ecologyGain || localized(options.lang, "惯常波动", "habitual drift"),
     };
     if (options.card === "pathology") {
-      process.stdout.write(
-        renderPathologyShareSvg(view, options.lang),
-      );
-      return;
+      return shareSuccess(renderPathologyShareSvg(view, options.lang));
     }
     if (options.card === "fossil") {
       const fossil = creature.fossils.at(-1);
       if (!fossil) {
-        process.stderr.write(
-          `${localized(options.lang, "当前没有永久化石可生成证书。第 90 个阅历日后再来。", "No permanent fossil is available for certification. Return after experience day 90.")}\n`,
+        return shareFailure(
+          localized(options.lang, "当前没有永久化石可生成证书。第 90 个阅历日后再来。", "No permanent fossil is available for certification. Return after experience day 90."),
         );
-        process.exitCode = 2;
-        return;
       }
       view.fossil = {
         ...fossil,
@@ -406,14 +393,13 @@ async function runShare(options) {
       view.scar = creatureLabel("scars", fossil.scarId, options.lang);
       delete view.art;
     }
-    process.stdout.write(
+    return shareSuccess(
       renderCreatureCollectionShareSvg(
         view,
         options.card,
         options.lang,
       ),
     );
-    return;
   }
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const date = options.date ?? localDate(new Date(), timezone);
@@ -421,9 +407,20 @@ async function runShare(options) {
     shiftDate(date, index - 7),
   );
   const reports = await reportsForDates(options, dates, timezone);
-  process.stdout.write(
+  return shareSuccess(
     renderShareSvg(reports.at(-1), reports.slice(0, -1), options.lang),
   );
 }
 
-export { runShare };
+async function runShare(options) {
+  const result = await renderShareCard(options);
+  if (!result) return;
+  if (result.error) {
+    process.stderr.write(`${result.error}\n`);
+    process.exitCode = result.status;
+    return;
+  }
+  process.stdout.write(result.svg);
+}
+
+export { renderShareCard, runShare };

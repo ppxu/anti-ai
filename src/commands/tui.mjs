@@ -1,5 +1,6 @@
 import { localized } from "../shared.mjs";
 import { createContainmentSession } from "../application/actions.mjs";
+import { createTuiShareController } from "../application/share-export.mjs";
 
 async function runTui(options) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
@@ -33,6 +34,7 @@ async function runTui(options) {
     lang: options.lang,
     motion: options.noMotion ? "off" : "low",
     actionController: session.actionController,
+    shareController: createTuiShareController(options),
   });
 }
 

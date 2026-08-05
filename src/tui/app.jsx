@@ -137,6 +137,30 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch, compact }) {
         </Panel>
       </Box>
       <Panel
+        title={zh ? "今日收容简报" : "TODAY'S CONTAINMENT BRIEF"}
+        color="cyan"
+        marginTop={1}
+      >
+        {overview.brief.day ? (
+          <>
+            <Text bold color={statusColor}>
+              {overview.brief.day.statusLabel} · {overview.brief.day.usageBandLabel}
+            </Text>
+            <Text>{overview.brief.day.summary}</Text>
+            {overview.brief.day.pathologyChanges.slice(0, 1).map((change) => (
+              <Text key={`${change.type}-${change.to}`} color="magenta">
+                {change.label}
+              </Text>
+            ))}
+          </>
+        ) : (
+          <Text dimColor>
+            {zh ? "当前日期尚未结算。档案员正在等你制造或避免后果。" : "This date is unsettled. The archivist awaits consequences—or restraint."}
+          </Text>
+        )}
+        <Text color="yellow">{overview.brief.nextMilestone.label}</Text>
+      </Panel>
+      <Panel
         title={zh ? "今天可做" : "AVAILABLE TODAY"}
         color="yellow"
         marginTop={1}
@@ -584,11 +608,89 @@ function CabinetSlots({ cabinet, lang, showInteractions = false }) {
   );
 }
 
-function CodexScreen({ snapshot, lang, mode, categoryIndex, entryIndex, compact }) {
+function CodexScreen({
+  snapshot,
+  lang,
+  mode,
+  categoryIndex,
+  entryIndex,
+  archiveSpan,
+  archiveIndex,
+  compact,
+}) {
   const { codex } = snapshot;
   const zh = lang === "zh";
   const category = codex.categories[categoryIndex] ?? codex.categories[0];
   const entry = category?.entries[entryIndex] ?? null;
+  const archiveDays = codex.archive.days.slice(0, archiveSpan);
+  const archiveDay = archiveDays[archiveIndex] ?? null;
+  if (mode === "archive_detail" && archiveDay) {
+    return (
+      <Box flexDirection="column">
+        <Panel title={`${zh ? "每日收容记录" : "DAILY CONTAINMENT RECORD"} · ${archiveDay.date}`} color="magenta">
+          <Text bold color={archiveDay.status === "active" ? "red" : "cyan"}>
+            {archiveDay.statusLabel} · {archiveDay.usageBandLabel}
+          </Text>
+          <Text>{archiveDay.summary}</Text>
+          {archiveDay.mutationEventLabel ? (
+            <Text>{zh ? "异变事件" : "MUTATION EVENT"}　{archiveDay.mutationEventLabel}</Text>
+          ) : null}
+          <Text bold color="magenta">{zh ? "病理变化" : "PATHOLOGY CHANGES"}</Text>
+          {archiveDay.pathologyChanges.length > 0 ? (
+            archiveDay.pathologyChanges.map((change) => (
+              <Text key={`${change.type}-${change.to}`}>· {change.label}</Text>
+            ))
+          ) : (
+            <Text dimColor>{zh ? "· 无结构性变化" : "· No structural change"}</Text>
+          )}
+          <Text bold color="cyan">{zh ? "新增收藏" : "DISCOVERIES"}</Text>
+          {archiveDay.discoveries.length > 0 ? (
+            archiveDay.discoveries.map((discovery) => (
+              <Text key={`${discovery.type}-${discovery.id}`}>· {discovery.label}</Text>
+            ))
+          ) : (
+            <Text dimColor>{zh ? "· 今日没有新标本入库" : "· No new records today"}</Text>
+          )}
+          {archiveDay.activities.map((activity, index) => (
+            <Text key={`${activity.type}-${index}`}>· {activity.label}</Text>
+          ))}
+          <Text dimColor>
+            {zh ? "s 分享 · Esc 返回档案" : "s share · Esc returns to archive"}
+          </Text>
+        </Panel>
+      </Box>
+    );
+  }
+  if (mode === "archive") {
+    return (
+      <Box flexDirection="column">
+        <Panel title={zh ? "收容档案" : "CONTAINMENT ARCHIVE"} color="magenta">
+          <Box justifyContent="space-between">
+            <Text bold>{zh ? `最近 ${archiveSpan} 天` : `LATEST ${archiveSpan} DAYS`}</Text>
+            <Text dimColor>{zh ? "t 切换 7 / 30 天" : "t toggles 7 / 30 days"}</Text>
+          </Box>
+          {archiveDays.length > 0 ? (
+            archiveDays.map((day, index) => (
+              <Box key={day.date} justifyContent="space-between">
+                <Text
+                  bold={index === archiveIndex}
+                  color={index === archiveIndex ? "yellow" : day.status === "active" ? "red" : "cyan"}
+                >
+                  {index === archiveIndex ? "> " : "  "}{day.date} · {day.statusLabel}
+                </Text>
+                <Text dimColor>{day.summary}</Text>
+              </Box>
+            ))
+          ) : (
+            <Text dimColor>{zh ? "尚无孵化后的收容记录。" : "No post-hatch containment records yet."}</Text>
+          )}
+          <Text dimColor>
+            {zh ? "↑↓ 选择日期 · Enter 查看 · Esc 返回图鉴" : "↑↓ selects a date · Enter opens · Esc returns to Codex"}
+          </Text>
+        </Panel>
+      </Box>
+    );
+  }
   if (mode === "detail" && entry) {
     return (
       <Box flexDirection="column">
@@ -606,11 +708,26 @@ function CodexScreen({ snapshot, lang, mode, categoryIndex, entryIndex, compact 
           <Text>
             {zh ? "发现于" : "DISCOVERED"}　{entry.discoveredAt ?? (zh ? "尚未发现" : "LOCKED")}
           </Text>
+          {entry.discovered && entry.provenance ? (
+            <>
+              <Text>
+                {zh ? "来源" : "SOURCE"}　{entry.provenance.sourceLabel}
+              </Text>
+              <Text>
+                {zh ? "关联记录" : "RELATED RECORD"}　{entry.provenance.relatedId ?? entry.provenance.sourceId ?? "—"}
+              </Text>
+              <Text>
+                {zh ? "陈列状态" : "DISPLAY STATUS"}　{entry.cabinet.displayed
+                  ? zh ? `第 ${entry.cabinet.slot} 位` : `SLOT ${entry.cabinet.slot}`
+                  : zh ? "未陈列" : "NOT DISPLAYED"}
+              </Text>
+            </>
+          ) : null}
           <Text dimColor>
             {entry.discovered
               ? zh
-                ? "d 陈列 · Esc 返回条目"
-                : "d display · Esc returns to entries"
+                ? "d 陈列 · s 分享 · Esc 返回条目"
+                : "d display · s share · Esc returns to entries"
               : zh
                 ? "锁定条目不会泄露名称或解锁条件 · Esc 返回"
                 : "Locked records reveal neither names nor hidden conditions · Esc returns"}
@@ -711,7 +828,7 @@ function CodexScreen({ snapshot, lang, mode, categoryIndex, entryIndex, compact 
         )}
       </Panel>
       <Text dimColor>
-        {zh ? "↑↓ 选择分类 · Enter 浏览条目" : "↑↓ selects a category · Enter browses entries"}
+        {zh ? "↑↓ 选择分类 · Enter 浏览条目 · h 收容档案" : "↑↓ selects a category · Enter browses entries · h archive"}
       </Text>
       <CabinetSlots cabinet={codex.cabinet} lang={lang} />
     </Box>
@@ -723,6 +840,7 @@ function HelpOverlay({ lang, activeId, codexMode }) {
   const contextual = {
     overview: [
       ["Enter", zh ? "处理当前主要行动" : "open the primary action"],
+      ["s", zh ? "导出异变体分享卡" : "export the specimen share card"],
     ],
     habitat: [
       ["Enter", zh ? "进入只读器官观察" : "open read-only anatomy inspection"],
@@ -730,6 +848,7 @@ function HelpOverlay({ lang, activeId, codexMode }) {
       ["r", zh ? "回放最近生态事件" : "replay the latest habitat event"],
       ["l", zh ? "前往污染实验室" : "open the pollution laboratory"],
       ["b", zh ? "选择或切换伴生物" : "bond or switch a companion"],
+      ["s", zh ? "导出生态舱分享卡" : "export the habitat share card"],
     ],
     laboratory: [
       ["Tab", zh ? "切换配方与培养架" : "switch formulas and shelf"],
@@ -741,7 +860,10 @@ function HelpOverlay({ lang, activeId, codexMode }) {
     codex: [
       ["↑↓ / Tab", zh ? "选择分类或条目" : "select category or entry"],
       ["Enter", zh ? "进入下一级" : "open the next level"],
+      ["h", zh ? "打开收容档案" : "open containment archive"],
+      ["t", zh ? "切换 7 / 30 天档案" : "toggle 7 / 30 day archive"],
       ["d", zh ? "陈列已发现条目" : "display a discovered entry"],
+      ["s", zh ? "预览并导出当前记录" : "preview and export the current record"],
       ["Esc", zh ? `${codexMode === "categories" ? "退出" : "返回上一级"}` : codexMode === "categories" ? "exit" : "go up one level"],
     ],
   }[activeId] ?? [];
@@ -765,11 +887,52 @@ function HelpOverlay({ lang, activeId, codexMode }) {
   );
 }
 
+function ShareOverlay({ mode, preview, result, error, lang }) {
+  const zh = lang === "zh";
+  if (mode === "loading") {
+    return (
+      <Panel title={zh ? "分享卡" : "SHARE CARD"} color="yellow">
+        <Text>{zh ? "正在准备本地卡片……" : "Preparing the local card…"}</Text>
+      </Panel>
+    );
+  }
+  if (mode === "error") {
+    return (
+      <Panel title={zh ? "分享失败" : "SHARE FAILED"} color="red">
+        <Text>{error}</Text>
+        <Text dimColor>{zh ? "Esc 返回，不会写入文件" : "Esc returns without writing a file"}</Text>
+      </Panel>
+    );
+  }
+  if (mode === "result") {
+    return (
+      <Panel title={zh ? "分享卡已保存" : "SHARE CARD SAVED"} color="green">
+        <Text bold color="green">{result.message}</Text>
+        <Text>{result.targetPath}</Text>
+        <Text dimColor>{zh ? "Enter 返回当前页面" : "Enter returns to the current page"}</Text>
+      </Panel>
+    );
+  }
+  return (
+    <Panel title={zh ? "分享卡预览" : "SHARE CARD PREVIEW"} color="yellow">
+      <Text bold>{preview.title}</Text>
+      <Text>{zh ? "卡片类型" : "CARD"}　{preview.card.toUpperCase()}</Text>
+      <Text>{zh ? "目标文件" : "TARGET"}　{preview.filename}</Text>
+      <Text color="cyan">{preview.privacy}</Text>
+      <Text color="yellow">{preview.warning}</Text>
+      <Text dimColor>
+        {zh ? "y / Enter 确认导出 · n / Esc 取消" : "y / Enter exports · n / Esc cancels"}
+      </Text>
+    </Panel>
+  );
+}
+
 function TuiApp({
   snapshot: initialSnapshot,
   lang = "zh",
   initialMotion = "low",
   actionController = null,
+  shareController = null,
   terminalColumns = undefined,
 }) {
   const { exit } = useApp();
@@ -790,9 +953,15 @@ function TuiApp({
   const [actionResult, setActionResult] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [actionOrigin, setActionOrigin] = useState("menu");
+  const [shareMode, setShareMode] = useState(null);
+  const [sharePreview, setSharePreview] = useState(null);
+  const [shareResult, setShareResult] = useState(null);
+  const [shareError, setShareError] = useState(null);
   const [codexMode, setCodexMode] = useState("categories");
   const [codexCategoryIndex, setCodexCategoryIndex] = useState(0);
   const [codexEntryIndex, setCodexEntryIndex] = useState(0);
+  const [codexArchiveSpan, setCodexArchiveSpan] = useState(7);
+  const [codexArchiveIndex, setCodexArchiveIndex] = useState(0);
   const [laboratoryFocus, setLaboratoryFocus] = useState(
     initialSnapshot.laboratory.proposals.length > 0 ? "formulas" : "shelf",
   );
@@ -812,6 +981,70 @@ function TuiApp({
       );
   const actions = snapshot.actions ?? [];
   const menuActions = actions.filter(({ available }) => available);
+  const activeCodexCategory = snapshot.codex.categories[codexCategoryIndex];
+  const activeCodexEntry = activeCodexCategory?.entries[codexEntryIndex] ?? null;
+  const activeArchiveDay = snapshot.codex.archive.days
+    .slice(0, codexArchiveSpan)[codexArchiveIndex] ?? null;
+
+  const currentShareContext = () => {
+    const settledDate = snapshot.lastSettledDate;
+    if (activeId === "overview") {
+      return settledDate ? { screen: "overview", date: settledDate } : null;
+    }
+    if (activeId === "habitat") {
+      return settledDate ? { screen: "habitat", date: settledDate } : null;
+    }
+    if (activeId === "codex" && codexMode === "archive_detail" && activeArchiveDay) {
+      return { screen: "archive", date: activeArchiveDay.date };
+    }
+    if (activeId === "codex" && codexMode === "detail" && activeCodexEntry) {
+      return {
+        screen: "codex",
+        date: activeCodexEntry.discoveredAt ?? settledDate,
+        entry: activeCodexEntry,
+      };
+    }
+    return null;
+  };
+
+  const openSharePreview = async () => {
+    const context = currentShareContext();
+    if (!context || !shareController?.preview) return;
+    setShareMode("loading");
+    setShareError(null);
+    setShareResult(null);
+    try {
+      const preview = await shareController.preview(context);
+      if (!preview.available) {
+        setShareError(preview.reasonLabel ?? preview.reason);
+        setShareMode("error");
+        return;
+      }
+      setSharePreview(preview);
+      setShareMode("preview");
+    } catch (error) {
+      setShareError(error?.message ?? String(error));
+      setShareMode("error");
+    }
+  };
+
+  const executeShare = async () => {
+    if (!sharePreview || !shareController?.execute) return;
+    setShareMode("loading");
+    try {
+      const result = await shareController.execute(sharePreview);
+      if (result.status !== "completed") {
+        setShareError(result.reasonLabel ?? result.reason);
+        setShareMode("error");
+        return;
+      }
+      setShareResult(result);
+      setShareMode("result");
+    } catch (error) {
+      setShareError(error?.message ?? String(error));
+      setShareMode("error");
+    }
+  };
 
   const openActionMenu = () => {
     const primaryIndex = snapshot.primaryAction
@@ -892,6 +1125,27 @@ function TuiApp({
   }, [activeId, motion, showHelp, actionMode]);
 
   useInput((input, key) => {
+    if (shareMode !== null) {
+      if (shareMode === "loading") return;
+      if (
+        key.escape ||
+        input === "q" ||
+        (shareMode === "preview" && input === "n")
+      ) {
+        setShareMode(null);
+        return;
+      }
+      if (shareMode === "preview" && (key.return || input === "y")) {
+        void executeShare();
+        return;
+      }
+      if (shareMode === "result" && key.return) {
+        setShareMode(null);
+        setSharePreview(null);
+        setShareResult(null);
+      }
+      return;
+    }
     if (actionMode !== null) {
       if (actionMode === "loading") return;
       if (
@@ -975,6 +1229,7 @@ function TuiApp({
       }
       if (activeId === "codex" && codexMode !== "categories") {
         if (codexMode === "detail") setCodexMode("entries");
+        else if (codexMode === "archive_detail") setCodexMode("archive");
         else setCodexMode("categories");
         return;
       }
@@ -1013,6 +1268,10 @@ function TuiApp({
       setMotion((value) => nextMotionLevel(value));
       return;
     }
+    if (input === "s" && currentShareContext()) {
+      void openSharePreview();
+      return;
+    }
     if (input === "a") {
       openActionMenu();
       return;
@@ -1047,6 +1306,11 @@ function TuiApp({
       const category = categories[codexCategoryIndex];
       const entries = category?.entries ?? [];
       if (codexMode === "categories") {
+        if (input === "h") {
+          setCodexArchiveIndex(0);
+          setCodexMode("archive");
+          return;
+        }
         if (key.upArrow) {
           setCodexCategoryIndex(
             (value) => (value + categories.length - 1) % categories.length,
@@ -1062,6 +1326,30 @@ function TuiApp({
         if (key.return) {
           setCodexEntryIndex(0);
           setCodexMode("entries");
+          return;
+        }
+      } else if (codexMode === "archive") {
+        const archiveCount = Math.min(
+          codexArchiveSpan,
+          snapshot.codex.archive.days.length,
+        );
+        if (input === "t") {
+          setCodexArchiveSpan((value) => (value === 7 ? 30 : 7));
+          setCodexArchiveIndex(0);
+          return;
+        }
+        if (archiveCount > 0 && key.upArrow) {
+          setCodexArchiveIndex(
+            (value) => (value + archiveCount - 1) % archiveCount,
+          );
+          return;
+        }
+        if (archiveCount > 0 && (key.downArrow || key.tab)) {
+          setCodexArchiveIndex((value) => (value + 1) % archiveCount);
+          return;
+        }
+        if (archiveCount > 0 && key.return) {
+          setCodexMode("archive_detail");
           return;
         }
       } else if (codexMode === "entries") {
@@ -1242,6 +1530,8 @@ function TuiApp({
         mode={codexMode}
         categoryIndex={codexCategoryIndex}
         entryIndex={codexEntryIndex}
+        archiveSpan={codexArchiveSpan}
+        archiveIndex={codexArchiveIndex}
         compact={compact}
       />
     ),
@@ -1257,9 +1547,13 @@ function TuiApp({
         snapshot.habitat.events.length > 0
           ? ` · r ${zh ? "回放" : "replay"}`
           : ""
-      }`
+      } · s ${zh ? "分享" : "share"}`
     : activeId === "overview" && snapshot.primaryAction
-      ? ` · Enter ${zh ? "处理" : "act"}`
+      ? ` · Enter ${zh ? "处理" : "act"} · s ${zh ? "分享" : "share"}`
+      : activeId === "overview"
+        ? ` · s ${zh ? "分享" : "share"}`
+        : activeId === "codex" && ["detail", "archive_detail"].includes(codexMode)
+          ? ` · s ${zh ? "分享" : "share"}`
       : activeId === "laboratory" && inspectingCulture
         ? ` · b ${zh ? "绑定" : "bond"} · Esc ${zh ? "返回" : "back"}`
         : activeId === "laboratory" && laboratoryFocus === "shelf"
@@ -1291,27 +1585,40 @@ function TuiApp({
     loading: <ActionStatus mode="loading" lang={lang} />,
     error: <ActionStatus mode="error" error={actionError} lang={lang} />,
   }[actionMode];
+  const shareOverlay = shareMode === null ? null : (
+    <ShareOverlay
+      mode={shareMode}
+      preview={sharePreview}
+      result={shareResult}
+      error={shareError}
+      lang={lang}
+    />
+  );
 
   return (
     <Box flexDirection="column" paddingX={1} width={columns}>
       <Header snapshot={snapshot} lang={lang} />
       <Navigation
         navigation={snapshot.navigation}
-        activeId={showHelp || actionMode !== null ? null : activeId}
+        activeId={showHelp || actionMode !== null || shareMode !== null ? null : activeId}
       />
       {showHelp ? (
         <HelpOverlay lang={lang} activeId={activeId} codexMode={codexMode} />
-      ) : actionOverlay ?? screen}
+      ) : shareOverlay ?? actionOverlay ?? screen}
       <Box marginTop={1} justifyContent="space-between">
         <Text dimColor>
-          {actionMode !== null
+          {shareMode !== null
+            ? zh
+              ? "本地分享 · 预览不会写入，确认后才创建 SVG"
+              : "Local sharing · preview is read-only; confirmation creates the SVG"
+            : actionMode !== null
             ? zh
               ? "收容协议 · 所有写入都需要明确确认"
               : "Containment protocol · every write requires confirmation"
             : `${navigationFooter}${contextualFooter}`}
         </Text>
         <Text dimColor>
-          {actionMode !== null
+          {actionMode !== null || shareMode !== null
             ? `Esc ${zh ? "返回" : "back"}`
             : `q ${zh ? "退出" : "quit"}`}
         </Text>

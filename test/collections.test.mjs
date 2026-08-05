@@ -406,6 +406,12 @@ test("codex --json derives a stable private collection from creature history", (
       pathologyId: "nuclear",
       discovered: true,
       discoveredAt: "2026-07-23",
+      provenance: {
+        firstDiscoveredAt: "2026-07-23",
+        sourceType: "specimen_record",
+        sourceId: report.sections.specimens[0].id,
+        relatedId: "extinguished_core",
+      },
     },
   );
   assert.deepEqual(report.recent, [
@@ -601,17 +607,15 @@ test("codex keeps achievement category colors while preserving rarity labels", (
   assert.equal(colored.status, 0, colored.stderr);
   assert.match(
     colored.stdout,
-    /\u001b\[1;31m基线纵火犯 · OFFENSE\u001b\[0m \/ \u001b\[36mUNCOMMON\u001b\[0m/,
+    /\u001b\[1;31m桌面反应堆 · OFFENSE\u001b\[0m \/ \u001b\[36mUNCOMMON\u001b\[0m/,
   );
   assert.match(colored.stdout, /\u001b\[37mCOMMON\u001b\[0m/);
   assert.match(colored.stdout, /\u001b\[36mUNCOMMON\u001b\[0m/);
-  assert.match(colored.stdout, /\u001b\[35mRARE\u001b\[0m/);
   assert.equal(plain.status, 0, plain.stderr);
   assert.doesNotMatch(plain.stdout, /\u001b/);
-  assert.match(plain.stdout, /基线纵火犯 · OFFENSE \/ UNCOMMON/);
+  assert.match(plain.stdout, /桌面反应堆 · OFFENSE \/ UNCOMMON/);
   assert.match(plain.stdout, /COMMON/);
   assert.match(plain.stdout, /UNCOMMON/);
-  assert.match(plain.stdout, /RARE/);
 });
 
 test("codex and creature use the same chromatic ability rank colors", (t) => {

@@ -181,13 +181,13 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-Running `anti-ai` with no arguments opens the console in an interactive terminal; a pipe or other non-interactive launch prints grouped Help instead. The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Press `a` anywhere to open the available-now action center, or press `Enter` on a contextual primary action. Every write follows preview → explicit confirmation → result → refreshed file; `Enter` or `y` confirms, while `Esc` or `n` cancels.
+Running `anti-ai` with no arguments opens the console in an interactive terminal; a pipe or other non-interactive launch prints grouped Help instead. The console brings Overview, Habitat, Laboratory, and Codex into one keyboard-navigable surface. Overview now opens with a containment brief for the selected day: settled status, pathology changes, discoveries, local records, the next milestone, and no more than one primary plus one secondary action. Press `a` anywhere to open the available-now action center, or press `Enter` on a contextual primary action. Every state write follows preview → explicit confirmation → result → refreshed file; `Enter` or `y` confirms, while `Esc` or `n` cancels.
 
 The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
 
-Press `1`–`4`, the arrow keys, or contextual `Tab` focus to move through the console. In Codex, choose a category, open an entry, inspect its stable ID, rarity and discovery date, then press `d` to preview placing a discovered record in one of three Consequence Cabinet slots. Laboratory shows a three-step material → culture → companion path: `Tab` switches between formulas and the complete culture shelf, `Enter` incubates or inspects the focused item, and `b` previews bonding the selected culture. An empty Habitat bay explains the next unmet step; press `l` to open Laboratory or, when a culture already exists, `b` to bond without leaving the console. Pollution-code exchange still uses the explicit `encounter --save` CLI because the TUI does not collect free-form codes. In Habitat, press `Enter` for read-only anatomy inspection, `r` to replay the latest sealed ecological event, `o` for today's Observation, or `c` for today's restrained Contact. Observation and Contact are each limited to once per settled day and create deterministic narrative only—no stats, rarity, or rewards.
+Press `1`–`4`, the arrow keys, or contextual `Tab` focus to move through the console. In Codex, press `h` for the nested Containment Archive, `t` to toggle the latest 7/30 days, and `Enter` to inspect one daily record. Collection details now show first discovery, provenance, related record, and Cabinet status; locked entries remain spoiler-free silhouettes. Press `d` to preview displaying a discovered record. Press `s` from Overview, Habitat, a discovered Codex detail, or a daily archive detail to preview the card type, privacy boundary, and target filename; confirmation creates a new SVG in the current directory without overwriting an existing file. Laboratory shows a three-step material → culture → companion path: `Tab` switches between formulas and the complete culture shelf, `Enter` incubates or inspects the focused item, and `b` previews bonding the selected culture. An empty Habitat bay explains the next unmet step; press `l` to open Laboratory or, when a culture already exists, `b` to bond without leaving the console. Pollution-code exchange still uses the explicit `encounter --save` CLI because the TUI does not collect free-form codes. In Habitat, press `Enter` for read-only anatomy inspection, `r` to replay the latest sealed ecological event, `o` for today's Observation, or `c` for today's restrained Contact. Observation and Contact are each limited to once per settled day and create deterministic narrative only—no stats, rarity, or rewards.
 
-Browsing, replaying, inspecting, and cancelling remain read-only and do not scan Agent records. Opening the daily-settlement impact preview may scan supported usage metadata so it can show the exact local impact before confirmation; it does not write. Only explicit confirmation writes the Creature file through the same action service and atomic conflict checks used by CLI commands. Scripts and Agents should continue using explicit commands and `--json`; the TUI is a human-only interactive surface.
+Browsing, replaying, inspecting, archive navigation, provenance lookup, share preview, and cancelling remain read-only and do not scan Agent records. Opening the daily-settlement impact preview may scan supported usage metadata so it can show the exact local impact before confirmation; it does not write. Gameplay confirmation writes the Creature file through the same action service and atomic conflict checks used by CLI commands. Share confirmation renders through the existing local SVG service and writes only the previewed new file. Scripts and Agents should continue using explicit commands and `--json`; the TUI is a human-only interactive surface.
 
 ### `today`
 
@@ -225,7 +225,7 @@ anti-ai codex --json
 
 The fixed collection contains 68 entries: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 route-balanced habitat phenomena. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, bonded companion forms, and resolved incident reports are collected without an artificial upper limit.
 
-`codex --json` exposes stable IDs, discovery state and dates, collection counts, the selected day's `recent` discoveries, and the current three-slot Cabinet references. The TUI adds category → entry → detail navigation with locked silhouettes and an explicitly confirmed display action. Displaying a record changes only Codex, Habitat, and share presentation. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters and does not turn Token volume into a preferred collection route.
+`codex --json` exposes stable IDs, discovery state and dates, provenance, collection counts, the selected day's `recent` discoveries, and the current three-slot Cabinet references. The TUI adds category → entry → detail navigation, first-discovery and related-record context, locked silhouettes, an explicitly confirmed display action, and a nested 7/30-day Containment Archive. Displaying a record changes only Codex, Habitat, and share presentation. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters and does not turn Token volume into a preferred collection route.
 
 The human view also reports the generator's **21,233,664 deduplicated final ASCII forms**. This is a theoretical species-space estimate, not collection progress. See the [Creature Guide](./docs/creature.md) for the capacity calculation and visual precedence rules.
 
@@ -423,7 +423,7 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/cli.mjs`: small command registry dispatcher
 - `src/cli/`: argument parsing, terminal rendering, and methodology explanation
 - `src/commands/`: focused Creature, Encounter, Laboratory, Share, and TUI handlers
-- `src/application/`: presentation-neutral read models and shared action orchestration
+- `src/application/`: presentation-neutral read models, archive queries, confirmed local share export, and shared action orchestration
 - `src/tui/`: Ink source for the controlled interactive containment console
 - `dist/tui.mjs`: generated self-contained Ink/React runtime bundle
 - `src/help.mjs`: global and command-specific help
@@ -435,7 +435,7 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/reporting.mjs`: terminal receipts, calendars, and verdicts
 - `src/renderers/svg.mjs`: privacy-safe SVG cards
 - `src/creature.mjs`: mutation growth and collection rules
-- `src/creature/`: content pools and appearance generation
+- `src/creature/`: content pools, appearance generation, and versioned balance policy
 - `src/consequence-cabinet.mjs`: three-slot displays and deterministic daily narrative interactions
 - `src/state-store.mjs`: validation-aware atomic local state storage
 - `src/laboratory.mjs`: derived formulas, sealed cultures, and shelves

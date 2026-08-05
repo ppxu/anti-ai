@@ -10,6 +10,7 @@ function startTui(snapshot, options = {}) {
       lang={options.lang ?? "zh"}
       initialMotion={options.motion ?? "low"}
       actionController={options.actionController ?? null}
+      shareController={options.shareController ?? null}
     />,
     {
       exitOnCtrlC: true,

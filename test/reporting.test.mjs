@@ -454,10 +454,14 @@ test("today settles one creature day and appends a concise mutation summary", (t
   const report = JSON.parse(creature.stdout);
   assert.equal(report.experienceDays, 1);
   assert.deepEqual(report.ecology, {
+    balanceVersion: 2,
     pollution: 1,
     clarity: 0,
     pollutionRate: 1,
     clarityRate: 0,
+    windowDays: 1,
+    windowPollution: 1,
+    windowClarity: 0,
     type: "unformed",
     pendingType: "polluted",
     pendingDays: 1,
@@ -571,16 +575,16 @@ test("week appends a bilingual living casebook from the complete creature histor
   assert.equal(english.status, 0, english.stderr);
   assert.match(chinese.stdout, /异变体周报 · 07-17 → 07-23/);
   assert.match(chinese.stdout, /本周主症状\s+核食/);
-  assert.match(chinese.stdout, /生态变化\s+污染 \+8 · 清醒 \+0/);
+  assert.match(chinese.stdout, /生态变化\s+污染 \+1 · 清醒 \+0/);
   assert.match(
     chinese.stdout,
     /成长记录\s+阅历 \+7 · 异常胚体 I → 分化幼体 II/,
   );
-  assert.match(chinese.stdout, /新增徽章.*基线纵火犯/);
+  assert.match(chinese.stdout, /新增徽章.*桌面反应堆/);
   assert.match(chinese.stdout, /主治意见\s+\S+/);
   assert.match(english.stdout, /MUTATION WEEKLY · 07-17 → 07-23/);
   assert.match(english.stdout, /PRIMARY SYMPTOM\s+NUCLEAR FEEDING/);
-  assert.match(english.stdout, /ECOLOGY CHANGE\s+pollution \+8 · clarity \+0/);
+  assert.match(english.stdout, /ECOLOGY CHANGE\s+pollution \+1 · clarity \+0/);
   assert.match(english.stdout, /ATTENDING NOTE\s+\S+/);
   assert.doesNotMatch(english.stdout, /异变体周报|本周主症状|生态变化|成长记录/);
 });
@@ -623,10 +627,10 @@ test("week and month keep achievement category colors", (t) => {
 
   assert.equal(week.status, 0, week.stderr);
   assert.equal(month.status, 0, month.stderr);
-  assert.match(week.stdout, /新增徽章.*\u001b\[1;31m基线纵火犯\u001b\[0m/);
+  assert.match(week.stdout, /新增徽章.*\u001b\[1;31m桌面反应堆\u001b\[0m/);
   assert.match(
     month.stdout,
-    /成就回顾.*\u001b\[1;31m基线纵火犯\u001b\[0m/,
+    /成就回顾.*\u001b\[1;31m桌面反应堆\u001b\[0m/,
   );
 });
 
@@ -679,13 +683,13 @@ test("month appends a bilingual autopsy without diagnosing pre-hatch days", (t) 
   assert.match(chinese.stdout, /主症状\s+核食/);
   assert.match(
     chinese.stdout,
-    /生态人格\s+未定型 → 污染型 · 污染 \+9 · 清醒 \+0/,
+    /生态人格\s+未定型 → 未定型 · 污染 \+2 · 清醒 \+0/,
   );
-  assert.match(chinese.stdout, /成就回顾\s+\[4\].*基线纵火犯/);
+  assert.match(chinese.stdout, /成就回顾\s+\[2\].*桌面反应堆/);
   assert.match(chinese.stdout, /复诊意见\s+\S+/);
   assert.match(english.stdout, /MONTHLY FOLLOW-UP · 2026-07/);
   assert.match(english.stdout, /VALID OBSERVATION\s+8 days · 8 active · 0 AI-free/);
-  assert.match(english.stdout, /ECOLOGY\s+UNFORMED → POLLUTED/);
+  assert.match(english.stdout, /ECOLOGY\s+UNFORMED → UNFORMED/);
   assert.match(english.stdout, /FOLLOW-UP NOTE\s+\S+/);
   assert.doesNotMatch(english.stdout, /月度复诊|有效观察|主症状|生态人格/);
 });

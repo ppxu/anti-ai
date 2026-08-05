@@ -180,10 +180,14 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
     fossils: [],
     evolution: null,
     ecology: {
+      balanceVersion: 2,
       pollution: 1,
       clarity: 0,
       pollutionRate: 1,
       clarityRate: 0,
+      windowDays: 1,
+      windowPollution: 1,
+      windowClarity: 0,
       type: "unformed",
       pendingType: "polluted",
       pendingDays: 1,
@@ -224,6 +228,7 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
     },
     mood: "token_chewing",
     today: {
+      balanceVersion: 2,
       pollutionDose: 27,
       usageBand: "calibrating",
       ecologyGains: {
@@ -339,10 +344,14 @@ test("creature gives every settled day neutral experience and exposes ecology", 
   const report = JSON.parse(result.stdout);
   assert.equal(report.experienceDays, 1);
   assert.deepEqual(report.ecology, {
+    balanceVersion: 2,
     pollution: 1,
     clarity: 0,
     pollutionRate: 1,
     clarityRate: 0,
+    windowDays: 1,
+    windowPollution: 1,
+    windowClarity: 0,
     type: "unformed",
     pendingType: "polluted",
     pendingDays: 1,
@@ -387,7 +396,7 @@ test("an unhatched creature keeps the first-stage threshold before generation on
   });
 });
 
-test("creature uses the seven-day baseline for pollution and rewards quiet days equally", (t) => {
+test("creature uses the twenty-eight-day active baseline and rewards quiet days equally", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-ecology-bands-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
   const root = path.join(workspace, "codex");
@@ -439,6 +448,138 @@ test("creature uses the seven-day baseline for pollution and rewards quiet days 
     pollution: 0,
     clarity: 3,
   });
+});
+
+test("raw token volume never grants an extra creature ability point", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-volume-guardrail-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const lowRoot = path.join(workspace, "low-codex");
+  const highRoot = path.join(workspace, "high-codex");
+  const usage = (totalTokens) => [
+    {
+      input_tokens: Math.round(totalTokens * 0.9),
+      cached_input_tokens: 0,
+      output_tokens: Math.round(totalTokens * 0.1),
+      total_tokens: totalTokens,
+    },
+  ];
+  for (const date of ["2026-07-22", "2026-07-23"]) {
+    writeCodexUsage(lowRoot, usage(100_000), date);
+    writeCodexUsage(highRoot, usage(2_000_000), date);
+  }
+  const environment = (home, root) => ({
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "volume-guardrail",
+  });
+
+  const low = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    environment(path.join(workspace, "low-home"), lowRoot),
+  );
+  const high = runCli(
+    ["creature", "--date", "2026-07-23", "--json"],
+    environment(path.join(workspace, "high-home"), highRoot),
+  );
+
+  assert.equal(low.status, 0, low.stderr);
+  assert.equal(high.status, 0, high.stderr);
+  const lowCreature = JSON.parse(low.stdout);
+  const highCreature = JSON.parse(high.stdout);
+  assert.ok(highCreature.today.pollutionDose >= 75);
+  assert.equal(lowCreature.today.abilityGains.appetite, 1);
+  assert.equal(highCreature.today.abilityGains.appetite, 1);
+  assert.equal(highCreature.abilityPoints, lowCreature.abilityPoints);
+  assert.equal(lowCreature.today.ecologyGains.pollution, 0);
+  assert.equal(highCreature.today.ecologyGains.pollution, 1);
+});
+
+test("a weekly token spike is not laundered into a lucid ecology", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-robust-baseline-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  for (let day = 0; day < 28; day += 1) {
+    const totalTokens = (day + 1) % 7 === 0 ? 700_000 : 100_000;
+    writeCodexUsage(
+      root,
+      [
+        {
+          input_tokens: Math.round(totalTokens * 0.9),
+          cached_input_tokens: 0,
+          output_tokens: Math.round(totalTokens * 0.1),
+          total_tokens: totalTokens,
+        },
+      ],
+      shiftTestDate("2026-07-01", day),
+    );
+  }
+
+  const result = runCli(
+    ["creature", "--date", "2026-07-28", "--json"],
+    {
+      HOME: home,
+      ANTI_AI_CODEX_DIR: root,
+      ANTI_AI_CREATURE_SEED: "robust-baseline",
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const creature = JSON.parse(result.stdout);
+  assert.equal(creature.ecology.type, "unformed");
+  assert.equal(creature.ecology.clarity, 0);
+  assert.equal(creature.today.usageBand, "meltdown");
+});
+
+test("a sustained token reduction earns a meaningful clarity runway", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-reduction-runway-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  for (let day = 0; day < 42; day += 1) {
+    const totalTokens = day < 28 ? 100_000 : 30_000;
+    writeCodexUsage(
+      root,
+      [
+        {
+          input_tokens: Math.round(totalTokens * 0.9),
+          cached_input_tokens: 0,
+          output_tokens: Math.round(totalTokens * 0.1),
+          total_tokens: totalTokens,
+        },
+      ],
+      shiftTestDate("2026-06-01", day),
+    );
+  }
+  const environment = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "reduction-runway",
+  };
+
+  const hatch = runCli(
+    ["creature", "--date", "2026-06-01", "--json"],
+    environment,
+  );
+  const settled = runCli(
+    ["creature", "--date", "2026-07-12", "--json"],
+    environment,
+  );
+  const history = runCli(
+    ["creature", "history", "--date", "2026-07-12", "--full", "--json"],
+    environment,
+  );
+
+  assert.equal(hatch.status, 0, hatch.stderr);
+  assert.equal(settled.status, 0, settled.stderr);
+  assert.equal(history.status, 0, history.stderr);
+  const reductionDays = JSON.parse(history.stdout).daily.slice(-14);
+  assert.equal(reductionDays.length, 14);
+  assert.ok(
+    reductionDays.filter(({ usageBand }) =>
+      ["restrained", "light"].includes(usageBand),
+    ).length >= 12,
+  );
 });
 
 test("creature renders a stable individualized ASCII specimen from its local genome", (t) => {
@@ -695,7 +836,7 @@ test("creature unlocks equally visible feeding and sobriety achievements", (t) =
   );
   assert.deepEqual(
     quietReport.achievements.recent.map((achievement) => achievement.id),
-    ["first_supply_cut"],
+    ["first_supply_cut", "withdrawal_reactor"],
   );
   assert.equal(
     quietReport.collections.achievementsUnlocked,
@@ -705,7 +846,7 @@ test("creature unlocks equally visible feeding and sobriety achievements", (t) =
   assert.equal(quietReport.title.coreId, quietReport.ecologyForm);
   assert.match(human.stdout, /徽章\s+\[\d+\]/);
   assert.match(human.stdout, /今日成就\s+第一次断供/);
-  assert.match(human.stdout, /称号\s+.*第一次断供/);
+  assert.match(human.stdout, /称号\s+.*戒断反应堆/);
   assert.ok(coloredHuman.stdout.includes("\u001b[1;31m七日连喂"));
   assert.ok(coloredHuman.stdout.includes("\u001b[1;36m第一次断供"));
   assert.ok(paradoxHuman.stdout.includes("\u001b[1;33m续杯戒断者"));

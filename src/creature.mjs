@@ -49,6 +49,15 @@ import {
   CREATURE_COPY,
 } from "./creature/content.mjs";
 import {
+  CREATURE_BALANCE_VERSION,
+  CREATURE_ECOLOGY_WINDOW,
+  classifyCreatureEcologyWindow,
+  creatureEcologyGainsForDose,
+  creatureEcologyWindow,
+  creatureUsageBand,
+  creatureUsageBaseline,
+} from "./creature/balance.mjs";
+import {
   creatureAbilityBar,
   creatureAbilityProgress,
   creatureAppearanceCapacity,
@@ -126,6 +135,7 @@ function dailyCreatureRecord(report, historicalReports = []) {
   const dose = pollutionDose(totals.totalTokens);
   if (dose === 0) {
     return {
+      balanceVersion: CREATURE_BALANCE_VERSION,
       pollutionDose: 0,
       active: false,
       usageBand: "sober",
@@ -161,34 +171,15 @@ function dailyCreatureRecord(report, historicalReports = []) {
     cacheIntensity,
     frenzyIntensity,
   );
-  const baselineTokens =
-    historicalReports.length === 0
-      ? 0
-      : historicalReports.reduce(
-          (sum, historicalReport) =>
-            sum + historicalReport.totals.totalTokens,
-          0,
-        ) / historicalReports.length;
-  const ratio = baselineTokens === 0 ? null : totals.totalTokens / baselineTokens;
-  const [usageBand, ecologyGains] =
-    ratio === null
-      ? ["calibrating", { pollution: 1, clarity: 0 }]
-      : ratio <= 0.3
-        ? ["restrained", { pollution: 0, clarity: 2 }]
-        : ratio <= 0.7
-          ? ["light", { pollution: 0, clarity: 1 }]
-          : ratio <= 1.5
-            ? ["habitual", { pollution: 0, clarity: 0 }]
-            : ratio <= 3
-              ? ["heavy", { pollution: 1, clarity: 0 }]
-              : ratio <= 6
-                ? ["binge", { pollution: 2, clarity: 0 }]
-                : ["meltdown", { pollution: 3, clarity: 0 }];
+  const baselineTokens = creatureUsageBaseline(historicalReports);
+  const usage = creatureUsageBand(totals.totalTokens, baselineTokens);
+  const ecologyGains = creatureEcologyGainsForDose(usage, dose);
 
   return {
+    balanceVersion: CREATURE_BALANCE_VERSION,
     pollutionDose: dose,
     active: true,
-    usageBand,
+    usageBand: usage.id,
     ecologyGains,
     traits: {
       context: roundCreature(dose * contextIntensity),
@@ -221,7 +212,7 @@ function creatureAbilityGains(seed, date, day, event, hasHatched) {
   const randomPool = ["memory", "shell", "mouths", "glow", "instability"];
   const randomAbility = randomPool[digest.readUInt32BE(0) % randomPool.length];
 
-  gains.appetite = day.pollutionDose >= 75 ? 2 : 1;
+  gains.appetite = 1;
   gains[branchAbility] += 1;
   if (digest.readUInt8(4) % 4 === 0) gains[randomAbility] += 1;
 
@@ -272,6 +263,7 @@ function deriveCreatureAchievements(state, date) {
   const branchStreaks = { context: 0, cache: 0, frenzy: 0, nuclear: 0 };
   const cumulativeTraits = { context: 0, cache: 0, frenzy: 0, nuclear: 0 };
   const recentDirections = [];
+  const recentEcologyGains = [];
   let hasHatched = false;
   let experienceDays = 0;
   let activeStreak = 0;
@@ -316,6 +308,10 @@ function deriveCreatureAchievements(state, date) {
     const clarityGain = day.ecologyGains?.clarity ?? 0;
     ecologyPollution += pollutionGain;
     ecologyClarity += clarityGain;
+    recentEcologyGains.push({ pollution: pollutionGain, clarity: clarityGain });
+    if (recentEcologyGains.length > CREATURE_ECOLOGY_WINDOW) {
+      recentEcologyGains.shift();
+    }
     if (pollutionGain > 0) pollutionDays += 1;
     if (clarityGain > 0) clarityDays += 1;
     recentDirections.push(
@@ -323,11 +319,9 @@ function deriveCreatureAchievements(state, date) {
     );
     if (recentDirections.length > 14) recentDirections.shift();
 
-    const candidateEcologyType = classifyCreatureEcology(
-      ecologyPollution,
-      ecologyClarity,
-      experienceDays,
-    );
+    const candidateEcologyType = classifyCreatureEcologyWindow(
+      recentEcologyGains,
+    ).type;
     if (candidateEcologyType === ecologyType) {
       pendingEcologyType = null;
       pendingEcologyDays = 0;
@@ -712,6 +706,70 @@ function creatureCodex(state, date) {
       discoveredAt: phenomenonDiscoveries.get(id) ?? null,
     }),
   );
+  const provenance = (entry, sourceType, sourceId, relatedId = null) => ({
+    firstDiscoveredAt: entry.discoveredAt,
+    sourceType,
+    sourceId,
+    relatedId,
+  });
+  for (const entry of forms) {
+    const source = specimens.find((specimen) => specimen.formId === entry.id);
+    entry.provenance = entry.discovered
+      ? provenance(entry, "specimen_record", source?.id ?? null, entry.id)
+      : null;
+  }
+  for (const entry of achievements) {
+    entry.provenance = entry.discovered
+      ? provenance(
+          entry,
+          "behavioral_evidence",
+          entry.discoveredAt,
+          state.days?.[entry.discoveredAt]?.event?.id ?? entry.id,
+        )
+      : null;
+  }
+  for (const entry of chromaticAbilities) {
+    entry.provenance = entry.discovered
+      ? provenance(entry, "chromatic_mutation", entry.discoveredAt, entry.id)
+      : null;
+  }
+  for (const entry of scars) {
+    const source = fossils.find((fossil) => fossil.scarId === entry.id);
+    entry.provenance = entry.discovered
+      ? provenance(entry, "generation_seal", source?.id ?? null, entry.id)
+      : null;
+  }
+  for (const entry of habitatPhenomena) {
+    entry.provenance = entry.discovered
+      ? provenance(entry, "habitat_event", entry.id, entry.decorationId)
+      : null;
+  }
+  for (const entry of specimens) {
+    entry.provenance = provenance(entry, "specimen_record", entry.id, entry.formId);
+  }
+  for (const entry of foreignSpecimens) {
+    entry.provenance = provenance(entry, "encounter", entry.id, entry.typeId);
+  }
+  for (const entry of caseSlices) {
+    entry.provenance = provenance(entry, "case_choice", entry.id, entry.caseId);
+  }
+  for (const entry of incidentReports) {
+    entry.provenance = provenance(
+      entry,
+      "incident_aftermath",
+      entry.id,
+      entry.incidentId,
+    );
+  }
+  for (const entry of cultures) {
+    entry.provenance = provenance(entry, "laboratory_culture", entry.id, entry.typeId);
+  }
+  for (const entry of companions) {
+    entry.provenance = provenance(entry, "companion_bond", entry.id, entry.routeId);
+  }
+  for (const entry of fossils) {
+    entry.provenance = provenance(entry, "generation_seal", entry.id, entry.scarId);
+  }
   const fixedCollections = [
     ...forms,
     ...achievements,
@@ -1316,16 +1374,6 @@ function creatureMood(creature, today) {
   return "token_chewing";
 }
 
-function classifyCreatureEcology(pollution, clarity, experienceDays) {
-  if (experienceDays === 0) return "unformed";
-  const pollutionRate = pollution / experienceDays;
-  const clarityRate = clarity / experienceDays;
-  if (pollutionRate >= 0.6 && clarityRate >= 0.6) return "paradox";
-  if (pollutionRate >= 0.6) return "polluted";
-  if (clarityRate >= 0.6) return "lucid";
-  return "unformed";
-}
-
 function deriveCreature(state, date) {
   const entries = Object.entries(state.days)
     .filter(([entryDate]) => entryDate <= date)
@@ -1350,6 +1398,7 @@ function deriveCreature(state, date) {
   let ecologyType = "unformed";
   let pendingEcologyType = null;
   let pendingEcologyDays = 0;
+  const recentEcologyGains = [];
   let evolutionTriggers = 0;
   let evolutionBenefitPoints = 0;
   let evolutionCostPoints = 0;
@@ -1375,11 +1424,13 @@ function deriveCreature(state, date) {
     if (activeDays > 0) {
       ecologyPollution += day.ecologyGains?.pollution ?? 0;
       ecologyClarity += day.ecologyGains?.clarity ?? 0;
-      const candidateEcologyType = classifyCreatureEcology(
-        ecologyPollution,
-        ecologyClarity,
-        ageDays,
-      );
+      recentEcologyGains.push(day.ecologyGains ?? {});
+      if (recentEcologyGains.length > CREATURE_ECOLOGY_WINDOW) {
+        recentEcologyGains.shift();
+      }
+      const candidateEcologyType = classifyCreatureEcologyWindow(
+        recentEcologyGains,
+      ).type;
       if (candidateEcologyType === ecologyType) {
         pendingEcologyType = null;
         pendingEcologyDays = 0;
@@ -1504,10 +1555,9 @@ function deriveCreature(state, date) {
       : generationNumber === 0
         ? stage.nextAt
         : (generationNumber - 1) * CREATURE_GENERATION_LENGTH + stage.nextAt;
-  const pollutionRate = roundCreature(
-    ecologyPollution / Math.max(1, ageDays),
-  );
-  const clarityRate = roundCreature(ecologyClarity / Math.max(1, ageDays));
+  const ecologyWindow = creatureEcologyWindow(recentEcologyGains);
+  const pollutionRate = roundCreature(ecologyWindow.pollutionRate);
+  const clarityRate = roundCreature(ecologyWindow.clarityRate);
   const progressPercent =
     stage.nextAt === null
       ? 100
@@ -1622,10 +1672,14 @@ function deriveCreature(state, date) {
     fossils,
     evolution,
     ecology: {
+      balanceVersion: CREATURE_BALANCE_VERSION,
       pollution: ecologyPollution,
       clarity: ecologyClarity,
       pollutionRate,
       clarityRate,
+      windowDays: ecologyWindow.days,
+      windowPollution: ecologyWindow.pollution,
+      windowClarity: ecologyWindow.clarity,
       type: ecologyType,
       pendingType: pendingEcologyType,
       pendingDays: pendingEcologyDays,

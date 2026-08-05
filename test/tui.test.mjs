@@ -27,6 +27,7 @@ import {
   executeContainmentAction,
   previewContainmentAction,
 } from "../src/application/actions.mjs";
+import { createTuiShareController } from "../src/application/share-export.mjs";
 
 async function waitForFrame(screen, pattern, options = {}) {
   const { absent = false, timeout = 1_000 } = options;
@@ -60,7 +61,7 @@ test("the TUI snapshot unifies four product areas without mutating state", (t) =
   const original = JSON.stringify(state);
   const snapshot = deriveTuiSnapshot(state, "2026-07-23", "zh");
 
-  assert.equal(snapshot.version, 1);
+  assert.equal(snapshot.version, 2);
   assert.equal(snapshot.date, "2026-07-23");
   assert.equal(snapshot.readOnly, true);
   assert.deepEqual(
@@ -82,11 +83,104 @@ test("the TUI snapshot unifies four product areas without mutating state", (t) =
     ),
   );
   assert.deepEqual(snapshot.codex.cabinet.slots, [null, null, null]);
+  assert.deepEqual(snapshot.codex.archive.availableSpans, [7, 30]);
+  assert.equal(snapshot.codex.archive.defaultSpan, 7);
+  assert.equal(snapshot.codex.archive.days.length, 1);
+  assert.equal(snapshot.codex.archive.days[0].date, "2026-07-23");
+  assert.equal(snapshot.codex.archive.days[0].status, "active");
+  assert.ok(snapshot.overview.brief.nextMilestone.remainingDays >= 0);
+  const discoveredEntry = snapshot.codex.categories
+    .flatMap((category) => category.entries)
+    .find((entry) => entry.discovered);
+  const lockedEntry = snapshot.codex.categories
+    .flatMap((category) => category.entries)
+    .find((entry) => !entry.discovered);
+  assert.equal(discoveredEntry.provenance.firstDiscoveredAt, "2026-07-23");
+  assert.ok(discoveredEntry.provenance.sourceType.length > 0);
+  assert.deepEqual(discoveredEntry.cabinet, {
+    displayed: false,
+    slot: null,
+  });
+  assert.equal(lockedEntry.provenance, null);
   assert.deepEqual(
     snapshot.overview.actions.map(({ id }) => id),
     ["observe_specimen", "contact_specimen"],
   );
   assert.equal(JSON.stringify(state), original);
+});
+
+test("TUI sharing previews a private local target before exporting SVG", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-share-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  const outputDirectory = path.join(workspace, "exports");
+  mkdirSync(home, { recursive: true });
+  mkdirSync(outputDirectory, { recursive: true });
+  const environment = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "tui-share-seed",
+  };
+  assert.equal(
+    runCli(["creature", "--date", "2026-07-23", "--json"], environment)
+      .status,
+    0,
+  );
+  const statePath = path.join(home, ".anti-ai", "creature.json");
+  const original = readFileSync(statePath, "utf8");
+  const previousEnvironment = Object.fromEntries(
+    Object.keys(environment).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, environment);
+  t.after(() => {
+    for (const [key, value] of Object.entries(previousEnvironment)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const controller = createTuiShareController(
+    { lang: "en" },
+    { outputDirectory },
+  );
+
+  const preview = await controller.preview({
+    screen: "overview",
+    date: "2026-07-23",
+  });
+
+  assert.equal(preview.card, "pathology");
+  assert.equal(preview.filename, "anti-ai-pathology-2026-07-23.svg");
+  assert.equal(preview.privacy, "LOCAL ONLY · NO CHATS, PATHS, MODELS, OR EXACT TOKENS");
+  assert.equal(readFileSync(statePath, "utf8"), original);
+  assert.equal(
+    spawnSync("test", ["-e", preview.targetPath]).status,
+    1,
+  );
+
+  const result = await controller.execute(preview);
+  assert.equal(result.status, "completed");
+  assert.match(readFileSync(result.targetPath, "utf8"), /^<svg/u);
+  assert.equal(readFileSync(statePath, "utf8"), original);
+
+  const unsettled = await controller.preview({
+    screen: "overview",
+    date: "2026-07-24",
+  });
+  assert.equal(unsettled.available, false);
+  assert.equal(unsettled.reason, "date_not_settled");
+
+  const collision = await controller.preview({
+    screen: "overview",
+    date: "2026-07-23",
+  });
+  const previewedCollisionPath = collision.targetPath;
+  writeFileSync(previewedCollisionPath, "existing export", "utf8");
+  collision.targetPath = path.join(outputDirectory, "unpreviewed.svg");
+  const refused = await controller.execute(collision);
+  assert.equal(refused.status, "failed");
+  assert.equal(refused.reason, "share_target_exists");
+  assert.equal(readFileSync(previewedCollisionPath, "utf8"), "existing export");
+  assert.equal(spawnSync("test", ["-e", collision.targetPath]).status, 1);
+  assert.equal(readFileSync(statePath, "utf8"), original);
 });
 
 test("the consequence cabinet and daily interactions persist only explicit narrative choices", async (t) => {
@@ -179,6 +273,13 @@ test("the consequence cabinet and daily interactions persist only explicit narra
   assert.equal(after.days["2026-07-23"].interactions.contact.targetId, "glass");
   const { interactions, ...afterDay } = after.days["2026-07-23"];
   assert.deepEqual(afterDay, beforeDay);
+  assert.deepEqual(
+    deriveTuiSnapshot(after, "2026-07-23", "zh")
+      .codex.archive.days[0].activities
+      .filter(({ type }) => type === "interaction")
+      .map(({ label }) => label),
+    ["今日观察已封存", "今日接触已封存"],
+  );
 
   const habitat = runCli(
     ["creature", "habitat", "--date", "2026-07-23"],
@@ -587,7 +688,7 @@ test("the containment console navigates all four product areas by keyboard", asy
   assert.match(screen.lastFrame(), /伴生收容进度.*0 \/ 3/u);
   assert.match(screen.lastFrame(), /尚无培养原料/u);
   assert.match(screen.lastFrame(), /l 前往实验室/u);
-  assert.match(screen.lastFrame(), /Enter 观察 · r 回放\s+q 退出/u);
+  assert.match(screen.lastFrame(), /Enter 观察 · r 回放 · s 分享\s+q 退出/u);
   screen.stdin.write("\r");
   await waitForFrame(screen, /器官观察/u);
   assert.match(screen.lastFrame(), /监测复眼/u);
@@ -665,6 +766,29 @@ test("the Codex drills into discovered entries and opens display preview for the
       };
     },
   };
+  let shareExecutions = 0;
+  const shareController = {
+    preview: async (context) => ({
+      available: true,
+      context,
+      card: "specimen",
+      date: context.date,
+      filename: "anti-ai-specimen-2026-07-23.svg",
+      targetPath: path.join(workspace, "anti-ai-specimen-2026-07-23.svg"),
+      privacy: "仅写入本地 · 不含对话、路径、模型名或精确 Token",
+      title: "导出分享卡",
+      warning: "确认后会新建 SVG。",
+    }),
+    execute: async (preview) => {
+      shareExecutions += 1;
+      return {
+        status: "completed",
+        filename: preview.filename,
+        targetPath: preview.targetPath,
+        message: `分享卡已保存：${preview.filename}`,
+      };
+    },
+  };
   const output = path.join(buildDirectory, "app.mjs");
   await build({
     entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
@@ -681,6 +805,7 @@ test("the Codex drills into discovered entries and opens display preview for the
       lang: "zh",
       initialMotion: "off",
       actionController,
+      shareController,
       terminalColumns: 80,
     }),
   );
@@ -693,6 +818,22 @@ test("the Codex drills into discovered entries and opens display preview for the
   assert.ok(
     screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
   );
+  screen.stdin.write("h");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /收容档案/u);
+  assert.match(screen.lastFrame(), /最近 7 天/u);
+  screen.stdin.write("t");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /最近 30 天/u);
+  screen.stdin.write("\r");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /每日收容记录/u);
+  assert.match(screen.lastFrame(), /病理变化/u);
+  screen.stdin.write("\u001B");
+  await waitForFrame(screen, /最近 30 天/u);
+  screen.stdin.write("\u001B");
+  await waitForFrame(screen, /病理图鉴/u);
+  assert.match(screen.lastFrame(), /病理图鉴/u);
   screen.stdin.write("\r");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /收藏条目/u);
@@ -701,13 +842,57 @@ test("the Codex drills into discovered entries and opens display preview for the
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /条目档案/u);
   assert.match(screen.lastFrame(), /发现于/u);
+  assert.match(screen.lastFrame(), /来源/u);
+  assert.match(screen.lastFrame(), /关联记录/u);
+  assert.match(screen.lastFrame(), /陈列状态/u);
   assert.match(screen.lastFrame(), /d 陈列/u);
   assert.ok(
     screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
   );
+  screen.stdin.write("s");
+  await waitForFrame(screen, /分享卡预览/u);
+  assert.match(screen.lastFrame(), /anti-ai-specimen-2026-07-23\.svg/u);
+  screen.stdin.write("y");
+  await waitForFrame(screen, /分享卡已保存/u);
+  assert.equal(shareExecutions, 1);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /条目档案/u);
   screen.stdin.write("d");
   await waitForFrame(screen, /影响预览 · 调整后果陈列柜/u);
   assert.match(previewTarget, /^form:/u);
+
+  const englishSnapshot = deriveTuiSnapshot(state, "2026-07-23", "en");
+  for (const terminalColumns of [80, 100]) {
+    const englishScreen = render(
+      React.createElement(TuiApp, {
+        snapshot: englishSnapshot,
+        lang: "en",
+        initialMotion: "off",
+        terminalColumns,
+      }),
+    );
+    englishScreen.stdin.write("4");
+    await new Promise((resolve) => setImmediate(resolve));
+    englishScreen.stdin.write("h");
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.match(englishScreen.lastFrame(), /CONTAINMENT ARCHIVE/u);
+    assert.ok(
+      englishScreen
+        .lastFrame()
+        .split("\n")
+        .every((line) => terminalWidth(line) <= terminalColumns),
+    );
+    englishScreen.stdin.write("\r");
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.match(englishScreen.lastFrame(), /DAILY CONTAINMENT RECORD/u);
+    assert.ok(
+      englishScreen
+        .lastFrame()
+        .split("\n")
+        .every((line) => terminalWidth(line) <= terminalColumns),
+    );
+    englishScreen.unmount();
+  }
 });
 
 test("the containment console previews, cancels, confirms, and refreshes one action", async (t) => {

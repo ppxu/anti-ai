@@ -6,6 +6,7 @@ import {
   consequenceCabinetView,
 } from "../consequence-cabinet.mjs";
 import {
+  CREATURE_COPY,
   creatureArt,
   creatureCodex,
   creatureLabel,
@@ -29,6 +30,7 @@ import {
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
+import { containmentArchive, containmentBrief } from "./archive.mjs";
 
 const ANSI_PATTERN = /\u001B\[[0-9;]*m/g;
 
@@ -87,6 +89,151 @@ function rarityLabel(rarity, lang) {
     mythic: ["神话", "MYTHIC"],
   };
   return localized(lang, ...(labels[rarity] ?? labels.common));
+}
+
+function usageBandLabel(usageBand, lang) {
+  const labels = {
+    sober: ["AI 清醒", "AI-FREE"],
+    calibrating: ["校准污染", "CALIBRATING"],
+    restrained: ["节制使用", "RESTRAINED"],
+    light: ["轻量使用", "LIGHT"],
+    habitual: ["惯常使用", "HABITUAL"],
+    heavy: ["重度使用", "HEAVY"],
+    binge: ["暴食使用", "BINGE"],
+    meltdown: ["熔毁使用", "MELTDOWN"],
+  };
+  return localized(lang, ...(labels[usageBand] ?? [usageBand, usageBand]));
+}
+
+function provenanceSourceLabel(sourceType, lang) {
+  const labels = {
+    specimen_record: ["本地标本记录", "Local specimen record"],
+    behavioral_evidence: ["行为证据", "Behavioral evidence"],
+    chromatic_mutation: ["异色突变", "Chromatic mutation"],
+    generation_seal: ["世代封存", "Generation seal"],
+    habitat_event: ["生态事件", "Habitat event"],
+    encounter: ["外来遭遇", "Foreign encounter"],
+    case_choice: ["病例选择", "Case choice"],
+    incident_aftermath: ["事故后果", "Incident aftermath"],
+    laboratory_culture: ["实验室培养", "Laboratory culture"],
+    companion_bond: ["伴生绑定", "Companion bond"],
+  };
+  return localized(
+    lang,
+    ...(labels[sourceType] ?? [sourceType, sourceType]),
+  );
+}
+
+function pathologyChangeLabel(change, lang) {
+  if (change.type === "hatch") {
+    return localized(lang, "异变体首次孵化", "The specimen hatched");
+  }
+  const groups = {
+    stage: "stages",
+    branch: "branches",
+    ecology: "ecologies",
+    form: "ecologyForms",
+  };
+  const group = groups[change.type];
+  const from = group ? creatureLabel(group, change.from, lang) : change.from;
+  const to = group ? creatureLabel(group, change.to, lang) : change.to;
+  const typeLabel = {
+    stage: ["阶段", "Stage"],
+    branch: ["病理分支", "Pathology"],
+    ecology: ["生态", "Ecology"],
+    form: ["形态", "Form"],
+  }[change.type] ?? [change.type, change.type];
+  return `${localized(lang, ...typeLabel)} · ${from} → ${to}`;
+}
+
+function archiveRecordLabel(group, type, lang) {
+  const labels = {
+    incident: {
+      opened: ["收容事故出现", "Containment incident opened"],
+      responded: ["事故响应已封存", "Incident response sealed"],
+      resolved: ["事故后果已显现", "Incident aftermath resolved"],
+    },
+    case: {
+      offered: ["转折病例出现", "Turning case opened"],
+      selected: ["治疗方案已封存", "Treatment route sealed"],
+    },
+    laboratory: {
+      culture: ["培养物入架", "Culture shelved"],
+      bond: ["伴生关系建立", "Companion bonded"],
+    },
+    interaction: {
+      observe: ["今日观察已封存", "Daily observation sealed"],
+      contact: ["今日接触已封存", "Daily contact sealed"],
+    },
+    imprint: {
+      pollution: ["伴生污染印记", "Companion pollution imprint"],
+      clarity: ["伴生清醒印记", "Companion clarity imprint"],
+      neutral: ["伴生常态印记", "Companion neutral imprint"],
+    },
+  };
+  return localized(
+    lang,
+    ...(labels[group]?.[type] ?? [type, type]),
+  );
+}
+
+function archiveDayPresentation(day, lang) {
+  const discoveries = day.discoveries.map((entry) => ({
+    ...entry,
+    label: codexRecentLabel(entry, lang),
+  }));
+  const activities = [
+    ...day.incidentChanges.map((entry) => ({
+      type: "incident",
+      label: `${archiveRecordLabel("incident", entry.type, lang)} · #${entry.id}`,
+    })),
+    ...day.caseChanges.map((entry) => ({
+      type: "case",
+      label: `${archiveRecordLabel("case", entry.type, lang)} · #${entry.id}`,
+    })),
+    ...day.laboratoryChanges.map((entry) => ({
+      type: "laboratory",
+      label: `${archiveRecordLabel("laboratory", entry.type, lang)} · #${entry.id}`,
+    })),
+    ...day.interactions.map((type) => ({
+      type: "interaction",
+      label: archiveRecordLabel("interaction", type, lang),
+    })),
+    ...(day.companion?.todayImprint
+      ? [{
+          type: "companion",
+          label: archiveRecordLabel(
+            "imprint",
+            day.companion.todayImprint,
+            lang,
+          ),
+        }]
+      : []),
+  ];
+  return {
+    ...day,
+    statusLabel: localized(
+      lang,
+      day.status === "active" ? "活跃进食" : "AI 清醒",
+      day.status === "active" ? "ACTIVE FEEDING" : "AI-FREE",
+    ),
+    usageBandLabel: usageBandLabel(day.usageBand, lang),
+    pathologyChanges: day.pathologyChanges.map((entry) => ({
+      ...entry,
+      label: pathologyChangeLabel(entry, lang),
+    })),
+    discoveries,
+    mutationEventLabel: day.mutationEvent
+      ? CREATURE_COPY.events[day.mutationEvent.id]?.name?.[lang] ??
+        `#${day.mutationEvent.id}`
+      : null,
+    activities,
+    summary: localized(
+      lang,
+      `污染 +${day.ecologyGains.pollution} · 清醒 +${day.ecologyGains.clarity} · 新收藏 ${discoveries.length} · 记录 ${activities.length}`,
+      `pollution +${day.ecologyGains.pollution} · clarity +${day.ecologyGains.clarity} · discoveries ${discoveries.length} · records ${activities.length}`,
+    ),
+  };
 }
 
 function laboratoryWorkflow(laboratory, companion, lang) {
@@ -160,6 +307,7 @@ function codexEntryPresentation(entry, lang) {
       ),
       rarity,
       rarityLabel: rarityLabel(rarity, lang),
+      provenance: null,
     };
   }
   let label = `#${entry.id}`;
@@ -218,6 +366,15 @@ function codexEntryPresentation(entry, lang) {
     detail,
     rarity,
     rarityLabel: rarityLabel(rarity, lang),
+    provenance: entry.provenance
+      ? {
+          ...entry.provenance,
+          sourceLabel: provenanceSourceLabel(
+            entry.provenance.sourceType,
+            lang,
+          ),
+        }
+      : null,
   };
 }
 
@@ -262,9 +419,18 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     ...entry,
     label: codexRecentLabel(entry, lang),
   }));
-  const collectionEntries = codexCollectionEntries(codex).map((entry) =>
-    codexEntryPresentation(entry, lang),
-  );
+  const featuredEntries = state.cabinet?.featured ?? [];
+  const collectionEntries = codexCollectionEntries(codex).map((entry) => {
+    const presented = codexEntryPresentation(entry, lang);
+    const featuredIndex = featuredEntries.indexOf(entry.key);
+    return {
+      ...presented,
+      cabinet: {
+        displayed: featuredIndex >= 0,
+        slot: featuredIndex >= 0 ? featuredIndex + 1 : null,
+      },
+    };
+  });
   const collectionBySection = new Map();
   for (const entry of collectionEntries) {
     const entries = collectionBySection.get(entry.sectionId) ?? [];
@@ -363,7 +529,15 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     })),
     recent,
     cabinet: cabinetModel,
+    archive: {
+      defaultSpan: 7,
+      availableSpans: [7, 30],
+      days: containmentArchive(state, date, 30).map((day) =>
+        archiveDayPresentation(day, lang),
+      ),
+    },
   };
+  const brief = containmentBrief(state, date);
   const actions = deriveContainmentActions(
     state,
     date,
@@ -373,7 +547,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
   );
 
   return {
-    version: 1,
+    version: 2,
     date,
     lastSettledDate: latestSettledDate(state, date),
     readOnly: true,
@@ -404,6 +578,25 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       abilities: creature.abilities,
       art,
       actions: actions.filter(({ available }) => available).slice(0, 2),
+      brief: {
+        day: brief.day ? archiveDayPresentation(brief.day, lang) : null,
+        nextMilestone: {
+          ...brief.nextMilestone,
+          label: brief.nextMilestone.type === "hatch"
+            ? localized(lang, "下一份有效记录将触发孵化", "The next active record triggers hatching")
+            : brief.nextMilestone.type === "stage"
+              ? localized(
+                  lang,
+                  `距下一阶段还有 ${brief.nextMilestone.remainingDays} 个阅历日`,
+                  `${brief.nextMilestone.remainingDays} experience day(s) to the next stage`,
+                )
+              : localized(
+                  lang,
+                  `距下一世代还有 ${brief.nextMilestone.remainingDays} 个阅历日`,
+                  `${brief.nextMilestone.remainingDays} experience day(s) to the next generation`,
+                ),
+        },
+      },
     },
     habitat: {
       ...habitat,

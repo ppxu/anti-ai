@@ -22,6 +22,7 @@ import React from "react";
 
 import { deriveTuiSnapshot } from "../src/application/tui.mjs";
 import {
+  applyContainmentAction,
   createContainmentSession,
   executeContainmentAction,
   previewContainmentAction,
@@ -583,6 +584,9 @@ test("the containment console navigates all four product areas by keyboard", asy
   screen.stdin.write("2");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /生态舱状态/u);
+  assert.match(screen.lastFrame(), /伴生收容进度.*0 \/ 3/u);
+  assert.match(screen.lastFrame(), /尚无培养原料/u);
+  assert.match(screen.lastFrame(), /l 前往实验室/u);
   assert.match(screen.lastFrame(), /Enter 观察 · r 回放\s+q 退出/u);
   screen.stdin.write("\r");
   await waitForFrame(screen, /器官观察/u);
@@ -603,6 +607,8 @@ test("the containment console navigates all four product areas by keyboard", asy
   screen.stdin.write("3");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /污染实验室/u);
+  assert.match(screen.lastFrame(), /培养流程.*0 \/ 3/u);
+  assert.match(screen.lastFrame(), /anti-ai encounter <污染编码> --save/u);
   screen.stdin.write("4");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /病理图鉴/u);
@@ -918,6 +924,26 @@ test("the laboratory opens its available incubation protocol with Enter", async 
   incubation.available = true;
   incubation.reason = null;
   incubation.reasonLabel = null;
+  snapshot.laboratory.status = "ready";
+  snapshot.laboratory.inventory.foreignSpecimens = 1;
+  snapshot.laboratory.inventory.total = 1;
+  snapshot.laboratory.proposals = [
+    {
+      id: "formula-1",
+      slot: 1,
+      rarity: "uncommon",
+      type: "缓存菌毯",
+      ecology: "悖论生态",
+      pathology: "缓存系",
+      complication: "上下文回声",
+    },
+  ];
+  snapshot.laboratory.workflow.completed = 1;
+  snapshot.laboratory.workflow.next = {
+    id: "incubate",
+    label: "原料已就绪 · 请选择配方培养",
+  };
+  snapshot.laboratory.workflow.steps[0].complete = true;
   const output = path.join(buildDirectory, "app.mjs");
   await build({
     entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
@@ -957,6 +983,239 @@ test("the laboratory opens its available incubation protocol with Enter", async 
   screen.stdin.write("\r");
   await waitForFrame(screen, /影响预览 · 孵化污染培养物/u);
   assert.match(screen.lastFrame(), /> 1\. 缓存菌毯/u);
+});
+
+test("an empty habitat can open a direct companion bond preview", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-habitat-bond-"));
+  const buildDirectory = mkdtempSync(
+    path.join(projectDir, ".anti-ai-tui-habitat-bond-test-"),
+  );
+  t.after(() => {
+    rmSync(workspace, { recursive: true, force: true });
+    rmSync(buildDirectory, { recursive: true, force: true });
+  });
+  const home = path.join(workspace, "home");
+  const visitorHome = path.join(workspace, "visitor-home");
+  mkdirSync(home, { recursive: true });
+  assert.equal(
+    runCli(["creature", "--date", "2026-07-23", "--json"], {
+      HOME: home,
+      ANTI_AI_CREATURE_SEED: "tui-habitat-bond-seed",
+    }).status,
+    0,
+  );
+  const visitor = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    {
+      HOME: visitorHome,
+      ANTI_AI_CREATURE_SEED: "tui-habitat-bond-visitor",
+    },
+  );
+  assert.equal(visitor.status, 0, visitor.stderr);
+  const saved = runCli(
+    [
+      "encounter",
+      JSON.parse(visitor.stdout).code,
+      "--save",
+      "--date",
+      "2026-07-23",
+      "--json",
+    ],
+    {
+      HOME: home,
+      ANTI_AI_CREATURE_SEED: "tui-habitat-bond-seed",
+    },
+  );
+  assert.equal(saved.status, 0, saved.stderr);
+  const state = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  const incubation = applyContainmentAction(
+    state,
+    "2026-07-23",
+    "incubate",
+    "1",
+  );
+  assert.equal(incubation.error, undefined);
+  const snapshot = deriveTuiSnapshot(state, "2026-07-23", "zh");
+  const cultureId = incubation.value.culture.id;
+  let previewTarget = null;
+  const bond = snapshot.actions.find(({ id }) => id === "bond");
+  const actionController = {
+    preview: async (id, target) => {
+      previewTarget = target;
+      return {
+        ...bond,
+        id,
+        title: "建立伴生关系",
+        summary: "选择一份培养物放入生态舱。",
+        warning: "切换不会丢失成长。",
+        irreversible: false,
+        impact: { cultures: 1 },
+        choices: [
+          { id: cultureId, label: `#${cultureId} · 递归霉菌`, detail: "RARE" },
+        ],
+      };
+    },
+  };
+  const output = path.join(buildDirectory, "app.mjs");
+  await build({
+    entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
+    outfile: output,
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    external: ["ink", "react"],
+  });
+  const { TuiApp } = await import(pathToFileURL(output).href);
+  const screen = render(
+    React.createElement(TuiApp, {
+      snapshot,
+      lang: "zh",
+      initialMotion: "off",
+      actionController,
+      terminalColumns: 80,
+    }),
+  );
+  t.after(() => screen.unmount());
+
+  screen.stdin.write("2");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /培养物已封存 · 可以建立伴生关系/u);
+  assert.match(screen.lastFrame(), /b 选择并绑定伴生物/u);
+  screen.stdin.write("b");
+  await waitForFrame(screen, /影响预览 · 建立伴生关系/u);
+  assert.equal(previewTarget, cultureId);
+  assert.match(screen.lastFrame(), new RegExp(`> ${cultureId}\\. #${cultureId}`, "u"));
+
+  screen.stdin.write("\u001B");
+  await waitForFrame(screen, /生态舱状态/u);
+  screen.stdin.write("3");
+  await waitForFrame(screen, /污染实验室/u);
+  screen.stdin.write("\t");
+  await waitForFrame(screen, /培养架 · 已聚焦/u);
+  assert.match(screen.lastFrame(), new RegExp(`> #${cultureId}`, "u"));
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /培养物档案/u);
+  assert.match(screen.lastFrame(), /原料/u);
+  assert.match(screen.lastFrame(), /并发症/u);
+  assert.match(screen.lastFrame(), /副作用/u);
+  assert.match(screen.lastFrame(), /b 绑定为伴生物/u);
+  assert.ok(
+    screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
+  );
+  screen.stdin.write("b");
+  await waitForFrame(screen, /影响预览 · 建立伴生关系/u);
+  assert.equal(previewTarget, cultureId);
+});
+
+test("the TUI completes incubation and bonding without leaving the console", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-lab-flow-"));
+  const buildDirectory = mkdtempSync(
+    path.join(projectDir, ".anti-ai-tui-lab-flow-test-"),
+  );
+  t.after(() => {
+    rmSync(workspace, { recursive: true, force: true });
+    rmSync(buildDirectory, { recursive: true, force: true });
+  });
+  const home = path.join(workspace, "home");
+  const visitorHome = path.join(workspace, "visitor-home");
+  const environment = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+    ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
+    ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
+    ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
+    ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
+    ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+    ANTI_AI_CREATURE_SEED: "tui-lab-flow-seed",
+  };
+  assert.equal(
+    runCli(["creature", "--date", "2026-07-23", "--json"], environment).status,
+    0,
+  );
+  const visitor = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    {
+      HOME: visitorHome,
+      ANTI_AI_CREATURE_SEED: "tui-lab-flow-visitor",
+    },
+  );
+  assert.equal(visitor.status, 0, visitor.stderr);
+  const encounter = runCli(
+    [
+      "encounter",
+      JSON.parse(visitor.stdout).code,
+      "--save",
+      "--date",
+      "2026-07-23",
+      "--json",
+    ],
+    environment,
+  );
+  assert.equal(encounter.status, 0, encounter.stderr);
+
+  const previousEnvironment = Object.fromEntries(
+    Object.keys(environment).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, environment);
+  t.after(() => {
+    for (const [key, value] of Object.entries(previousEnvironment)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const session = await createContainmentSession({
+    date: "2026-07-23",
+    lang: "zh",
+    source: "all",
+  });
+  const output = path.join(buildDirectory, "app.mjs");
+  await build({
+    entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
+    outfile: output,
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    external: ["ink", "react"],
+  });
+  const { TuiApp } = await import(pathToFileURL(output).href);
+  const screen = render(
+    React.createElement(TuiApp, {
+      snapshot: session.snapshot,
+      lang: "zh",
+      initialMotion: "off",
+      actionController: session.actionController,
+    }),
+  );
+  t.after(() => screen.unmount());
+
+  screen.stdin.write("3");
+  await waitForFrame(screen, /第 1 批配方/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /影响预览 · 孵化污染培养物/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /协议执行完成/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /培养流程 · 2 \/ 3/u);
+  screen.stdin.write("\t");
+  await waitForFrame(screen, /培养架 · 已聚焦/u);
+  screen.stdin.write("b");
+  await waitForFrame(screen, /影响预览 · 建立伴生关系/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /协议执行完成/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /培养流程 · 3 \/ 3/u);
+  screen.stdin.write("2");
+  await waitForFrame(screen, /伴生位/u);
+  assert.doesNotMatch(screen.lastFrame(), /尚无培养原料|可以建立伴生关系/u);
+  assert.match(screen.lastFrame(), /#\w+ · 1 天/u);
+
+  const state = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  assert.equal(state.laboratory.cultures.length, 1);
+  assert.equal(state.laboratory.activeCultureId, state.laboratory.cultures[0].id);
 });
 
 test("the interactive console reports a corrupted mutation file without a stack trace", (t) => {

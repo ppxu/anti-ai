@@ -89,6 +89,64 @@ function rarityLabel(rarity, lang) {
   return localized(lang, ...(labels[rarity] ?? labels.common));
 }
 
+function laboratoryWorkflow(laboratory, companion, lang) {
+  const materialReady = laboratory.inventory.total > 0;
+  const cultureReady = laboratory.cultures > 0;
+  const bondReady = companion !== null;
+  const completed = [materialReady, cultureReady, bondReady].filter(
+    Boolean,
+  ).length;
+  const next = !materialReady
+    ? {
+        id: "material",
+        label: localized(lang, "尚无培养原料", "NO CULTURE MATERIAL"),
+      }
+    : !cultureReady
+      ? {
+          id: "incubate",
+          label: localized(
+            lang,
+            "原料已就绪 · 请选择配方培养",
+            "MATERIAL READY · SELECT A FORMULA",
+          ),
+        }
+      : !bondReady
+        ? {
+            id: "bond",
+            label: localized(
+              lang,
+              "培养物已封存 · 可以建立伴生关系",
+              "CULTURE SEALED · READY TO BOND",
+            ),
+          }
+        : {
+            id: "complete",
+            label: localized(lang, "伴生关系已建立", "COMPANION BONDED"),
+          };
+  return {
+    completed,
+    total: 3,
+    next,
+    steps: [
+      {
+        id: "material",
+        complete: materialReady,
+        label: localized(lang, "获取原料", "GET MATERIAL"),
+      },
+      {
+        id: "incubate",
+        complete: cultureReady,
+        label: localized(lang, "孵化培养物", "INCUBATE"),
+      },
+      {
+        id: "bond",
+        complete: bondReady,
+        label: localized(lang, "绑定伴生物", "BOND COMPANION"),
+      },
+    ],
+  };
+}
+
 function codexEntryPresentation(entry, lang) {
   if (!entry.discovered) {
     const rarity = entry.rarity ?? "common";
@@ -235,14 +293,35 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     inventory: laboratory.inventory,
     cultures: laboratory.cultures,
     proposals,
-    shelf: shelf.cultures.slice(-4).reverse().map((culture) => ({
+    shelf: shelf.cultures.toReversed().map((culture) => ({
       id: culture.id,
       rarity: culture.rarity,
       type: laboratoryLabel("types", culture.typeId, lang),
       createdAt: culture.createdAt,
+      active: companion?.cultureId === culture.id,
+      ecology: creatureLabel("ecologies", culture.ecologyId, lang),
+      pathology: creatureLabel("branches", culture.pathologyId, lang),
+      complication: laboratoryLabel(
+        "complications",
+        culture.complicationId,
+        lang,
+      ),
+      sideEffect: laboratoryLabel("sideEffects", culture.sideEffectId, lang),
+      ingredients: culture.ingredients.map(({ type, id }) => ({
+        type,
+        id,
+        label: laboratoryLabel("ingredients", type, lang),
+      })),
+      art: [...culture.appearance.lines],
+      fingerprint: culture.appearance.fingerprint,
     })),
     companion,
   };
+  laboratoryModel.workflow = laboratoryWorkflow(
+    laboratoryModel,
+    companion,
+    lang,
+  );
   const codexModel = {
     fixed: codex.summary.fixed,
     categories: [

@@ -32,6 +32,12 @@ anti-ai share --card companion
 
 可运行 `anti-ai help lab`、`anti-ai help lab incubate`、`anti-ai help lab shelf`、`anti-ai help lab inspect`、`anti-ai help lab bond` 或 `anti-ai help lab companion` 查看分级帮助。
 
+## 交互式控制台
+
+面向人类的 `anti-ai tui` 可以在不退出控制台的情况下完成同一套实验室主流程。按 `3` 进入实验室，顶部进度会标出“原料 → 培养物 → 伴生物”中尚未完成的第一步。`Tab` 在稳定配方和完整培养架之间切换，方向键选择项目，`Enter` 打开培养预览或只读培养物档案；在培养架项目上按 `b` 可预览绑定或切换伴生物，所有写入仍需要明确确认。
+
+生态舱伴生位空置时可按 `l` 返回实验室；已经存在培养物时，也可直接按 `b` 打开绑定选择。污染编码交换仍需显式执行 `anti-ai encounter <污染编码> --save`，因为 TUI 不接收自由文本形式的访客编码。这只是对现有操作的导航补全，不是第二套成长或奖励系统。
+
 ## 派生原料
 
 实验室只接受已经存在于本地异变体档案中的三类原料：

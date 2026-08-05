@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-08-05
+
+### Changed
+
+- Completed the existing culture workflow inside the TUI: Laboratory now exposes a material → culture → companion progress strip, separate formula and full-shelf focus, read-only culture files, and direct preview-confirm incubation and bonding.
+- Made an empty Habitat companion bay state-aware, with a direct Laboratory shortcut and an in-place bond picker when a sealed culture is already available.
+- Updated bilingual TUI Help, READMEs, Laboratory and Companion guides, and the Agent Skill to describe the same keyboard path.
+
+### Security
+
+- TUI cultivation continues to call the shared local application actions and atomic state store. Inspection and navigation stay read-only, every mutation requires explicit confirmation, and no new network, telemetry, raw-content, Token-reward, or persistence surface was added.
+
 ## [2.6.0] - 2026-08-03
 
 ### Added

@@ -102,8 +102,8 @@ const COMMAND_HELP = {
       "Open the controlled interactive containment console.",
     ],
     output: [
-      "在四个区域中浏览图鉴与生态舱，陈列收藏，并通过行动中心预览、确认结算、轻互动、事故响应、干预、进化、孵化或缔结。",
-      "Browse the Codex and Habitat, display collections, and preview or confirm settlement, light interactions, incident responses, interventions, evolution, incubation, or bonding.",
+      "在四个区域中浏览图鉴与生态舱，陈列收藏，并直接从实验室选择配方、查看培养架、检查培养物和绑定伴生物。",
+      "Browse the Codex and Habitat, display collections, and directly select formulas, inspect the culture shelf, open culture files, and bond companions in Laboratory.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
@@ -115,8 +115,8 @@ const COMMAND_HELP = {
       "anti-ai tui --no-motion",
     ],
     note: [
-      "无参数 anti-ai 在交互终端会打开本界面；浏览与取消只读。每日观察和接触各一次，只写叙事记录且不增加数值。Agent 应使用显式命令及 --json。",
-      "A no-argument interactive launch opens this console; browsing and cancellation are read-only. Observation and contact are each limited to once per day and add narrative only. Agents should use explicit commands and --json.",
+      "无参数 anti-ai 在交互终端会打开本界面；伴生位会引导原料、培养和绑定，所有写入仍需影响预览与明确确认。Agent 应使用显式命令及 --json。",
+      "A no-argument interactive launch opens this console; the companion bay guides material, incubation, and bonding, while every write still requires preview and confirmation. Agents should use explicit commands and --json.",
     ],
     related: ["today", "creature habitat", "lab", "codex"],
   },

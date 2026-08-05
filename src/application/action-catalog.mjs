@@ -63,7 +63,7 @@ const ACTION_DEFINITIONS = Object.freeze([
     id: "bond",
     actor: "companion",
     target: "habitat",
-    command: () => "anti-ai lab shelf",
+    command: () => "anti-ai lab bond <culture-id>",
     label: ["建立或切换伴生关系", "Bond or switch a companion"],
   },
 ]);

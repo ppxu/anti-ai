@@ -17,6 +17,11 @@ import {
   previewContainmentAction,
 } from "../src/application/actions.mjs";
 import { createTuiShareController } from "../src/application/share-export.mjs";
+import {
+  expeditionEventView,
+  expeditionReturnSummary,
+  expeditionShareView,
+} from "../src/expedition/presentation.mjs";
 
 test("expedition status exposes one read-only opportunity after a settled day", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-expedition-status-"));
@@ -249,6 +254,13 @@ test("expedition advances ten cells, blocks on choices, and seals one history re
   assert.equal(finalStatus.latest.completedAt, date);
   assert.equal(finalStatus.totals.completed, 1);
   assert.ok(Math.abs(finalStatus.latest.permanentEffect.delta) <= 2);
+
+  const returnSummary = runCli(["expedition", "--date", date], env);
+  assert.equal(returnSummary.status, 0, returnSummary.stderr);
+  assert.match(returnSummary.stdout, /返航总结/u);
+  assert.match(returnSummary.stdout, /事件轨迹/u);
+  assert.match(returnSummary.stdout, /返航诊断/u);
+  assert.match(returnSummary.stdout, /临时状态.*返航时失效/u);
 
   const history = runCli(
     ["expedition", "history", "--date", date, "--json"],
@@ -503,10 +515,94 @@ test("human expedition output renders the ten-cell rail and localized event copy
   assert.equal(nextEn.status, 0, nextEn.stderr);
   assert.match(nextZh.stdout, /第 1 \/ 10 格/);
   assert.match(nextZh.stdout, /最近事件/);
+  assert.match(nextZh.stdout, /\[(?:静默格|普通事件|状态变动|特殊事件)\]/u);
+  assert.match(nextZh.stdout, /系统记录.*已封存/u);
   assert.match(nextEn.stdout, /CONTAINMENT EXPEDITION · REACTOR GRAVEYARD/);
   assert.match(nextEn.stdout, /CELL 1 \/ 10/);
   assert.match(nextEn.stdout, /LATEST EVENT/);
   assert.doesNotMatch(nextEn.stdout, /[\p{Script=Han}]/u);
+});
+
+test("expedition presentation separates special events from system copy and builds a localized return summary", () => {
+  const record = {
+    id: "exp-presentation",
+    version: 1,
+    destinationId: "context_mine",
+    status: "completed",
+    startedAt: "2026-08-10",
+    completedAt: "2026-08-10",
+    sourceExperienceDay: 4,
+    step: 10,
+    totalSteps: 10,
+    pendingChoice: null,
+    events: [
+      {
+        id: "context_mine:observation:0:1",
+        step: 1,
+        type: "observation",
+        bodyId: "context_mine_observation_0",
+      },
+      {
+        id: "context_mine:anomaly:1:8",
+        step: 8,
+        type: "anomaly",
+        bodyId: "context_mine_anomaly_1",
+        effect: {
+          abilityId: "withdrawal",
+          delta: -2,
+          duration: "expedition",
+        },
+      },
+      {
+        id: "context_mine:artifact:4:9",
+        step: 9,
+        type: "artifact",
+        bodyId: "context_mine_artifact_4",
+        artifactId: "context_mine_artifact_5",
+      },
+      {
+        id: "context_mine:ability:0:10",
+        step: 10,
+        type: "ability",
+        bodyId: "context_mine_ability_0",
+        effect: {
+          abilityId: "appetite",
+          delta: 1,
+          duration: "permanent",
+          named: false,
+        },
+      },
+    ],
+    temporaryEffects: [{ abilityId: "withdrawal", delta: -2 }],
+    permanentEffect: { abilityId: "appetite", delta: 1, named: false },
+    artifactIds: ["context_mine_artifact_5"],
+    achievementIds: ["first_return", "permanent_increase"],
+  };
+
+  const event = expeditionEventView(record, record.events[1], "zh");
+  assert.equal(event.badge, "特殊事件");
+  assert.equal(event.stage, "返航窗口");
+  assert.equal(event.effect.ability, "戒断反应");
+  assert.match(event.system, /第 8 格.*已封存/u);
+
+  const summary = expeditionReturnSummary(record, "zh");
+  assert.equal(summary.status, "已返航");
+  assert.equal(summary.events.total, 4);
+  assert.equal(summary.events.special, 2);
+  assert.equal(summary.recentEvents.length, 3);
+  assert.equal(summary.artifacts[0].name, "空白引用核");
+  assert.equal(summary.artifacts[0].rarity, "rare");
+  assert.equal(summary.achievements[1].name, "病灶增生");
+  assert.equal(summary.permanentEffect.ability, "吞噬欲");
+  assert.match(summary.temporaryEffectNote, /返航时失效/u);
+  assert.ok(summary.diagnosis.length > 10);
+
+  const english = expeditionReturnSummary(record, "en");
+  assert.equal(english.status, "RETURNED");
+  assert.doesNotMatch(JSON.stringify(english), /[\p{Script=Han}]/u);
+  const share = expeditionShareView(record, "en");
+  assert.equal(share.eventLog[1].badge, "SPECIAL EVENT");
+  assert.equal(share.latestEvent.badge, "CONDITION SHIFT");
 });
 
 test("completed expeditions feed fixed Codex artifacts and achievements", (t) => {
@@ -841,6 +937,13 @@ test("a resumed expedition can export its return card on an unsettled completion
   assert.equal(preview.available, true);
   assert.equal(preview.card, "expedition");
   assert.equal(preview.date, completionDate);
+  const card = runCli(
+    ["share", "--card", "expedition", "--date", completionDate, "--lang", "en"],
+    environment,
+  );
+  assert.equal(card.status, 0, card.stderr);
+  assert.match(card.stdout, /RETURN DIAGNOSIS/u);
+  assert.match(card.stdout, /EVENT TRAIL/u);
   assert.equal(readFileSync(statePath, "utf8"), before);
 });
 

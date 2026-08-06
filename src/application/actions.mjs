@@ -417,7 +417,7 @@ function expeditionPreview(state, date, lang, action) {
         return {
           id,
           label: destination.name[lang],
-          detail: destination.description[lang],
+          detail: `${destination.description[lang]} · ${destination.mood[lang]}`,
         };
       }),
       impact: { cells: 10, opportunity: 1 },

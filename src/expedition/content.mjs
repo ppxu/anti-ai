@@ -6,6 +6,10 @@ const EXPEDITION_DESTINATION_DEFINITIONS = Object.freeze([
       zh: "被压缩、截断和反复引用的地下记忆层。",
       en: "An underground memory seam compressed, truncated, and cited again.",
     },
+    mood: {
+      zh: "像把四十个标签页压进一块煤里。",
+      en: "Forty browser tabs compressed into one lump of coal.",
+    },
     observations: [
       ["矿壁正在引用一段已经不存在的上文。", "The wall cites context that no longer exists."],
       ["一辆提示词矿车空载驶过，却坚持申报满额。", "An empty prompt cart passes while reporting a full load."],
@@ -28,6 +32,10 @@ const EXPEDITION_DESTINATION_DEFINITIONS = Object.freeze([
     description: {
       zh: "过期内容沉积成仍然命中的化石泥层。",
       en: "Expired content settles into fossil mud that still reports a hit.",
+    },
+    mood: {
+      zh: "每一步都命中缓存，每个答案都来自昨天。",
+      en: "Every step is a cache hit; every answer is from yesterday.",
     },
     observations: [
       ["沼气弹出一个绿色 HIT，然后什么也没返回。", "A green HIT bubbles up and returns nothing."],
@@ -52,6 +60,10 @@ const EXPEDITION_DESTINATION_DEFINITIONS = Object.freeze([
       zh: "排队、重试并自我复制的口器育儿室。",
       en: "A nursery of queued, retried, self-replicating request mouths.",
     },
+    mood: {
+      zh: "队列永远只差一个重试就能恢复正常。",
+      en: "The queue is always one retry away from becoming normal.",
+    },
     observations: [
       ["一窝请求刚孵化就开始请求更多请求。", "A clutch of requests hatches and immediately requests more requests."],
       ["队列尽头挂着一块“马上轮到你”的永久标牌。", "The queue ends beneath a permanent YOU'RE NEXT sign."],
@@ -74,6 +86,10 @@ const EXPEDITION_DESTINATION_DEFINITIONS = Object.freeze([
     description: {
       zh: "熄灭模型留下余热、辐射风和未结算的风扇声。",
       en: "Dead models leave residual heat, radiation wind, and unsettled fan noise.",
+    },
+    mood: {
+      zh: "回答已经结束，散热和账单坚持继续。",
+      en: "The answer ended; cooling and billing chose to continue.",
     },
     observations: [
       ["冷却塔仍在为一条早已结束的回答散热。", "A cooling tower still vents heat for an answer long finished."],

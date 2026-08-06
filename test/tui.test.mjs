@@ -106,10 +106,23 @@ test("the TUI snapshot unifies five product areas without mutating state", (t) =
     snapshot.overview.actions.map(({ id }) => id),
     ["start_expedition", "observe_specimen"],
   );
+  assert.ok(snapshot.expedition.destinations.every(({ mood }) => mood.length > 0));
+  assert.equal(
+    snapshot.actions.find(({ id }) => id === "start_expedition").execution,
+    "direct",
+  );
+  assert.equal(
+    snapshot.actions.find(({ id }) => id === "choose_expedition").execution,
+    "select",
+  );
+  assert.equal(
+    snapshot.actions.find(({ id }) => id === "abandon_expedition").execution,
+    "confirm",
+  );
   assert.equal(JSON.stringify(state), original);
 });
 
-test("the 80-column TUI starts and advances one expedition through confirmed actions", async (t) => {
+test("the 80-column TUI starts and advances an expedition with one Enter per ordinary step", async (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-expedition-"));
   const buildDirectory = mkdtempSync(
     path.join(projectDir, ".anti-ai-tui-expedition-test-"),
@@ -150,6 +163,15 @@ test("the 80-column TUI starts and advances one expedition through confirmed act
     lang: "zh",
     source: "all",
   });
+  let directExecutions = 0;
+  const actionController = {
+    ...session.actionController,
+    execute: async (...args) => {
+      directExecutions += 1;
+      await new Promise((resolve) => setImmediate(resolve));
+      return session.actionController.execute(...args);
+    },
+  };
   const output = path.join(buildDirectory, "app.mjs");
   await build({
     entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
@@ -165,13 +187,13 @@ test("the 80-column TUI starts and advances one expedition through confirmed act
       snapshot: session.snapshot,
       lang: "zh",
       initialMotion: "off",
-      actionController: session.actionController,
+      actionController,
       terminalColumns: 80,
     }),
   );
   t.after(() => screen.unmount());
 
-  screen.stdin.write("3");
+  screen.stdin.write("\r");
   await waitForFrame(screen, /收容远征/u);
   assert.match(screen.lastFrame(), /上下文矿井/u);
   assert.match(screen.lastFrame(), /反应堆墓场/u);
@@ -180,42 +202,78 @@ test("the 80-column TUI starts and advances one expedition through confirmed act
   );
 
   screen.stdin.write("\r");
-  await waitForFrame(screen, /影响预览 · 开启收容远征/u);
-  screen.stdin.write("\r");
-  await waitForFrame(screen, /协议执行完成/u);
   screen.stdin.write("\r");
   await waitForFrame(screen, /第 0 \/ 10 格/u);
+  assert.equal(directExecutions, 1);
+  assert.doesNotMatch(screen.lastFrame(), /影响预览|协议执行完成/u);
   assert.match(screen.lastFrame(), /\[@\].*\[\?\]/u);
 
   screen.stdin.write("\r");
-  await waitForFrame(screen, /影响预览 · 进入下一格/u);
-  screen.stdin.write("\r");
-  await waitForFrame(screen, /协议执行完成/u);
-  screen.stdin.write("\r");
   await waitForFrame(screen, /第 1 \/ 10 格/u);
+  assert.doesNotMatch(screen.lastFrame(), /影响预览|协议执行完成/u);
   assert.match(screen.lastFrame(), /最近事件/u);
 
   screen.stdin.write("q");
   await waitForFrame(screen, /今日收容简报/u);
-  screen.stdin.write("3");
+  screen.stdin.write("a");
+  await waitForFrame(screen, /行动中心/u);
+  screen.stdin.write("\r");
   await waitForFrame(screen, /第 1 \/ 10 格/u);
+  assert.doesNotMatch(screen.lastFrame(), /影响预览/u);
 
-  for (let actions = 0; actions < 12; actions += 1) {
+  for (let actions = 0; actions < 14; actions += 1) {
     if (/最近返航/u.test(screen.lastFrame())) break;
+    const frameBefore = screen.lastFrame();
+    const stepBefore = Number(frameBefore.match(/第 (\d+) \/ 10 格/u)?.[1] ?? 0);
+    const branchPending = /当前分叉待处理/u.test(frameBefore);
+    if (branchPending) {
+      assert.match(frameBefore, /1\..*2\..*3\./su);
+      assert.doesNotMatch(
+        frameBefore,
+        /\b(?:appetite|memory|shell|mouths|glow|instability|withdrawal)\b/u,
+      );
+    }
     screen.stdin.write("\r");
-    await waitForFrame(
-      screen,
-      /影响预览 · (进入下一格|处理远征分叉)/u,
-    );
-    screen.stdin.write("\r");
-    await waitForFrame(screen, /协议执行完成/u);
-    screen.stdin.write("\r");
-    await waitForFrame(screen, /收容远征/u);
+    if (branchPending) {
+      await waitForFrame(screen, /当前分叉待处理/u, { absent: true });
+    } else if (stepBefore < 9) {
+      await waitForFrame(screen, new RegExp(`第 ${stepBefore + 1} / 10 格`, "u"));
+    } else {
+      await waitForFrame(screen, /最近返航/u);
+    }
+    assert.doesNotMatch(screen.lastFrame(), /影响预览|协议执行完成/u);
   }
   assert.match(screen.lastFrame(), /最近返航/u);
   assert.match(screen.lastFrame(), /COMPLETED/u);
+  assert.match(screen.lastFrame(), /返航总结/u);
+  assert.match(screen.lastFrame(), /事件轨迹/u);
+  assert.match(screen.lastFrame(), /返航诊断/u);
   assert.ok(
     screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
+  );
+
+  const completedState = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  const englishScreen = render(
+    React.createElement(TuiApp, {
+      snapshot: deriveTuiSnapshot(completedState, date, "en"),
+      lang: "en",
+      initialMotion: "off",
+      terminalColumns: 80,
+    }),
+  );
+  t.after(() => englishScreen.unmount());
+  englishScreen.stdin.write("3");
+  await waitForFrame(englishScreen, /RETURN SUMMARY/u);
+  assert.match(englishScreen.lastFrame(), /EVENT TRAIL/u);
+  assert.match(englishScreen.lastFrame(), /RETURN DIAGNOSIS/u);
+  assert.doesNotMatch(englishScreen.lastFrame(), /[\p{Script=Han}]/u);
+  assert.ok(
+    englishScreen
+      .lastFrame()
+      .split("\n")
+      .every((line) => terminalWidth(line) <= 80),
   );
 });
 

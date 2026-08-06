@@ -37,6 +37,12 @@ The deck order is derived from the local creature seed, expedition sequence, des
 
 Temporary conditions last only for that run. A completed run reaches at most one permanent ability adjustment: normally `+1` or `-1`; a 1% named side effect becomes `+2` or `-2`. Ability values never fall below zero. A branch may add `-2`, `0`, or `+2` to a temporary condition and must be sealed before the next cell.
 
+## Event and return presentation
+
+Human CLI, TUI, and Expedition share output derive from one presentation model. Every revealed cell has a visible label—Quiet Cell, Field Event, Condition Shift, or Special Event—so narrative copy cannot be mistaken for a system message. The TUI places the sealed system record on its own line and retains the latest three cells as a compact trail.
+
+A completed or abandoned record gets a deterministic return summary: route and event counts, special-event and condition-shift counts, artifacts with rarity, achievements, the permanent aftereffect, temporary conditions that expired on return, the latest three cells, and one satirical diagnosis. This summary is derived on read and adds no state field or reward.
+
 ## Commands
 
 ```bash
@@ -57,13 +63,14 @@ Use `anti-ai help expedition` or `anti-ai help expedition <action>` for focused 
 Expedition is the third of five console areas. Press `3` to open it.
 
 - `↑` / `↓`: select a destination before starting;
-- `Enter`: preview and confirm start, next cell, or the focused branch response;
+- `Enter`: start the focused destination, advance one ordinary cell, or seal the focused branch response directly;
+- `1`–`3`: focus a branch response when a branch appears;
 - `x`: preview abandoning the active run;
 - `q`: leave the area while preserving the active run;
 - `s`: preview a local expedition SVG;
 - `m`: change the global low-rate motion setting.
 
-Every write uses the shared application action service: preview, explicit confirmation, result, and refreshed state. The TUI does not invoke CLI handlers or a shell.
+Every write uses the shared application action service and atomic state store. For Expedition start, ordinary advance, and branch resolution, the focused destination or response plus `Enter` is the explicit confirmation; an in-flight lock ignores repeated input until the refreshed snapshot arrives. Abandonment keeps a separate preview-confirm step. The TUI does not invoke CLI handlers or a shell.
 
 ## Collection
 

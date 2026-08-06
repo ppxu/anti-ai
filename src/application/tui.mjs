@@ -36,8 +36,11 @@ import {
   expeditionArtifact,
   expeditionChoiceCopy,
   expeditionDestination,
-  expeditionEventCopy,
 } from "../expedition/content.mjs";
+import {
+  expeditionEventView,
+  expeditionReturnSummary,
+} from "../expedition/presentation.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
 import { containmentArchive, containmentBrief } from "./archive.mjs";
 
@@ -439,11 +442,19 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       },
       events: record.events.map((event) => ({
         ...event,
-        ...expeditionEventCopy(event, lang),
+        ...expeditionEventView(record, event, lang),
         ...(event.options
           ? {
               options: event.options.map((option) => ({
                 ...option,
+                effect: {
+                  ...option.effect,
+                  ability: creatureLabel(
+                    "abilities",
+                    option.effect.abilityId,
+                    lang,
+                  ),
+                },
                 label: expeditionChoiceCopy(
                   record.destinationId,
                   option.slot,
@@ -453,6 +464,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
             }
           : {}),
       })),
+      returnSummary: expeditionReturnSummary(record, lang),
     };
   };
   const statusLabel = {
@@ -621,6 +633,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
         id: destination.id,
         label: destination.name[lang],
         description: destination.description[lang],
+        mood: destination.mood[lang],
       })),
       active: presentExpedition(expedition.active),
       latest: presentExpedition(expedition.latest),

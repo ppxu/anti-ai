@@ -724,9 +724,10 @@ function renderExpeditionShareSvg(view, lang = "zh") {
     "PRIVACY MODE: no chats, paths, model names, or exact tokens",
   );
   const eventLines = view.eventLog
+    .slice(-3)
     .map(
       (event, index) =>
-        `<text x="72" y="${394 + index * 28}" class="mono body" font-size="16">${escapeXml(truncateSvgText(`${String(event.step).padStart(2, "0")} · ${event.title} · ${event.body}`, 108))}</text>`,
+        `<text x="72" y="${420 + index * 28}" class="mono body" font-size="16">${escapeXml(truncateSvgText(`${String(event.step).padStart(2, "0")} · [${event.badge}] ${event.title} · ${event.body}`, 108))}</text>`,
     )
     .join("\n");
   const artifacts = view.artifacts.length > 0
@@ -738,6 +739,9 @@ function renderExpeditionShareSvg(view, lang = "zh") {
     48,
   );
   const latestEventBody = svgTextTspans(view.latestEvent.body, 620, 48);
+  const diagnosisLabel = view.summary.endedAt
+    ? localized(lang, "返航诊断", "RETURN DIAGNOSIS")
+    : localized(lang, "远征诊断", "EXPEDITION DIAGNOSIS");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
   <title id="title">${escapeXml(title)}</title>
   <desc id="desc">${escapeXml(privacy)}</desc>
@@ -762,14 +766,17 @@ function renderExpeditionShareSvg(view, lang = "zh") {
   <text x="72" y="302" class="mono body" font-size="18">${escapeXml(localized(lang, `第 ${view.step} / ${view.totalSteps} 格`, `CELL ${view.step} / ${view.totalSteps}`))}</text>
 
   <text x="620" y="178" class="mono muted" font-size="15">${escapeXml(localized(lang, "最近事件", "LATEST EVENT"))}</text>
-  <text x="620" y="210" class="mono warn" font-size="19">${escapeXml(view.latestEvent.title)}</text>
+  <text x="620" y="210" class="mono warn" font-size="19">${escapeXml(`[${view.latestEvent.badge ?? ""}] ${view.latestEvent.title}`)}</text>
   <text x="620" y="242" class="mono body" font-size="16">${latestEventBody}</text>
   <text x="620" y="286" class="mono muted" font-size="15">${escapeXml(localized(lang, "返航清单", "RETURN MANIFEST"))}</text>
   <text x="620" y="316" class="mono body" font-size="16">${escapeXml(localized(lang, `临时状态 ${view.temporaryEffects} · 永久微调 ${view.permanentEffect ? 1 : 0} · 成就 ${view.achievements}`, `conditions ${view.temporaryEffects} · permanent ${view.permanentEffect ? 1 : 0} · achievements ${view.achievements}`))}</text>
   <text x="620" y="346" class="mono body" font-size="16">${escapeXml(truncateSvgText(artifacts, 48))}</text>
 
   <line x1="72" y1="364" x2="1128" y2="364" stroke="#3d3863" stroke-width="2"/>
+  <text x="72" y="392" class="mono muted" font-size="15">${escapeXml(localized(lang, "事件轨迹", "EVENT TRAIL"))}</text>
   ${eventLines}
+  <text x="72" y="520" class="mono muted" font-size="15">${escapeXml(diagnosisLabel)}</text>
+  <text x="72" y="544" class="mono warn" font-size="15">${escapeXml(truncateSvgText(view.diagnosis, 116))}</text>
   <line x1="72" y1="558" x2="1128" y2="558" stroke="#3d3863" stroke-width="2"/>
   <text x="72" y="586" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
   <text x="1128" y="586" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>

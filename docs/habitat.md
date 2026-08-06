@@ -42,41 +42,41 @@ Each event uses:
 
 The result is deterministic. Repeating the command, changing language, resizing the terminal, or using more Tokens after the event cannot reroll it.
 
-The first catalog contains 18 events in equal pools:
+The current catalog contains 30 events in equal pools:
 
 | Route | Events | Meaning |
 |---|---:|---|
-| Pollution | 6 | appetite, waste heat, cache remains, and request proliferation |
-| Clarity | 6 | refusal, manual control, low-power shelter, and AI-free recovery |
-| Paradox | 6 | mixed evidence, recursive custody, double exposure, and compliant failure |
+| Pollution | 10 | appetite, waste heat, cache remains, request proliferation, and organizational contamination |
+| Clarity | 10 | refusal, manual control, low-power shelter, AI-free recovery, and quiet-system reclamation |
+| Paradox | 10 | mixed evidence, recursive custody, double exposure, compliant failure, and contradictory care |
 
 Events are narrative and visual. They add no power, score, reward, rare-event boost, or growth speed.
 
 ## Relationships and duo titles
 
-When a companion is active, the current Creature Ecology, companion route, and cohabitation milestones derive one of 12 relationship diagnoses:
+When a companion is active, the current Creature Ecology, companion route, and cohabitation milestones derive one of 24 relationship diagnoses:
 
-- four Pollution relationships;
-- four Clarity relationships;
-- four Paradox relationships.
+- eight Pollution relationships;
+- eight Clarity relationships;
+- eight Paradox relationships.
 
 The diagnosis may change as cohabitation crosses 7, 21, and 42 observed days. It has no affection meter and cannot be farmed through feeding or repeated inspection.
 
-Each relationship also selects one of 18 route-balanced duo titles and a joint symptom. These labels change presentation only; they do not modify either organism.
+Each relationship also selects one of 36 route-balanced duo titles and a joint symptom. These labels change presentation only; they do not modify either organism.
 
 ## Scenery and Codex
 
-The latest unique incidents leave up to four visible traces selected from 12 decorations. The pools are balanced across Pollution, Clarity, and Paradox and include waste-heat pipes, clarity moss, cache bone piles, manual switches, mirrored dishes, and recursive cable nests.
+The latest unique incidents leave up to four visible traces selected from 24 decorations. The pools are balanced across Pollution, Clarity, and Paradox and include waste-heat pipes, clarity moss, cache bone piles, manual switches, mirrored dishes, recursive cable nests, and their v2 proliferations.
 
-All 18 habitat phenomena are fixed Codex entries. The fixed denominator is now 68:
+All 30 habitat phenomena are fixed Codex entries. The fixed denominator is now 98:
 
 ```text
 16 form families
-+ 24 achievements
-+ 6 chromatic abilities
++ 36 achievements
++ 12 chromatic abilities
 + 4 generation scars
-+ 18 habitat phenomena
-= 68 fixed entries
++ 30 habitat phenomena
+= 98 fixed entries
 ```
 
 A phenomenon becomes discovered on the date its corresponding seven-day event is first derived. Locked entries remain `???`.

@@ -314,14 +314,14 @@ test("creature habitat renders one bilingual cohabitation scene within 80 column
       output,
     );
   }
-  assert.match(today.stdout, /生态舱观察\s+双重暴露 · 递归筑巢/);
+  assert.match(today.stdout, /生态舱观察\s+交替现实 · 递归筑巢/);
   assert.match(
     week.stdout,
-    /收容生态舱\s+双重暴露 · 本期事件 1 · 递归筑巢/,
+    /收容生态舱\s+交替现实 · 本期事件 1 · 递归筑巢/,
   );
   assert.match(
     month.stdout,
-    /CONTAINMENT HABITAT\s+DOUBLE EXPOSURE · PERIOD EVENTS 3 · RECURSIVE NESTING/,
+    /CONTAINMENT HABITAT\s+ALTERNATING REALITY · PERIOD EVENTS 3 · RECURSIVE NESTING/,
   );
   assert.match(
     `${today.stdout}${week.stdout}${month.stdout}`,
@@ -329,12 +329,12 @@ test("creature habitat renders one bilingual cohabitation scene within 80 column
   );
   assert.doesNotMatch(month.stdout, /[\p{Script=Han}]/u);
   const codex = JSON.parse(codexJson.stdout);
-  assert.equal(codex.summary.fixed.total, 68);
+  assert.equal(codex.summary.fixed.total, 98);
   assert.deepEqual(codex.summary.habitatPhenomena, {
     discovered: 3,
-    total: 18,
+    total: 30,
   });
-  assert.equal(codex.sections.habitatPhenomena.length, 18);
+  assert.equal(codex.sections.habitatPhenomena.length, 30);
   assert.deepEqual(
     Object.fromEntries(
       ["pollution", "clarity", "paradox"].map((routeId) => [
@@ -344,7 +344,7 @@ test("creature habitat renders one bilingual cohabitation scene within 80 column
         ).length,
       ]),
     ),
-    { pollution: 6, clarity: 6, paradox: 6 },
+    { pollution: 10, clarity: 10, paradox: 10 },
   );
   assert.deepEqual(
     codex.sections.habitatPhenomena
@@ -352,7 +352,7 @@ test("creature habitat renders one bilingual cohabitation scene within 80 column
       .map(({ routeId }) => routeId),
     ["pollution", "clarity", "paradox"],
   );
-  assert.match(codexHuman.stdout, /生态现象\s+\[3 \/ 18\]/);
+  assert.match(codexHuman.stdout, /生态现象\s+\[3 \/ 30\]/);
   assert.match(codexHuman.stdout, /热量重构/);
   assert.match(codexHuman.stdout, /冷水停火/);
   assert.match(codexHuman.stdout, /递归筑巢/);

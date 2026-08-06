@@ -223,11 +223,11 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 68 entries: 16 form families, 24 achievements, 6 chromatic abilities, 4 generation scars, and 18 route-balanced habitat phenomena. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, bonded companion forms, and resolved incident reports are collected without an artificial upper limit.
+The fixed collection contains 98 entries: 16 form families, 36 achievements, 12 chromatic abilities, 4 generation scars, and 30 route-balanced habitat phenomena. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, bonded companion forms, and resolved incident reports are collected without an artificial upper limit.
 
 `codex --json` exposes stable IDs, discovery state and dates, provenance, collection counts, the selected day's `recent` discoveries, and the current three-slot Cabinet references. The TUI adds category → entry → detail navigation, first-discovery and related-record context, locked silhouettes, an explicitly confirmed display action, and a nested 7/30-day Containment Archive. Displaying a record changes only Codex, Habitat, and share presentation. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters and does not turn Token volume into a preferred collection route.
 
-The human view also reports the generator's **21,233,664 deduplicated final ASCII forms**. This is a theoretical species-space estimate, not collection progress. See the [Creature Guide](./docs/creature.md) for the capacity calculation and visual precedence rules.
+The human view also reports the generator's **204,374,016 deduplicated final ASCII forms**. This includes six new-generation graft organs and distinct legacy/v2 achievement and chromatic overlays. It is a theoretical species-space estimate, not collection progress. See the [Creature Guide](./docs/creature.md) for the capacity calculation and visual precedence rules.
 
 ### `encounter`
 
@@ -322,7 +322,7 @@ Every 14 experience days may offer one turning-point case. Its three routes—Po
 
 Every 7 experience days may also offer one containment incident. Emergency Quarantine, Continue Observation, and Allow Resonance each seal a visible trade-off; the aftermath appears 3 experience days later and may open one deterministic follow-up chapter. Pending incidents never build a backlog, and responses grant no abilities, experience, Ecology, or Token rewards.
 
-The Reactor Kaiju generator has 16 core form families and **21,233,664 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, and chromatic rarity reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
+The Reactor Kaiju generator has 16 core form families and **204,374,016 deduplicated final ASCII forms**. A stable local genome controls its organs while pathology, Ecology, scars, achievements, chromatic rarity, and sealed generation grafts reshape the same skeleton. Run `anti-ai codex` to compare that theoretical capacity with your collection.
 
 `creature habitat` combines the current specimen, active companion, collection traces, and Consequence Cabinet into the selected single-screen containment scene. The Habitat snapshot is read-only, derives one deterministic event every seven experience days, and cannot be rerolled or accelerated with Token volume. Cabinet curation and the two daily light interactions happen only after explicit TUI confirmation and never alter growth values.
 

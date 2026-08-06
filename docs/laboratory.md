@@ -66,11 +66,11 @@ There is no network randomness, countdown, daily free attempt, missed-day punish
 
 The first release combines:
 
-- 6 culture types;
+- 10 culture types;
 - 3 Ecology directions;
 - 4 pathologies;
-- 6 complications;
-- 6 side effects;
+- 10 complications;
+- 10 side effects;
 - a deterministic dish ASCII and 12-character appearance fingerprint.
 
 Rarity depends on material-category diversity plus one deterministic local roll:
@@ -87,7 +87,7 @@ These percentages describe the fixed hash partition, not an online probability s
 
 `lab shelf` shows the six most recently sealed cultures. `--full` displays the complete local shelf; JSON always returns the complete machine-readable list. `lab inspect` shows one culture's materials, dish ASCII, diagnosis, complication, and side effect.
 
-Sealed cultures also appear in `anti-ai codex` with their stable ID, type, rarity, discovery date, ingredient categories, and appearance fingerprint. They do not change the fixed 68-entry Codex denominator.
+Sealed cultures also appear in `anti-ai codex` with their stable ID, type, rarity, discovery date, ingredient categories, and appearance fingerprint. They do not change the fixed 98-entry Codex denominator.
 
 `share --card culture` prints a 1200×630 SVG for the latest culture. `--id` selects another culture. The SVG is written to stdout and is never uploaded.
 
@@ -113,7 +113,7 @@ The laboratory is a collection and narrative system. More Token use is not a sho
 
 ## State and privacy
 
-Creature state uses schema v12. The Laboratory v2 section stores only:
+Creature state uses schema v13. The Laboratory v2 section stores only:
 
 - a laboratory format version and next batch number;
 - stable culture and material IDs;
@@ -123,6 +123,6 @@ Creature state uses schema v12. The Laboratory v2 section stores only:
 - the active culture ID and privacy-safe bond history;
 - one discrete companion imprint per observed date and sealed anomaly IDs.
 
-Schema v1–v11 files migrate sequentially and idempotently by preserving or adding the missing empty Laboratory, companion, incident, or consequence-cabinet index. Migration never invents past experiments, bonds, imprints, anomalies, incidents, displays, or interactions.
+Schema v1–v12 files migrate sequentially and idempotently by preserving or adding missing indexes and freezing legacy content as v1. Migration never invents past experiments, bonds, imprints, anomalies, incidents, displays, or interactions.
 
 The state, JSON output, Codex entry, culture card, and companion card omit exact Tokens, request counts, model and Agent names, prompts, responses, tool calls, local paths, personal baselines, and request timestamps. Everything stays in `~/.anti-ai/creature.json`.

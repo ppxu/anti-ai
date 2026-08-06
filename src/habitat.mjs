@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 
 import { laboratoryCompanion } from "./companion.mjs";
+import { V2_HABITAT_COPY } from "./habitat-v2.mjs";
 
 const HABITAT_EVENT_CADENCE_DAYS = 7;
 
-const HABITAT_COPY = Object.freeze({
+const LEGACY_HABITAT_COPY = Object.freeze({
   events: {
     coolant_bloom: {
       route: "pollution",
@@ -357,6 +358,32 @@ const HABITAT_COPY = Object.freeze({
   },
 });
 
+const HABITAT_COPY = Object.freeze({
+  events: Object.freeze({
+    ...LEGACY_HABITAT_COPY.events,
+    ...V2_HABITAT_COPY.events,
+  }),
+  relationships: Object.freeze({
+    ...LEGACY_HABITAT_COPY.relationships,
+    ...V2_HABITAT_COPY.relationships,
+  }),
+  decorations: Object.freeze({
+    ...LEGACY_HABITAT_COPY.decorations,
+    ...V2_HABITAT_COPY.decorations,
+  }),
+  duoTitles: Object.freeze(
+    Object.fromEntries(
+      ["pollution", "clarity", "paradox"].map((route) => [
+        route,
+        [
+          ...LEGACY_HABITAT_COPY.duoTitles[route],
+          ...V2_HABITAT_COPY.duoTitles[route],
+        ],
+      ]),
+    ),
+  ),
+});
+
 const EVENT_IDS_BY_ROUTE = Object.freeze(
   Object.fromEntries(
     ["pollution", "clarity", "paradox"].map((route) => [
@@ -375,6 +402,24 @@ const RELATIONSHIP_IDS_BY_ROUTE = Object.freeze(
       Object.entries(HABITAT_COPY.relationships)
         .filter(([, relationship]) => relationship.route === route)
         .map(([id]) => id),
+    ]),
+  ),
+);
+
+const LEGACY_EVENT_IDS_BY_ROUTE = Object.freeze(
+  Object.fromEntries(
+    Object.entries(EVENT_IDS_BY_ROUTE).map(([route, ids]) => [
+      route,
+      ids.slice(0, 6),
+    ]),
+  ),
+);
+
+const LEGACY_RELATIONSHIP_IDS_BY_ROUTE = Object.freeze(
+  Object.fromEntries(
+    Object.entries(RELATIONSHIP_IDS_BY_ROUTE).map(([route, ids]) => [
+      route,
+      ids.slice(0, 4),
     ]),
   ),
 );
@@ -426,7 +471,12 @@ function habitatEvents(state, date) {
       experienceDay,
     );
     const routeId = habitatEventRoute(state, windowDates, discoveredAt);
-    const pool = EVENT_IDS_BY_ROUTE[routeId];
+    const contentVersion = windowDates.some(
+      (entryDate) => (state.days[entryDate]?.contentVersion ?? 1) >= 2,
+    ) ? 2 : 1;
+    const pool = contentVersion >= 2
+      ? EVENT_IDS_BY_ROUTE[routeId]
+      : LEGACY_EVENT_IDS_BY_ROUTE[routeId];
     const id =
       pool[
         digestIndex(
@@ -467,10 +517,15 @@ function relationshipRoute(creature, companion) {
   return "paradox";
 }
 
-function habitatRelationship(state, creature, companion) {
+function habitatRelationship(state, creature, companion, date) {
   if (!companion) return null;
   const routeId = relationshipRoute(creature, companion);
-  const pool = RELATIONSHIP_IDS_BY_ROUTE[routeId];
+  const contentVersion = Object.entries(state.days ?? {}).some(
+    ([entryDate, day]) => entryDate <= date && (day.contentVersion ?? 1) >= 2,
+  ) ? 2 : 1;
+  const pool = contentVersion >= 2
+    ? RELATIONSHIP_IDS_BY_ROUTE[routeId]
+    : LEGACY_RELATIONSHIP_IDS_BY_ROUTE[routeId];
   const cohabitationDays = companion.imprintCounts.total;
   const milestone =
     cohabitationDays >= 42
@@ -488,7 +543,9 @@ function habitatRelationship(state, creature, companion) {
     routeId,
   );
   const id = pool[(offset + milestone) % pool.length];
-  const titles = HABITAT_COPY.duoTitles[routeId];
+  const titles = contentVersion >= 2
+    ? HABITAT_COPY.duoTitles[routeId]
+    : LEGACY_HABITAT_COPY.duoTitles[routeId];
   const titleId = digestIndex(
     titles,
     "anti-ai-habitat-duo-title-v1",
@@ -531,7 +588,7 @@ function habitatDecorations(events, companion) {
 function deriveHabitat(state, creature, date, specimenArt) {
   const companion = creature.companion;
   const events = habitatEvents(state, date);
-  const relationship = habitatRelationship(state, creature, companion);
+  const relationship = habitatRelationship(state, creature, companion, date);
   const experienceDays = creature.experienceDays;
   const remainder = experienceDays % HABITAT_EVENT_CADENCE_DAYS;
   return {
@@ -545,6 +602,9 @@ function deriveHabitat(state, creature, date, specimenArt) {
       pathologyId: creature.branch,
       generation: creature.generation.number,
       experienceDays,
+      temperament: creature.temperament,
+      chromaticAbilityId: creature.appearance.rareAbilityId,
+      evolutionId: creature.appearance.evolutionId,
       art: String(specimenArt ?? "")
         .replaceAll(/\u001B\[[0-9;]*m/g, "")
         .split("\n")

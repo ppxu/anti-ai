@@ -34,6 +34,24 @@ import {
   writeOpenCodeSessionMessageDb,
 } from "./helpers.mjs";
 
+import { CASEBOOK_CASES } from "../src/casebook.mjs";
+
+test("v2.9 doubles the route-balanced casebook pool", () => {
+  assert.equal(CASEBOOK_CASES.length, 24);
+  assert.deepEqual(
+    Object.fromEntries(
+      ["context", "cache", "frenzy", "nuclear"].map((pathologyId) => [
+        pathologyId,
+        CASEBOOK_CASES.filter((entry) => entry.pathologyId === pathologyId)
+          .length,
+      ]),
+    ),
+    { context: 4, cache: 4, frenzy: 4, nuclear: 4 },
+  );
+  assert.equal(CASEBOOK_CASES.filter((entry) => entry.ecologyId === "lucid").length, 4);
+  assert.equal(CASEBOOK_CASES.filter((entry) => entry.ecologyId === "paradox").length, 4);
+});
+
 test("creature history compresses settled growth into key local casebook events", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-history-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
@@ -196,7 +214,7 @@ test("creature history promotes rare mutations, chromatic gains, and badges to k
     ["creature", "history", "--date", "2026-07-23", "--json"],
     {
       HOME: rareHome,
-      ANTI_AI_CREATURE_SEED: "rare-ability-297",
+      ANTI_AI_CREATURE_SEED: "rare-ability-758",
     },
   );
   const badges = runCli(

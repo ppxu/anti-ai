@@ -64,6 +64,7 @@ async function settleCreatureState(state, date, options, timezone) {
         evolutionEffect?.triggered && evolutionEffect.category === "paradox"
           ? evolutionEffect.benefitPoints * 2
           : 0,
+        record.contentVersion,
       );
       record.traits[event.trait] = roundCreature(
         record.traits[event.trait] + event.delta,
@@ -84,6 +85,7 @@ async function settleCreatureState(state, date, options, timezone) {
       state.seed,
       report.date,
       record.active,
+      record.contentVersion,
     );
     state.days[report.date] = record;
   }

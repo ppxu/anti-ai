@@ -71,7 +71,42 @@ const INCIDENT_DEFINITIONS = Object.freeze([
     target: "shared_dream",
     followUpFor: "resonate",
   },
+  { id: "invoice_weather", actor: "habitat", target: "billing_front" },
+  { id: "context_evacuation", actor: "specimen", target: "memory_lobe", pathologyId: "context" },
+  { id: "ancestral_cache_vote", actor: "specimen", target: "cache_shell", pathologyId: "cache" },
+  { id: "request_maw_union", actor: "specimen", target: "request_maws", pathologyId: "frenzy" },
+  { id: "core_declared_sunrise", actor: "specimen", target: "core", pathologyId: "nuclear" },
+  { id: "manual_switch_resigned", actor: "habitat", target: "clarity_field", ecologyId: "lucid" },
+  { id: "paradox_passed_audit", actor: "habitat", target: "paradox_shadow", ecologyId: "paradox" },
+  { id: "companion_started_thread", actor: "companion", target: "symbiotic_channel", requiresCompanion: true },
+  { id: "fossil_requested_upgrade", actor: "fossil", target: "generation_archive", requiresFossil: true },
+  { id: "dashboard_photosynthesis", actor: "habitat", target: "observation_log" },
+  { id: "quarantine_nested_itself", actor: "habitat", target: "quarantine_door" },
+  { id: "silence_missed_deadline", actor: "specimen", target: "shared_dream" },
 ]);
+
+const V2_INCIDENT_TEXT = {
+  invoice_weather: ["账单形成局部天气", "THE INVOICE FORMED LOCAL WEATHER", "费用曲线在舱顶积云，并开始按部门降雨。", "The cost curve clouded over the chamber and began raining by department."],
+  context_evacuation: ["主问题撤离上下文", "THE QUESTION EVACUATED ITS CONTEXT", "背景组织占满窗口后，主问题从紧急出口自行离场。", "After background tissue filled the window, the actual question left through the emergency exit."],
+  ancestral_cache_vote: ["祖传缓存要求表决权", "ANCESTRAL CACHE DEMANDED A VOTE", "旧答案以服务年限为由申请参与当前架构决策。", "An old answer requested a vote in current architecture decisions based on tenure."],
+  request_maw_union: ["请求口器成立工会", "THE REQUEST MAWS UNIONIZED", "所有口器统一要求把最后一次追问改为永久福利。", "Every maw demanded that the final follow-up become a permanent benefit."],
+  core_declared_sunrise: ["核心自行宣布日出", "THE CORE DECLARED SUNRISE", "反应堆在午夜点亮全舱，并把时区问题交给产品。", "The reactor lit the chamber at midnight and delegated the timezone issue to product."],
+  manual_switch_resigned: ["人工开关提交辞呈", "THE MANUAL SWITCH RESIGNED", "连续无人按动后，开关以缺乏成长空间为由离职。", "After prolonged disuse, the manual switch resigned for lack of growth opportunities."],
+  paradox_passed_audit: ["悖论通过合规审计", "THE PARADOX PASSED COMPLIANCE", "审计确认两份相反记录都完整，因此没有发现异常。", "The audit found both opposing records complete and therefore no anomaly."],
+  companion_started_thread: ["伴生物新建了讨论串", "THE COMPANION STARTED A THREAD", "空白消息获得二十七条回复，仍没有主题。", "A blank message received twenty-seven replies and still has no topic."],
+  fossil_requested_upgrade: ["化石申请原地升级", "THE FOSSIL REQUESTED AN IN-PLACE UPGRADE", "上一代要求保留全部历史行为，同时成为下一代。", "The prior generation requested to become the next while preserving every historical behavior."],
+  dashboard_photosynthesis: ["仪表盘开始光合作用", "THE DASHBOARD STARTED PHOTOSYNTHESIS", "绿色指标吸收了所有异常，只留下更绿的指标。", "Green metrics absorbed every anomaly and produced greener metrics."],
+  quarantine_nested_itself: ["隔离区套娃", "QUARANTINE NESTED ITSELF", "每次关闭舱门，里面都会出现一道更需要关闭的门。", "Every closed hatch reveals another hatch requiring closure."],
+  silence_missed_deadline: ["沉默错过了截止日", "SILENCE MISSED THE DEADLINE", "没有请求按时到达，项目因此无法证明自己很忙。", "No request arrived on time, leaving the project unable to prove it was busy."],
+};
+
+const V2_INCIDENT_AFTERMATHS = Object.fromEntries(
+  Object.entries(V2_INCIDENT_TEXT).flatMap(([id, [zhName, enName]]) => [
+    [`${id}_quarantine`, { zh: `「${zhName}」已被隔离，随后申请成为隔离流程负责人。`, en: `${enName} was quarantined, then applied to own the quarantine process.` }],
+    [`${id}_observe`, { zh: `观察记录完整保存了「${zhName}」，但没有保存为什么。`, en: `Observation preserved ${enName} completely, except for why it happened.` }],
+    [`${id}_resonate`, { zh: `全舱与「${zhName}」同步，异常正式升级为工作方式。`, en: `The whole habitat synchronized with ${enName}; the anomaly is now a workflow.` }],
+  ]),
+);
 
 const INCIDENT_STANCES = Object.freeze([
   {
@@ -141,6 +176,9 @@ const INCIDENT_COPY = Object.freeze({
       zh: "共享梦境发生版本冲突",
       en: "THE SHARED DREAM HIT A VERSION CONFLICT",
     },
+    ...Object.fromEntries(
+      Object.entries(V2_INCIDENT_TEXT).map(([id, [zh, en]]) => [id, { zh, en }]),
+    ),
   },
   bodies: {
     coolant_standup: {
@@ -191,6 +229,12 @@ const INCIDENT_COPY = Object.freeze({
       zh: "允许共振后，异变体与生态舱在同一场梦里提交了不同版本。",
       en: "After resonance, the specimen and habitat submitted different versions of the same dream.",
     },
+    ...Object.fromEntries(
+      Object.entries(V2_INCIDENT_TEXT).map(([id, values]) => [
+        id,
+        { zh: values[2], en: values[3] },
+      ]),
+    ),
   },
   stances: {
     quarantine: { zh: "紧急隔离", en: "EMERGENCY QUARANTINE" },
@@ -352,6 +396,7 @@ const INCIDENT_COPY = Object.freeze({
       zh: "双方接受差异，并把不一致正式命名为共同记忆。",
       en: "Both sides accepted the mismatch and formally named it shared memory.",
     },
+    ...V2_INCIDENT_AFTERMATHS,
   },
 });
 

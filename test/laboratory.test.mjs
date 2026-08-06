@@ -34,6 +34,27 @@ import {
   writeOpenCodeSessionMessageDb,
 } from "./helpers.mjs";
 
+import {
+  CULTURE_COMPLICATION_IDS,
+  CULTURE_SIDE_EFFECT_IDS,
+  CULTURE_TYPE_IDS,
+} from "../src/laboratory.mjs";
+import { COMPANION_COPY } from "../src/companion.mjs";
+import { HABITAT_COPY } from "../src/habitat.mjs";
+
+test("v2.9 expands culture, companion, and habitat collection pools", () => {
+  assert.equal(CULTURE_TYPE_IDS.length, 10);
+  assert.equal(CULTURE_COMPLICATION_IDS.length, 10);
+  assert.equal(CULTURE_SIDE_EFFECT_IDS.length, 10);
+  assert.equal(Object.keys(COMPANION_COPY.anomalies).length, 27);
+  assert.equal(Object.keys(HABITAT_COPY.relationships).length, 24);
+  assert.equal(Object.keys(HABITAT_COPY.decorations).length, 24);
+  assert.deepEqual(
+    Object.values(HABITAT_COPY.duoTitles).map((titles) => titles.length),
+    [12, 12, 12],
+  );
+});
+
 test("lab offers one stable three-formula batch from local derived collections", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-lab-formulas-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));
@@ -301,7 +322,7 @@ test("lab incubate seals one culture without changing creature growth", (t) => {
     "utf8",
   );
   const saved = JSON.parse(savedText);
-  assert.equal(saved.schemaVersion, 12);
+  assert.equal(saved.schemaVersion, 13);
   assert.equal(saved.laboratory.nextBatch, 2);
   assert.deepEqual(saved.laboratory.cultures, [result.culture]);
   assert.deepEqual(saved.days, initialState.days);
@@ -1270,7 +1291,7 @@ test("codex records companion stages and anomalies outside the fixed denominator
   assert.equal(bondDate.status, 0, bondDate.stderr);
   const codex = JSON.parse(first.stdout);
   assert.deepEqual(JSON.parse(second.stdout), codex);
-  assert.equal(codex.summary.fixed.total, 68);
+  assert.equal(codex.summary.fixed.total, 98);
   assert.deepEqual(codex.summary.companions, { discovered: 1 });
   assert.deepEqual(codex.sections.companions, [
     {

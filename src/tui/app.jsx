@@ -89,6 +89,13 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch, compact }) {
     awaiting: "yellow",
     unhatched: "gray",
   }[overview.status];
+  const pose = glitch
+    ? "mutation"
+    : overview.status === "active"
+      ? frame % 8 >= 4 ? "feeding" : "idle"
+      : overview.status === "quiet"
+        ? "withdrawal"
+        : "dormant";
   return (
     <Box flexDirection="column">
       <Box gap={1} flexDirection={compact ? "column" : "row"}>
@@ -100,6 +107,9 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch, compact }) {
           <Text color={glitch ? "magenta" : ecologyColor}>
             {deriveSpecimenFrame(overview.art, frame, motion, {
               glitch,
+              pose,
+              temperament: overview.temperament,
+              chromaticAbilityId: overview.chromaticAbilityId,
             }).join("\n")}
           </Text>
           <Text dimColor>#{overview.specimenId}</Text>
@@ -206,7 +216,15 @@ function HabitatScreen({
     habitat.specimen.art,
     frame,
     motion,
-    { glitch },
+    {
+      glitch,
+      pose: glitch ? "mutation" : habitat.relationship ? "alert" : "idle",
+      temperament: habitat.specimen.temperament,
+      chromaticAbilityId: habitat.specimen.chromaticAbilityId,
+      observedOrganId: observation?.target === "specimen"
+        ? observation.id
+        : null,
+    },
   );
   return (
     <Box flexDirection="column">
@@ -237,6 +255,11 @@ function HabitatScreen({
                   habitat.companion.art,
                   frame,
                   motion,
+                  {
+                    routeId: habitat.companion.routeId,
+                    stageId: habitat.companion.stageId,
+                    anomalyIds: habitat.companion.anomalyIds,
+                  },
                 ).map((line, lineIndex) => {
                   const selected =
                     observation?.target === "companion" &&

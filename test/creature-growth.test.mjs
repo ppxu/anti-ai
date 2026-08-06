@@ -33,6 +33,11 @@ import {
   writeOpenCodeDb,
   writeOpenCodeSessionMessageDb,
 } from "./helpers.mjs";
+import {
+  COMMON_CREATURE_EVENTS,
+  CREATURE_CLINICAL_NOTES,
+  RARE_CREATURE_EVENTS,
+} from "../src/creature/content.mjs";
 
 test("creature --json turns the latest 30 days into an initial mutation file", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-home-"));
@@ -219,7 +224,7 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
     achievements: {
       unlocked: [],
       recent: [],
-      total: 24,
+      total: 36,
     },
     title: {
       modifierId: "awaiting_shape",
@@ -228,6 +233,7 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
     },
     mood: "token_chewing",
     today: {
+      contentVersion: 2,
       balanceVersion: 2,
       pollutionDose: 27,
       usageBand: "calibrating",
@@ -236,7 +242,7 @@ test("creature --json turns the latest 30 days into an initial mutation file", (
         clarity: 0,
       },
       event: {
-        id: "cache_calcification",
+        id: "snapshot_bloating",
         rarity: "common",
       },
       abilityGains: {
@@ -285,12 +291,142 @@ test("creature persists one deterministic mutation event per active day", (t) =>
   assert.equal(second.status, 0, second.stderr);
   assert.deepEqual(JSON.parse(second.stdout), JSON.parse(first.stdout));
   assert.deepEqual(JSON.parse(first.stdout).today.event, {
-    id: "cache_calcification",
+    id: "snapshot_bloating",
     rarity: "common",
   });
 });
 
+test("creature content v2 preserves legacy event rolls and versions new days", (t) => {
+  assert.deepEqual(creatureEvent("test-seed", "2026-07-23", 0, 0, 1), {
+    id: "cache_calcification",
+    trait: "cache",
+    delta: 8,
+    rarity: "common",
+  });
+
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-content-version-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 12,
+      seed: "legacy-content-version",
+      days: {
+        "2026-07-22": {
+          pollutionDose: 0,
+          active: false,
+          usageBand: "sober",
+          ecologyGains: { pollution: 0, clarity: 0 },
+          traits: { context: 0, cache: 0, frenzy: 0, nuclear: 0 },
+          event: null,
+          abilityGains: {
+            appetite: 0,
+            memory: 0,
+            shell: 0,
+            mouths: 0,
+            glow: 0,
+            instability: 0,
+            withdrawal: 0,
+          },
+          rareAbilityGain: null,
+        },
+      },
+    })}\n`,
+  );
+
+  const result = runCli(["creature", "--date", "2026-07-23", "--json"], {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: path.join(home, "missing-codex"),
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const saved = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  assert.equal(saved.schemaVersion, 13);
+  assert.equal(saved.days["2026-07-22"].contentVersion, 1);
+  assert.equal(saved.days["2026-07-23"].contentVersion, 2);
+});
+
+test("v2 achievements unlock on a new day without rewriting legacy discovery dates", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-content-achievement-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  mkdirSync(path.join(home, ".anti-ai"), { recursive: true });
+  const days = Object.fromEntries(
+    Array.from({ length: 15 }, (_, index) => [
+      shiftTestDate("2026-07-01", index),
+      {
+        pollutionDose: 40,
+        active: true,
+        usageBand: "heavy",
+        ecologyGains: { pollution: 1, clarity: 0 },
+        traits: { context: 40, cache: 0, frenzy: 0, nuclear: 0 },
+        event: { id: "misplaced_context", rarity: "common" },
+        abilityGains: {
+          appetite: 1,
+          memory: 1,
+          shell: 0,
+          mouths: 0,
+          glow: 0,
+          instability: 0,
+          withdrawal: 0,
+        },
+        rareAbilityGain: null,
+      },
+    ]),
+  );
+  writeFileSync(
+    path.join(home, ".anti-ai", "creature.json"),
+    `${JSON.stringify({
+      schemaVersion: 12,
+      seed: "legacy-achievement-version",
+      days,
+    })}\n`,
+  );
+
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: path.join(home, "missing-codex"),
+  };
+  const result = runCli(["creature", "--date", "2026-07-16", "--json"], env);
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  const achievement = report.achievements.unlocked.find(
+    ({ id }) => id === "context_landfill",
+  );
+  assert.equal(achievement.unlockedAt, "2026-07-16");
+  const legacyCodex = runCli(
+    ["codex", "--date", "2026-07-15", "--json"],
+    env,
+  );
+  assert.equal(legacyCodex.status, 0, legacyCodex.stderr);
+  assert.equal(
+    JSON.parse(legacyCodex.stdout).sections.achievements.find(
+      ({ id }) => id === "context_landfill",
+    ).discovered,
+    false,
+  );
+});
+
 test("creature events and clinical notes have enough deterministic variety", () => {
+  assert.equal(COMMON_CREATURE_EVENTS.length, 28);
+  assert.equal(RARE_CREATURE_EVENTS.length, 21);
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(CREATURE_CLINICAL_NOTES).map(([symptom, notes]) => [
+        symptom,
+        notes.length,
+      ]),
+    ),
+    {
+      context: 12,
+      cache: 12,
+      frenzy: 12,
+      nuclear: 12,
+      withdrawal: 12,
+      unhatched: 12,
+    },
+  );
   const events = new Set();
   for (let day = 0; day < 800; day += 1) {
     events.add(
@@ -776,7 +912,7 @@ test("all reactor kaiju stages keep 10,000 seeded specimens diverse and bounded"
   assert.deepEqual(creatureAppearanceContentStats(), {
     basePartIds: 54,
     formFamilies: 16,
-    achievements: 24,
+    achievements: 36,
   });
 });
 
@@ -1017,6 +1153,42 @@ test("chromatic mutations visibly outrank achievement marks on complete forms", 
   );
 });
 
+test("v2.9 growth marks add new overlays and one current-generation graft", () => {
+  const state = creatureAppearanceState("pathological-proliferation");
+  const achievementAppearance = deriveCreatureAppearance(
+    state,
+    3,
+    "paradox",
+    "context",
+    [{
+      id: "balanced_damage",
+      category: "paradox",
+      rarity: "rare",
+      tier: 1,
+      unlockedAt: "2026-08-06",
+    }],
+    {},
+    null,
+    "loaded_nerve",
+  );
+  const chromaticAppearance = deriveCreatureAppearance(
+    state,
+    3,
+    "polluted",
+    "nuclear",
+    [],
+    { budget_resurrection: { rarity: "mythic", level: 1 } },
+    null,
+    "reactor_bladder",
+  );
+
+  assert.match(creatureArt({ appearance: achievementAppearance }), /!\+\?\+!/u);
+  assert.match(creatureArt({ appearance: achievementAppearance }), /\{\?x\?\}/u);
+  assert.match(creatureArt({ appearance: chromaticAppearance }), /@Z@Z@/u);
+  assert.match(creatureArt({ appearance: chromaticAppearance }), /\{☢o☢\}/u);
+  assert.ok(achievementAppearance.partIds.includes("evolution_loaded_nerve"));
+});
+
 test("creature grows deterministic random abilities and exposes playable state", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-abilities-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));
@@ -1178,7 +1350,7 @@ test("creature rolls legacy ability points into 255-point malignancy ranks witho
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 12);
+  assert.equal(saved.schemaVersion, 13);
   assert.equal(saved.days["2026-07-22"].abilityGains.appetite, 267);
 });
 

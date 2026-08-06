@@ -60,13 +60,13 @@ Every specimen grows on one continuous Reactor Kaiju skeleton. A stable local ge
 - tail;
 - chest pattern.
 
-Usage pathology changes the crest, Ecology changes markings and color, inherited scars rewrite the chest, achievements add category marks, and chromatic abilities override the lower-priority pattern with an R, SR, or SSR mutation.
+Usage pathology changes the crest, Ecology changes markings and color, inherited scars rewrite the chest, achievements add category marks, chromatic abilities override the lower-priority pattern with an R, SR, or SSR mutation, and a sealed v2 generation choice may graft one extra organ onto the silhouette.
 
 The same local file always renders the same specimen. Language and ANSI color do not change its geometry.
 
 ### Theoretical species capacity
 
-The current generator can render **21,233,664 deduplicated final ASCII forms**:
+The current generator can render **204,374,016 deduplicated final ASCII forms**:
 
 ```text
 Structural forms
@@ -75,17 +75,18 @@ Structural forms
 
 Growth variants
 4 ecologies × 4 pathologies
-× (6 genome patterns + 4 scars + 3 achievement marks + 3 chromatic ranks)
-= 256
+× (6 genome patterns + 4 scars + 6 achievement marks + 6 chromatic overlays)
+× (1 ungrafted form + 6 generation grafts)
+= 2,464
 
-82,944 × 256 = 21,233,664
+82,944 × 2,464 = 204,374,016
 ```
 
 This is not the same as the 16 core form families shown in the codex. A family is one Ecology/Pathology pairing; the capacity counts individualized final ASCII specimens after visible genes and overlays are applied.
 
 Browse the literal `6 + 8 + 8 + 6 + 6 + 6` source glyphs in the [Base Organ Codex](./creature-organs.md).
 
-See all 24 visible overlays, their stage behavior, and their precedence in the [Growth Appearance Codex](./creature-growth-appearance.md).
+See all 36 growth appearance elements, their stage behavior, and their precedence in the [Growth Appearance Codex](./creature-growth-appearance.md).
 
 Overlay precedence matters:
 
@@ -93,7 +94,7 @@ Overlay precedence matters:
 2. An achievement mark overrides scar and genome patterns.
 3. A scar overrides the ordinary genome pattern.
 
-The 24 achievement IDs therefore collapse into three visible categories, and the six chromatic abilities collapse into three visible ranks. Ability levels, titles, moods, and exact growth values do not multiply the ASCII capacity because they do not change the current skeleton.
+The 36 achievement IDs collapse into six visible category/version marks, and the 12 chromatic abilities collapse into six visible rank/version overlays. A v2 generation choice adds one of six independent graft organs. Ability levels, titles, moods, transient motion poses, and exact growth values do not multiply the stable ASCII capacity.
 
 Run `anti-ai codex` to see the current capacity alongside collection progress. `codex --json` exposes:
 
@@ -101,8 +102,8 @@ Run `anti-ai codex` to see the current capacity alongside collection progress. `
 {
   "capacity": {
     "structuralForms": 82944,
-    "growthVariants": 256,
-    "finalAsciiForms": 21233664
+    "growthVariants": 2464,
+    "finalAsciiForms": 204374016
   }
 }
 ```
@@ -248,7 +249,7 @@ Chromatic rank changes the complete-form chest pattern and color. A specific abi
 
 ## Achievements, titles, and events
 
-The first 24 achievements are divided evenly across:
+The 36 achievements are divided evenly across:
 
 - red Offense badges;
 - cyan Sobriety badges;
@@ -265,10 +266,10 @@ A local seed plus the date selects one reproducible event per active day. After 
 `anti-ai codex` derives a private collection from the existing creature history:
 
 - 16 core form families;
-- 24 achievements;
-- 6 chromatic abilities;
+- 36 achievements;
+- 12 chromatic abilities;
 - 4 generation scars;
-- 18 route-balanced habitat phenomena;
+- 30 route-balanced habitat phenomena;
 - unlimited dynamic specimen fingerprints;
 - unlimited foreign encounter specimens;
 - unlimited permanent fossils;
@@ -300,7 +301,7 @@ Turning-point cases are also local and optional. Read [Forked Casebook](./casebo
 Containment incidents are local delayed event chains. Read [Containment Incidents](./incidents.md) for cadence, responses, aftermaths, and incident-report collection behavior.
 Laboratory cultures are local and optional. Read [Pollution Laboratory](./laboratory.md) for stable formula, rarity, shelf, and culture-card behavior.
 Bonded companions are local and optional. Read [Symbiotic Companions](./companions.md) for imprints, routes, milestones, and companion-card behavior.
-The combined containment scene is local and read-only. Read [Containment Habitat](./habitat.md) for seven-day events, relationships, scenery, period summaries, and the 18 fixed phenomena.
+The combined containment scene is local and read-only. Read [Containment Habitat](./habitat.md) for seven-day events, relationships, scenery, period summaries, and the 30 fixed phenomena.
 
 ## State, privacy, and reset
 
@@ -310,9 +311,10 @@ State lives at:
 ~/.anti-ai/creature.json
 ```
 
-The current schema is v12. It stores only:
+The current schema is v13. It stores only:
 
 - discrete usage bands and derived Ecology points;
+- integer content versions for settled days and generation choices, so v1 history is never rerolled by v2 content pools;
 - stable gene and part IDs;
 - achievements and appearance fingerprints;
 - pollution doses, traits, regular/chromatic ability gains, and event IDs;
@@ -329,7 +331,7 @@ The current schema is v12. It stores only:
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v11 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, or anomalies. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
+Schema v1-v12 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, anomalies, or v2 discoveries. Missing historical content versions become v1; only newly settled days and newly sealed evolution choices use v2 pools. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
 
 One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 

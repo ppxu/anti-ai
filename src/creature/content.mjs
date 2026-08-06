@@ -1,3 +1,14 @@
+import {
+  CREATURE_CONTENT_VERSION,
+  V2_ACHIEVEMENT_DEFINITIONS,
+  V2_ACHIEVEMENT_TIER_THRESHOLDS,
+  V2_CLINICAL_NOTES,
+  V2_COMMON_CREATURE_EVENTS,
+  V2_CREATURE_COPY,
+  V2_RARE_ABILITY_POOLS,
+  V2_RARE_CREATURE_EVENTS,
+} from "./content-v2.mjs";
+
 const CREATURE_STAGES = [
   {
     id: "contaminated_embryo",
@@ -230,7 +241,9 @@ const CREATURE_ACHIEVEMENT_DEFINITIONS = [
   ["withdrawal_reactor", "paradox", "rare"],
   ["double_sided_record", "paradox", "rare"],
   ["ecological_paradox", "paradox", "mythic"],
-].map(([id, category, rarity]) => ({ id, category, rarity }));
+]
+  .map(([id, category, rarity]) => ({ id, category, rarity }))
+  .concat(V2_ACHIEVEMENT_DEFINITIONS);
 const CREATURE_ACHIEVEMENT_BY_ID = Object.fromEntries(
   CREATURE_ACHIEVEMENT_DEFINITIONS.map((achievement) => [
     achievement.id,
@@ -250,8 +263,9 @@ const CREATURE_ACHIEVEMENT_TIER_THRESHOLDS = {
   human_mode_reboot: [3, 7, 14],
   double_sided_record: [60, 120, 240],
   ecological_paradox: [120, 240, 500],
+  ...V2_ACHIEVEMENT_TIER_THRESHOLDS,
 };
-const CREATURE_CLINICAL_NOTES = {
+const LEGACY_CREATURE_CLINICAL_NOTES = {
   context: [
     {
       zh: "上下文继续增生，主治医生已经找不到问题本体。",
@@ -409,6 +423,12 @@ const CREATURE_CLINICAL_NOTES = {
     },
   ],
 };
+const CREATURE_CLINICAL_NOTES = Object.fromEntries(
+  Object.entries(LEGACY_CREATURE_CLINICAL_NOTES).map(([symptom, notes]) => [
+    symptom,
+    [...notes, ...(V2_CLINICAL_NOTES[symptom] ?? [])],
+  ]),
+);
 
 const COMMON_CREATURE_EVENTS = [
   {
@@ -471,7 +491,7 @@ const COMMON_CREATURE_EVENTS = [
     trait: "nuclear",
     delta: 8,
   },
-];
+].concat(V2_COMMON_CREATURE_EVENTS);
 
 const RARE_CREATURE_EVENTS = [
   {
@@ -514,7 +534,7 @@ const RARE_CREATURE_EVENTS = [
     trait: "nuclear",
     delta: 20,
   },
-];
+].concat(V2_RARE_CREATURE_EVENTS);
 
 const CREATURE_ABILITY_KEYS = [
   "appetite",
@@ -550,9 +570,14 @@ const CREATURE_RARE_ABILITY_POOLS = {
     "deadline_scent",
     "phantom_cache",
     "rubber_duck_necromancy",
+    ...V2_RARE_ABILITY_POOLS.rare,
   ],
-  epic: ["prompt_telepathy", "hallucination_antibodies"],
-  mythic: ["token_transmutation"],
+  epic: [
+    "prompt_telepathy",
+    "hallucination_antibodies",
+    ...V2_RARE_ABILITY_POOLS.epic,
+  ],
+  mythic: ["token_transmutation", ...V2_RARE_ABILITY_POOLS.mythic],
 };
 const CREATURE_RARE_ABILITY_RANKS = {
   rare: { badge: "R", color: "1;36" },
@@ -937,6 +962,7 @@ const CREATURE_COPY = {
         en: "Rare mutation: its chest borrowed a small sun due back next release.",
       },
     },
+    ...V2_CREATURE_COPY.events,
   },
   abilities: {
     appetite: { zh: "吞噬欲", en: "TOKEN APPETITE" },
@@ -972,6 +998,7 @@ const CREATURE_COPY = {
       en: "HALLUCINATION ANTIBODIES",
     },
     token_transmutation: { zh: "Token 炼金术", en: "TOKEN TRANSMUTATION" },
+    ...V2_CREATURE_COPY.rareAbilities,
   },
   rareAbilityDescriptions: {
     deadline_scent: {
@@ -998,6 +1025,7 @@ const CREATURE_COPY = {
       zh: "把预算直接炼成上下文，没有中间商。",
       en: "Transmutes budget directly into context.",
     },
+    ...V2_CREATURE_COPY.rareAbilityDescriptions,
   },
   talents: {
     bottomless_stomach: { zh: "无底胃袋", en: "BOTTOMLESS STOMACH" },
@@ -1193,6 +1221,7 @@ const CREATURE_COPY = {
     withdrawal_reactor: { zh: "戒断反应堆", en: "WITHDRAWAL REACTOR" },
     double_sided_record: { zh: "双面病历", en: "DOUBLE-SIDED RECORD" },
     ecological_paradox: { zh: "生态悖论", en: "ECOLOGICAL PARADOX" },
+    ...V2_CREATURE_COPY.achievements,
   },
   achievementTiers: {
     offense_1: { zh: "记录", en: "RECORDED" },
@@ -1208,6 +1237,7 @@ const CREATURE_COPY = {
 };
 
 export {
+  CREATURE_CONTENT_VERSION,
   CREATURE_STAGES,
   CREATURE_FORMS,
   CREATURE_APPEARANCE_GENE_POOLS,

@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-08-06
+
+### Added
+
+- Expanded the fixed Codex from 68 to 98 entries: 12 new route-balanced achievements, 6 chromatic abilities at the existing R/SR/SSR odds, and 12 habitat phenomena.
+- Expanded the deterministic local narrative pools to 28 common mutations, 21 rare mutations, 72 clinical notes, 24 observation reactions, 24 cases, 24 incident skeletons, 27 companion anomalies, and 24 relationships, decorations, and period duo titles.
+- Expanded Laboratory type, complication, and side-effect pools from 6 each to 10 each, increasing the base culture combination space from 2,592 to 12,000 without adding another action or reward loop.
+- Added six visible graft organs for generation choices selected under v2 content, six readable specimen poses, seven temperament motion profiles, twelve chromatic glitch signatures, and route/stage/anomaly-aware companion motion. The theoretical deduplicated final ASCII space is now 204,374,016 forms.
+
+### Changed
+
+- Creature state is now schema v13. Settled days and evolution selections carry a content version: legacy records remain v1, while new records use v2 pools without rerolling old events, chromatic gains, appearances, or selected evolutions.
+- Expanded bilingual daily/weekly/monthly footers and share-method copy while preserving the existing deterministic rotation, cadence, rarity odds, and equal progress for active, restrained, and AI-free days.
+- Refined TUI motion around semantic anatomy anchors. Motion remains capped at 4 FPS, pauses off living screens, and `--no-motion` still reproduces the exact static specimen art.
+
+### Security
+
+- Content versioning adds only integer versions and stable derived IDs to the existing local state. No raw prompts, responses, paths, model names, exact Tokens, request timestamps, network access, account, telemetry, background process, or required runtime dependency was added.
+- The release adds no command, currency, combat system, leaderboard, missed-day pressure, or Token-volume shortcut. High use, restrained use, and AI-free days retain independent, equally paced collection routes.
+
 ## [2.8.0] - 2026-08-05
 
 ### Added

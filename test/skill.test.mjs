@@ -54,7 +54,7 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
-  assert.match(skill, /schema v12/);
+  assert.match(skill, /schema v13/);
   assert.match(skill, /PARASITIC HATCHLING.*SYMBIOTIC ABERRATION.*ACCOMPLICE ORGAN/is);
   assert.match(skill, /one imprint per observed day/i);
   assert.match(skill, /heavy.*restrained.*AI-free.*same rate/is);
@@ -67,7 +67,7 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   );
   assert.match(skill, /no precise probabilities/i);
   assert.match(skill, /1–255.*MALIGNANT I/is);
-  assert.match(skill, /68 fixed collection entries/i);
+  assert.match(skill, /98 fixed collection entries/i);
   assert.match(skill, /one deterministic event.*seven experience days/is);
   assert.match(skill, /locked.*\?\?\?/is);
   assert.match(skill, /foreign specimens|外来标本/i);

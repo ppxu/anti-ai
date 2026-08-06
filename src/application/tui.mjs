@@ -576,6 +576,9 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       experienceDays: creature.experienceDays,
       generation: creature.generation,
       abilities: creature.abilities,
+      temperament: creature.temperament,
+      chromaticAbilityId: creature.appearance.rareAbilityId,
+      evolutionId: creature.appearance.evolutionId,
       art,
       actions: actions.filter(({ available }) => available).slice(0, 2),
       brief: {

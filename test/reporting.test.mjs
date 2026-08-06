@@ -33,6 +33,7 @@ import {
   writeOpenCodeDb,
   writeOpenCodeSessionMessageDb,
 } from "./helpers.mjs";
+import { PERIOD_FOOTERS, SHARE_METHODOLOGY } from "../src/content.mjs";
 
 test("today prints a satirical receipt with transparent resource estimates", () => {
   const result = runCli(
@@ -260,6 +261,23 @@ test("today rotates satirical copy deterministically by date", () => {
 });
 
 test("period footers and share methodology rotate through richer bilingual pools", () => {
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(PERIOD_FOOTERS).map(([period, copy]) => [
+        period,
+        { zh: copy.zh.length, en: copy.en.length },
+      ]),
+    ),
+    {
+      today: { zh: 24, en: 24 },
+      week: { zh: 24, en: 24 },
+      month: { zh: 24, en: 24 },
+    },
+  );
+  assert.deepEqual(
+    { zh: SHARE_METHODOLOGY.zh.length, en: SHARE_METHODOLOGY.en.length },
+    { zh: 20, en: 20 },
+  );
   const weekFooters = new Set();
   const monthFooters = new Set();
   const shareMethodology = new Set();

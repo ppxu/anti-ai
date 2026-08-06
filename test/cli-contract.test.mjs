@@ -64,9 +64,9 @@ test("creature ability bars and numeric values align in both languages", (t) => 
 
 test("rare ability tiers use distinct terminal colors", (t) => {
   const cases = [
-    ["rare-ability-297", "1;36", "[R] 截止日嗅觉"],
-    ["rare-ability-268", "1;35", "[SR] 幻觉抗体"],
-    ["rare-ability-345", "1;33", "[SSR] Token 炼金术"],
+    ["rare-ability-758", "1;36", "[R] 截止日嗅觉"],
+    ["rare-ability-268", "1;35", "[SR] 合成良心"],
+    ["rare-ability-345", "1;33", "[SSR] 预算复活术"],
   ];
 
   for (const [seed, code, label] of cases) {
@@ -353,12 +353,12 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /schema v12.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*收容事故.*培养物.*伴生绑定\/离散印记\/异常 ID.*陈列条目 ID.*每日轻互动 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
+    /schema v13.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*收容事故.*培养物.*伴生绑定\/离散印记\/异常 ID.*陈列条目 ID.*每日轻互动 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
 
-test("explain discloses ecology, incidents, companion guardrails, and schema v12", () => {
+test("explain discloses ecology, incidents, companion guardrails, and schema v13", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
@@ -398,7 +398,7 @@ test("explain discloses ecology, incidents, companion guardrails, and schema v12
   );
   assert.match(
     result.stdout,
-    /schema v12.*schema v1-v11.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+    /schema v13.*schema v1-v12.*不保存.*精确 Token.*模型名.*路径.*对话/s,
   );
 });
 
@@ -441,7 +441,7 @@ test("doctor, explain, and help support English output", () => {
   );
   assert.match(
     explain.stdout,
-    /schema v12.*schema v1-v11 migrate sequentially.*local backup/s,
+    /schema v13.*schema v1-v12 migrate sequentially.*local backup/s,
   );
   assert.doesNotMatch(explain.stdout, /模型统计|个人基线与判词/);
 
@@ -823,7 +823,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 2.8.0\n");
+  assert.equal(result.stdout, "anti-ai 2.9.0\n");
   assert.equal(result.stderr, "");
 });
 

@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-08-06
+
+### Added
+
+- Added a shared Expedition presentation model with visible Quiet Cell, Field Event, Condition Shift, and Special Event labels; separate sealed system records; a rolling three-cell trail; and deterministic bilingual destination atmosphere.
+- Added full return summaries to the TUI, human CLI output, and privacy-safe Expedition SVG cards, including event counts, artifacts, achievements, permanent and expired temporary effects, a recent trail, and a deterministic satirical diagnosis.
+
+### Changed
+
+- Starting from a selected destination and advancing an ordinary cell now take one `Enter` each in the TUI. A branch shows its three responses inline and asks for selection only when it actually appears.
+- Overview and the Action Center now route Expedition actions to the focused Expedition area instead of adding a generic preview detour. Abandonment and other higher-impact actions retain their existing preview-confirm flow.
+- Updated bilingual Help, READMEs, Expedition and architecture guides, contribution/security guidance, and the Agent Skill for the risk-tiered interaction model and return report.
+
+### Security
+
+- Direct Expedition keys still call the shared validated action service, use an in-flight input lock, and persist through the existing atomic optimistic-concurrency store. The selected destination or focused branch plus `Enter` is the explicit write intent; no event can be rerolled by repeated input.
+- Creature schema remains v14. The release adds no persistent field, network access, telemetry, background process, required runtime dependency, Token-volume reward, missed-day pressure, or probability change.
+
 ## [3.0.0] - 2026-08-06
 
 ### Added

@@ -16,20 +16,18 @@ import { saveCreatureState } from "../creature.mjs";
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
 import {
-  expeditionArtifact,
   expeditionChoiceCopy,
   expeditionDestination,
-  expeditionEventCopy,
 } from "../expedition/content.mjs";
+import {
+  expeditionEventView,
+  expeditionRail,
+  expeditionReturnSummary,
+} from "../expedition/presentation.mjs";
 
-function expeditionRail(expedition) {
-  const cursor = Math.max(1, expedition.step);
-  return Array.from({ length: expedition.totalSteps }, (_, index) => {
-    const cell = index + 1;
-    if (expedition.status === "completed" || cell < cursor) return "[✓]";
-    if (cell === cursor) return "[@]";
-    return "[?]";
-  }).join("─");
+function eventEffectLine(effect, lang) {
+  if (!effect) return null;
+  return `  ${effect.ability} ${effect.delta >= 0 ? "+" : ""}${effect.delta} · ${effect.durationLabel}`;
 }
 
 function renderExpeditionStatus(status, lang) {
@@ -46,8 +44,10 @@ function renderExpeditionStatus(status, lang) {
     ? expeditionDestination(active.destinationId)
     : null;
   const latestEvent = active?.events.at(-1) ?? null;
-  const eventCopy = latestEvent ? expeditionEventCopy(latestEvent, lang) : null;
-  const effect = latestEvent?.effect;
+  const eventView = latestEvent && active
+    ? expeditionEventView(active, latestEvent, lang)
+    : null;
+  const summary = active ? expeditionReturnSummary(active, lang) : null;
   return [
     destination
       ? localized(
@@ -66,21 +66,20 @@ function renderExpeditionStatus(status, lang) {
             `第 ${active.step} / 10 格`,
             `CELL ${active.step} / 10`,
           ),
-          ...(latestEvent
+          ...(status.active && latestEvent
             ? [
                 "",
-                `${localized(lang, "最近事件", "LATEST EVENT")}  ${eventCopy.title}`,
-                `  ${eventCopy.body}`,
-                ...(effect
+                `${localized(lang, "最近事件", "LATEST EVENT")}  [${eventView.badge}] ${eventView.title}`,
+                `  ${eventView.body}`,
+                ...(eventView.effect
+                  ? [eventEffectLine(eventView.effect, lang)]
+                  : []),
+                ...(eventView.artifact
                   ? [
-                      `  ${creatureLabel("abilities", effect.abilityId, lang)} ${effect.delta >= 0 ? "+" : ""}${effect.delta} · ${effect.duration === "permanent" ? localized(lang, "永久", "PERMANENT") : localized(lang, "本局", "THIS RUN")}`,
+                      `  ${localized(lang, "发现", "FOUND")}  ${eventView.artifact.name} · ${eventView.artifact.rarity.toUpperCase()}`,
                     ]
                   : []),
-                ...(latestEvent.artifactId
-                  ? [
-                      `  ${localized(lang, "发现", "FOUND")}  ${expeditionArtifact(latestEvent.artifactId).name[lang]}`,
-                    ]
-                  : []),
+                `  ${eventView.system}`,
                 ...(active.pendingChoice
                   ? [
                       "",
@@ -95,6 +94,43 @@ function renderExpeditionStatus(status, lang) {
                       ),
                     ]
                   : []),
+                ...(active.events.length > 1
+                  ? [
+                      "",
+                      localized(lang, "最近轨迹", "RECENT TRAIL"),
+                      ...summary.recentEvents.map(
+                        (event) =>
+                          `  ${String(event.step).padStart(2, "0")} · ${event.badge} · ${event.title}`,
+                      ),
+                    ]
+                  : []),
+              ]
+            : []),
+          ...(!status.active && status.latest
+            ? [
+                "",
+                localized(lang, "返航总结", "RETURN SUMMARY"),
+                localized(
+                  lang,
+                  `  行程 ${summary.step} / ${summary.totalSteps} 格 · 事件 ${summary.events.total} · 特殊事件 ${summary.events.special} · 状态变动 ${summary.events.mutations}`,
+                  `  ROUTE ${summary.step} / ${summary.totalSteps} · EVENTS ${summary.events.total} · SPECIAL ${summary.events.special} · SHIFTS ${summary.events.mutations}`,
+                ),
+                `  ${localized(lang, "遗物", "ARTIFACTS")}  ${summary.artifacts.length > 0 ? summary.artifacts.map(({ name, rarity }) => `${name} [${rarity.toUpperCase()}]`).join(" · ") : localized(lang, "空手返航", "EMPTY-HANDED")}`,
+                `  ${localized(lang, "成就", "ACHIEVEMENTS")}  ${summary.achievements.length > 0 ? summary.achievements.map(({ name, rarity }) => `${name} [${rarity.toUpperCase()}]`).join(" · ") : localized(lang, "无", "NONE")}`,
+                ...(summary.permanentEffect
+                  ? [
+                      `${localized(lang, "永久后遗症", "PERMANENT AFTEREFFECT")}  ${summary.permanentEffect.ability} ${summary.permanentEffect.delta >= 0 ? "+" : ""}${summary.permanentEffect.delta}`,
+                    ]
+                  : []),
+                `${localized(lang, "临时状态", "TEMPORARY CONDITIONS")}  ${summary.temporaryEffectNote}`,
+                "",
+                localized(lang, "事件轨迹", "EVENT TRAIL"),
+                ...summary.recentEvents.map(
+                  (event) =>
+                    `  ${String(event.step).padStart(2, "0")} · ${event.badge} · ${event.title}`,
+                ),
+                "",
+                `${localized(lang, "返航诊断", "RETURN DIAGNOSIS")}  ${summary.diagnosis}`,
               ]
             : []),
         ]
@@ -106,7 +142,7 @@ function renderExpeditionStatus(status, lang) {
           ...EXPEDITION_DESTINATIONS.map(
             ({ id }) => {
               const candidate = expeditionDestination(id);
-              return `  ${id}  ${candidate.name[lang]}`;
+              return `  ${id}  ${candidate.name[lang]} · ${candidate.mood[lang]}`;
             },
           ),
           "",

@@ -45,7 +45,7 @@ Preserve these product rules:
 - `src/state-store.mjs` owns validation-aware state loading, backups, locking, and atomic writes.
 
 Avoid runtime import cycles. Register new public IDs centrally instead of adding duplicate allowlists.
-TUI actions must call application services, never command handlers or arbitrary shell commands. Browsing and cancellation stay read-only; all mutations require an explicit confirmation screen.
+TUI actions must call application services, never command handlers or arbitrary shell commands. Browsing and cancellation stay read-only; mutations require explicit user input. Irreversible or higher-impact actions use a confirmation screen, while focused Expedition start, advance, and branch keys may execute directly when the keypress itself is the documented confirmation.
 
 ## State invariants
 

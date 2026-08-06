@@ -74,7 +74,7 @@ test("the TUI snapshot unifies four product areas without mutating state", (t) =
   assert.ok(snapshot.overview.art.length >= 8);
   assert.equal(snapshot.habitat.companion, null);
   assert.equal(snapshot.laboratory.cultures, 0);
-  assert.equal(snapshot.codex.fixed.total, 68);
+  assert.equal(snapshot.codex.fixed.total, 98);
   assert.equal(snapshot.codex.categories[0].entries.length, 16);
   assert.match(snapshot.codex.categories[0].entries[0].key, /^form:/);
   assert.ok(
@@ -267,7 +267,7 @@ test("the consequence cabinet and daily interactions persist only explicit narra
   assert.equal(repeated.reason, "already_observed");
 
   const after = JSON.parse(readFileSync(statePath, "utf8"));
-  assert.equal(after.schemaVersion, 12);
+  assert.equal(after.schemaVersion, 13);
   assert.equal(after.cabinet.featured[0], displayKey);
   assert.equal(after.days["2026-07-23"].interactions.observe.targetId, "specimen");
   assert.equal(after.days["2026-07-23"].interactions.contact.targetId, "glass");

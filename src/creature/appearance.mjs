@@ -10,11 +10,55 @@ import {
   CREATURE_COPY,
   CREATURE_ECOLOGY_FORM_IDS,
   CREATURE_ECOLOGY_PARTS,
+  CREATURE_EVOLUTION_DEFINITIONS,
   CREATURE_KAIJU_GLYPHS,
   CREATURE_RARE_ABILITY_DEFINITIONS,
   CREATURE_RARE_ABILITY_RANKS,
   CREATURE_SCARS,
 } from "./content.mjs";
+import {
+  V2_ACHIEVEMENT_DEFINITIONS,
+  V2_RARE_ABILITY_POOLS,
+} from "./content-v2.mjs";
+
+const V2_ACHIEVEMENT_IDS = new Set(
+  V2_ACHIEVEMENT_DEFINITIONS.map(({ id }) => id),
+);
+const V2_RARE_ABILITY_IDS = new Set(
+  Object.values(V2_RARE_ABILITY_POOLS).flat(),
+);
+const CREATURE_GRAFT_MARKS = {
+  bottomless_graft: "{v∞v}",
+  recursive_lobe: "{[[∞]]}",
+  chorus_jaw: "{≡≡≡}",
+  reactor_bladder: "{☢o☢}",
+  abstinence_sac: "{○-○}",
+  loaded_nerve: "{?x?}",
+};
+const CREATURE_ACHIEVEMENT_MARKS = {
+  legacy: {
+    offense: "!!x!!",
+    sobriety: "--X--",
+    paradox: "!X?X!",
+  },
+  v2: {
+    offense: "!!+!!",
+    sobriety: "--+--",
+    paradox: "!+?+!",
+  },
+};
+const CREATURE_CHROMATIC_OVERLAYS = {
+  legacy: {
+    rare: "@R@R@",
+    epic: "@S@S@",
+    mythic: "@X@X@",
+  },
+  v2: {
+    rare: "@N@N@",
+    epic: "@Q@Q@",
+    mythic: "@Z@Z@",
+  },
+};
 
 function creatureLabel(group, id, lang) {
   return CREATURE_COPY[group][id][lang];
@@ -77,23 +121,21 @@ function creatureArt(creature) {
     split_shadow: "//\\\\//",
   };
   const rarePattern = appearance.rareAbilityId
-    ? {
-        rare: "@R@R@",
-        epic: "@S@S@",
-        mythic: "@X@X@",
-      }[CREATURE_RARE_ABILITY_DEFINITIONS[appearance.rareAbilityId].rarity]
+    ? CREATURE_CHROMATIC_OVERLAYS[
+        V2_RARE_ABILITY_IDS.has(appearance.rareAbilityId) ? "v2" : "legacy"
+      ][CREATURE_RARE_ABILITY_DEFINITIONS[appearance.rareAbilityId].rarity]
+    : null;
+  const achievementPattern = appearance.achievementCategory
+    ? CREATURE_ACHIEVEMENT_MARKS[
+        V2_ACHIEVEMENT_IDS.has(appearance.achievementId) ? "v2" : "legacy"
+      ][appearance.achievementCategory]
     : null;
   const pattern =
     rarePattern ??
     (appearance.stageIndex >= 3
-      ? appearance.achievementCategory === "offense"
-        ? "!!x!!"
-        : appearance.achievementCategory === "sobriety"
-          ? "--X--"
-          : appearance.achievementCategory === "paradox"
-            ? "!X?X!"
-            : scarMarks[appearance.scarId] ??
-              CREATURE_KAIJU_GLYPHS.patterns[geneIds.pattern]
+      ? achievementPattern ??
+        scarMarks[appearance.scarId] ??
+        CREATURE_KAIJU_GLYPHS.patterns[geneIds.pattern]
       : scarMarks[appearance.scarId] ?? ecologyMarks[appearance.ecology]);
   const center = (value) => centeredCreatureText(value, width);
   const crest =
@@ -157,6 +199,9 @@ function creatureArt(creature) {
       center(`╱${leg.repeat(2)}╱         ╲${leg.repeat(2)}╲`),
       center(CREATURE_KAIJU_GLYPHS.feet[geneIds.limbs]),
     ];
+  }
+  if (appearance.evolutionId) {
+    lines.splice(-1, 0, center(CREATURE_GRAFT_MARKS[appearance.evolutionId]));
   }
   const colorCode = appearance.rareAbilityId
     ? CREATURE_RARE_ABILITY_RANKS[
@@ -261,6 +306,7 @@ function deriveCreatureAppearance(
   achievements,
   rareAbilities,
   scarId = null,
+  evolutionId = null,
 ) {
   const partIds = [
     appearanceState.genes.body,
@@ -278,6 +324,9 @@ function deriveCreatureAppearance(
   }
   if (scarId) {
     partIds.push(`scar_${scarId}`);
+  }
+  if (evolutionId) {
+    partIds.push(`evolution_${evolutionId}`);
   }
   const latestAchievement = [...achievements].sort(
     (left, right) =>
@@ -307,6 +356,7 @@ function deriveCreatureAppearance(
         partIds,
         rareAbilityId: latestRareAbilityId,
         ...(scarId ? { scarId } : {}),
+        ...(evolutionId ? { evolutionId } : {}),
       }),
     )
     .digest("hex")
@@ -325,6 +375,7 @@ function deriveCreatureAppearance(
     achievementCategory: latestAchievement?.category ?? null,
     rareAbilityId: latestRareAbilityId ?? null,
     scarId,
+    ...(evolutionId ? { evolutionId } : {}),
   };
 }
 
@@ -343,6 +394,9 @@ function creatureSpecimenSnapshot(creature) {
     achievementCategory: appearance.achievementCategory,
     rareAbilityId: appearance.rareAbilityId,
     scarId: appearance.scarId,
+    ...(appearance.evolutionId
+      ? { evolutionId: appearance.evolutionId }
+      : {}),
   };
 }
 
@@ -410,6 +464,13 @@ function isCreatureSpecimenSnapshot(value) {
   ) {
     return false;
   }
+  const evolutionId = value.evolutionId ?? null;
+  if (
+    evolutionId !== null &&
+    !Object.hasOwn(CREATURE_EVOLUTION_DEFINITIONS, evolutionId)
+  ) {
+    return false;
+  }
   const derived = deriveCreatureAppearance(
     {
       version: value.version,
@@ -433,6 +494,7 @@ function isCreatureSpecimenSnapshot(value) {
       ? { [value.rareAbilityId]: { level: 1 } }
       : {},
     value.scarId,
+    evolutionId,
   );
   return derived.fingerprint === value.fingerprint;
 }
@@ -460,19 +522,17 @@ function creatureAppearanceCapacity() {
     CREATURE_APPEARANCE_GENE_POOLS.pattern.length +
     new Set(Object.values(CREATURE_SCARS)).size +
     new Set(
-      CREATURE_ACHIEVEMENT_DEFINITIONS.map(
-        (achievement) => achievement.category,
-      ),
+      Object.values(CREATURE_ACHIEVEMENT_MARKS).flatMap(Object.values),
     ).size +
     new Set(
-      Object.values(CREATURE_RARE_ABILITY_DEFINITIONS).map(
-        (ability) => ability.rarity,
-      ),
+      Object.values(CREATURE_CHROMATIC_OVERLAYS).flatMap(Object.values),
     ).size;
+  const graftVariants = Object.keys(CREATURE_GRAFT_MARKS).length + 1;
   const growthVariants =
     Object.keys(CREATURE_BRANCH_PARTS).length *
     Object.keys(CREATURE_ECOLOGY_PARTS).length *
-    chestVariants;
+    chestVariants *
+    graftVariants;
   return {
     structuralForms,
     growthVariants,

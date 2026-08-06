@@ -362,12 +362,12 @@ test("codex --json derives a stable private collection from creature history", (
   assert.match(report.specimenId, /^[0-9a-f]{8}$/);
   assert.deepEqual(report.cabinet, { featured: [] });
   assert.deepEqual(report.summary, {
-    fixed: { discovered: 1, total: 68, percent: 1 },
+    fixed: { discovered: 1, total: 98, percent: 1 },
     forms: { discovered: 1, total: 16 },
-    achievements: { discovered: 0, total: 24 },
-    chromaticAbilities: { discovered: 0, total: 6 },
+    achievements: { discovered: 0, total: 36 },
+    chromaticAbilities: { discovered: 0, total: 12 },
     scars: { discovered: 0, total: 4 },
-    habitatPhenomena: { discovered: 0, total: 18 },
+    habitatPhenomena: { discovered: 0, total: 30 },
     specimens: { discovered: 1 },
     foreignSpecimens: { discovered: 0 },
     fossils: { discovered: 0 },
@@ -385,10 +385,10 @@ test("codex --json derives a stable private collection from creature history", (
     ),
     {
       forms: 16,
-      achievements: 24,
-      chromaticAbilities: 6,
+      achievements: 36,
+      chromaticAbilities: 12,
       scars: 4,
-      habitatPhenomena: 18,
+      habitatPhenomena: 30,
       specimens: 1,
       foreignSpecimens: 0,
       fossils: 0,
@@ -521,18 +521,18 @@ test("codex exposes the deduplicated final ASCII species capacity", (t) => {
   assert.equal(chinese.status, 0, chinese.stderr);
   assert.match(
     chinese.stdout,
-    /理论物种容量\s+21,233,664 · 去重后的最终 ASCII 形象/,
+    /理论物种容量\s+204,374,016 · 去重后的最终 ASCII 形象/,
   );
   assert.equal(english.status, 0, english.stderr);
   assert.match(
     english.stdout,
-    /THEORETICAL SPECIES CAPACITY\s+21,233,664 · DEDUPLICATED FINAL ASCII FORMS/,
+    /THEORETICAL SPECIES CAPACITY\s+204,374,016 · DEDUPLICATED FINAL ASCII FORMS/,
   );
   assert.equal(json.status, 0, json.stderr);
   assert.deepEqual(JSON.parse(json.stdout).capacity, {
     structuralForms: 82_944,
-    growthVariants: 256,
-    finalAsciiForms: 21_233_664,
+    growthVariants: 2_464,
+    finalAsciiForms: 204_374_016,
   });
 });
 
@@ -556,11 +556,11 @@ test("codex renders bilingual locked and discovered collections", (t) => {
 
   assert.equal(chinese.status, 0, chinese.stderr);
   assert.match(chinese.stdout, /病理图鉴 · 2026-07-23/);
-  assert.match(chinese.stdout, /固定收藏\s+1 \/ 68 · 1%/);
+  assert.match(chinese.stdout, /固定收藏\s+1 \/ 98 · 1%/);
   assert.match(chinese.stdout, /形态家族\s+\[1 \/ 16\]/);
   assert.match(chinese.stdout, /熄火幼核/);
   assert.match(chinese.stdout, /\?\?\? × 15/);
-  assert.match(chinese.stdout, /生态现象\s+\[0 \/ 18\]/);
+  assert.match(chinese.stdout, /生态现象\s+\[0 \/ 30\]/);
   assert.match(chinese.stdout, /动态标本\s+\[1\]/);
   assert.match(chinese.stdout, /今日发现\s+\[2\]/);
   assert.match(
@@ -570,10 +570,10 @@ test("codex renders bilingual locked and discovered collections", (t) => {
 
   assert.equal(english.status, 0, english.stderr);
   assert.match(english.stdout, /PATHOLOGY CODEX · 2026-07-23/);
-  assert.match(english.stdout, /FIXED COLLECTION\s+1 \/ 68 · 1%/);
+  assert.match(english.stdout, /FIXED COLLECTION\s+1 \/ 98 · 1%/);
   assert.match(english.stdout, /FORM FAMILIES\s+\[1 \/ 16\]/);
   assert.match(english.stdout, /EXTINGUISHED CORE/);
-  assert.match(english.stdout, /HABITAT PHENOMENA\s+\[0 \/ 18\]/);
+  assert.match(english.stdout, /HABITAT PHENOMENA\s+\[0 \/ 30\]/);
   assert.match(english.stdout, /DYNAMIC SPECIMENS\s+\[1\]/);
   assert.match(english.stdout, /TODAY'S DISCOVERIES\s+\[2\]/);
   assert.doesNotMatch(english.stdout, /病理图鉴|固定收藏|形态家族/);
@@ -624,7 +624,7 @@ test("codex and creature use the same chromatic ability rank colors", (t) => {
   const env = {
     HOME: home,
     ANTI_AI_CODEX_DIR: baselineCodexDir,
-    ANTI_AI_CREATURE_SEED: "rare-ability-297",
+    ANTI_AI_CREATURE_SEED: "rare-ability-758",
     NO_COLOR: "",
     FORCE_COLOR: "1",
   };

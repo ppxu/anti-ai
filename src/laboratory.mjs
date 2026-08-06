@@ -8,6 +8,10 @@ const CULTURE_TYPE_IDS = [
   "cache_lichen",
   "request_amoeba",
   "abstinence_slime",
+  "invoice_kelp",
+  "rollback_coral",
+  "prompt_mycelium",
+  "manual_thought_yeast",
 ];
 const CULTURE_COMPLICATION_IDS = [
   "context_echo",
@@ -16,6 +20,10 @@ const CULTURE_COMPLICATION_IDS = [
   "reactor_sweat",
   "ethical_necrosis",
   "quiet_tremor",
+  "budget_photosensitivity",
+  "snapshot_bloat",
+  "approval_spores",
+  "offline_fever",
 ];
 const CULTURE_SIDE_EFFECT_IDS = [
   "forgets_the_question",
@@ -24,6 +32,10 @@ const CULTURE_SIDE_EFFECT_IDS = [
   "glows_during_review",
   "rejects_productivity",
   "whispers_in_airplane_mode",
+  "files_expense_reports",
+  "grows_during_rollback",
+  "asks_for_one_more_sample",
+  "sleeps_through_autocomplete",
 ];
 const CULTURE_ECOLOGY_IDS = ["polluted", "lucid", "paradox"];
 const CULTURE_PATHOLOGY_IDS = ["context", "cache", "frenzy", "nuclear"];
@@ -35,6 +47,10 @@ const LABORATORY_COPY = {
     cache_lichen: { zh: "缓存地衣", en: "CACHE LICHEN" },
     request_amoeba: { zh: "请求变形虫", en: "REQUEST AMOEBA" },
     abstinence_slime: { zh: "戒断黏液", en: "ABSTINENCE SLIME" },
+    invoice_kelp: { zh: "账单海带", en: "INVOICE KELP" },
+    rollback_coral: { zh: "回滚珊瑚", en: "ROLLBACK CORAL" },
+    prompt_mycelium: { zh: "提示词菌丝", en: "PROMPT MYCELIUM" },
+    manual_thought_yeast: { zh: "手动思考酵母", en: "MANUAL-THOUGHT YEAST" },
   },
   complications: {
     context_echo: { zh: "上下文回声", en: "CONTEXT ECHO" },
@@ -43,6 +59,10 @@ const LABORATORY_COPY = {
     reactor_sweat: { zh: "反应堆盗汗", en: "REACTOR SWEAT" },
     ethical_necrosis: { zh: "伦理坏死", en: "ETHICAL NECROSIS" },
     quiet_tremor: { zh: "清醒震颤", en: "QUIET TREMOR" },
+    budget_photosensitivity: { zh: "预算光敏", en: "BUDGET PHOTOSENSITIVITY" },
+    snapshot_bloat: { zh: "快照腹胀", en: "SNAPSHOT BLOAT" },
+    approval_spores: { zh: "审批孢子", en: "APPROVAL SPORES" },
+    offline_fever: { zh: "离线低热", en: "OFFLINE FEVER" },
   },
   sideEffects: {
     forgets_the_question: { zh: "忘记最初的问题", en: "FORGETS THE QUESTION" },
@@ -54,6 +74,10 @@ const LABORATORY_COPY = {
       zh: "飞行模式下低语",
       en: "WHISPERS IN AIRPLANE MODE",
     },
+    files_expense_reports: { zh: "自行报销", en: "FILES EXPENSE REPORTS" },
+    grows_during_rollback: { zh: "回滚时增生", en: "GROWS DURING ROLLBACK" },
+    asks_for_one_more_sample: { zh: "总要再取一份样本", en: "ASKS FOR ONE MORE SAMPLE" },
+    sleeps_through_autocomplete: { zh: "自动补全时熟睡", en: "SLEEPS THROUGH AUTOCOMPLETE" },
   },
   ingredients: {
     foreignSpecimen: { zh: "外来标本", en: "FOREIGN SPECIMEN" },

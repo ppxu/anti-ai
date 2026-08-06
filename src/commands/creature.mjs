@@ -500,6 +500,7 @@ async function runCreature(options, mode = "render") {
     ...creature,
     mood: creatureMood(creature, today),
     today: {
+      contentVersion: today.contentVersion ?? 1,
       balanceVersion: today.balanceVersion ?? 1,
       pollutionDose: today.pollutionDose,
       usageBand: today.usageBand,

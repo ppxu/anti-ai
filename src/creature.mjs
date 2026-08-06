@@ -16,6 +16,7 @@ import { ensureIncidentState } from "./incidents.mjs";
 import { ensureConsequenceCabinetState } from "./consequence-cabinet.mjs";
 import {
   CREATURE_STAGES,
+  CREATURE_CONTENT_VERSION,
   CREATURE_FORMS,
   CREATURE_APPEARANCE_GENE_POOLS,
   CREATURE_KAIJU_GLYPHS,
@@ -73,7 +74,14 @@ import {
   roundCreature,
 } from "./creature/appearance.mjs";
 
-const CREATURE_STATE_SCHEMA_VERSION = 12;
+const CREATURE_STATE_SCHEMA_VERSION = 13;
+const LEGACY_COMMON_CREATURE_EVENTS = COMMON_CREATURE_EVENTS.slice(0, 12);
+const LEGACY_RARE_CREATURE_EVENTS = RARE_CREATURE_EVENTS.slice(0, 8);
+const LEGACY_RARE_ABILITY_POOLS = {
+  rare: CREATURE_RARE_ABILITY_POOLS.rare.slice(0, 3),
+  epic: CREATURE_RARE_ABILITY_POOLS.epic.slice(0, 2),
+  mythic: CREATURE_RARE_ABILITY_POOLS.mythic.slice(0, 1),
+};
 
 function emptyCreatureAbilities() {
   return Object.fromEntries(CREATURE_ABILITY_KEYS.map((key) => [key, 0]));
@@ -86,12 +94,20 @@ function creatureRareChance(instability = 0, bonus = 0) {
   );
 }
 
-function creatureEvent(seed, date, instability = 0, rareChanceBonus = 0) {
+function creatureEvent(
+  seed,
+  date,
+  instability = 0,
+  rareChanceBonus = 0,
+  contentVersion = CREATURE_CONTENT_VERSION,
+) {
   const digest = createHash("sha256").update(`${seed}:${date}`).digest();
   const rare =
     digest.readUInt32BE(0) % 100 <
     creatureRareChance(instability, rareChanceBonus);
-  const pool = rare ? RARE_CREATURE_EVENTS : COMMON_CREATURE_EVENTS;
+  const pool = contentVersion >= 2
+    ? rare ? RARE_CREATURE_EVENTS : COMMON_CREATURE_EVENTS
+    : rare ? LEGACY_RARE_CREATURE_EVENTS : LEGACY_COMMON_CREATURE_EVENTS;
   const traits = ["context", "cache", "frenzy", "nuclear"];
   const trait = traits[digest.readUInt32BE(4) % traits.length];
   const variants = pool.filter((event) => event.trait === trait);
@@ -102,7 +118,12 @@ function creatureEvent(seed, date, instability = 0, rareChanceBonus = 0) {
   };
 }
 
-function creatureRareAbilityGain(seed, date, active) {
+function creatureRareAbilityGain(
+  seed,
+  date,
+  active,
+  contentVersion = CREATURE_CONTENT_VERSION,
+) {
   if (!active) return null;
   const digest = createHash("sha256")
     .update(`${seed}:${date}:rare-ability`)
@@ -117,7 +138,9 @@ function creatureRareAbilityGain(seed, date, active) {
           ? "rare"
           : null;
   if (!rarity) return null;
-  const pool = CREATURE_RARE_ABILITY_POOLS[rarity];
+  const pool = contentVersion >= 2
+    ? CREATURE_RARE_ABILITY_POOLS[rarity]
+    : LEGACY_RARE_ABILITY_POOLS[rarity];
   return {
     id: pool[digest.readUInt32BE(4) % pool.length],
     rarity,
@@ -135,6 +158,7 @@ function dailyCreatureRecord(report, historicalReports = []) {
   const dose = pollutionDose(totals.totalTokens);
   if (dose === 0) {
     return {
+      contentVersion: CREATURE_CONTENT_VERSION,
       balanceVersion: CREATURE_BALANCE_VERSION,
       pollutionDose: 0,
       active: false,
@@ -176,6 +200,7 @@ function dailyCreatureRecord(report, historicalReports = []) {
   const ecologyGains = creatureEcologyGainsForDose(usage, dose);
 
   return {
+    contentVersion: CREATURE_CONTENT_VERSION,
     balanceVersion: CREATURE_BALANCE_VERSION,
     pollutionDose: dose,
     active: true,
@@ -279,6 +304,9 @@ function deriveCreatureAchievements(state, date) {
   let pendingEcologyDays = 0;
   let clarityAfterHeavy = 0;
   let previousUsageBand = null;
+  let previousDirection = null;
+  let directionChanges = 0;
+  let detoxCycles = 0;
 
   for (const [entryDate, day] of entries) {
     const priorQuietStreak = quietStreak;
@@ -317,6 +345,15 @@ function deriveCreatureAchievements(state, date) {
     recentDirections.push(
       pollutionGain > 0 ? "pollution" : clarityGain > 0 ? "clarity" : "neutral",
     );
+    const currentDirection = recentDirections.at(-1);
+    if (
+      previousDirection !== null &&
+      currentDirection !== "neutral" &&
+      previousDirection !== currentDirection
+    ) {
+      directionChanges += 1;
+    }
+    if (currentDirection !== "neutral") previousDirection = currentDirection;
     if (recentDirections.length > 14) recentDirections.shift();
 
     const candidateEcologyType = classifyCreatureEcologyWindow(
@@ -399,19 +436,25 @@ function deriveCreatureAchievements(state, date) {
     if (experienceDays >= 90 && ecologyType === "lucid") {
       unlock("sober_and_alive", entryDate);
     }
-
     if (previousUsageBand === "meltdown" && day.usageBand === "sober") {
       unlock("calm_after_fire", entryDate);
+    }
+    if (
+      previousUsageBand !== null &&
+      previousUsageBand !== "sober" &&
+      day.usageBand === "sober"
+    ) {
+      detoxCycles += 1;
     }
     const lastTenDirections = recentDirections
       .slice(-10)
       .filter((direction) => direction !== "neutral");
-    const directionChanges = lastTenDirections
+    const recentDirectionChanges = lastTenDirections
       .slice(1)
       .filter(
         (direction, index) => direction !== lastTenDirections[index],
       ).length;
-    if (directionChanges >= 6) unlock("ecological_ping_pong", entryDate);
+    if (recentDirectionChanges >= 6) unlock("ecological_ping_pong", entryDate);
 
     const cumulativeBranch = dominantCreatureKey(cumulativeTraits);
     if (cumulativeBranch === "cache" && ecologyType === "lucid") {
@@ -444,6 +487,52 @@ function deriveCreatureAchievements(state, date) {
         entryDate,
         Math.min(ecologyPollution, ecologyClarity),
       );
+    }
+    if ((day.contentVersion ?? 1) >= 2) {
+      if (branchCounts.context >= 15) {
+        unlock("context_landfill", entryDate, branchCounts.context);
+      }
+      if (branchCounts.cache >= 15) {
+        unlock("cache_afterlife", entryDate, branchCounts.cache);
+      }
+      if (branchCounts.frenzy >= 15) {
+        unlock("request_swarm", entryDate, branchCounts.frenzy);
+      }
+      if (branchCounts.nuclear >= 15) {
+        unlock("heat_budget", entryDate, branchCounts.nuclear);
+      }
+      if (quietStreak >= 2) {
+        unlock("weekend_human", entryDate, Math.floor(quietStreak / 2));
+      }
+      if (clarityDays >= 10) unlock("manual_thought", entryDate, clarityDays);
+      if (quietStreak >= 14) unlock("quiet_month", entryDate, quietStreak);
+      if (clarityDays >= 15) {
+        unlock("low_power_custodian", entryDate, clarityDays);
+      }
+      if (detoxCycles >= 3) {
+        unlock("scheduled_detox", entryDate, detoxCycles);
+      }
+      if (directionChanges >= 4) {
+        unlock("bilingual_relapse", entryDate, directionChanges);
+      }
+      if (ecologyPollution >= 90 && ecologyClarity >= 90) {
+        unlock(
+          "balanced_damage",
+          entryDate,
+          Math.min(ecologyPollution, ecologyClarity),
+        );
+      }
+      if (
+        ecologyPollution >= 180 &&
+        ecologyClarity >= 180 &&
+        Math.abs(ecologyPollution - ecologyClarity) <= 15
+      ) {
+        unlock(
+          "compliance_meltdown",
+          entryDate,
+          Math.min(ecologyPollution, ecologyClarity),
+        );
+      }
     }
     previousUsageBand = day.usageBand;
   }
@@ -502,6 +591,8 @@ function syncCreatureSpecimen(state, creature, date) {
     previous.stageId !== creature.stage ||
     previous.ecologyId !== creature.ecology.type ||
     previous.achievementId !== creature.appearance.achievementId ||
+    (previous.evolutionId ?? null) !==
+      (creature.appearance.evolutionId ?? null) ||
     (creature.appearance.rareAbilityId !== null &&
       previous.rareAbilityId !== creature.appearance.rareAbilityId);
   if (!appearanceChanged) return false;
@@ -515,6 +606,7 @@ function syncCreatureSpecimen(state, creature, date) {
     pathologyId: creature.branch,
     achievementId: creature.appearance.achievementId,
     rareAbilityId: creature.appearance.rareAbilityId,
+    evolutionId: creature.appearance.evolutionId ?? null,
     partIds: [...creature.appearance.partIds],
   });
   return true;
@@ -537,6 +629,7 @@ function creatureCodex(state, date) {
         ] ?? null,
       achievementId: specimen.achievementId,
       rareAbilityId: specimen.rareAbilityId,
+      evolutionId: specimen.evolutionId ?? null,
     }));
   const foreignSpecimens = (state.foreignSpecimens ?? [])
     .filter((specimen) => specimen.collectedAt <= date)
@@ -1002,6 +1095,7 @@ function syncCreatureGenerations(state, date) {
     }
     const nextGeneration = generation + 1;
     state.generations.evolutions[String(nextGeneration)] ??= {
+      contentVersion: CREATURE_CONTENT_VERSION,
       generation: nextGeneration,
       offeredAt: sealedAt,
       optionIds: creatureEvolutionOptionIds(state.seed, nextGeneration),
@@ -1058,6 +1152,7 @@ function creatureEvolutionSummary(state, date) {
         ? "missed"
         : "pending";
   return {
+    contentVersion: evolution.contentVersion ?? 1,
     generation: evolution.generation,
     status,
     selectedId: status === "selected" ? evolution.selectedId : null,
@@ -1084,7 +1179,9 @@ function selectCreatureEvolution(state, date, choice) {
   if (evolution.selectedId !== null && evolution.selectedId !== selectedId) {
     return { error: "locked", generation: evolution.generation };
   }
+  const isNewSelection = evolution.selectedId === null;
   evolution.selectedId = selectedId;
+  if (isNewSelection) evolution.contentVersion = CREATURE_CONTENT_VERSION;
   evolution.selectedAt ??= date;
   evolution.status = "selected";
   const fossil = state.generations.fossils.find(
@@ -1172,8 +1269,18 @@ function ensureDailyGrowthState(state) {
       state.seed,
       date,
       day.active,
+      day.contentVersion,
     );
     if (day.active) hasHatched = true;
+  }
+}
+
+function ensureCreatureContentVersion(state) {
+  for (const day of Object.values(state.days)) {
+    day.contentVersion ??= 1;
+  }
+  for (const evolution of Object.values(state.generations?.evolutions ?? {})) {
+    evolution.contentVersion ??= 1;
   }
 }
 
@@ -1189,6 +1296,7 @@ const CREATURE_STATE_MIGRATIONS = new Map([
   [9, ensureCompanionState],
   [10, ensureIncidentState],
   [11, ensureConsequenceCabinetState],
+  [12, ensureCreatureContentVersion],
 ]);
 
 function migrateCreatureState(state) {
@@ -1214,6 +1322,7 @@ function migrateCreatureState(state) {
   ensureCompanionState(state);
   ensureIncidentState(state);
   ensureConsequenceCabinetState(state);
+  ensureCreatureContentVersion(state);
   ensureDailyGrowthState(state);
   return state;
 }
@@ -1578,6 +1687,9 @@ function deriveCreature(state, date) {
     achievements.unlocked,
     rareAbilities,
     scarId,
+    evolution?.status === "selected" && evolution.contentVersion >= 2
+      ? evolution.selectedId
+      : null,
   );
   const titleModifierId =
     ecologyType === "polluted"
@@ -1788,6 +1900,9 @@ function creatureCasebook(state, startDate, endDate) {
   };
 
   return {
+    contentVersion: days.some(([, day]) => (day.contentVersion ?? 1) >= 2)
+      ? CREATURE_CONTENT_VERSION
+      : 1,
     startDate,
     endDate,
     observedDays: days.length,
@@ -1825,9 +1940,12 @@ function creatureCasebook(state, startDate, endDate) {
 }
 
 function creatureClinicalNote(casebook, lang = "zh", kind = "week") {
-  const notes =
+  const expandedNotes =
     CREATURE_CLINICAL_NOTES[casebook.primarySymptom] ??
     CREATURE_CLINICAL_NOTES.unhatched;
+  const notes = casebook.contentVersion >= 2
+    ? expandedNotes
+    : expandedNotes.slice(0, 6);
   const digest = createHash("sha256")
     .update(
       `${casebook.startDate}:${casebook.endDate}:${casebook.primarySymptom}:${casebook.ecology.to}:${kind}`,

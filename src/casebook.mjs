@@ -23,6 +23,18 @@ const CASEBOOK_CASES = [
   { id: "clarity_rejection", ecologyId: "lucid", abilityId: "withdrawal" },
   { id: "split_diagnosis", ecologyId: "paradox", abilityId: "instability" },
   { id: "borrowed_symptom", ecologyId: "paradox", abilityId: "instability" },
+  { id: "appendix_organ_failure", pathologyId: "context", abilityId: "memory" },
+  { id: "brief_engulfment", pathologyId: "context", abilityId: "memory" },
+  { id: "ancestral_cache_fever", pathologyId: "cache", abilityId: "shell" },
+  { id: "snapshot_ossification", pathologyId: "cache", abilityId: "shell" },
+  { id: "followup_hyperplasia", pathologyId: "frenzy", abilityId: "mouths" },
+  { id: "approval_parasite", pathologyId: "frenzy", abilityId: "mouths" },
+  { id: "invoice_aurora", pathologyId: "nuclear", abilityId: "glow" },
+  { id: "coolant_arrhythmia", pathologyId: "nuclear", abilityId: "glow" },
+  { id: "manual_thought_rash", ecologyId: "lucid", abilityId: "withdrawal" },
+  { id: "offline_photosensitivity", ecologyId: "lucid", abilityId: "withdrawal" },
+  { id: "compliant_meltdown", ecologyId: "paradox", abilityId: "instability" },
+  { id: "dual_reality_fever", ecologyId: "paradox", abilityId: "instability" },
 ];
 
 const CASEBOOK_COPY = {
@@ -75,6 +87,18 @@ const CASEBOOK_COPY = {
       zh: "借来症状",
       en: "BORROWED SYMPTOM",
     },
+    appendix_organ_failure: { zh: "附录器官衰竭", en: "APPENDIX ORGAN FAILURE" },
+    brief_engulfment: { zh: "需求吞没症", en: "BRIEF ENGULFMENT" },
+    ancestral_cache_fever: { zh: "祖传缓存热", en: "ANCESTRAL CACHE FEVER" },
+    snapshot_ossification: { zh: "快照骨化", en: "SNAPSHOT OSSIFICATION" },
+    followup_hyperplasia: { zh: "追问增生", en: "FOLLOW-UP HYPERPLASIA" },
+    approval_parasite: { zh: "审批寄生虫", en: "APPROVAL PARASITE" },
+    invoice_aurora: { zh: "账单极光症", en: "INVOICE AURORA" },
+    coolant_arrhythmia: { zh: "冷却液心律不齐", en: "COOLANT ARRHYTHMIA" },
+    manual_thought_rash: { zh: "手动思考皮疹", en: "MANUAL-THOUGHT RASH" },
+    offline_photosensitivity: { zh: "离线光敏症", en: "OFFLINE PHOTOSENSITIVITY" },
+    compliant_meltdown: { zh: "合规熔毁", en: "COMPLIANT MELTDOWN" },
+    dual_reality_fever: { zh: "双重现实热", en: "DUAL-REALITY FEVER" },
   },
   routes: {
     pollution: {

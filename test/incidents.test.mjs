@@ -31,6 +31,10 @@ function creatureAt(experienceDays, ecologyId = "polluted") {
   };
 }
 
+test("v2.9 expands the incident skeletons without changing cadence", () => {
+  assert.equal(INCIDENT_DEFINITIONS.length, 24);
+});
+
 test("incidents use lived days, delay consequences, and never build a backlog", () => {
   const polluted = { seed: "incident-polluted", incidents: undefined };
   const lucid = { seed: "incident-lucid", incidents: undefined };
@@ -386,7 +390,7 @@ test("creature incident seals one local choice and reveals its delayed aftermath
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 12);
+  assert.equal(saved.schemaVersion, 13);
   assert.equal(saved.incidents.records.length, 1);
   assert.equal(saved.incidents.dispositions.resonate, 1);
 });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  deriveAnatomyAnchors,
   deriveCompanionFrame,
   deriveEventReplay,
   deriveObservationTargets,
@@ -9,6 +10,7 @@ import {
   isGlitchFrame,
   motionInterval,
   nextMotionLevel,
+  observationContentStats,
 } from "../src/application/tui-motion.mjs";
 
 test("motion levels stay low-rate and cycle predictably", () => {
@@ -163,4 +165,122 @@ test("observation targets map visible organs to existing growth attributes", () 
   }, "en");
   assert.equal(embryoTargets.find(({ id }) => id === "mouth").lineIndex, 1);
   assert.equal(embryoTargets.find(({ id }) => id === "core").lineIndex, 2);
+});
+
+test("v2.9 exposes six readable poses and twelve chromatic signatures", () => {
+  const art = [
+    "    ╱◉╲╱◉╲",
+    "  ╭─╱● ●╲─╮",
+    "  │ ## ╲≡╱ ## │",
+    "  │    [0]    │",
+    "  ╰━╯ ╱██╲ ╰━━",
+  ];
+  const poses = ["idle", "feeding", "withdrawal", "dormant", "alert", "mutation"];
+  const poseFrames = new Set(
+    poses.map((pose) => deriveSpecimenFrame(
+      art,
+      5,
+      "full",
+      { pose, temperament: "clamorous" },
+    ).join("\n")),
+  );
+  assert.equal(poseFrames.size, 6);
+  assert.deepEqual(deriveSpecimenFrame(art, 5, "off", { pose: "mutation" }), art);
+
+  const chromatics = [
+    "deadline_scent",
+    "phantom_cache",
+    "rubber_duck_necromancy",
+    "prompt_telepathy",
+    "hallucination_antibodies",
+    "token_transmutation",
+    "merge_conflict_gills",
+    "meeting_radiation",
+    "lint_divination",
+    "rollback_precognition",
+    "synthetic_conscience",
+    "budget_resurrection",
+  ];
+  const signatures = new Set(
+    chromatics.map((chromaticAbilityId) => deriveSpecimenFrame(
+      art,
+      31,
+      "full",
+      { glitch: true, chromaticAbilityId },
+    ).join("\n")),
+  );
+  assert.equal(signatures.size, 12);
+});
+
+test("v2.9 companion motion combines route, stage, and anomaly effects", () => {
+  const art = ["    .---.", "  _/0 0\\_", " /  %  \\", " \\__^__/"];
+  const frames = new Set();
+  for (const routeId of ["pollution", "clarity", "paradox"]) {
+    for (const stageId of ["culture", "parasite", "symbiote", "accomplice"]) {
+      frames.add(deriveCompanionFrame(art, 1, "full", {
+        routeId,
+        stageId,
+        anomalyIds: ["reactor_drool"],
+      }).join("\n"));
+    }
+  }
+  assert.equal(frames.size, 12);
+  assert.notDeepEqual(
+    deriveSpecimenFrame([" [0] "], 0, "full", { observedOrganId: "core" }),
+    deriveSpecimenFrame([" [0] "], 1, "full", { observedOrganId: "core" }),
+  );
+  assert.deepEqual(observationContentStats(), { organs: 6, feedback: 24 });
+});
+
+test("semantic motion anchors cover every base-organ glyph", () => {
+  const eyes = ["◉   ◉", "●   ●", "◆   ◆", "×   ×", "+   +", "◌ ◉ ◌", "0 0 0", "▣   ▣"];
+  const mouths = ["╲═══╱", "╲≡≡≡╱", "╲███╱", "╲▼▼▼╱", "╲WWW╱", "╲───╱", "╲[_]╱", "╲}{ ╱"];
+  const cores = ["[●X●]", "[◉X◉]", "[@X@]", "[◆X◆]", "[+X+]", "[-X-]"];
+  const armor = ["▓", "█", "▒", "▦", "#", "≋"];
+  const feet = ["═╩═", "╙─╜", "╱_╲", "┻━┻", "╰┳╯", "▰▰▰"];
+  const tails = ["━━>", "══>", "~~>", "──>", "::>", "##>"];
+  for (let index = 0; index < eyes.length; index += 1) {
+    const art = [
+      `╭─${armor[index % armor.length].repeat(4)}─╮`,
+      `│ ${eyes[index]} │`,
+      `│ ${mouths[index]} │`,
+      `│ ${cores[index % cores.length]} │`,
+      `│ ${feet[index % feet.length]} │`,
+      `╰${tails[index % tails.length]}`,
+    ];
+    const anchors = deriveAnatomyAnchors(art);
+    assert.deepEqual(
+      Object.keys(anchors).filter((organId) => anchors[organId] < 0),
+      [],
+      `missing anchors for variant ${index + 1}`,
+    );
+    const targets = deriveObservationTargets({
+      date: "2026-08-06",
+      overview: {
+        specimenId: `variant-${index}`,
+        art,
+        abilities: {
+          appetite: 1,
+          memory: 1,
+          shell: 1,
+          mouths: 1,
+          glow: 1,
+          instability: 1,
+          withdrawal: 1,
+        },
+      },
+    });
+    assert.deepEqual(
+      targets.map(({ id }) => id),
+      ["eyes", "mouth", "core", "armor", "limbs", "tail"],
+    );
+    for (const organId of Object.keys(anchors)) {
+      const base = deriveSpecimenFrame(art, 0, "full");
+      const observed = deriveSpecimenFrame(art, 0, "full", {
+        observedOrganId: organId,
+      });
+      assert.notDeepEqual(observed, base, `${organId} did not react`);
+      assert.equal(observed[anchors[organId]].length, art[anchors[organId]].length);
+    }
+  }
 });

@@ -44,7 +44,7 @@ Use `anti-ai help creature history`, `anti-ai help creature intervene`, `anti-ai
 
 After hatching, a case may appear every 14 experience days. Token volume cannot make those days arrive faster: one settled calendar day is still exactly one experience day.
 
-Only one case can remain pending. If it is unanswered, later case intervals do not create a backlog. The first release contains 12 deterministic case skeletons shaped by the current pathology or Ecology:
+Only one case can remain pending. If it is unanswered, later case intervals do not create a backlog. The current pool contains 24 deterministic case skeletons shaped by the current pathology or Ecology. Each of the four pathologies and both Ecology routes has four cases; the original examples remain part of the pool:
 
 - Context: Context Echo Chamber, Recursive Memory Fever;
 - Cache: Cache Mummification, Rollback Calcification;
@@ -75,9 +75,9 @@ The prognosis share card shows the current case and its three visible trade-offs
 
 ## Codex and persistence
 
-Sealed choices become unlimited case slices in `anti-ai codex`. They do not change the fixed 68-entry collection denominator and do not grant combat power or Token-based score.
+Sealed choices become unlimited case slices in `anti-ai codex`. They do not change the fixed 98-entry collection denominator and do not grant combat power or Token-based score.
 
-Creature state uses schema v12. Casebook and incident records contain only:
+Creature state uses schema v13. Casebook and incident records contain only:
 
 - stable case and route IDs;
 - offered and selected dates;
@@ -85,6 +85,6 @@ Creature state uses schema v12. Casebook and incident records contain only:
 - the next experience-day interval.
 - stable incident, stance, aftermath, and chain IDs with privacy-safe trigger summaries and dates.
 
-Schema v1–v11 files migrate sequentially and idempotently. Migration preserves the casebook and adds empty incident, laboratory, companion, and consequence-cabinet indexes when needed; it never invents a past choice, incident, experiment, bond, display, or interaction.
+Schema v1–v12 files migrate sequentially and idempotently. Migration preserves the casebook, freezes legacy day content as v1, and adds empty indexes when needed; it never invents a past choice, incident, experiment, bond, display, or interaction.
 
 Everything stays in `~/.anti-ai/creature.json`. There is no account, server, upload, leaderboard, daily check-in, or Token-spending accelerator.

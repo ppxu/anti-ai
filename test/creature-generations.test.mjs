@@ -563,7 +563,7 @@ test("creature awakens deterministic low-probability rare abilities", (t) => {
 
   const result = runCli(["creature", "--date", "2026-07-23", "--json"], {
     HOME: home,
-    ANTI_AI_CREATURE_SEED: "rare-ability-297",
+    ANTI_AI_CREATURE_SEED: "rare-ability-758",
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -620,12 +620,12 @@ test("drawing the same rare ability again grows its level", (t) => {
   assert.equal(first.status, 0, first.stderr);
   assert.equal(second.status, 0, second.stderr);
   const report = JSON.parse(second.stdout);
-  assert.deepEqual(report.rareAbilities.rubber_duck_necromancy, {
+  assert.deepEqual(report.rareAbilities.lint_divination, {
     rarity: "rare",
     level: 2,
   });
   assert.deepEqual(report.today.rareAbilityGain, {
-    id: "rubber_duck_necromancy",
+    id: "lint_divination",
     rarity: "rare",
     points: 1,
   });
@@ -686,8 +686,8 @@ test("v0.6 creature files migrate without losing stored ability growth", (t) => 
   assert.ok(report.collections.rareAbilitiesUnlocked >= 0);
 });
 
-test("schema v1-v11 creature files migrate idempotently without inventing cabinet, companion, or incident history", (t) => {
-  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
+test("schema v1-v12 creature files migrate idempotently without inventing cabinet, companion, or incident history", (t) => {
+  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
     const home = mkdtempSync(
       path.join(tmpdir(), `anti-ai-schema-${schemaVersion}-`),
     );
@@ -748,7 +748,7 @@ test("schema v1-v11 creature files migrate idempotently without inventing cabine
     const saved = JSON.parse(
       readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
     );
-    assert.equal(saved.schemaVersion, 12);
+    assert.equal(saved.schemaVersion, 13);
     assert.deepEqual(saved.cabinet, { version: 1, featured: [] });
     assert.equal(saved.appearance.version, 1);
     assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
@@ -852,7 +852,7 @@ test("schema v9 cultures remain unbound after companion migration", (t) => {
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 12);
+  assert.equal(saved.schemaVersion, 13);
   assert.deepEqual(saved.cabinet, { version: 1, featured: [] });
   assert.deepEqual(saved.laboratory, {
     version: 2,
@@ -875,7 +875,7 @@ test("creature can reach a rare mutation from its local deterministic seed", (t)
 
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout).today.event, {
-    id: "infinite_appendix",
+    id: "repository_swallow",
     rarity: "rare",
   });
 });
@@ -1098,7 +1098,7 @@ test("creature renders bilingual mutation files without leaking raw usage", (t) 
   assert.match(zh.stdout, /标本编号\s+[0-9a-f]{8}/);
   assert.match(zh.stdout, /徽章\s+\[\d+\]/);
   assert.match(zh.stdout, /今日成就/);
-  assert.match(zh.stdout, /今日突变\s+\[普通\] 缓存钙化/);
+  assert.match(zh.stdout, /今日突变\s+\[普通\] 快照腹胀/);
   assert.match(zh.stdout, /能力值 · Lv\.\d+/);
   assert.match(zh.stdout, /吞噬欲/);
   assert.match(zh.stdout, /今日加点/);
@@ -1121,7 +1121,7 @@ test("creature renders bilingual mutation files without leaking raw usage", (t) 
   assert.match(en.stdout, /SPECIMEN ID\s+[0-9a-f]{8}/);
   assert.match(en.stdout, /BADGES\s+\[\d+\]/);
   assert.match(en.stdout, /TODAY'S ACHIEVEMENTS/);
-  assert.match(en.stdout, /TODAY'S MUTATION\s+\[COMMON\] CACHE CALCIFICATION/);
+  assert.match(en.stdout, /TODAY'S MUTATION\s+\[COMMON\] SNAPSHOT BLOATING/);
   assert.match(en.stdout, /ABILITIES · LV\.\d+/);
   assert.match(en.stdout, /APPETITE/);
   assert.match(en.stdout, /TODAY'S GROWTH/);

@@ -26,7 +26,7 @@ Incident responses never add abilities, experience, Ecology, rarity, scores, or 
 
 ## Incident pool
 
-Version 2.5 includes 12 deterministic skeletons:
+The current pool contains 24 deterministic skeletons. The original 12 remain stable, while v2 adds one parallel set spanning habitat, pathology, Ecology, companion, fossil, and containment contexts:
 
 - one universal habitat incident;
 - four pathology incidents for Context, Cache, Frenzy, and Nuclear forms;
@@ -51,10 +51,10 @@ The aftermath remains hidden until 3 more experience days have settled. It then 
 
 ## History, reports, and codex
 
-`anti-ai creature` surfaces the current pending, waiting, or resolved incident. `creature history` records the offer, sealed response, and revealed aftermath. Complete-source `week` and `month` reports count newly discovered incident reports. `anti-ai codex` stores them as unlimited private dynamic entries without changing the fixed 68-entry denominator.
+`anti-ai creature` surfaces the current pending, waiting, or resolved incident. `creature history` records the offer, sealed response, and revealed aftermath. Complete-source `week` and `month` reports count newly discovered incident reports. `anti-ai codex` stores them as unlimited private dynamic entries without changing the fixed 98-entry denominator.
 
 ## State and privacy
 
-Creature schema v12 stores only stable incident, stance, aftermath, actor, target, chain, and trigger-summary IDs; offer/selection/resolution dates; experience-day thresholds; aggregate disposition counts; up to three displayed collection keys; and daily observe/contact target and reaction IDs. It does not store prompts, responses, paths, model names, exact Tokens, request counts, or per-request timestamps.
+Creature schema v13 stores only stable incident, stance, aftermath, actor, target, chain, content-version, and trigger-summary IDs; offer/selection/resolution dates; experience-day thresholds; aggregate disposition counts; up to three displayed collection keys; and daily observe/contact target and reaction IDs. It does not store prompts, responses, paths, model names, exact Tokens, request counts, or per-request timestamps.
 
-Schema v1–v11 files migrate sequentially and idempotently by adding empty incident and consequence-cabinet indexes. Migration does not invent past incidents, responses, aftermaths, disposition history, displays, or interactions. Everything remains in `~/.anti-ai/creature.json`; there is no account, server, upload, leaderboard, or background process.
+Schema v1–v12 files migrate sequentially and idempotently. Migration freezes legacy settled content as v1 and does not invent past incidents, responses, aftermaths, disposition history, displays, or interactions. Everything remains in `~/.anti-ai/creature.json`; there is no account, server, upload, leaderboard, or background process.

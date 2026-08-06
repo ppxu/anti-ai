@@ -36,7 +36,7 @@ You may switch to another culture later. Switching:
 - cannot award two imprints on the same date;
 - cannot reroll an existing anomaly or appearance.
 
-A migrated v1–v11 file starts with no invented active companion. Existing cultures are never auto-bonded.
+A migrated v1–v12 file starts with no invented active companion. Existing cultures are never auto-bonded.
 
 ## One day, one imprint
 
@@ -69,7 +69,7 @@ The balance of accumulated imprints determines one of three routes:
 - **CLARITY** when refusal evidence clearly leads;
 - **PARADOX** when neither side can establish a lead.
 
-This route is a diagnosis, not a moral score or upgrade tier. Day 7 and day 21 each seal one deterministic anomaly from the active route's pool. The culture ID, milestone, and route select the anomaly, so repeated commands, language changes, terminal width, and current Token totals cannot reroll it.
+This route is a diagnosis, not a moral score or upgrade tier. The current catalog has 27 anomalies, nine per route. Day 7 and day 21 each seal one deterministic anomaly from the active route's pool. The culture ID, milestone, and route select the anomaly, so repeated commands, language changes, terminal width, and current Token totals cannot reroll it.
 
 The companion's ASCII form is generated from its culture, stage, route, and sealed anomalies. Its fingerprint is stable for the same state and date.
 
@@ -98,11 +98,11 @@ Using more AI creates more Pollution-shaped evidence; using less AI or taking AI
 
 ## State and privacy
 
-Creature state uses schema v12. The Laboratory v2 section stores only:
+Creature state uses schema v13. The Laboratory v2 section stores only:
 
 - the active culture ID and privacy-safe bond history;
 - one discrete imprint ID per observed date;
 - sealed anomaly IDs;
 - the existing derived culture IDs and local deterministic seed.
 
-It does not store exact Tokens, request counts, models, Agent names, prompts, responses, tool calls, paths, personal baselines, or per-request timestamps. Schema v1–v11 migration preserves or adds empty companion and consequence-cabinet indexes and does not invent bonds, imprints, anomalies, displays, or interactions.
+It does not store exact Tokens, request counts, models, Agent names, prompts, responses, tool calls, paths, personal baselines, or per-request timestamps. Schema v1–v12 migration preserves existing records, freezes legacy content as v1, and does not invent bonds, imprints, anomalies, displays, or interactions.

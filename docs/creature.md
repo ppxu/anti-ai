@@ -270,6 +270,8 @@ A local seed plus the date selects one reproducible event per active day. After 
 - 12 chromatic abilities;
 - 4 generation scars;
 - 30 route-balanced habitat phenomena;
+- 24 expedition artifacts;
+- 12 expedition achievements;
 - unlimited dynamic specimen fingerprints;
 - unlimited foreign encounter specimens;
 - unlimited permanent fossils;
@@ -279,9 +281,9 @@ A local seed plus the date selects one reproducible event per active day. After 
 
 Locked fixed entries remain `???`. Collection discovery does not prefer high Token use: Pollution, Clarity, AI-free days, achievements, rare abilities, generations, and explicit evolution choices all have independent routes.
 
-Inside the TUI, Codex supports category → entry → detail navigation. Details show first discovery, provenance, a related record, and Cabinet status without leaking locked names or conditions. Press `h` for the nested Containment Archive, `t` to toggle 7/30 days, and `Enter` for a daily record. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. Press `s` from Overview, Habitat, a discovered record, or a daily archive detail to preview and explicitly export an existing privacy-safe SVG card. The cabinet and exported files add no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
+Inside the TUI, Codex supports category → entry → detail navigation. Details show first discovery, provenance, a related record, and Cabinet status without leaking locked names or conditions. Press `h` for the nested Containment Archive, `t` to toggle 7/30 days, and `Enter` for a daily record. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. Press `s` from Overview, Habitat, Expedition, a discovered record, or a daily archive detail to preview and explicitly export an existing privacy-safe SVG card. The cabinet and exported files add no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
 
-Nine privacy-safe SVG cards are available:
+Ten privacy-safe SVG cards are available:
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -293,12 +295,14 @@ anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
 anti-ai share --card habitat > anti-ai-habitat.svg
+anti-ai share --card expedition > anti-ai-expedition.svg
 ```
 
 A fossil certificate becomes available after experience day 90.
 Cross-machine collection is local and optional. Read [Local Mutation Encounters](./encounters.md) for pollution-code and foreign-specimen behavior.
 Turning-point cases are also local and optional. Read [Forked Casebook](./casebook.md) for history, intervention, prognosis, and case-slice behavior.
 Containment incidents are local delayed event chains. Read [Containment Incidents](./incidents.md) for cadence, responses, aftermaths, and incident-report collection behavior.
+Containment Expeditions are local ten-cell runs. Read [Containment Expeditions](./expeditions.md) for daily eligibility, event decks, choices, artifacts, achievements, and pause/resume behavior.
 Laboratory cultures are local and optional. Read [Pollution Laboratory](./laboratory.md) for stable formula, rarity, shelf, and culture-card behavior.
 Bonded companions are local and optional. Read [Symbiotic Companions](./companions.md) for imprints, routes, milestones, and companion-card behavior.
 The combined containment scene is local and read-only. Read [Containment Habitat](./habitat.md) for seven-day events, relationships, scenery, period summaries, and the 30 fixed phenomena.
@@ -311,7 +315,7 @@ State lives at:
 ~/.anti-ai/creature.json
 ```
 
-The current schema is v13. It stores only:
+The current schema is v14. It stores only:
 
 - discrete usage bands and derived Ecology points;
 - integer content versions for settled days and generation choices, so v1 history is never rerolled by v2 content pools;
@@ -327,11 +331,12 @@ The current schema is v13. It stores only:
 - companion bonds, discrete daily imprints, and sealed anomaly IDs;
 - up to three stable Consequence Cabinet collection keys;
 - at most one Observation target/reaction ID and one Contact target/reaction ID per settled day;
+- stable expedition destinations, event plans, revealed events, choices, effects, artifacts, achievements, status, sequence, experience-day, and date fields;
 - a local seed.
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v12 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, anomalies, or v2 discoveries. Missing historical content versions become v1; only newly settled days and newly sealed evolution choices use v2 pools. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
+Schema v1-v13 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, expeditions, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, anomalies, or v2 discoveries. Missing historical content versions become v1; only newly settled days and newly sealed evolution choices use v2 pools. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
 
 One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 

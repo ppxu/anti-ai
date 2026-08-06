@@ -362,12 +362,14 @@ test("codex --json derives a stable private collection from creature history", (
   assert.match(report.specimenId, /^[0-9a-f]{8}$/);
   assert.deepEqual(report.cabinet, { featured: [] });
   assert.deepEqual(report.summary, {
-    fixed: { discovered: 1, total: 98, percent: 1 },
+    fixed: { discovered: 1, total: 134, percent: 1 },
     forms: { discovered: 1, total: 16 },
     achievements: { discovered: 0, total: 36 },
     chromaticAbilities: { discovered: 0, total: 12 },
     scars: { discovered: 0, total: 4 },
     habitatPhenomena: { discovered: 0, total: 30 },
+    expeditionArtifacts: { discovered: 0, total: 24 },
+    expeditionAchievements: { discovered: 0, total: 12 },
     specimens: { discovered: 1 },
     foreignSpecimens: { discovered: 0 },
     fossils: { discovered: 0 },
@@ -389,6 +391,8 @@ test("codex --json derives a stable private collection from creature history", (
       chromaticAbilities: 12,
       scars: 4,
       habitatPhenomena: 30,
+      expeditionArtifacts: 24,
+      expeditionAchievements: 12,
       specimens: 1,
       foreignSpecimens: 0,
       fossils: 0,
@@ -556,7 +560,7 @@ test("codex renders bilingual locked and discovered collections", (t) => {
 
   assert.equal(chinese.status, 0, chinese.stderr);
   assert.match(chinese.stdout, /病理图鉴 · 2026-07-23/);
-  assert.match(chinese.stdout, /固定收藏\s+1 \/ 98 · 1%/);
+  assert.match(chinese.stdout, /固定收藏\s+1 \/ 134 · 1%/);
   assert.match(chinese.stdout, /形态家族\s+\[1 \/ 16\]/);
   assert.match(chinese.stdout, /熄火幼核/);
   assert.match(chinese.stdout, /\?\?\? × 15/);
@@ -570,7 +574,7 @@ test("codex renders bilingual locked and discovered collections", (t) => {
 
   assert.equal(english.status, 0, english.stderr);
   assert.match(english.stdout, /PATHOLOGY CODEX · 2026-07-23/);
-  assert.match(english.stdout, /FIXED COLLECTION\s+1 \/ 98 · 1%/);
+  assert.match(english.stdout, /FIXED COLLECTION\s+1 \/ 134 · 1%/);
   assert.match(english.stdout, /FORM FAMILIES\s+\[1 \/ 16\]/);
   assert.match(english.stdout, /EXTINGUISHED CORE/);
   assert.match(english.stdout, /HABITAT PHENOMENA\s+\[0 \/ 30\]/);

@@ -623,6 +623,35 @@ function creatureHistory(state, date, { full = false } = {}) {
       });
     }
   }
+  const expeditions = [
+    ...(state.expeditions?.history ?? []),
+    ...(state.expeditions?.active ? [state.expeditions.active] : []),
+  ];
+  for (const expedition of expeditions) {
+    if (expedition.startedAt > date) continue;
+    events.push({
+      date: expedition.startedAt,
+      type: "expedition_started",
+      id: expedition.id,
+      destinationId: expedition.destinationId,
+      sourceExperienceDay: expedition.sourceExperienceDay,
+    });
+    const returnedAt = expedition.completedAt ?? expedition.abandonedAt;
+    if (returnedAt && returnedAt <= date) {
+      events.push({
+        date: returnedAt,
+        type:
+          expedition.status === "completed"
+            ? "expedition_returned"
+            : "expedition_abandoned",
+        id: expedition.id,
+        destinationId: expedition.destinationId,
+        cells: expedition.step,
+        artifactIds: [...expedition.artifactIds],
+        achievementIds: [...expedition.achievementIds],
+      });
+    }
+  }
   const eventOrder = {
     hatch: 0,
     stage: 1,
@@ -636,6 +665,9 @@ function creatureHistory(state, date, { full = false } = {}) {
     incident_opened: 9,
     incident_selected: 10,
     incident_aftermath: 11,
+    expedition_started: 12,
+    expedition_returned: 13,
+    expedition_abandoned: 13,
   };
   events.sort(
     (left, right) =>

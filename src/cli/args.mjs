@@ -1,5 +1,6 @@
 import {
   CREATURE_ACTION_IDS,
+  EXPEDITION_ACTION_IDS,
   EXPLAIN_TOPIC_IDS,
   LAB_ACTION_IDS,
 } from "../registry.mjs";
@@ -22,6 +23,7 @@ function parseArgs(argv) {
     choice: undefined,
     id: undefined,
     topic: undefined,
+    destination: undefined,
     unknown: [],
     missing: undefined,
   };
@@ -72,6 +74,26 @@ function parseArgs(argv) {
       } else {
         options.with = rest[++index];
       }
+    } else if (
+      command === "expedition" &&
+      EXPEDITION_ACTION_IDS.includes(arg) &&
+      options.action === undefined
+    ) {
+      options.action = arg;
+    } else if (
+      command === "expedition" &&
+      options.action === "start" &&
+      options.destination === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.destination = arg;
+    } else if (
+      command === "expedition" &&
+      options.action === "choose" &&
+      options.choice === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.choice = arg;
     } else if (
       command === "encounter" &&
       options.code === undefined &&

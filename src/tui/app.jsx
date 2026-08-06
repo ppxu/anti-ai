@@ -18,7 +18,13 @@ import {
 } from "./action-views.jsx";
 import { Panel } from "./panel.jsx";
 
-const SCREEN_IDS = ["overview", "habitat", "laboratory", "codex"];
+const SCREEN_IDS = [
+  "overview",
+  "habitat",
+  "expedition",
+  "laboratory",
+  "codex",
+];
 
 function ProgressBar({ value, width = 18, color = "cyan" }) {
   const normalized = Math.max(0, Math.min(100, Number(value) || 0));
@@ -378,6 +384,119 @@ function HabitatScreen({
         </Panel>
       </Box>
       <CabinetSlots cabinet={habitat.cabinet} lang={lang} showInteractions />
+    </Box>
+  );
+}
+
+function ExpeditionRail({ expedition, frame, motion }) {
+  const cursor = Math.max(1, expedition.step);
+  const cursorGlyph = motion === "off" || frame % 2 === 0 ? "@" : "◉";
+  const cells = Array.from({ length: expedition.totalSteps }, (_, index) => {
+    const cell = index + 1;
+    if (expedition.status === "completed" || cell < cursor) return "[✓]";
+    if (cell === cursor) return `[${cursorGlyph}]`;
+    return "[?]";
+  });
+  return <Text color="cyan">{cells.join("─")}</Text>;
+}
+
+function ExpeditionScreen({
+  snapshot,
+  lang,
+  selectedDestinationIndex,
+  frame,
+  motion,
+  compact,
+}) {
+  const { expedition } = snapshot;
+  const zh = lang === "zh";
+  const active = expedition.active;
+  if (!active) {
+    const latest = expedition.latest;
+    return (
+      <Box flexDirection="column">
+        <Panel title={zh ? "收容远征" : "CONTAINMENT EXPEDITION"} color="yellow">
+          <Text bold color={expedition.eligibility.available ? "green" : "gray"}>
+            {expedition.eligibility.available
+              ? zh ? "一个新阅历日机会可用" : "ONE EXPERIENCE-DAY OPPORTUNITY AVAILABLE"
+              : zh ? "当前没有新的远征机会" : "NO NEW EXPEDITION OPPORTUNITY"}
+          </Text>
+          <Text dimColor>
+            {zh
+              ? "机会不累计；Token 量不改变格数、稀有率或收藏概率。"
+              : "Opportunities do not stack; Token volume changes no cells, rarity, or collection odds."}
+          </Text>
+        </Panel>
+        {expedition.eligibility.available ? (
+          <Panel title={zh ? "选择目的地" : "SELECT DESTINATION"} color="cyan" marginTop={1}>
+            {expedition.destinations.map((destination, index) => (
+              <Box key={destination.id} flexDirection="column">
+                <Text bold={index === selectedDestinationIndex} color={index === selectedDestinationIndex ? "cyan" : undefined}>
+                  {index === selectedDestinationIndex ? "> " : "  "}
+                  {index + 1}. {destination.label}
+                </Text>
+                {!compact || index === selectedDestinationIndex ? (
+                  <Text dimColor>   {destination.description}</Text>
+                ) : null}
+              </Box>
+            ))}
+            <Text dimColor>
+              {zh ? "↑↓ 选择 · Enter 预览并确认" : "↑↓ selects · Enter previews and confirms"}
+            </Text>
+          </Panel>
+        ) : latest ? (
+          <Panel title={zh ? "最近返航" : "LATEST RETURN"} color="magenta" marginTop={1}>
+            <Text bold>{latest.destination.label} · {latest.status.toUpperCase()}</Text>
+            <ExpeditionRail expedition={latest} frame={frame} motion={motion} />
+            <Text>
+              {zh ? `已处理 ${latest.step} / 10 格` : `${latest.step} / 10 CELLS SEALED`} ·{" "}
+              {zh ? `遗物 ${latest.artifactIds.length}` : `ARTIFACTS ${latest.artifactIds.length}`} ·{" "}
+              {zh ? `成就 ${latest.achievementIds.length}` : `ACHIEVEMENTS ${latest.achievementIds.length}`}
+            </Text>
+          </Panel>
+        ) : null}
+      </Box>
+    );
+  }
+  const latestEvent = active.events.at(-1) ?? null;
+  return (
+    <Box flexDirection="column">
+      <Panel title={`${zh ? "收容远征" : "CONTAINMENT EXPEDITION"} · ${active.destination.label}`} color="magenta">
+        <ExpeditionRail expedition={active} frame={frame} motion={motion} />
+        <Text bold>
+          {zh ? `第 ${active.step} / 10 格` : `CELL ${active.step} / 10`} ·{" "}
+          {zh ? `临时状态 ${active.temporaryEffects.length}` : `CONDITIONS ${active.temporaryEffects.length}`} ·{" "}
+          {zh ? `遗物 ${active.artifactIds.length}` : `ARTIFACTS ${active.artifactIds.length}`}
+        </Text>
+      </Panel>
+      <Panel title={zh ? "最近事件" : "LATEST EVENT"} color="cyan" marginTop={1}>
+        {latestEvent ? (
+          <>
+            <Text bold color={latestEvent.type === "anomaly" ? "magenta" : "yellow"}>
+              {latestEvent.title}
+            </Text>
+            <Text>{latestEvent.body}</Text>
+            {latestEvent.effect ? (
+              <Text color={latestEvent.effect.delta >= 0 ? "red" : "cyan"}>
+                {latestEvent.effect.abilityId} {latestEvent.effect.delta >= 0 ? "+" : ""}{latestEvent.effect.delta} · {latestEvent.effect.duration === "permanent" ? (zh ? "永久" : "PERMANENT") : (zh ? "本局" : "THIS RUN")}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <Text dimColor>
+            {zh ? "尚未进入第一格。事件正在排队假装随机。" : "Cell one is untouched. Events are queuing to impersonate chance."}
+          </Text>
+        )}
+        {active.pendingChoice ? (
+          <Text bold color="yellow">
+            {zh ? "当前分叉待处理 · Enter 选择" : "BRANCH PENDING · Enter chooses"}
+          </Text>
+        ) : (
+          <Text dimColor>
+            {zh ? "Enter 预览下一格 · x 放弃并返航 · q 暂停返回" : "Enter previews next cell · x abandons · q pauses"}
+          </Text>
+        )}
+      </Panel>
     </Box>
   );
 }
@@ -880,6 +999,12 @@ function HelpOverlay({ lang, activeId, codexMode }) {
       ["b", zh ? "绑定所选培养物" : "bond the selected culture"],
       ["Esc", zh ? "从培养物档案返回" : "return from a culture file"],
     ],
+    expedition: [
+      ["↑↓", zh ? "选择目的地" : "select a destination"],
+      ["Enter", zh ? "预览开始、下一格或分叉选择" : "preview start, next cell, or branch"],
+      ["x", zh ? "预览放弃当前远征" : "preview abandoning the run"],
+      ["q", zh ? "暂停并返回总览" : "pause and return to Overview"],
+    ],
     codex: [
       ["↑↓ / Tab", zh ? "选择分类或条目" : "select category or entry"],
       ["Enter", zh ? "进入下一级" : "open the next level"],
@@ -892,7 +1017,7 @@ function HelpOverlay({ lang, activeId, codexMode }) {
   }[activeId] ?? [];
   return (
     <Panel title={zh ? "控制台快捷键" : "CONSOLE SHORTCUTS"} color="yellow">
-      <Text>1–4　{zh ? "切换区域" : "switch area"}</Text>
+      <Text>1–5　{zh ? "切换区域" : "switch area"}</Text>
       <Text>← →　{zh ? "切换相邻区域" : "switch adjacent area"}</Text>
       <Text>Tab　 {zh ? "切换区域或当前焦点" : "switch area or current focus"}</Text>
       <Text>m　　{zh ? "切换动态档位" : "cycle motion level"}</Text>
@@ -990,6 +1115,7 @@ function TuiApp({
   );
   const [laboratoryProposalIndex, setLaboratoryProposalIndex] = useState(0);
   const [laboratoryCultureIndex, setLaboratoryCultureIndex] = useState(0);
+  const [expeditionDestinationIndex, setExpeditionDestinationIndex] = useState(0);
   const [inspectingCulture, setInspectingCulture] = useState(false);
 
   const activeId = SCREEN_IDS[activeIndex];
@@ -1016,6 +1142,15 @@ function TuiApp({
     }
     if (activeId === "habitat") {
       return settledDate ? { screen: "habitat", date: settledDate } : null;
+    }
+    if (activeId === "expedition") {
+      const record = snapshot.expedition.active ?? snapshot.expedition.latest;
+      return record
+        ? {
+            screen: "expedition",
+            date: record.completedAt ?? record.abandonedAt ?? record.startedAt,
+          }
+        : null;
     }
     if (activeId === "codex" && codexMode === "archive_detail" && activeArchiveDay) {
       return { screen: "archive", date: activeArchiveDay.date };
@@ -1137,7 +1272,7 @@ function TuiApp({
       interval === null ||
       showHelp ||
       actionMode !== null ||
-      !["overview", "habitat"].includes(activeId)
+      !["overview", "habitat", "expedition"].includes(activeId)
     ) {
       return undefined;
     }
@@ -1231,6 +1366,10 @@ function TuiApp({
         setActionResult(null);
         return;
       }
+      return;
+    }
+    if (input === "q" && activeId === "expedition") {
+      setActiveIndex(SCREEN_IDS.indexOf("overview"));
       return;
     }
     if (input === "q") {
@@ -1399,6 +1538,46 @@ function TuiApp({
         return;
       }
     }
+    if (activeId === "expedition") {
+      const expedition = snapshot.expedition;
+      if (!expedition.active && expedition.eligibility.available) {
+        if (key.upArrow) {
+          setExpeditionDestinationIndex(
+            (value) =>
+              (value + expedition.destinations.length - 1) %
+              expedition.destinations.length,
+          );
+          return;
+        }
+        if (key.downArrow || key.tab) {
+          setExpeditionDestinationIndex(
+            (value) => (value + 1) % expedition.destinations.length,
+          );
+          return;
+        }
+        if (key.return) {
+          const action = actions.find(({ id }) => id === "start_expedition");
+          const destination = expedition.destinations[expeditionDestinationIndex];
+          if (action?.available && destination) {
+            void openActionPreview(action, destination.id, "screen");
+          }
+          return;
+        }
+      }
+      if (expedition.active && input === "x") {
+        const action = actions.find(({ id }) => id === "abandon_expedition");
+        if (action?.available) void openActionPreview(action, undefined, "screen");
+        return;
+      }
+      if (expedition.active && key.return) {
+        const actionId = expedition.active.pendingChoice
+          ? "choose_expedition"
+          : "advance_expedition";
+        const action = actions.find(({ id }) => id === actionId);
+        if (action?.available) void openActionPreview(action, undefined, "screen");
+        return;
+      }
+    }
     if (
       activeId === "overview" &&
       key.return &&
@@ -1489,7 +1668,11 @@ function TuiApp({
       return;
     }
     const directIndex = Number(input) - 1;
-    if (Number.isInteger(directIndex) && directIndex >= 0 && directIndex < 4) {
+    if (
+      Number.isInteger(directIndex) &&
+      directIndex >= 0 &&
+      directIndex < SCREEN_IDS.length
+    ) {
       setShowHelp(false);
       setObservationIndex(null);
       setReplayStartFrame(null);
@@ -1535,6 +1718,16 @@ function TuiApp({
         compact={compact}
       />
     ),
+    expedition: (
+      <ExpeditionScreen
+        snapshot={snapshot}
+        lang={lang}
+        selectedDestinationIndex={expeditionDestinationIndex}
+        frame={frame}
+        motion={motion}
+        compact={compact}
+      />
+    ),
     laboratory: (
       <LaboratoryScreen
         snapshot={snapshot}
@@ -1571,6 +1764,10 @@ function TuiApp({
           ? ` · r ${zh ? "回放" : "replay"}`
           : ""
       } · s ${zh ? "分享" : "share"}`
+    : activeId === "expedition" && snapshot.expedition.active
+      ? ` · Enter ${zh ? "推进" : "advance"} · x ${zh ? "放弃" : "abandon"} · s ${zh ? "分享" : "share"}`
+      : activeId === "expedition" && snapshot.expedition.eligibility.available
+        ? ` · ↑↓ ${zh ? "目的地" : "destination"} · Enter ${zh ? "开始" : "start"}`
     : activeId === "overview" && snapshot.primaryAction
       ? ` · Enter ${zh ? "处理" : "act"} · s ${zh ? "分享" : "share"}`
       : activeId === "overview"
@@ -1586,8 +1783,8 @@ function TuiApp({
             ? ` · Enter ${zh ? "培养" : "incubate"}`
         : "";
   const navigationFooter = compact
-    ? `1–4 ${zh ? "区域" : "areas"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${motionLabel}`
-    : `1–4 ${zh ? "区域" : "areas"} · ← → ${zh ? "切换" : "switch"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${zh ? "动态" : "motion"} ${motionLabel}`;
+    ? `1–5 ${zh ? "区域" : "areas"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${motionLabel}`
+    : `1–5 ${zh ? "区域" : "areas"} · ← → ${zh ? "切换" : "switch"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${zh ? "动态" : "motion"} ${motionLabel}`;
   const actionOverlay = {
     menu: (
       <ActionMenu

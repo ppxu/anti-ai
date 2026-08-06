@@ -38,6 +38,17 @@ import {
   selectCreatureIncident,
 } from "../incidents.mjs";
 import { StateConflictError } from "../state-store.mjs";
+import {
+  EXPEDITION_DESTINATIONS,
+  abandonExpedition,
+  advanceExpedition,
+  chooseExpedition,
+  startExpedition,
+} from "../expedition.mjs";
+import {
+  expeditionChoiceCopy,
+  expeditionDestination,
+} from "../expedition/content.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
 import { settleCreatureState } from "./settlement.mjs";
 import { deriveTuiSnapshot } from "./tui.mjs";
@@ -380,6 +391,99 @@ function displayPreview(state, date, lang, action, target) {
   };
 }
 
+function expeditionPreview(state, date, lang, action) {
+  const active = state.expeditions?.active ?? null;
+  if (action.id === "start_expedition") {
+    return {
+      ...action,
+      title: localized(
+        lang,
+        "开启收容远征",
+        "START CONTAINMENT EXPEDITION",
+      ),
+      summary: localized(
+        lang,
+        "选择一个目的地，封存十格稳定事件序列。",
+        "Choose a destination and seal one stable ten-cell event sequence.",
+      ),
+      warning: localized(
+        lang,
+        "开始会消耗本阅历日机会；退出可恢复，但目的地和事件不能重抽。",
+        "Starting consumes this experience-day opportunity; the run can resume, but its destination and events cannot be rerolled.",
+      ),
+      irreversible: true,
+      choices: EXPEDITION_DESTINATIONS.map(({ id }) => {
+        const destination = expeditionDestination(id);
+        return {
+          id,
+          label: destination.name[lang],
+          detail: destination.description[lang],
+        };
+      }),
+      impact: { cells: 10, opportunity: 1 },
+    };
+  }
+  if (action.id === "advance_expedition") {
+    return {
+      ...action,
+      title: localized(lang, "进入下一格", "ENTER THE NEXT CELL"),
+      summary: localized(
+        lang,
+        `将进入第 ${active.step + 1} / 10 格；结果在确认前保持未知。`,
+        `Enters cell ${active.step + 1} / 10; its result remains unknown until confirmation.`,
+      ),
+      warning: localized(
+        lang,
+        "事件会立即封存且不能重抽；永久微调每局最多一次。",
+        "The event is sealed immediately and cannot be rerolled; at most one permanent adjustment exists per run.",
+      ),
+      irreversible: true,
+      choices: [],
+      impact: { nextCell: active.step + 1, totalCells: 10 },
+    };
+  }
+  if (action.id === "choose_expedition") {
+    return {
+      ...action,
+      title: localized(lang, "处理远征分叉", "RESOLVE EXPEDITION BRANCH"),
+      summary: localized(
+        lang,
+        "封存当前格的一项处理方式，然后继续远征。",
+        "Seal one response for the current cell, then continue the expedition.",
+      ),
+      warning: localized(
+        lang,
+        "选择不能改写；公开变化只在本局有效。",
+        "The choice cannot be rewritten; disclosed changes last only for this run.",
+      ),
+      irreversible: true,
+      choices: active.pendingChoice.options.map((option) => ({
+        id: option.slot,
+        label: expeditionChoiceCopy(active.destinationId, option.slot, lang),
+        detail: `${creatureLabel("abilities", option.effect.abilityId, lang)} ${option.effect.delta >= 0 ? "+" : ""}${option.effect.delta}`,
+      })),
+      impact: { cell: active.step },
+    };
+  }
+  return {
+    ...action,
+    title: localized(lang, "放弃当前远征", "ABANDON ACTIVE EXPEDITION"),
+    summary: localized(
+      lang,
+      `在第 ${active.step} / 10 格立即返航。`,
+      `Return immediately from cell ${active.step} / 10.`,
+    ),
+    warning: localized(
+      lang,
+      "本阅历日机会不会返还；已经发生的永久变化和收藏继续保留。",
+      "The experience-day opportunity is not refunded; reached permanent changes and artifacts remain.",
+    ),
+    irreversible: true,
+    choices: [],
+    impact: { reachedCells: active.step, totalCells: 10 },
+  };
+}
+
 async function previewContainmentAction(actionId, options = {}, session = {}) {
   const { date, timezone } = actionDate(options);
   const lang = options.lang ?? "zh";
@@ -414,6 +518,16 @@ async function previewContainmentAction(actionId, options = {}, session = {}) {
   if (actionId === "curate_display") {
     return displayPreview(state, date, lang, action, options.target);
   }
+  if (
+    [
+      "start_expedition",
+      "advance_expedition",
+      "choose_expedition",
+      "abandon_expedition",
+    ].includes(actionId)
+  ) {
+    return expeditionPreview(state, date, lang, action);
+  }
   return bondPreview(state, date, lang, action);
 }
 
@@ -426,6 +540,19 @@ function failedAction(actionId, error) {
 }
 
 function applyContainmentAction(state, date, actionId, choice) {
+  const creature = deriveCreature(state, date);
+  if (actionId === "start_expedition") {
+    return startExpedition(state, creature, date, choice);
+  }
+  if (actionId === "advance_expedition") {
+    return advanceExpedition(state, creature, date);
+  }
+  if (actionId === "choose_expedition") {
+    return chooseExpedition(state, date, choice);
+  }
+  if (actionId === "abandon_expedition") {
+    return abandonExpedition(state, date);
+  }
   if (actionId === "choose_intervention") {
     return selectCreatureIntervention(
       state,
@@ -577,6 +704,48 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
       "培养事故已入架。实验室再次把意外写成了流程。",
       "The incubation accident is shelved. The lab has documented surprise as procedure.",
     ]);
+  }
+  if (
+    [
+      "start_expedition",
+      "advance_expedition",
+      "choose_expedition",
+      "abandon_expedition",
+    ].includes(actionId)
+  ) {
+    const selected = applyContainmentAction(
+      state,
+      date,
+      actionId,
+      options.choice,
+    );
+    if (selected.error) return failedAction(actionId, selected.error);
+    const messages = {
+      start_expedition: [
+        "远征序列已封存。它现在连后悔都具有确定性。",
+        "The expedition is sealed. Even regret is deterministic now.",
+      ],
+      advance_expedition: [
+        "下一格已封存。未知内容正式升级为既成事实。",
+        "The next cell is sealed. The unknown is now documented fact.",
+      ],
+      choose_expedition: [
+        "分叉处置已封存。另两种后悔方式同时失效。",
+        "The branch response is sealed. Two alternative regrets expired.",
+      ],
+      abandon_expedition: [
+        "远征已提前返航。机会没有，病历还在。",
+        "The expedition returned early. The opportunity is gone; the record remains.",
+      ],
+    }[actionId];
+    return completeAction(
+      actionId,
+      state,
+      date,
+      lang,
+      selected.value,
+      messages,
+    );
   }
   if (actionId === "curate_display") {
     const selected = applyContainmentAction(

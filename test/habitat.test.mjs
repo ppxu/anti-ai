@@ -329,7 +329,7 @@ test("creature habitat renders one bilingual cohabitation scene within 80 column
   );
   assert.doesNotMatch(month.stdout, /[\p{Script=Han}]/u);
   const codex = JSON.parse(codexJson.stdout);
-  assert.equal(codex.summary.fixed.total, 98);
+  assert.equal(codex.summary.fixed.total, 134);
   assert.deepEqual(codex.summary.habitatPhenomena, {
     discovered: 3,
     total: 30,

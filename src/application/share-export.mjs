@@ -25,11 +25,15 @@ import {
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderHabitatShareSvg,
+  renderExpeditionShareSvg,
   renderPathologyShareSvg,
 } from "../renderers/svg.mjs";
+import { expeditionStatus } from "../expedition.mjs";
+import { expeditionShareView } from "../expedition/presentation.mjs";
 import { localized } from "../shared.mjs";
 
 function shareCardForContext(context) {
+  if (context.screen === "expedition") return { card: "expedition", id: null };
   if (context.screen === "habitat") return { card: "habitat", id: null };
   if (context.screen !== "codex" || !context.entry) {
     return { card: "pathology", id: null };
@@ -273,6 +277,27 @@ async function prepareTuiShareCard(card, id, date, lang) {
         "The mutation file cannot be read.",
       ),
     );
+  }
+  if (card === "expedition") {
+    const status = expeditionStatus(state, deriveCreature(state, date), date);
+    const record = status.active ?? status.latest;
+    if (!record) {
+      return unavailable(
+        "expedition_not_found",
+        localized(
+          lang,
+          "当前没有可分享的远征记录。",
+          "No expedition record is available to share.",
+        ),
+      );
+    }
+    return {
+      available: true,
+      svg: renderExpeditionShareSvg(
+        expeditionShareView(record, lang),
+        lang,
+      ),
+    };
   }
   if (!state.days?.[date]) {
     return unavailable(

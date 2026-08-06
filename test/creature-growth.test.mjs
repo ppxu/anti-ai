@@ -343,7 +343,7 @@ test("creature content v2 preserves legacy event rolls and versions new days", (
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 13);
+  assert.equal(saved.schemaVersion, 14);
   assert.equal(saved.days["2026-07-22"].contentVersion, 1);
   assert.equal(saved.days["2026-07-23"].contentVersion, 2);
 });
@@ -1350,7 +1350,7 @@ test("creature rolls legacy ability points into 255-point malignancy ranks witho
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 13);
+  assert.equal(saved.schemaVersion, 14);
   assert.equal(saved.days["2026-07-22"].abilityGains.appetite, 267);
 });
 

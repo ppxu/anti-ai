@@ -390,7 +390,7 @@ test("creature incident seals one local choice and reveals its delayed aftermath
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 13);
+  assert.equal(saved.schemaVersion, 14);
   assert.equal(saved.incidents.records.length, 1);
   assert.equal(saved.incidents.dispositions.resonate, 1);
 });

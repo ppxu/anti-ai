@@ -29,6 +29,15 @@ import {
 } from "../laboratory.mjs";
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
+import { expeditionStatus } from "../expedition.mjs";
+import {
+  EXPEDITION_ACHIEVEMENT_DEFINITIONS,
+  EXPEDITION_DESTINATION_DEFINITIONS,
+  expeditionArtifact,
+  expeditionChoiceCopy,
+  expeditionDestination,
+  expeditionEventCopy,
+} from "../expedition/content.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
 import { containmentArchive, containmentBrief } from "./archive.mjs";
 
@@ -39,6 +48,7 @@ function tuiCopy(lang) {
     navigation: [
       ["overview", "总览", "Overview"],
       ["habitat", "生态舱", "Habitat"],
+      ["expedition", "远征", "Expedition"],
       ["laboratory", "实验室", "Laboratory"],
       ["codex", "图鉴", "Codex"],
     ].map(([id, zh, en], index) => ({
@@ -76,6 +86,14 @@ function codexRecentLabel(entry, lang) {
   if (entry.type === "incidentReport") {
     return localized(lang, `事故报告 #${entry.id}`, `INCIDENT REPORT #${entry.id}`);
   }
+  if (entry.type === "expeditionArtifact") {
+    return expeditionArtifact(entry.id)?.name[lang] ?? `#${entry.id}`;
+  }
+  if (entry.type === "expeditionAchievement") {
+    return EXPEDITION_ACHIEVEMENT_DEFINITIONS.find(
+      ({ id }) => id === entry.id,
+    )?.name[lang] ?? `#${entry.id}`;
+  }
   const section = creatureSections[entry.type];
   return section ? creatureLabel(section, entry.id, lang) : `#${entry.id}`;
 }
@@ -108,6 +126,8 @@ function usageBandLabel(usageBand, lang) {
 function provenanceSourceLabel(sourceType, lang) {
   const labels = {
     specimen_record: ["本地标本记录", "Local specimen record"],
+    expedition_artifact: ["远征遗物", "Expedition artifact"],
+    expedition_return: ["远征返航", "Expedition return"],
     behavioral_evidence: ["行为证据", "Behavioral evidence"],
     chromatic_mutation: ["异色突变", "Chromatic mutation"],
     generation_seal: ["世代封存", "Generation seal"],
@@ -334,6 +354,16 @@ function codexEntryPresentation(entry, lang) {
     label = habitatEventCopy(entry.id, lang).name;
     detail = habitatDecorationCopy(entry.decorationId, lang).name;
     rarity = "uncommon";
+  } else if (entry.type === "expeditionArtifact") {
+    const artifact = expeditionArtifact(entry.id);
+    label = artifact.name[lang];
+    detail = artifact.description[lang];
+  } else if (entry.type === "expeditionAchievement") {
+    const achievement = EXPEDITION_ACHIEVEMENT_DEFINITIONS.find(
+      ({ id }) => id === entry.id,
+    );
+    label = achievement.name[lang];
+    detail = achievement.description[lang];
   } else if (entry.type === "specimen") {
     label = localized(lang, `本地标本 #${entry.id}`, `LOCAL SPECIMEN #${entry.id}`);
     detail = `${creatureLabel("ecologyForms", entry.formId, lang)} · ${localized(lang, `阅历 ${entry.experienceDays} 天`, `${entry.experienceDays} experience days`)}`;
@@ -396,6 +426,35 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     .split("\n")
     .filter(Boolean);
   const status = overviewStatus(state, creature, date);
+  const expedition = expeditionStatus(state, creature, date);
+  const presentExpedition = (record) => {
+    if (!record) return null;
+    const destination = expeditionDestination(record.destinationId);
+    return {
+      ...record,
+      destination: {
+        id: destination.id,
+        label: destination.name[lang],
+        description: destination.description[lang],
+      },
+      events: record.events.map((event) => ({
+        ...event,
+        ...expeditionEventCopy(event, lang),
+        ...(event.options
+          ? {
+              options: event.options.map((option) => ({
+                ...option,
+                label: expeditionChoiceCopy(
+                  record.destinationId,
+                  option.slot,
+                  lang,
+                ),
+              })),
+            }
+          : {}),
+      })),
+    };
+  };
   const statusLabel = {
     active: localized(lang, "今日已进食", "FED TODAY"),
     quiet: localized(lang, "AI 清醒日已结算", "AI-FREE DAY SETTLED"),
@@ -496,6 +555,8 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       ["chromaticAbilities", "异色能力", "Chromatics", "fixed"],
       ["scars", "世代伤痕", "Scars", "fixed"],
       ["habitatPhenomena", "生态现象", "Phenomena", "fixed"],
+      ["expeditionArtifacts", "远征遗物", "Expedition artifacts", "fixed"],
+      ["expeditionAchievements", "远征成就", "Expedition achievements", "fixed"],
       ["specimens", "本地标本", "Local specimens", "dynamic"],
       ["foreignSpecimens", "外来标本", "Foreign specimens", "dynamic"],
       ["caseSlices", "病例切片", "Case slices", "dynamic"],
@@ -554,6 +615,16 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     actions,
     primaryAction: actions.find(({ available }) => available) ?? null,
     navigation: tuiCopy(lang).navigation,
+    expedition: {
+      ...expedition,
+      destinations: EXPEDITION_DESTINATION_DEFINITIONS.map((destination) => ({
+        id: destination.id,
+        label: destination.name[lang],
+        description: destination.description[lang],
+      })),
+      active: presentExpedition(expedition.active),
+      latest: presentExpedition(expedition.latest),
+    },
     overview: {
       status,
       statusLabel,

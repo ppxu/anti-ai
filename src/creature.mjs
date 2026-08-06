@@ -12,6 +12,11 @@ import {
   resetJsonState,
   saveJsonState,
 } from "./state-store.mjs";
+import { ensureExpeditionState } from "./expedition.mjs";
+import {
+  EXPEDITION_ACHIEVEMENT_DEFINITIONS,
+  EXPEDITION_ARTIFACT_DEFINITIONS,
+} from "./expedition/content.mjs";
 import { ensureIncidentState } from "./incidents.mjs";
 import { ensureConsequenceCabinetState } from "./consequence-cabinet.mjs";
 import {
@@ -74,7 +79,7 @@ import {
   roundCreature,
 } from "./creature/appearance.mjs";
 
-const CREATURE_STATE_SCHEMA_VERSION = 13;
+const CREATURE_STATE_SCHEMA_VERSION = 14;
 const LEGACY_COMMON_CREATURE_EVENTS = COMMON_CREATURE_EVENTS.slice(0, 12);
 const LEGACY_RARE_CREATURE_EVENTS = RARE_CREATURE_EVENTS.slice(0, 8);
 const LEGACY_RARE_ABILITY_POOLS = {
@@ -799,6 +804,41 @@ function creatureCodex(state, date) {
       discoveredAt: phenomenonDiscoveries.get(id) ?? null,
     }),
   );
+  const expeditionArtifactDiscoveries = new Map(
+    (state.expeditions?.artifactRecords ?? [])
+      .filter(({ discoveredAt }) => discoveredAt <= date)
+      .map((record) => [record.id, record]),
+  );
+  const expeditionArtifacts = EXPEDITION_ARTIFACT_DEFINITIONS.map(
+    (definition) => {
+      const record = expeditionArtifactDiscoveries.get(definition.id);
+      return {
+        id: definition.id,
+        destinationId: definition.destinationId,
+        rarity: definition.rarity,
+        discovered: record !== undefined,
+        discoveredAt: record?.discoveredAt ?? null,
+        expeditionId: record?.expeditionId ?? null,
+      };
+    },
+  );
+  const expeditionAchievementDiscoveries = new Map(
+    (state.expeditions?.achievementRecords ?? [])
+      .filter(({ discoveredAt }) => discoveredAt <= date)
+      .map((record) => [record.id, record]),
+  );
+  const expeditionAchievements = EXPEDITION_ACHIEVEMENT_DEFINITIONS.map(
+    (definition) => {
+      const record = expeditionAchievementDiscoveries.get(definition.id);
+      return {
+        id: definition.id,
+        rarity: definition.rarity,
+        discovered: record !== undefined,
+        discoveredAt: record?.discoveredAt ?? null,
+        expeditionId: record?.expeditionId ?? null,
+      };
+    },
+  );
   const provenance = (entry, sourceType, sourceId, relatedId = null) => ({
     firstDiscoveredAt: entry.discoveredAt,
     sourceType,
@@ -837,6 +877,26 @@ function creatureCodex(state, date) {
       ? provenance(entry, "habitat_event", entry.id, entry.decorationId)
       : null;
   }
+  for (const entry of expeditionArtifacts) {
+    entry.provenance = entry.discovered
+      ? provenance(
+          entry,
+          "expedition_artifact",
+          entry.expeditionId,
+          entry.destinationId,
+        )
+      : null;
+  }
+  for (const entry of expeditionAchievements) {
+    entry.provenance = entry.discovered
+      ? provenance(
+          entry,
+          "expedition_return",
+          entry.expeditionId,
+          entry.id,
+        )
+      : null;
+  }
   for (const entry of specimens) {
     entry.provenance = provenance(entry, "specimen_record", entry.id, entry.formId);
   }
@@ -869,6 +929,8 @@ function creatureCodex(state, date) {
     ...chromaticAbilities,
     ...scars,
     ...habitatPhenomena,
+    ...expeditionArtifacts,
+    ...expeditionAchievements,
   ];
   const fixedDiscovered = fixedCollections.filter(
     (entry) => entry.discovered,
@@ -883,6 +945,14 @@ function creatureCodex(state, date) {
     ...scars.map((entry) => ({ type: "scar", ...entry })),
     ...habitatPhenomena.map((entry) => ({
       type: "habitatPhenomenon",
+      ...entry,
+    })),
+    ...expeditionArtifacts.map((entry) => ({
+      type: "expeditionArtifact",
+      ...entry,
+    })),
+    ...expeditionAchievements.map((entry) => ({
+      type: "expeditionAchievement",
       ...entry,
     })),
     ...specimens.map((entry) => ({
@@ -968,6 +1038,17 @@ function creatureCodex(state, date) {
           .length,
         total: habitatPhenomena.length,
       },
+      expeditionArtifacts: {
+        discovered: expeditionArtifacts.filter((entry) => entry.discovered)
+          .length,
+        total: expeditionArtifacts.length,
+      },
+      expeditionAchievements: {
+        discovered: expeditionAchievements.filter(
+          (entry) => entry.discovered,
+        ).length,
+        total: expeditionAchievements.length,
+      },
       specimens: { discovered: specimens.length },
       foreignSpecimens: { discovered: foreignSpecimens.length },
       caseSlices: { discovered: caseSlices.length },
@@ -982,6 +1063,8 @@ function creatureCodex(state, date) {
       chromaticAbilities,
       scars,
       habitatPhenomena,
+      expeditionArtifacts,
+      expeditionAchievements,
       specimens,
       foreignSpecimens,
       caseSlices,
@@ -1297,6 +1380,7 @@ const CREATURE_STATE_MIGRATIONS = new Map([
   [10, ensureIncidentState],
   [11, ensureConsequenceCabinetState],
   [12, ensureCreatureContentVersion],
+  [13, ensureExpeditionState],
 ]);
 
 function migrateCreatureState(state) {
@@ -1323,6 +1407,7 @@ function migrateCreatureState(state) {
   ensureIncidentState(state);
   ensureConsequenceCabinetState(state);
   ensureCreatureContentVersion(state);
+  ensureExpeditionState(state);
   ensureDailyGrowthState(state);
   return state;
 }
@@ -1494,6 +1579,50 @@ function deriveCreature(state, date) {
     nuclear: 0,
   };
   const abilityTotals = emptyCreatureAbilities();
+  const expeditionEffects = [
+    ...(state.expeditions?.history ?? []),
+    ...(state.expeditions?.active ? [state.expeditions.active] : []),
+  ]
+    .map((expedition) => ({
+      id: expedition.id,
+      ...expedition.permanentEffect,
+    }))
+    .filter(
+      (effect) =>
+        effect.abilityId &&
+        effect.appliedAt &&
+        effect.appliedAt <= date &&
+        Number.isFinite(effect.delta),
+    )
+    .sort(
+      (left, right) =>
+        left.appliedAt.localeCompare(right.appliedAt) ||
+        (left.appliedExperienceDay ?? Number.MAX_SAFE_INTEGER) -
+          (right.appliedExperienceDay ?? Number.MAX_SAFE_INTEGER) ||
+        left.id.localeCompare(right.id),
+    );
+  let expeditionEffectIndex = 0;
+  const applyExpeditionEffectsThrough = (
+    throughDate,
+    experienceDays,
+    inclusiveDate,
+  ) => {
+    while (expeditionEffectIndex < expeditionEffects.length) {
+      const effect = expeditionEffects[expeditionEffectIndex];
+      const withinBoundary = Number.isInteger(effect.appliedExperienceDay)
+        ? effect.appliedExperienceDay <= experienceDays
+        : inclusiveDate
+          ? effect.appliedAt <= throughDate
+          : effect.appliedAt < throughDate;
+      if (!withinBoundary) break;
+      expeditionEffectIndex += 1;
+      if (!Object.hasOwn(abilityTotals, effect.abilityId)) continue;
+      abilityTotals[effect.abilityId] = Math.max(
+        0,
+        abilityTotals[effect.abilityId] + effect.delta,
+      );
+    }
+  };
   const rareAbilityLevels = {};
   let exposure = 0;
   let activeDays = 0;
@@ -1512,7 +1641,8 @@ function deriveCreature(state, date) {
   let evolutionBenefitPoints = 0;
   let evolutionCostPoints = 0;
 
-  for (const [, day] of entries) {
+  for (const [entryDate, day] of entries) {
+    applyExpeditionEffectsThrough(entryDate, ageDays, false);
     if (day.active) {
       exposure += day.pollutionDose;
       activeDays += 1;
@@ -1572,7 +1702,9 @@ function deriveCreature(state, date) {
       evolutionBenefitPoints += day.evolutionEffect.benefitPoints;
       evolutionCostPoints += day.evolutionEffect.costPoints;
     }
+    applyExpeditionEffectsThrough(entryDate, ageDays, true);
   }
+  applyExpeditionEffectsThrough(date, ageDays, true);
 
   for (const key of Object.keys(traits)) traits[key] = roundCreature(traits[key]);
   const branch = dominantCreatureKey(traits);
@@ -1894,6 +2026,14 @@ function creatureCasebook(state, startDate, endDate) {
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,
     incidentReports: codex.sections.incidentReports.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    expeditionArtifacts: codex.sections.expeditionArtifacts.filter(
+      (entry) =>
+        entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
+    ).length,
+    expeditionAchievements: codex.sections.expeditionAchievements.filter(
       (entry) =>
         entry.discoveredAt >= startDate && entry.discoveredAt <= endDate,
     ).length,

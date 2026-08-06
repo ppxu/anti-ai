@@ -16,7 +16,7 @@
 
 `~/.anti-ai/creature.json` 仍是唯一持久化玩法文件，只保存离散用量带和派生玩法状态，不保存精确 Token、模型名、Prompt、回复、工具调用或来源路径。
 
-- 完整来源的人类可读 `today`、`week`、`month`，以及 `creature`、`encounter` 和改变状态的实验室动作，可能结算本地成长史。
+- 完整来源的人类可读 `today`、`week`、`month`，以及 `creature`、`encounter`、改变状态的实验室动作和显式远征动作，可能写入本地成长史。
 - 带来源过滤的报告和 `today --json` 只做统计。
 - TUI 的浏览、档案查看、观察、回放、分享预览与取消操作保持只读。每日结算的影响预览可能扫描受支持的用量元数据但不会写入。后果陈列柜调整，以及每天各一次的“观察”和“接触”，只会在明确确认后写入稳定收藏/互动 ID；所有写入都经过共享动作服务。确认分享预览后只会以禁止覆盖的方式新建一个 SVG，不会改变玩法状态。
 - `codex`、`creature habitat`、所有 `share` 卡片、`doctor`、`explain` 与 Help 仍是只读快照。
@@ -30,9 +30,9 @@
 
 拥有较多编排逻辑的新命令放入 `src/commands/`。参数与白名单归注册/CLI 层，领域计算归领域模块，展示归 `src/cli/render.mjs` 或 `src/renderers/`。
 
-与展示无关的查询模型和动作编排放入 `src/application/`：`action-catalog.mjs` 派生可用性与禁用原因，`actions.mjs` 负责预览和执行会话，`settlement.mjs` 保存共享结算链路，`archive.mjs` 派生孵化后的逐日收容记录。`share-export.mjs` 只从已结算状态在内存中准备当前场景的 SVG，并在确认后写入文件。CLI 命令和 TUI 调用这些服务，不重复实现领域规则；TUI 不能调用命令处理器或执行任意 Shell 命令，异变规则仍只能由领域模块负责。`src/incidents.mjs` 独立负责确定性的事故资格、上下文选择、响应封存、延迟后果和双章节事件链，适配层只负责展示或调用这些规则。
+与展示无关的查询模型和动作编排放入 `src/application/`：`action-catalog.mjs` 派生可用性与禁用原因，`actions.mjs` 负责预览和执行会话，`settlement.mjs` 保存共享结算链路，`archive.mjs` 派生孵化后的逐日收容记录。`share-export.mjs` 只从已结算状态在内存中准备当前场景的 SVG，并在确认后写入文件。CLI 命令和 TUI 调用这些服务，不重复实现领域规则；TUI 不能调用命令处理器或执行任意 Shell 命令，异变规则仍只能由领域模块负责。`src/incidents.mjs` 独立负责确定性的事故资格、上下文选择、响应封存、延迟后果和双章节事件链。`src/expedition.mjs` 负责不累计的每日资格、稳定十格计划、分叉、变化、收藏解锁和历史日期过滤；`src/expedition/content.mjs` 与 `presentation.mjs` 分别负责双语内容和隐私安全视图。适配层只负责展示或调用这些规则。
 
-TUI 必须消费结构化快照，不能解析终端文案。schema v13 会给旧记录补上 `contentVersion: 1`，只让新结算日期进入 v2 内容池，不虚构历史陈列或互动。`src/consequence-cabinet.mjs` 负责 3 个陈列位引用与确定性每日叙事反馈；`src/application/tui-motion.mjs` 负责确定性的 ASCII 帧、器官观察、异色故障特征、伴生动作和事件回放场景，本身不能访问计时器或持久化；`src/tui/` 只保存临时帧计数、键盘焦点、紧凑布局和确认状态。动态刷新最高 4 FPS，离开活体页面后暂停，也能在不改变快照的前提下彻底关闭。
+TUI 必须消费结构化快照，不能解析终端文案；五个区域依次为总览、生态舱、远征、实验室和图鉴。schema v14 为 v13 档案增加空远征索引，不虚构过去的远征；既有内容迁移仍会给旧记录补上 `contentVersion: 1`，只让新结算日期进入 v2 内容池。`src/consequence-cabinet.mjs` 负责 3 个陈列位引用与确定性每日叙事反馈；`src/application/tui-motion.mjs` 负责确定性的 ASCII 帧、器官观察、异色故障特征、伴生动作、事件回放场景和临时远征光标动态，本身不能访问计时器或持久化；`src/tui/` 只保存临时帧计数、键盘焦点、紧凑布局和确认状态。动态刷新最高 4 FPS，离开活体页面后暂停，也能在不改变快照的前提下彻底关闭。
 
 Ink 与 React 只存在于 `devDependencies`，由 `scripts/build-tui.mjs` 打包为 `dist/tui.mjs`；普通命令不会加载框架，安装包仍没有必需运行时依赖。只编辑 `src/tui/`，不要直接修改生成产物。
 

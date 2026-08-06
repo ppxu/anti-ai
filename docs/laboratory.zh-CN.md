@@ -87,7 +87,7 @@ anti-ai share --card companion
 
 `lab shelf` 默认展示最近六份培养物；`--full` 展示完整本地培养架，JSON 始终返回完整机器可读列表。`lab inspect` 会展示单个培养物的原料、培养皿 ASCII、诊断、并发症和副作用。
 
-已封存培养物也会进入 `anti-ai codex`，记录稳定 ID、类型、稀有度、发现日期、原料类别和外观指纹。它们不会改变固定 98 项图鉴的分母。
+已封存培养物也会进入 `anti-ai codex`，记录稳定 ID、类型、稀有度、发现日期、原料类别和外观指纹。它们不会改变固定 134 项图鉴的分母。
 
 `share --card culture` 会把最近一份培养物输出为 1200×630 SVG；`--id` 可指定其他培养物。SVG 只写入标准输出，不会上传。
 
@@ -113,7 +113,7 @@ anti-ai share --card companion
 
 ## 档案与隐私
 
-异变体档案使用 schema v13。Laboratory v2 只保存：
+异变体档案使用 schema v14。Laboratory v2 只保存：
 
 - 实验室格式版本和下一批次；
 - 稳定培养物与原料 ID；

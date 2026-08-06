@@ -44,6 +44,7 @@ import {
 import { runCreature } from "./commands/creature.mjs";
 import { runEncounter } from "./commands/encounter.mjs";
 import { runLaboratory } from "./commands/laboratory.mjs";
+import { runExpedition } from "./commands/expedition.mjs";
 import { runShare } from "./commands/share.mjs";
 import { runTui } from "./commands/tui.mjs";
 
@@ -288,6 +289,7 @@ const COMMAND_HANDLERS = {
   creature: runCreature,
   encounter: runEncounter,
   lab: runLaboratory,
+  expedition: runExpedition,
   doctor: runDoctor,
   explain: (options) => runExplain(options.lang, options.topic),
 };
@@ -315,7 +317,7 @@ async function main(rawArgs = process.argv.slice(2)) {
       : options.command && !options.command.startsWith("-")
         ? [
             options.command,
-            ...(["creature", "lab"].includes(options.command) && options.action
+            ...(["creature", "lab", "expedition"].includes(options.command) && options.action
               ? [options.action]
               : []),
           ]

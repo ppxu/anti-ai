@@ -322,7 +322,7 @@ test("lab incubate seals one culture without changing creature growth", (t) => {
     "utf8",
   );
   const saved = JSON.parse(savedText);
-  assert.equal(saved.schemaVersion, 13);
+  assert.equal(saved.schemaVersion, 14);
   assert.equal(saved.laboratory.nextBatch, 2);
   assert.deepEqual(saved.laboratory.cultures, [result.culture]);
   assert.deepEqual(saved.days, initialState.days);
@@ -1291,7 +1291,7 @@ test("codex records companion stages and anomalies outside the fixed denominator
   assert.equal(bondDate.status, 0, bondDate.stderr);
   const codex = JSON.parse(first.stdout);
   assert.deepEqual(JSON.parse(second.stdout), codex);
-  assert.equal(codex.summary.fixed.total, 98);
+  assert.equal(codex.summary.fixed.total, 134);
   assert.deepEqual(codex.summary.companions, { discovered: 1 });
   assert.deepEqual(codex.sections.companions, [
     {

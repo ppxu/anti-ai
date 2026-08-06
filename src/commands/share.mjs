@@ -6,6 +6,7 @@ import {
 } from "../companion.mjs";
 import {
   creatureArt,
+  deriveCreature,
   creatureLabel,
   creatureTitle,
   loadCreatureState,
@@ -21,6 +22,7 @@ import {
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
+  renderExpeditionShareSvg,
   renderHabitatShareSvg,
   renderPathologyShareSvg,
   renderPrognosisShareSvg,
@@ -31,6 +33,8 @@ import { localized } from "../shared.mjs";
 import { deriveHabitat } from "../habitat.mjs";
 import { runCreature } from "./creature.mjs";
 import { encounterContext, encounterErrorMessage } from "./encounter.mjs";
+import { expeditionStatus } from "../expedition.mjs";
+import { expeditionShareView } from "../expedition/presentation.mjs";
 
 function shareFailure(message, status = 2) {
   return { status, error: message, svg: null };
@@ -41,6 +45,40 @@ function shareSuccess(svg) {
 }
 
 async function renderShareCard(options) {
+  if (options.card === "expedition") {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const date = options.date ?? localDate(new Date(), timezone);
+    let state;
+    try {
+      state = await loadCreatureState();
+    } catch {
+      return shareFailure(
+        localized(
+          options.lang,
+          "远征分享卡无法读取异变体档案。",
+          "The expedition card cannot read the mutation file.",
+        ),
+        1,
+      );
+    }
+    const status = expeditionStatus(state, deriveCreature(state, date), date);
+    const record = status.active ?? status.latest;
+    if (!record) {
+      return shareFailure(
+        localized(
+          options.lang,
+          "当前没有可分享的远征记录。",
+          "No expedition record is available to share.",
+        ),
+      );
+    }
+    return shareSuccess(
+      renderExpeditionShareSvg(
+        expeditionShareView(record, options.lang),
+        options.lang,
+      ),
+    );
+  }
   if (options.card === "habitat") {
     const context = await runCreature(
       {

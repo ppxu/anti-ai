@@ -43,7 +43,7 @@ async function waitForFrame(screen, pattern, options = {}) {
   return frame;
 }
 
-test("the TUI snapshot unifies four product areas without mutating state", (t) => {
+test("the TUI snapshot unifies five product areas without mutating state", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-model-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
   const home = path.join(workspace, "home");
@@ -66,7 +66,7 @@ test("the TUI snapshot unifies four product areas without mutating state", (t) =
   assert.equal(snapshot.readOnly, true);
   assert.deepEqual(
     snapshot.navigation.map(({ id }) => id),
-    ["overview", "habitat", "laboratory", "codex"],
+    ["overview", "habitat", "expedition", "laboratory", "codex"],
   );
   assert.equal(snapshot.overview.status, "active");
   assert.equal(snapshot.overview.experienceDays, 1);
@@ -74,7 +74,7 @@ test("the TUI snapshot unifies four product areas without mutating state", (t) =
   assert.ok(snapshot.overview.art.length >= 8);
   assert.equal(snapshot.habitat.companion, null);
   assert.equal(snapshot.laboratory.cultures, 0);
-  assert.equal(snapshot.codex.fixed.total, 98);
+  assert.equal(snapshot.codex.fixed.total, 134);
   assert.equal(snapshot.codex.categories[0].entries.length, 16);
   assert.match(snapshot.codex.categories[0].entries[0].key, /^form:/);
   assert.ok(
@@ -104,9 +104,119 @@ test("the TUI snapshot unifies four product areas without mutating state", (t) =
   assert.equal(lockedEntry.provenance, null);
   assert.deepEqual(
     snapshot.overview.actions.map(({ id }) => id),
-    ["observe_specimen", "contact_specimen"],
+    ["start_expedition", "observe_specimen"],
   );
   assert.equal(JSON.stringify(state), original);
+});
+
+test("the 80-column TUI starts and advances one expedition through confirmed actions", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-expedition-"));
+  const buildDirectory = mkdtempSync(
+    path.join(projectDir, ".anti-ai-tui-expedition-test-"),
+  );
+  t.after(() => {
+    rmSync(workspace, { recursive: true, force: true });
+    rmSync(buildDirectory, { recursive: true, force: true });
+  });
+  const home = path.join(workspace, "home");
+  const codex = path.join(workspace, "codex");
+  const date = "2026-08-14";
+  writeCodexUsage(
+    codex,
+    [{ input_tokens: 900, output_tokens: 100, total_tokens: 1_000 }],
+    date,
+  );
+  const environment = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: codex,
+    ANTI_AI_CREATURE_SEED: "tui-expedition-seed",
+  };
+  assert.equal(
+    runCli(["creature", "--date", date, "--json"], environment).status,
+    0,
+  );
+  const previousEnvironment = Object.fromEntries(
+    Object.keys(environment).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, environment);
+  t.after(() => {
+    for (const [key, value] of Object.entries(previousEnvironment)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const session = await createContainmentSession({
+    date,
+    lang: "zh",
+    source: "all",
+  });
+  const output = path.join(buildDirectory, "app.mjs");
+  await build({
+    entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
+    outfile: output,
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    external: ["ink", "react"],
+  });
+  const { TuiApp } = await import(pathToFileURL(output).href);
+  const screen = render(
+    React.createElement(TuiApp, {
+      snapshot: session.snapshot,
+      lang: "zh",
+      initialMotion: "off",
+      actionController: session.actionController,
+      terminalColumns: 80,
+    }),
+  );
+  t.after(() => screen.unmount());
+
+  screen.stdin.write("3");
+  await waitForFrame(screen, /收容远征/u);
+  assert.match(screen.lastFrame(), /上下文矿井/u);
+  assert.match(screen.lastFrame(), /反应堆墓场/u);
+  assert.ok(
+    screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
+  );
+
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /影响预览 · 开启收容远征/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /协议执行完成/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /第 0 \/ 10 格/u);
+  assert.match(screen.lastFrame(), /\[@\].*\[\?\]/u);
+
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /影响预览 · 进入下一格/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /协议执行完成/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /第 1 \/ 10 格/u);
+  assert.match(screen.lastFrame(), /最近事件/u);
+
+  screen.stdin.write("q");
+  await waitForFrame(screen, /今日收容简报/u);
+  screen.stdin.write("3");
+  await waitForFrame(screen, /第 1 \/ 10 格/u);
+
+  for (let actions = 0; actions < 12; actions += 1) {
+    if (/最近返航/u.test(screen.lastFrame())) break;
+    screen.stdin.write("\r");
+    await waitForFrame(
+      screen,
+      /影响预览 · (进入下一格|处理远征分叉)/u,
+    );
+    screen.stdin.write("\r");
+    await waitForFrame(screen, /协议执行完成/u);
+    screen.stdin.write("\r");
+    await waitForFrame(screen, /收容远征/u);
+  }
+  assert.match(screen.lastFrame(), /最近返航/u);
+  assert.match(screen.lastFrame(), /COMPLETED/u);
+  assert.ok(
+    screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
+  );
 });
 
 test("TUI sharing previews a private local target before exporting SVG", async (t) => {
@@ -150,6 +260,10 @@ test("TUI sharing previews a private local target before exporting SVG", async (
   assert.equal(preview.card, "pathology");
   assert.equal(preview.filename, "anti-ai-pathology-2026-07-23.svg");
   assert.equal(preview.privacy, "LOCAL ONLY · NO CHATS, PATHS, MODELS, OR EXACT TOKENS");
+  assert.equal(
+    preview.warning,
+    "Confirmation creates a new SVG in the current directory; existing files are never overwritten.",
+  );
   assert.equal(readFileSync(statePath, "utf8"), original);
   assert.equal(
     spawnSync("test", ["-e", preview.targetPath]).status,
@@ -267,7 +381,7 @@ test("the consequence cabinet and daily interactions persist only explicit narra
   assert.equal(repeated.reason, "already_observed");
 
   const after = JSON.parse(readFileSync(statePath, "utf8"));
-  assert.equal(after.schemaVersion, 13);
+  assert.equal(after.schemaVersion, 14);
   assert.equal(after.cabinet.featured[0], displayKey);
   assert.equal(after.days["2026-07-23"].interactions.observe.targetId, "specimen");
   assert.equal(after.days["2026-07-23"].interactions.contact.targetId, "glass");
@@ -334,6 +448,10 @@ test("the TUI distinguishes a settled AI-free day from an unsettled date", (t) =
       { id: "resolve_incident", available: false, reason: "no_pending_incident" },
       { id: "choose_intervention", available: false, reason: "no_pending_case" },
       { id: "choose_evolution", available: false, reason: "no_pending_evolution" },
+      { id: "start_expedition", available: true, reason: null },
+      { id: "advance_expedition", available: false, reason: "no_active_expedition" },
+      { id: "choose_expedition", available: false, reason: "no_expedition_choice" },
+      { id: "abandon_expedition", available: false, reason: "no_active_expedition" },
       { id: "observe_specimen", available: false, reason: "date_not_settled" },
       { id: "contact_specimen", available: false, reason: "date_not_settled" },
       { id: "curate_display", available: true, reason: null },
@@ -619,7 +737,7 @@ test("choice actions preview stable options and execute incidents, intervention,
   );
 });
 
-test("the containment console navigates all four product areas by keyboard", async (t) => {
+test("the containment console navigates all five product areas by keyboard", async (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-screen-"));
   const buildDirectory = mkdtempSync(
     path.join(projectDir, ".anti-ai-tui-test-"),
@@ -705,12 +823,12 @@ test("the containment console navigates all four product areas by keyboard", asy
   screen.stdin.write("r");
   await new Promise((resolve) => setImmediate(resolve));
   assert.doesNotMatch(screen.lastFrame(), /事件回放/u);
-  screen.stdin.write("3");
+  screen.stdin.write("4");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /污染实验室/u);
   assert.match(screen.lastFrame(), /培养流程.*0 \/ 3/u);
   assert.match(screen.lastFrame(), /anti-ai encounter <污染编码> --save/u);
-  screen.stdin.write("4");
+  screen.stdin.write("5");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /病理图鉴/u);
   screen.stdin.write("1");
@@ -811,7 +929,7 @@ test("the Codex drills into discovered entries and opens display preview for the
   );
   t.after(() => screen.unmount());
 
-  screen.stdin.write("4");
+  screen.stdin.write("5");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /基础图鉴/u);
   assert.match(screen.lastFrame(), /个人收藏/u);
@@ -871,7 +989,7 @@ test("the Codex drills into discovered entries and opens display preview for the
         terminalColumns,
       }),
     );
-    englishScreen.stdin.write("4");
+    englishScreen.stdin.write("5");
     await new Promise((resolve) => setImmediate(resolve));
     englishScreen.stdin.write("h");
     await new Promise((resolve) => setImmediate(resolve));
@@ -1163,7 +1281,7 @@ test("the laboratory opens its available incubation protocol with Enter", async 
   );
   t.after(() => screen.unmount());
 
-  screen.stdin.write("3");
+  screen.stdin.write("4");
   await new Promise((resolve) => setImmediate(resolve));
   screen.stdin.write("\r");
   await waitForFrame(screen, /影响预览 · 孵化污染培养物/u);
@@ -1275,7 +1393,7 @@ test("an empty habitat can open a direct companion bond preview", async (t) => {
 
   screen.stdin.write("\u001B");
   await waitForFrame(screen, /生态舱状态/u);
-  screen.stdin.write("3");
+  screen.stdin.write("4");
   await waitForFrame(screen, /污染实验室/u);
   screen.stdin.write("\t");
   await waitForFrame(screen, /培养架 · 已聚焦/u);
@@ -1375,7 +1493,7 @@ test("the TUI completes incubation and bonding without leaving the console", asy
   );
   t.after(() => screen.unmount());
 
-  screen.stdin.write("3");
+  screen.stdin.write("4");
   await waitForFrame(screen, /第 1 批配方/u);
   screen.stdin.write("\r");
   await waitForFrame(screen, /影响预览 · 孵化污染培养物/u);

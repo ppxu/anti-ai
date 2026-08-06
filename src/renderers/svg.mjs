@@ -28,6 +28,42 @@ function escapeXml(value) {
     .replaceAll("'", "&apos;");
 }
 
+function wrapSvgText(value, maxChars, maxLines = 2) {
+  const lines = [];
+  let remaining = String(value).trim();
+  while (remaining.length > 0 && lines.length < maxLines) {
+    if (remaining.length <= maxChars) {
+      lines.push(remaining);
+      break;
+    }
+    if (lines.length === maxLines - 1) {
+      lines.push(`${remaining.slice(0, maxChars - 1).trimEnd()}…`);
+      break;
+    }
+    const candidate = remaining.slice(0, maxChars + 1);
+    const lastSpace = candidate.lastIndexOf(" ");
+    const splitAt = lastSpace >= Math.floor(maxChars * 0.6)
+      ? lastSpace
+      : maxChars;
+    lines.push(remaining.slice(0, splitAt).trimEnd());
+    remaining = remaining.slice(splitAt).trimStart();
+  }
+  return lines;
+}
+
+function svgTextTspans(value, x, maxChars, maxLines = 2, lineHeight = 22) {
+  return wrapSvgText(value, maxChars, maxLines)
+    .map(
+      (line, index) =>
+        `<tspan x="${x}" dy="${index === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+}
+
+function truncateSvgText(value, maxChars) {
+  return wrapSvgText(value, maxChars, 1)[0] ?? "";
+}
+
 function renderShareSvg(report, historicalReports = [], lang = "zh") {
   const { date, totals } = report;
   const resources = estimateResources(totals);
@@ -676,11 +712,77 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
 `;
 }
 
+function renderExpeditionShareSvg(view, lang = "zh") {
+  const title = localized(
+    lang,
+    "收容远征返航单",
+    "CONTAINMENT EXPEDITION",
+  );
+  const privacy = localized(
+    lang,
+    "隐私模式：无对话、路径、模型名或精确 Token",
+    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
+  );
+  const eventLines = view.eventLog
+    .map(
+      (event, index) =>
+        `<text x="72" y="${394 + index * 28}" class="mono body" font-size="16">${escapeXml(truncateSvgText(`${String(event.step).padStart(2, "0")} · ${event.title} · ${event.body}`, 108))}</text>`,
+    )
+    .join("\n");
+  const artifacts = view.artifacts.length > 0
+    ? view.artifacts.join(" · ")
+    : localized(lang, "空手返航", "EMPTY-HANDED");
+  const destinationDescription = svgTextTspans(
+    view.destinationDescription,
+    72,
+    48,
+  );
+  const latestEventBody = svgTextTspans(view.latestEvent.body, 620, 48);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(title)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#090b12"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#3d3863" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#a97cff"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #8f8aa8; }
+    .body { fill: #f4f0ff; }
+    .accent { fill: #b995ff; }
+    .warn { fill: #f0c66d; }
+  </style>
+  <text x="72" y="80" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
+  <text x="1128" y="80" class="mono muted" font-size="18" text-anchor="end">${escapeXml(view.date)}</text>
+  <text x="72" y="112" class="mono muted" font-size="15">#${escapeXml(view.expeditionId)} · ${escapeXml(view.status)}</text>
+  <line x1="72" y1="132" x2="1128" y2="132" stroke="#3d3863" stroke-width="2"/>
+
+  <text x="72" y="178" class="mono warn" font-size="22">${escapeXml(view.destination)}</text>
+  <text x="72" y="210" class="mono muted" font-size="16">${destinationDescription}</text>
+  <text x="72" y="264" class="mono accent" font-size="20">${escapeXml(view.rail)}</text>
+  <text x="72" y="302" class="mono body" font-size="18">${escapeXml(localized(lang, `第 ${view.step} / ${view.totalSteps} 格`, `CELL ${view.step} / ${view.totalSteps}`))}</text>
+
+  <text x="620" y="178" class="mono muted" font-size="15">${escapeXml(localized(lang, "最近事件", "LATEST EVENT"))}</text>
+  <text x="620" y="210" class="mono warn" font-size="19">${escapeXml(view.latestEvent.title)}</text>
+  <text x="620" y="242" class="mono body" font-size="16">${latestEventBody}</text>
+  <text x="620" y="286" class="mono muted" font-size="15">${escapeXml(localized(lang, "返航清单", "RETURN MANIFEST"))}</text>
+  <text x="620" y="316" class="mono body" font-size="16">${escapeXml(localized(lang, `临时状态 ${view.temporaryEffects} · 永久微调 ${view.permanentEffect ? 1 : 0} · 成就 ${view.achievements}`, `conditions ${view.temporaryEffects} · permanent ${view.permanentEffect ? 1 : 0} · achievements ${view.achievements}`))}</text>
+  <text x="620" y="346" class="mono body" font-size="16">${escapeXml(truncateSvgText(artifacts, 48))}</text>
+
+  <line x1="72" y1="364" x2="1128" y2="364" stroke="#3d3863" stroke-width="2"/>
+  ${eventLines}
+  <line x1="72" y1="558" x2="1128" y2="558" stroke="#3d3863" stroke-width="2"/>
+  <text x="72" y="586" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="586" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 export {
   renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
   renderEncounterShareSvg,
+  renderExpeditionShareSvg,
   renderHabitatShareSvg,
   renderPathologyShareSvg,
   renderPrognosisShareSvg,

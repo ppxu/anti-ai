@@ -68,7 +68,7 @@ Each relationship also selects one of 36 route-balanced duo titles and a joint s
 
 The latest unique incidents leave up to four visible traces selected from 24 decorations. The pools are balanced across Pollution, Clarity, and Paradox and include waste-heat pipes, clarity moss, cache bone piles, manual switches, mirrored dishes, recursive cable nests, and their v2 proliferations.
 
-All 30 habitat phenomena are fixed Codex entries. The fixed denominator is now 98:
+All 30 habitat phenomena are fixed Codex entries. With Expeditions, the fixed denominator is now 134:
 
 ```text
 16 form families
@@ -76,7 +76,9 @@ All 30 habitat phenomena are fixed Codex entries. The fixed denominator is now 9
 + 12 chromatic abilities
 + 4 generation scars
 + 30 habitat phenomena
-= 98 fixed entries
++ 24 expedition artifacts
++ 12 expedition achievements
+= 134 fixed entries
 ```
 
 A phenomenon becomes discovered on the date its corresponding seven-day event is first derived. Locked entries remain `???`.

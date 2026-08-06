@@ -51,10 +51,10 @@ The aftermath remains hidden until 3 more experience days have settled. It then 
 
 ## History, reports, and codex
 
-`anti-ai creature` surfaces the current pending, waiting, or resolved incident. `creature history` records the offer, sealed response, and revealed aftermath. Complete-source `week` and `month` reports count newly discovered incident reports. `anti-ai codex` stores them as unlimited private dynamic entries without changing the fixed 98-entry denominator.
+`anti-ai creature` surfaces the current pending, waiting, or resolved incident. `creature history` records the offer, sealed response, and revealed aftermath. Complete-source `week` and `month` reports count newly discovered incident reports. `anti-ai codex` stores them as unlimited private dynamic entries without changing the fixed 134-entry denominator.
 
 ## State and privacy
 
-Creature schema v13 stores only stable incident, stance, aftermath, actor, target, chain, content-version, and trigger-summary IDs; offer/selection/resolution dates; experience-day thresholds; aggregate disposition counts; up to three displayed collection keys; and daily observe/contact target and reaction IDs. It does not store prompts, responses, paths, model names, exact Tokens, request counts, or per-request timestamps.
+Creature schema v14 stores only stable incident, stance, aftermath, actor, target, chain, content-version, and trigger-summary IDs; offer/selection/resolution dates; experience-day thresholds; aggregate disposition counts; up to three displayed collection keys; and daily observe/contact target and reaction IDs. It does not store prompts, responses, paths, model names, exact Tokens, request counts, or per-request timestamps.
 
 Schema v1–v12 files migrate sequentially and idempotently. Migration freezes legacy settled content as v1 and does not invent past incidents, responses, aftermaths, disposition history, displays, or interactions. Everything remains in `~/.anti-ai/creature.json`; there is no account, server, upload, leaderboard, or background process.

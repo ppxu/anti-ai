@@ -10,6 +10,8 @@ const SECTION_TYPES = Object.freeze({
   chromaticAbilities: "chromaticAbility",
   scars: "scar",
   habitatPhenomena: "habitatPhenomenon",
+  expeditionArtifacts: "expeditionArtifact",
+  expeditionAchievements: "expeditionAchievement",
   specimens: "specimen",
   foreignSpecimens: "foreignSpecimen",
   caseSlices: "caseSlice",

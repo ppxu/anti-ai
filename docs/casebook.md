@@ -75,9 +75,9 @@ The prognosis share card shows the current case and its three visible trade-offs
 
 ## Codex and persistence
 
-Sealed choices become unlimited case slices in `anti-ai codex`. They do not change the fixed 98-entry collection denominator and do not grant combat power or Token-based score.
+Sealed choices become unlimited case slices in `anti-ai codex`. They do not change the fixed 134-entry collection denominator and do not grant combat power or Token-based score.
 
-Creature state uses schema v13. Casebook and incident records contain only:
+Creature state uses schema v14. Casebook and incident records contain only:
 
 - stable case and route IDs;
 - offered and selected dates;

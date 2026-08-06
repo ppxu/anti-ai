@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-08-06
+
+### Added
+
+- Added Containment Expeditions: one non-stacking opportunity per new experience day, four destinations, a deterministic non-rerollable ten-cell event deck, pause/resume, explicit branch choices, abandonment, and read-only history.
+- Added `expedition status|start|next|choose|history|abandon`, focused bilingual Help, stable JSON, a privacy-safe Expedition SVG card, Creature history events, and complete-source period discovery counts.
+- Added Expedition as the third of five TUI areas, with destination focus, an animated ten-cell rail, preview-confirm actions, pause/resume, return summaries, and contextual sharing.
+- Added 24 fixed destination artifacts and 12 fixed Expedition achievements, expanding the Codex from 98 to 134 fixed entries with shared rarity colors and provenance.
+- Added standalone English and Simplified Chinese Expedition guides and a read-only-first Agent Skill workflow.
+
+### Changed
+
+- Creature state is now schema v14. Local v13 files migrate to an empty Expedition index without inventing past runs or discoveries, while permanent adjustments reached during later runs are applied to derived ability totals.
+- Historical Expedition status, history, Codex, and share views exclude later records. Skipped opportunities expire when a newer experience day is settled instead of accumulating into a backlog.
+- Updated the bilingual READMEs, Help, methodology, Creature and architecture guides, Security Policy, contribution guide, and Agent Skill for the five-area console and 134-entry fixed Codex.
+
+### Security
+
+- Expedition state stores only stable derived destinations, event plans, revealed events, choices, effects, collection IDs, dates, and local hashes. Public JSON and SVG omit unopened plans and internal hashes; no prompts, responses, paths, model names, exact Tokens, requests, or per-request timestamps are added.
+- Every Expedition write uses the existing validated, atomic, optimistic-concurrency state store and the TUI shared preview-confirm action service. There is no server, account, telemetry, background process, required runtime dependency, map, combat, currency, stamina, leaderboard, missed-day penalty, or Token-volume shortcut.
+
 ## [2.9.0] - 2026-08-06
 
 ### Added

@@ -98,7 +98,7 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 
 ## 档案与隐私
 
-异变体档案使用 schema v13，Laboratory v2 只会额外保存：
+异变体档案使用 schema v14，Laboratory v2 只会额外保存：
 
 - 活动培养物编号和隐私安全的绑定历史；
 - 每个观察日期的一项离散印记 ID；

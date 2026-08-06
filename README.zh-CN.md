@@ -121,6 +121,13 @@ anti-ai lab inspect <培养物编号>
 anti-ai lab bond <培养物编号>
 anti-ai lab companion
 
+anti-ai expedition
+anti-ai expedition start context_mine
+anti-ai expedition next
+anti-ai expedition choose 2
+anti-ai expedition history
+anti-ai expedition abandon
+
 anti-ai share > anti-ai-receipt.svg
 anti-ai share --lang en > anti-ai-receipt.svg
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -132,6 +139,7 @@ anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
 anti-ai share --card habitat > anti-ai-habitat.svg
+anti-ai share --card expedition > anti-ai-expedition.svg
 
 anti-ai creature
 anti-ai creature --full
@@ -168,7 +176,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json`、`codex --json`、`creature --json`、`encounter --json` 和 `lab --json` 不受展示语言影响，字段名和结构保持稳定。
+`today --json`、`codex --json`、`creature --json`、`encounter --json`、`lab --json` 和 `expedition --json` 不受展示语言影响，字段名和结构保持稳定。
 
 ### `tui`
 
@@ -181,11 +189,11 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-在交互终端中无参数运行 `anti-ai` 会直接打开控制台；通过管道或其他非交互方式运行时，则成功输出分组 Help。控制台把总览、生态舱、实验室和图鉴放进同一个键盘界面。总览首先给出所选日期的收容简报：结算状态、病理变化、新发现、本地记录、下一个里程碑，以及最多一个主要和一个次要行动。在任意区域按 `a` 可打开“立即可用”的行动中心，也可在出现上下文主行动时直接按 `Enter`。所有状态写入都遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”，`Enter` 或 `y` 确认，`Esc` 或 `n` 取消。
+在交互终端中无参数运行 `anti-ai` 会直接打开控制台；通过管道或其他非交互方式运行时，则成功输出分组 Help。控制台把总览、生态舱、远征、实验室和图鉴放进同一个键盘界面。总览首先给出所选日期的收容简报：结算状态、病理变化、新发现、本地记录、下一个里程碑，以及最多一个主要和一个次要行动。在任意区域按 `a` 可打开“立即可用”的行动中心，也可在出现上下文主行动时直接按 `Enter`。所有状态写入都遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”，`Enter` 或 `y` 确认，`Esc` 或 `n` 取消。
 
 异变体与当前伴生物会以刻意克制的默认频率呼吸、眨眼和脉动。按 `m` 在“低频 / 完整 / 关闭”之间切换，也可以用 `--no-motion` 直接进入完全静态模式；动态效果不会改变成长或存档。
 
-使用 `1`–`4`、方向键和页面内 `Tab` 焦点移动。在图鉴中按 `h` 打开内嵌“收容档案”，按 `t` 切换最近 7/30 天，按 `Enter` 查看某天详情。收藏详情会展示首次发现、来源、关联记录和陈列状态；锁定项仍是无剧透剪影。对已发现条目按 `d` 可预览放入 3 个“后果陈列柜”展示位。在总览、生态舱、已发现收藏详情或每日档案详情按 `s`，会先预览卡片类型、隐私边界和目标文件名；确认后只在当前目录新建 SVG，不覆盖已有文件。实验室会显示“原料 → 培养物 → 伴生物”三步流程：`Tab` 在配方和完整培养架之间切换，`Enter` 培养或查看当前项目，`b` 预览绑定所选培养物。生态舱伴生位空置时会说明尚缺哪一步；按 `l` 进入实验室，已有培养物时也可直接按 `b` 完成绑定。污染编码交换仍使用明确的 `encounter --save` 命令，因为 TUI 不采集自由文本编码。生态舱中 `Enter` 是只读器官观察，`r` 回放最近事件，`o` 记录今日观察，`c` 进行今日接触；观察和接触每个已结算日各最多一次，只增加确定性叙事，不增加数值、稀有率或奖励。
+使用 `1`–`5`、方向键和页面内 `Tab` 焦点移动。远征位于第 `3` 区：选择四个目的地之一，逐格预览并确认十格事件，遇到唯一的三选一分叉时先封存选择；按 `q` 离开不会丢失进度，按 `x` 可明确放弃。在图鉴中按 `h` 打开内嵌“收容档案”，按 `t` 切换最近 7/30 天，按 `Enter` 查看某天详情。收藏详情会展示首次发现、来源、关联记录和陈列状态；锁定项仍是无剧透剪影。对已发现条目按 `d` 可预览放入 3 个“后果陈列柜”展示位。在总览、生态舱、远征、已发现收藏详情或每日档案详情按 `s`，会先预览卡片类型、隐私边界和目标文件名；确认后只在当前目录新建 SVG，不覆盖已有文件。实验室会显示“原料 → 培养物 → 伴生物”三步流程：`Tab` 在配方和完整培养架之间切换，`Enter` 培养或查看当前项目，`b` 预览绑定所选培养物。生态舱伴生位空置时会说明尚缺哪一步；按 `l` 进入实验室，已有培养物时也可直接按 `b` 完成绑定。污染编码交换仍使用明确的 `encounter --save` 命令，因为 TUI 不采集自由文本编码。生态舱中 `Enter` 是只读器官观察，`r` 回放最近事件，`o` 记录今日观察，`c` 进行今日接触；观察和接触每个已结算日各最多一次，只增加确定性叙事，不增加数值、稀有率或奖励。
 
 浏览、回放、观察、档案导航、来源查看、分享预览和取消操作都保持只读，不会扫描 Agent 记录。打开“今日结算”的影响预览时，控制台可能扫描受支持的用量元数据，以便在确认前展示准确影响，但不会写入；玩法确认会通过与 CLI 相同的动作服务和原子并发检查更新异变体档案，分享确认则通过现有本地 SVG 服务只写入预览过的新文件。脚本与 Agent 应继续使用明确命令和 `--json`；`anti-ai tui` 是面向人类的交互界面。
 
@@ -223,11 +231,28 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-固定收藏共 98 项：16 个形态家族、36 个成就、12 个异色能力、4 种世代伤痕和 30 个路线对等的生态现象。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物、已绑定伴生形态和已结案事故报告则不设人为上限。
+固定收藏共 134 项：16 个形态家族、36 个成就、12 个异色能力、4 种世代伤痕、30 个路线对等的生态现象、24 件远征遗物和 12 项远征成就。人类可读输出只揭示已发现名称，锁定项保持 `???`；动态标本指纹、外来遭遇标本、永久化石、已封存病例切片、污染培养物、已绑定伴生形态和已结案事故报告则不设人为上限。
 
 `codex --json` 提供稳定 ID、发现状态与日期、来源链、收藏计数、指定日期的 `recent` 新发现，以及当前 3 个陈列位引用。TUI 提供分类、条目和详情浏览、首次发现与关联记录，以及内嵌的 7/30 天“收容档案”；陈列动作必须明确确认。陈列只改变图鉴、生态舱和分享展示。图鉴与 `creature` 共用完整的六来源成长史，因此拒绝 `--source` 过滤，也不会把多烧 Token 变成首选收集路线。
 
 人类可读图鉴还会展示生成器的 **204,374,016 种去重后的最终 ASCII 形象**，其中包含 6 种新世代嫁接器官，以及新旧成就/异色能力各自独立的覆盖纹路。这是理论物种空间，不是个人收集进度。容量算法与视觉覆盖优先级详见[异变体成长指南](./docs/creature.zh-CN.md)。
+
+### `expedition`
+
+每个新阅历日最多开启一次十格收容远征：
+
+```bash
+anti-ai expedition
+anti-ai expedition start context_mine
+anti-ai expedition next
+anti-ai expedition choose <1|2|3>
+anti-ai expedition history
+anti-ai expedition abandon
+```
+
+从上下文矿井、缓存沼泽、请求巢穴和反应堆墓场中选择一处，然后逐格揭示稳定事件。一局完整牌组包含 2 格空白、2 格观察、2 格临时病变、1 格永久能力微调、1 格三选一分叉和 2 格通配事件。序列由本地派生状态封存，重复打开、语言、终端宽度、动态、日期和 Token 量都不能重抽。
+
+机会不累计。跳过没有惩罚，但结算新的阅历日后，旧机会会过期；退出只暂停当前进度，放弃则消耗机会，同时保留已经发生的事件、遗物和永久微调。图鉴新增 24 件固定目的地遗物与 12 项远征成就，均不提供战力、分数、更多远征或 Token 奖励。完整事件牌组、TUI 操作、收藏、档案和隐私边界见[收容远征](./docs/expeditions.zh-CN.md)。[English](./docs/expeditions.md)。
 
 ### `encounter`
 
@@ -283,9 +308,10 @@ anti-ai share --card prognosis > anti-ai-prognosis.svg
 anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
 anti-ai share --card habitat > anti-ai-habitat.svg
+anti-ai share --card expedition > anti-ai-expedition.svg
 ```
 
-成长史与实验室现在支持 9 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡，`prognosis` 是当前病例的三路线预演，`culture` 是已封存培养事故，`companion` 是当前绑定伴生异物的成长档案，`habitat` 是双体收容场景。化石证书会在第 90 个阅历日后开放；预后卡会在转折病例待处理时开放；培养物卡默认选择最近一份，也可使用 `--id` 指定；伴生卡会在执行 `lab bond` 后开放。生态舱卡在伴生位空置时也可以生成。
+成长史与实验室现在支持 10 种隐私安全卡片：`pathology` 是病理切片，`specimen` 是当前收藏标本，`wanted` 是讽刺悬赏令，`fossil` 是最近一代的永久化石证书，`encounter` 是本地接触事故卡，`prognosis` 是当前病例的三路线预演，`culture` 是已封存培养事故，`companion` 是当前绑定伴生异物的成长档案，`habitat` 是双体收容场景，`expedition` 是当前或最近一局有效远征。化石证书会在第 90 个阅历日后开放；预后卡会在转折病例待处理时开放；培养物卡默认选择最近一份，也可使用 `--id` 指定；伴生卡会在执行 `lab bond` 后开放。生态舱卡在伴生位空置时也可以生成；远征卡查看历史日期时不会暴露未来记录。
 
 工具不会上传卡片；所有卡片均不包含精确 Token、请求数、来源/模型名、路径或对话正文，保存位置完全由你的命令行重定向决定。异变体卡片必须使用完整数据，因此会拒绝 `--source` 过滤。
 
@@ -326,7 +352,7 @@ anti-ai creature evolve 2
 
 `creature habitat` 会把当前标本、活动伴生物、收藏痕迹和后果陈列柜组合成单屏收容场景。生态舱快照保持只读，每 7 个阅历日派生一个确定性事件，不能靠重复查看或增加 Token 重抽、加速；陈列与两项每日轻互动只会在 TUI 明确确认后写入，且不会改变成长数值。
 
-生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
+生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；十格探索见[收容远征](./docs/expeditions.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Containment Expeditions](./docs/expeditions.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
 
 ### `doctor`
 
@@ -454,11 +480,14 @@ npm run test:package
 - `src/laboratory.mjs`：派生配方、封存培养物和培养架
 - `src/companion.mjs`：伴生绑定、印记、路线和 ASCII 成长
 - `src/habitat.mjs`：只读关系、场景装饰和七日生态事件
+- `src/expedition.mjs`：不累计的十格远征、变化、遗物与成就
+- `src/expedition/`：双语远征内容与隐私安全展示
 - `src/shared.mjs`：共享的语言和空统计结构
 - `docs/architecture.zh-CN.md`：扩展、状态、隐私与质量边界
 - `docs/creature.zh-CN.md`：完整的异变体系统与理论物种容量指南
 - `docs/companions.zh-CN.md`：完整的伴生异物成长指南
 - `docs/habitat.zh-CN.md`：完整的收容生态舱指南
+- `docs/expeditions.zh-CN.md`：完整的收容远征指南
 
 ## 参与贡献
 

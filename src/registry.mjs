@@ -114,6 +114,13 @@ const COMMAND_REGISTRY = Object.freeze([
     },
   },
   {
+    id: "expedition",
+    summary: {
+      zh: "开启或继续十格收容远征",
+      en: "Start or continue a ten-cell containment expedition",
+    },
+  },
+  {
     id: "doctor",
     summary: {
       zh: "检查本地记录来源",
@@ -147,6 +154,7 @@ const SHARE_CARD_IDS = Object.freeze([
   "culture",
   "companion",
   "habitat",
+  "expedition",
 ]);
 
 const CREATURE_ACTION_IDS = Object.freeze([
@@ -168,6 +176,14 @@ const LAB_ACTION_IDS = Object.freeze([
   "companion",
 ]);
 
+const EXPEDITION_ACTION_IDS = Object.freeze([
+  "start",
+  "next",
+  "choose",
+  "history",
+  "abandon",
+]);
+
 const EXPLAIN_TOPIC_IDS = Object.freeze([
   "resources",
   "comparisons",
@@ -182,6 +198,7 @@ const FULL_SOURCE_COMMAND_IDS = Object.freeze([
   "lab",
   "codex",
   "tui",
+  "expedition",
 ]);
 
 const FULL_SOURCE_SHARE_CARD_IDS = Object.freeze(
@@ -232,6 +249,10 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
     zh: "查看配方和培养架只读；培养、绑定与伴生结算会写入档案。",
     en: "Formula and shelf inspection are read-only; incubation, bonding, and companion settlement write state.",
   },
+  expedition: {
+    zh: "状态与历史查询只读；开始、推进、选择和放弃会写入档案。",
+    en: "Status and history are read-only; start, advance, choose, and abandon write state.",
+  },
   doctor: {
     zh: "只读诊断，不修改 Agent 记录或异变体档案。",
     en: "Read-only diagnostics; Agent records and mutation state are unchanged.",
@@ -247,6 +268,7 @@ export {
   COMMAND_REGISTRY,
   COMMAND_STATE_BEHAVIOR,
   CREATURE_ACTION_IDS,
+  EXPEDITION_ACTION_IDS,
   EXPLAIN_TOPIC_IDS,
   FULL_SOURCE_COMMAND_IDS,
   FULL_SOURCE_SHARE_CARD_IDS,

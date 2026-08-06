@@ -1,5 +1,9 @@
 import { currentCreatureIntervention } from "../casebook.mjs";
 import { currentCreatureIncident } from "../incidents.mjs";
+import {
+  expeditionEligibility,
+  expeditionLastActionAt,
+} from "../expedition.mjs";
 import { localized } from "../shared.mjs";
 
 const ACTION_DEFINITIONS = Object.freeze([
@@ -30,6 +34,34 @@ const ACTION_DEFINITIONS = Object.freeze([
     target: "generation",
     command: () => "anti-ai creature evolve",
     label: ["处理待定世代进化", "Resolve the pending evolution"],
+  },
+  {
+    id: "start_expedition",
+    actor: "specimen",
+    target: "expedition",
+    command: () => "anti-ai expedition start <destination>",
+    label: ["开启今日收容远征", "Start today's containment expedition"],
+  },
+  {
+    id: "advance_expedition",
+    actor: "specimen",
+    target: "expedition",
+    command: () => "anti-ai expedition next",
+    label: ["进入远征下一格", "Enter the next expedition cell"],
+  },
+  {
+    id: "choose_expedition",
+    actor: "specimen",
+    target: "expedition",
+    command: () => "anti-ai expedition choose <1|2|3>",
+    label: ["处理远征分叉", "Resolve the expedition branch"],
+  },
+  {
+    id: "abandon_expedition",
+    actor: "specimen",
+    target: "expedition",
+    command: () => "anti-ai expedition abandon",
+    label: ["放弃当前远征", "Abandon the active expedition"],
   },
   {
     id: "observe_specimen",
@@ -73,6 +105,16 @@ const REASON_COPY = Object.freeze({
   no_pending_incident: ["当前没有待响应事故", "No incident is pending"],
   no_pending_case: ["当前没有待处理病例", "No turning case is pending"],
   no_pending_evolution: ["当前没有待选择进化", "No evolution is pending"],
+  expedition_active: ["已有远征正在进行", "An expedition is already active"],
+  expedition_used: ["本阅历日机会已使用", "This experience-day opportunity is used"],
+  expedition_expired: ["过去阅历日的机会不会累计", "Past experience-day opportunities do not stack"],
+  no_active_expedition: ["当前没有进行中的远征", "No expedition is active"],
+  expedition_choice_required: ["必须先处理当前分叉", "Resolve the current branch first"],
+  no_expedition_choice: ["当前没有待处理分叉", "No expedition branch is pending"],
+  expedition_date_before_last_action: [
+    "所选日期早于远征最近一次操作",
+    "The selected date precedes the expedition's latest action",
+  ],
   date_not_settled: ["请先结算当前日期", "Settle this date first"],
   unhatched: ["异变体尚未孵化", "The specimen has not hatched"],
   already_observed: ["今日观察已经记录", "Today's observation is already recorded"],
@@ -102,6 +144,51 @@ function actionAvailability(id, state, date, creature, laboratory) {
     return creature.evolution?.status === "pending"
       ? { available: true, reason: null }
       : { available: false, reason: "no_pending_evolution" };
+  }
+  if (id === "start_expedition") {
+    const eligibility = expeditionEligibility(state, creature, date);
+    const reason = {
+      active: "expedition_active",
+      used: "expedition_used",
+      expired: "expedition_expired",
+      unhatched: "unhatched",
+    }[eligibility.reason];
+    return eligibility.available
+      ? { available: true, reason: null }
+      : { available: false, reason };
+  }
+  if (id === "advance_expedition") {
+    if (!state.expeditions?.active) {
+      return { available: false, reason: "no_active_expedition" };
+    }
+    if (date < expeditionLastActionAt(state.expeditions.active)) {
+      return { available: false, reason: "expedition_date_before_last_action" };
+    }
+    return state.expeditions.active.pendingChoice
+      ? { available: false, reason: "expedition_choice_required" }
+      : { available: true, reason: null };
+  }
+  if (id === "choose_expedition") {
+    if (
+      state.expeditions?.active
+      && date < expeditionLastActionAt(state.expeditions.active)
+    ) {
+      return { available: false, reason: "expedition_date_before_last_action" };
+    }
+    return state.expeditions?.active?.pendingChoice
+      ? { available: true, reason: null }
+      : { available: false, reason: "no_expedition_choice" };
+  }
+  if (id === "abandon_expedition") {
+    if (
+      state.expeditions?.active
+      && date < expeditionLastActionAt(state.expeditions.active)
+    ) {
+      return { available: false, reason: "expedition_date_before_last_action" };
+    }
+    return state.expeditions?.active
+      ? { available: true, reason: null }
+      : { available: false, reason: "no_active_expedition" };
   }
   if (["observe_specimen", "contact_specimen"].includes(id)) {
     if (!state.days?.[date]) {

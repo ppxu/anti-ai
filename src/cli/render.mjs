@@ -11,6 +11,10 @@ import { incidentLabel } from "../incidents.mjs";
 import { color, formatTokens } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
 import {
+  EXPEDITION_ACHIEVEMENT_DEFINITIONS,
+  expeditionArtifact,
+} from "../expedition/content.mjs";
+import {
   habitatDecorationCopy,
   habitatEventCopy,
   habitatRelationshipCopy,
@@ -185,7 +189,7 @@ function renderCreatureCasebook(casebook, lang) {
     `  ${localized(lang, "成长记录", "GROWTH RECORD")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "新增徽章", "NEW BADGES")}  ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions} · 事故 ${casebook.discoveries.incidentReports}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions} · incidents ${casebook.discoveries.incidentReports}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions} · 事故 ${casebook.discoveries.incidentReports} · 远征遗物 ${casebook.discoveries.expeditionArtifacts} · 远征成就 ${casebook.discoveries.expeditionAchievements}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions} · incidents ${casebook.discoveries.incidentReports} · expedition artifacts ${casebook.discoveries.expeditionArtifacts} · expedition achievements ${casebook.discoveries.expeditionAchievements}`)}`,
     `  ${localized(lang, "主治意见", "ATTENDING NOTE")}  ${creatureClinicalNote(casebook, lang, "week")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -216,7 +220,7 @@ function renderCreatureAutopsy(casebook, lang) {
     `  ${localized(lang, "成长回顾", "GROWTH REVIEW")}  ${localized(lang, `阅历 +${casebook.growth.experienceDelta}`, `experience +${casebook.growth.experienceDelta}`)} · ${creatureLabel("stages", casebook.growth.stageFrom, lang)} → ${creatureLabel("stages", casebook.growth.stageTo, lang)}`,
     `  ${localized(lang, "世代", "GENERATION")}  ${generationLabel(casebook.growth.generationFrom, lang)} → ${generationLabel(casebook.growth.generationTo, lang)} · ${localized(lang, "永久化石", "PERMANENT FOSSILS")} +${casebook.growth.fossilsSealed}`,
     `  ${localized(lang, "成就回顾", "ACHIEVEMENT REVIEW")}  [${casebook.achievementIds.length}] ${achievements || localized(lang, "无", "NONE")}`,
-    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions} · 事故 ${casebook.discoveries.incidentReports}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions} · incidents ${casebook.discoveries.incidentReports}`)}`,
+    `  ${localized(lang, "新增收藏", "NEW COLLECTIONS")}  ${casebook.discoveries.total} · ${localized(lang, `形态 ${casebook.discoveries.forms} · 成就 ${casebook.discoveries.achievements} · 异色 ${casebook.discoveries.chromatics} · 伤痕 ${casebook.discoveries.scars} · 标本 ${casebook.discoveries.specimens} · 外来 ${casebook.discoveries.foreignSpecimens} · 化石 ${casebook.discoveries.fossils} · 病例 ${casebook.discoveries.caseSlices} · 培养 ${casebook.discoveries.cultures} · 伴生 ${casebook.discoveries.companions} · 事故 ${casebook.discoveries.incidentReports} · 远征遗物 ${casebook.discoveries.expeditionArtifacts} · 远征成就 ${casebook.discoveries.expeditionAchievements}`, `forms ${casebook.discoveries.forms} · achievements ${casebook.discoveries.achievements} · chromatics ${casebook.discoveries.chromatics} · scars ${casebook.discoveries.scars} · specimens ${casebook.discoveries.specimens} · foreign ${casebook.discoveries.foreignSpecimens} · fossils ${casebook.discoveries.fossils} · cases ${casebook.discoveries.caseSlices} · cultures ${casebook.discoveries.cultures} · companions ${casebook.discoveries.companions} · incidents ${casebook.discoveries.incidentReports} · expedition artifacts ${casebook.discoveries.expeditionArtifacts} · expedition achievements ${casebook.discoveries.expeditionAchievements}`)}`,
     `  ${localized(lang, "复诊意见", "FOLLOW-UP NOTE")}  ${creatureClinicalNote(casebook, lang, "month")}`,
     `  ${localized(lang, "查看完整档案", "FULL FILE")}  anti-ai creature`,
     `  ${localized(lang, "查看图鉴", "CODEX")}      anti-ai codex`,
@@ -225,6 +229,14 @@ function renderCreatureAutopsy(casebook, lang) {
 }
 
 function codexDiscoveryLabel(discovery, lang) {
+  if (discovery.type === "expeditionArtifact") {
+    return expeditionArtifact(discovery.id)?.name[lang] ?? discovery.id;
+  }
+  if (discovery.type === "expeditionAchievement") {
+    return EXPEDITION_ACHIEVEMENT_DEFINITIONS.find(
+      ({ id }) => id === discovery.id,
+    )?.name[lang] ?? discovery.id;
+  }
   if (discovery.type === "form") {
     return creatureLabel("ecologyForms", discovery.id, lang);
   }
@@ -403,6 +415,24 @@ function renderCodex(codex, lang) {
           clarity: "1;36",
           paradox: "1;33",
         })[entry.routeId],
+    ),
+    ...fixedSection(
+      localized(lang, "远征遗物", "EXPEDITION ARTIFACTS"),
+      codex.sections.expeditionArtifacts,
+      (entry) => {
+        const artifact = expeditionArtifact(entry.id);
+        return `${artifact.name[lang]} · ${entry.rarity.toUpperCase()}`;
+      },
+    ),
+    ...fixedSection(
+      localized(lang, "远征成就", "EXPEDITION ACHIEVEMENTS"),
+      codex.sections.expeditionAchievements,
+      (entry) => {
+        const achievement = EXPEDITION_ACHIEVEMENT_DEFINITIONS.find(
+          ({ id }) => id === entry.id,
+        );
+        return `${achievement.name[lang]} · ${entry.rarity.toUpperCase()}`;
+      },
     ),
     `${localized(lang, "动态标本", "DYNAMIC SPECIMENS")}  [${codex.summary.specimens.discovered}]`,
     ...(specimenLines.length > 0

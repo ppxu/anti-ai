@@ -102,8 +102,8 @@ const COMMAND_HELP = {
       "Open the controlled interactive containment console.",
     ],
     output: [
-      "在四个区域中浏览今日收容简报、7/30 天档案、收藏来源与生态舱，并直接完成主要实验室操作。",
-      "Browse today's containment brief, the 7/30-day archive, collection provenance, and Habitat, while completing the main Laboratory actions directly.",
+      "在五个区域中浏览今日简报、生态舱、十格远征、实验室、7/30 天档案与收藏来源。",
+      "Browse the daily brief, Habitat, ten-cell Expeditions, Laboratory, the 7/30-day archive, and collection provenance across five areas.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
@@ -115,8 +115,8 @@ const COMMAND_HELP = {
       "anti-ai tui --no-motion",
     ],
     note: [
-      "h 打开图鉴内的收容档案，s 预览本地 SVG；浏览不写入，分享与玩法写入都需要明确确认。Agent 应使用显式命令及 --json。",
-      "Press h for the Codex archive and s to preview a local SVG; browsing never writes, while sharing and gameplay writes require explicit confirmation. Agents should use explicit commands and --json.",
+      "按 3 进入远征，h 打开图鉴档案，s 预览本地 SVG；浏览不写入，分享与玩法写入都需要明确确认。Agent 应使用显式命令及 --json。",
+      "Press 3 for Expeditions, h for the Codex archive, and s to preview a local SVG; browsing never writes, while sharing and gameplay writes require explicit confirmation. Agents should use explicit commands and --json.",
     ],
     related: ["today", "creature habitat", "lab", "codex"],
   },
@@ -129,7 +129,7 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion|habitat>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion|habitat|expedition>", "选择卡片类型", "Select card type"],
       ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
       ["--id <culture-id>", "指定 culture 卡的培养物", "Select the culture for a culture card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
@@ -143,6 +143,7 @@ const COMMAND_HELP = {
       "anti-ai share --card culture --id <culture-id> > culture.svg",
       "anti-ai share --card companion > companion.svg",
       "anti-ai share --card habitat > habitat.svg",
+      "anti-ai share --card expedition > expedition.svg",
     ],
     note: [
       "异变体收藏卡必须使用完整来源。",
@@ -230,6 +231,33 @@ const COMMAND_HELP = {
     ],
     related: ["lab incubate", "lab shelf", "lab inspect", "lab bond", "lab companion", "codex", "encounter"],
   },
+  expedition: {
+    usage: "anti-ai expedition [start|next|choose|history|abandon] [options]",
+    summary: [
+      "查看、开启或继续一局十格收容远征。",
+      "Inspect, start, or continue one ten-cell containment expedition.",
+    ],
+    output: [
+      "显示当日资格、当前格、已封存事件、临时变化、永久微调、收藏与最近返航记录。",
+      "Shows daily eligibility, the current cell, sealed events, temporary changes, permanent adjustments, artifacts, and the latest return.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定日期状态", "Inspect state on a date"],
+      ["--json", "输出语言无关的机器可读状态", "Print language-neutral machine-readable state"],
+    ],
+    examples: [
+      "anti-ai expedition",
+      "anti-ai expedition start context_mine",
+      "anti-ai expedition next",
+      "anti-ai expedition choose 2",
+      "anti-ai expedition history",
+    ],
+    note: [
+      "每个新阅历日最多一局；机会不累计，Token 量不改变次数、格数、稀有率或收藏概率。",
+      "At most one run is available per new experience day; opportunities do not stack, and Token volume changes neither count, cells, rarity, nor collection odds.",
+    ],
+    related: ["expedition start", "expedition next", "expedition choose", "expedition history", "expedition abandon", "creature", "codex", "tui"],
+  },
   doctor: {
     usage: "anti-ai doctor [options]",
     summary: ["检查各本地 Agent 记录是否可读取。", "Check whether each local Agent record source is readable."],
@@ -269,6 +297,51 @@ const COMMAND_HELP = {
 };
 
 const ACTION_HELP = {
+  "expedition start": {
+    usage: "anti-ai expedition start <context_mine|cache_swamp|request_nest|reactor_graveyard> [options]",
+    summary: ["选择目的地并封存一局十格远征。", "Choose a destination and seal one ten-cell expedition."],
+    output: ["创建不可重抽的稳定事件序列，并停在第 0 格等待推进。", "Creates a stable non-rerollable event sequence and waits before cell one."],
+    options: [["--date <YYYY-MM-DD>", "使用指定已结算日期的资格", "Use eligibility from a settled date"], ["--json", "输出机器可读远征状态", "Print machine-readable expedition state"]],
+    examples: ["anti-ai expedition start context_mine", "anti-ai expedition start cache_swamp --json"],
+    note: ["开始后本阅历日机会立即消耗；退出可恢复，不能换目的地重抽。", "Starting immediately consumes the experience-day opportunity; exiting can resume it but cannot reroll another destination."],
+    related: ["expedition", "expedition next", "expedition abandon"],
+  },
+  "expedition next": {
+    usage: "anti-ai expedition next [options]",
+    summary: ["进入并封存远征的下一格。", "Enter and seal the expedition's next cell."],
+    output: ["揭示一个稳定事件并保存变化；第十格处理后自动返航。", "Reveals one stable event and saves its effects; the run returns after cell ten."],
+    options: [["--date <YYYY-MM-DD>", "指定事件发生日期", "Select the event date"], ["--json", "输出机器可读远征状态", "Print machine-readable expedition state"]],
+    examples: ["anti-ai expedition next", "anti-ai expedition next --json"],
+    note: ["遇到分叉时必须先 choose；重复查看、语言或终端宽度不会改变下一格。", "A pending branch must be chosen first; repeated views, language, and terminal width never change the next cell."],
+    related: ["expedition", "expedition choose", "expedition abandon"],
+  },
+  "expedition choose": {
+    usage: "anti-ai expedition choose <1|2|3> [options]",
+    summary: ["封存当前分叉事件的一项处理方式。", "Seal one response to the current branch event."],
+    output: ["记录选择和公开后果，然后允许继续下一格。", "Records the choice and disclosed consequence, then allows the next cell."],
+    options: [["--date <YYYY-MM-DD>", "指定选择日期", "Select the choice date"], ["--json", "输出机器可读远征状态", "Print machine-readable expedition state"]],
+    examples: ["anti-ai expedition choose 2", "anti-ai expedition choose 1 --json"],
+    note: ["已封存选择不能改写；选项只影响本局状态或收藏分支。", "A sealed choice cannot be rewritten; options affect only run conditions or collection branches."],
+    related: ["expedition", "expedition next"],
+  },
+  "expedition history": {
+    usage: "anti-ai expedition history [options]",
+    summary: ["查看已返航或已放弃的远征记录。", "Inspect returned or abandoned expedition records."],
+    output: ["列出稳定事件、选择、变化、收藏和返航状态。", "Lists stable events, choices, effects, artifacts, and return status."],
+    options: [["--date <YYYY-MM-DD>", "查看截至指定日期的记录", "Inspect records through a date"], ["--json", "输出机器可读历史", "Print machine-readable history"]],
+    examples: ["anti-ai expedition history", "anti-ai expedition history --json"],
+    note: ["历史只读，不扫描 Agent 记录，也不包含精确 Token、模型、路径或对话。", "History is read-only, scans no Agent records, and contains no exact tokens, models, paths, or chats."],
+    related: ["expedition", "codex"],
+  },
+  "expedition abandon": {
+    usage: "anti-ai expedition abandon [options]",
+    summary: ["立即放弃当前远征并封存已经发生的结果。", "Abandon the active expedition and seal everything already encountered."],
+    output: ["生成一条已放弃记录；已发生的永久变化和收藏继续保留。", "Creates an abandoned record; reached permanent changes and artifacts remain."],
+    options: [["--date <YYYY-MM-DD>", "指定放弃日期", "Select the abandonment date"], ["--json", "输出机器可读结果", "Print the machine-readable result"]],
+    examples: ["anti-ai expedition abandon", "anti-ai expedition abandon --json"],
+    note: ["放弃会消耗本阅历日机会，不能用来重抽事件。", "Abandoning consumes the experience-day opportunity and cannot be used to reroll events."],
+    related: ["expedition", "expedition history"],
+  },
   "creature habitat": {
     usage: "anti-ai creature habitat [options]",
     summary: [
@@ -654,6 +727,7 @@ function renderTopLevelHelp(lang = "zh") {
     ]),
     ...commandGroup(localized(lang, "异变体与收藏", "CREATURE & COLLECTIONS"), [
       "creature",
+      "expedition",
       "codex",
       "lab",
       "encounter",

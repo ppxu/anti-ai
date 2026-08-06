@@ -87,7 +87,7 @@ These percentages describe the fixed hash partition, not an online probability s
 
 `lab shelf` shows the six most recently sealed cultures. `--full` displays the complete local shelf; JSON always returns the complete machine-readable list. `lab inspect` shows one culture's materials, dish ASCII, diagnosis, complication, and side effect.
 
-Sealed cultures also appear in `anti-ai codex` with their stable ID, type, rarity, discovery date, ingredient categories, and appearance fingerprint. They do not change the fixed 98-entry Codex denominator.
+Sealed cultures also appear in `anti-ai codex` with their stable ID, type, rarity, discovery date, ingredient categories, and appearance fingerprint. They do not change the fixed 134-entry Codex denominator.
 
 `share --card culture` prints a 1200×630 SVG for the latest culture. `--id` selects another culture. The SVG is written to stdout and is never uploaded.
 
@@ -113,7 +113,7 @@ The laboratory is a collection and narrative system. More Token use is not a sho
 
 ## State and privacy
 
-Creature state uses schema v13. The Laboratory v2 section stores only:
+Creature state uses schema v14. The Laboratory v2 section stores only:
 
 - a laboratory format version and next batch number;
 - stable culture and material IDs;

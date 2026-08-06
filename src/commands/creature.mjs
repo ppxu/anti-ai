@@ -49,6 +49,7 @@ import { deriveHabitat } from "../habitat.mjs";
 import { renderHabitat } from "../renderers/habitat.mjs";
 import { settleCreatureState } from "../application/settlement.mjs";
 import { applyContainmentAction } from "../application/actions.mjs";
+import { expeditionDestination } from "../expedition/content.mjs";
 
 async function runCreature(options, mode = "render") {
   if (options.action === "reset") {
@@ -377,8 +378,12 @@ async function runCreature(options, mode = "render") {
         label = `${localized(options.lang, "收容事故", "CONTAINMENT INCIDENT")} · ${incidentLabel("incidents", event.incidentId, options.lang)}`;
       } else if (event.type === "incident_selected") {
         label = `${localized(options.lang, "事故响应", "INCIDENT RESPONSE")} · ${incidentLabel("stances", event.stanceId, options.lang)}`;
-      } else {
+      } else if (event.type === "incident_aftermath") {
         label = `${localized(options.lang, "延迟后果", "DELAYED AFTERMATH")} · ${incidentLabel("aftermaths", event.outcomeId, options.lang)}`;
+      } else if (event.type === "expedition_started") {
+        label = `${localized(options.lang, "远征开启", "EXPEDITION STARTED")} · ${expeditionDestination(event.destinationId).name[options.lang]}`;
+      } else {
+        label = `${localized(options.lang, event.type === "expedition_returned" ? "远征返航" : "远征放弃", event.type === "expedition_returned" ? "EXPEDITION RETURNED" : "EXPEDITION ABANDONED")} · ${expeditionDestination(event.destinationId).name[options.lang]} · ${event.cells} / 10`;
       }
       return `  ${event.date}  ${label}`;
     });

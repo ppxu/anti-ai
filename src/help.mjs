@@ -253,8 +253,8 @@ const COMMAND_HELP = {
       "anti-ai expedition history",
     ],
     note: [
-      "每个新阅历日最多一局；机会不累计，Token 量不改变次数、格数、稀有率或收藏概率。",
-      "At most one run is available per new experience day; opportunities do not stack, and Token volume changes neither count, cells, rarity, nor collection odds.",
+      "每个本地自然日最多一局，不依赖成长结算；机会不累计，Token 量不改变次数、格数、稀有率或收藏概率。",
+      "At most one run is available per local calendar day, independent of settlement; opportunities do not stack, and Token volume changes neither count, cells, rarity, nor collection odds.",
     ],
     related: ["expedition start", "expedition next", "expedition choose", "expedition history", "expedition abandon", "creature", "codex", "tui"],
   },
@@ -301,9 +301,9 @@ const ACTION_HELP = {
     usage: "anti-ai expedition start <context_mine|cache_swamp|request_nest|reactor_graveyard> [options]",
     summary: ["选择目的地并封存一局十格远征。", "Choose a destination and seal one ten-cell expedition."],
     output: ["创建不可重抽的稳定事件序列，并停在第 0 格等待推进。", "Creates a stable non-rerollable event sequence and waits before cell one."],
-    options: [["--date <YYYY-MM-DD>", "使用指定已结算日期的资格", "Use eligibility from a settled date"], ["--json", "输出机器可读远征状态", "Print machine-readable expedition state"]],
+    options: [["--date <YYYY-MM-DD>", "使用指定本地自然日的资格", "Use eligibility from a local calendar date"], ["--json", "输出机器可读远征状态", "Print machine-readable expedition state"]],
     examples: ["anti-ai expedition start context_mine", "anti-ai expedition start cache_swamp --json"],
-    note: ["开始后本阅历日机会立即消耗；退出可恢复，不能换目的地重抽。", "Starting immediately consumes the experience-day opportunity; exiting can resume it but cannot reroll another destination."],
+    note: ["每个本地自然日最多启程一次；开始后今日机会立即消耗，退出可恢复但不能换目的地重抽。", "Start at most once on each local calendar day; starting consumes today's opportunity, and exiting can resume but cannot reroll another destination."],
     related: ["expedition", "expedition next", "expedition abandon"],
   },
   "expedition next": {
@@ -339,7 +339,7 @@ const ACTION_HELP = {
     output: ["生成一条已放弃记录；已发生的永久变化和收藏继续保留。", "Creates an abandoned record; reached permanent changes and artifacts remain."],
     options: [["--date <YYYY-MM-DD>", "指定放弃日期", "Select the abandonment date"], ["--json", "输出机器可读结果", "Print the machine-readable result"]],
     examples: ["anti-ai expedition abandon", "anti-ai expedition abandon --json"],
-    note: ["放弃会消耗本阅历日机会，不能用来重抽事件。", "Abandoning consumes the experience-day opportunity and cannot be used to reroll events."],
+    note: ["放弃会消耗启程当天的机会，不能用来重抽事件；跨日返航不占用新一天的机会。", "Abandoning consumes the start day's opportunity and cannot reroll events; returning on a later day does not consume that new day's opportunity."],
     related: ["expedition", "expedition history"],
   },
   "creature habitat": {

@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-08-07
+
+### Changed
+
+- Expedition opportunities now refresh by local calendar day instead of waiting for a newly settled Creature experience day. Starting still consumes only that date's opportunity, missed days do not stack, and finishing a resumed older run does not consume the current day's opportunity.
+- Expedition status JSON now exposes the requested `date` and `lastStartedDate` while retaining `experienceDays` and `lastStartedExperienceDay` for compatibility and historical context.
+- TUI share exports now test the launch directory before confirmation and fall back to `~/.anti-ai/exports` when it is not writable. Known filesystem failures report a localized actionable reason and the exact target path instead of collapsing to `share_export_failed`.
+- Updated bilingual Help, Explain, READMEs, Expedition and architecture guides, Security Policy, and the Agent Skill for calendar-day eligibility and share export fallback behavior.
+
+### Security
+
+- Share previews remain read-only; confirmation still creates only the previewed SVG with exclusive-create semantics and never overwrites an existing file. The fallback directory is created only after explicit confirmation.
+- Creature schema remains v14. This release adds no persistent gameplay field, network access, telemetry, background process, probability change, Token-volume reward, or missed-day pressure.
+
 ## [3.1.0] - 2026-08-06
 
 ### Added

@@ -44,17 +44,24 @@ function expeditionEndedOnOrBefore(expedition, date) {
   return endedAt !== undefined && (date === undefined || endedAt <= date);
 }
 
-function settledExperienceDays(state) {
-  let hatched = false;
-  let experienceDays = 0;
-  for (const [, day] of Object.entries(state.days ?? {}).sort(
-    ([left], [right]) => left.localeCompare(right),
-  )) {
-    if (!hatched && !day.active) continue;
-    if (day.active) hatched = true;
-    experienceDays += 1;
-  }
-  return experienceDays;
+function latestSettledDate(state) {
+  return Object.keys(state.days ?? {}).sort().at(-1) ?? null;
+}
+
+function latestExpeditionDate(expeditions) {
+  return [
+    ...expeditions.history,
+    ...(expeditions.active ? [expeditions.active] : []),
+  ]
+    .flatMap((expedition) => [
+      expedition.startedAt,
+      expedition.lastActionAt,
+      expedition.completedAt,
+      expedition.abandonedAt,
+    ])
+    .filter(Boolean)
+    .sort()
+    .at(-1) ?? null;
 }
 
 function expeditionEligibility(state, creature, date) {
@@ -77,16 +84,31 @@ function expeditionEligibility(state, creature, date) {
           Math.max(latest, expedition.sourceExperienceDay ?? 0),
         0,
       );
+  const lastStartedDate = visibleRuns
+    .map((expedition) => expedition.startedAt)
+    .filter(Boolean)
+    .sort()
+    .at(-1) ?? null;
+  const latestKnownDate = [
+    latestSettledDate(state),
+    latestExpeditionDate(expeditions),
+  ]
+    .filter(Boolean)
+    .sort()
+    .at(-1) ?? null;
   let reason = null;
   if (active !== null) reason = "active";
   else if (experienceDays === 0) reason = "unhatched";
-  else if (experienceDays < settledExperienceDays(state)) reason = "expired";
-  else if (experienceDays <= lastStartedExperienceDay) {
+  else if (date !== undefined && latestKnownDate !== null && date < latestKnownDate) {
+    reason = "expired";
+  } else if (date === undefined ? lastStartedDate !== null : lastStartedDate === date) {
     reason = "used";
   }
   return {
     available: reason === null,
     reason,
+    date: date ?? latestKnownDate,
+    lastStartedDate,
     experienceDays,
     lastStartedExperienceDay,
   };

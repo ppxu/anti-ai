@@ -11,7 +11,7 @@ import {
   writeCodexUsage,
   writeFileSync,
 } from "./helpers.mjs";
-import { readdirSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import {
   executeContainmentAction,
   previewContainmentAction,
@@ -63,6 +63,8 @@ test("expedition status exposes one read-only opportunity after a settled day", 
     eligibility: {
       available: true,
       reason: null,
+      date,
+      lastStartedDate: null,
       experienceDays: 1,
       lastStartedExperienceDay: 0,
     },
@@ -167,6 +169,65 @@ test("expedition start seals one deterministic ten-cell run without rerolls", (t
   assert.equal(state.expeditions.lastStartedExperienceDay, 1);
   assert.equal(state.expeditions.active.eventPlan.length, 10);
   assert.equal(new Set(state.expeditions.active.eventPlan).size, 10);
+});
+
+test("a new local calendar day offers an expedition without another settlement", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-expedition-calendar-day-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  const firstDate = "2026-08-07";
+  const nextDate = "2026-08-08";
+  writeCodexUsage(
+    root,
+    [{ input_tokens: 400, output_tokens: 40, total_tokens: 440 }],
+    firstDate,
+  );
+  const env = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "expedition-calendar-day",
+  };
+  assert.equal(
+    runCli(["creature", "--date", firstDate, "--json"], env).status,
+    0,
+  );
+  assert.equal(
+    runCli(
+      ["expedition", "start", "context_mine", "--date", firstDate, "--json"],
+      env,
+    ).status,
+    0,
+  );
+  assert.equal(
+    runCli(["expedition", "abandon", "--date", firstDate, "--json"], env).status,
+    0,
+  );
+  const duplicate = runCli(
+    ["expedition", "start", "cache_swamp", "--date", firstDate],
+    env,
+  );
+  assert.equal(duplicate.status, 2);
+  assert.match(duplicate.stderr, /今天的远征机会已经使用/u);
+  assert.doesNotMatch(duplicate.stderr, /阅历日机会/u);
+
+  const status = runCli(
+    ["expedition", "--date", nextDate, "--json"],
+    env,
+  );
+  assert.equal(status.status, 0, status.stderr);
+  assert.deepEqual(JSON.parse(status.stdout).eligibility, {
+    available: true,
+    reason: null,
+    date: nextDate,
+    lastStartedDate: firstDate,
+    experienceDays: 1,
+    lastStartedExperienceDay: 1,
+  });
+  const human = runCli(["expedition", "--date", nextDate], env);
+  assert.equal(human.status, 0, human.stderr);
+  assert.match(human.stdout, /状态\s+今日可开启/u);
+  assert.doesNotMatch(human.stdout, /阅历日机会/u);
 });
 
 test("expedition advances ten cells, blocks on choices, and seals one history record", (t) => {
@@ -284,7 +345,7 @@ test("expedition advances ten cells, blocks on choices, and seals one history re
     env,
   );
   assert.equal(used.status, 2);
-  assert.match(used.stderr, /本阅历日的远征机会已经使用/);
+  assert.match(used.stderr, /今天的远征机会已经使用/);
 });
 
 test("abandon consumes the opportunity while reached permanent effects survive", (t) => {
@@ -476,6 +537,13 @@ test("expedition and every state-changing subcommand have bilingual help", () =>
   const top = runCli(["--help", "--lang", "en"]);
   assert.equal(top.status, 0, top.stderr);
   assert.match(top.stdout, /expedition\s+Start or continue/);
+
+  const startZh = runCli(["expedition", "start", "--help"]);
+  const startEn = runCli(["expedition", "start", "--help", "--lang", "en"]);
+  assert.match(startZh.stdout, /每个本地自然日/u);
+  assert.match(startEn.stdout, /each local calendar day/iu);
+  assert.doesNotMatch(startZh.stdout, /本阅历日机会/u);
+  assert.doesNotMatch(startEn.stdout, /experience-day opportunity/iu);
 });
 
 test("human expedition output renders the ten-cell rail and localized event copy", (t) => {
@@ -780,6 +848,8 @@ test("TUI application actions preview and execute expedition writes through shar
   assert.equal(preview.available, true);
   assert.equal(preview.choices.length, 4);
   assert.match(preview.title, /START CONTAINMENT EXPEDITION/);
+  assert.match(preview.warning, /local calendar day/iu);
+  assert.doesNotMatch(preview.warning, /experience-day opportunity/iu);
   assert.equal(readFileSync(statePath, "utf8"), before);
 
   const started = await executeContainmentAction(
@@ -912,6 +982,23 @@ test("a resumed expedition can export its return card on an unsettled completion
     completed = status.latest;
   }
   assert.equal(completed.completedAt, completionDate);
+  const nextCalendarOpportunity = runCli(
+    ["expedition", "--date", completionDate, "--json"],
+    environment,
+  );
+  assert.equal(
+    nextCalendarOpportunity.status,
+    0,
+    nextCalendarOpportunity.stderr,
+  );
+  assert.equal(
+    JSON.parse(nextCalendarOpportunity.stdout).eligibility.available,
+    true,
+  );
+  assert.equal(
+    JSON.parse(nextCalendarOpportunity.stdout).eligibility.lastStartedDate,
+    startDate,
+  );
 
   const previousEnvironment = Object.fromEntries(
     Object.keys(environment).map((key) => [key, process.env[key]]),
@@ -945,6 +1032,66 @@ test("a resumed expedition can export its return card on an unsettled completion
   assert.match(card.stdout, /RETURN DIAGNOSIS/u);
   assert.match(card.stdout, /EVENT TRAIL/u);
   assert.equal(readFileSync(statePath, "utf8"), before);
+});
+
+test("TUI expedition sharing falls back when the launch directory is not writable", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-expedition-share-fallback-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "codex");
+  const home = path.join(workspace, "home");
+  const blockedDirectory = path.join(workspace, "read-only-launch-directory");
+  const fallbackDirectory = path.join(home, ".anti-ai", "exports");
+  const date = "2026-08-17";
+  mkdirSync(blockedDirectory, { recursive: true });
+  chmodSync(blockedDirectory, 0o500);
+  t.after(() => {
+    if (existsSync(blockedDirectory)) chmodSync(blockedDirectory, 0o700);
+  });
+  writeCodexUsage(
+    root,
+    [{ input_tokens: 900, output_tokens: 100, total_tokens: 1_000 }],
+    date,
+  );
+  const environment = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: root,
+    ANTI_AI_CREATURE_SEED: "expedition-share-fallback",
+  };
+  assert.equal(
+    runCli(["creature", "--date", date, "--json"], environment).status,
+    0,
+  );
+  assert.equal(
+    runCli(
+      ["expedition", "start", "cache_swamp", "--date", date, "--json"],
+      environment,
+    ).status,
+    0,
+  );
+
+  const previousEnvironment = Object.fromEntries(
+    Object.keys(environment).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, environment);
+  t.after(() => {
+    for (const [key, value] of Object.entries(previousEnvironment)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const controller = createTuiShareController(
+    { lang: "zh" },
+    { outputDirectory: blockedDirectory, fallbackDirectory },
+  );
+  const preview = await controller.preview({ screen: "expedition", date });
+
+  assert.equal(preview.available, true);
+  assert.equal(path.dirname(preview.targetPath), fallbackDirectory);
+  assert.match(preview.warning, /当前目录不可写/u);
+  const result = await controller.execute(preview);
+  assert.equal(result.status, "completed", result.reasonLabel ?? result.reason);
+  assert.equal(path.dirname(result.targetPath), fallbackDirectory);
+  assert.match(readFileSync(result.targetPath, "utf8"), /^<svg/u);
 });
 
 test("historical expedition views never reveal runs or cards from a later date", (t) => {
@@ -1007,6 +1154,8 @@ test("historical expedition views never reveal runs or cards from a later date",
     eligibility: {
       available: false,
       reason: "expired",
+      date: earlierDate,
+      lastStartedDate: null,
       experienceDays: 1,
       lastStartedExperienceDay: 0,
     },
@@ -1062,7 +1211,7 @@ test("skipped expedition opportunities never accumulate into historical runs", (
     env,
   );
   assert.equal(expired.status, 2);
-  assert.match(expired.stderr, /过去阅历日的远征机会不会累计/);
+  assert.match(expired.stderr, /所选日期的远征机会已过期/);
 
   const current = runCli(
     ["expedition", "start", "cache_swamp", "--date", currentDate, "--json"],

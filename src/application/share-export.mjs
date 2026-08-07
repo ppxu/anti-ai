@@ -1,5 +1,6 @@
 import { constants as fsConstants } from "node:fs";
-import { access, writeFile } from "node:fs/promises";
+import { access, mkdir, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import {
@@ -67,6 +68,74 @@ async function availableShareTarget(outputDirectory, card, date) {
 
 function unavailable(reason, reasonLabel) {
   return { available: false, reason, reasonLabel };
+}
+
+async function directoryCanAcceptFiles(directory) {
+  let candidate = directory;
+  while (true) {
+    try {
+      const metadata = await stat(candidate);
+      if (!metadata.isDirectory()) return false;
+      await access(candidate, fsConstants.W_OK | fsConstants.X_OK);
+      return true;
+    } catch (error) {
+      if (error?.code !== "ENOENT") return false;
+      const parent = path.dirname(candidate);
+      if (parent === candidate) return false;
+      candidate = parent;
+    }
+  }
+}
+
+async function shareOutputDirectory(preferred, fallback) {
+  if (await directoryCanAcceptFiles(preferred)) {
+    return { available: true, directory: preferred, fallback: false };
+  }
+  if (await directoryCanAcceptFiles(fallback)) {
+    return { available: true, directory: fallback, fallback: true };
+  }
+  return { available: false, directory: fallback, fallback: true };
+}
+
+function shareExportFailure(error, targetPath, lang) {
+  const directory = path.dirname(targetPath);
+  const reason = error?.code === "EEXIST"
+    ? "share_target_exists"
+    : ["EACCES", "EPERM", "EROFS"].includes(error?.code)
+      ? "share_directory_not_writable"
+      : error?.code === "ENOSPC"
+        ? "share_storage_full"
+        : ["ENOENT", "ENOTDIR"].includes(error?.code)
+          ? "share_directory_unavailable"
+          : "share_export_failed";
+  const reasonLabel = {
+    share_target_exists: localized(
+      lang,
+      `目标文件已存在：${targetPath}`,
+      `The target file already exists: ${targetPath}`,
+    ),
+    share_directory_not_writable: localized(
+      lang,
+      `目标目录不可写：${directory}。请检查目录权限后重试。`,
+      `The target directory is not writable: ${directory}. Check its permissions and try again.`,
+    ),
+    share_storage_full: localized(
+      lang,
+      `存储空间不足，无法写入：${targetPath}`,
+      `Storage is full; the card cannot be written to: ${targetPath}`,
+    ),
+    share_directory_unavailable: localized(
+      lang,
+      `目标目录不可用：${directory}。请检查路径后重试。`,
+      `The target directory is unavailable: ${directory}. Check the path and try again.`,
+    ),
+    share_export_failed: localized(
+      lang,
+      `分享卡写入失败（${error?.code ?? "UNKNOWN"}）：${targetPath}`,
+      `Share card write failed (${error?.code ?? "UNKNOWN"}): ${targetPath}`,
+    ),
+  }[reason];
+  return { status: "failed", reason, reasonLabel, targetPath };
 }
 
 function creatureShareView(state, date, lang) {
@@ -318,8 +387,12 @@ async function prepareTuiShareCard(card, id, date, lang) {
 
 function createTuiShareController(options = {}, serviceOptions = {}) {
   const lang = options.lang ?? "zh";
-  const outputDirectory = path.resolve(
+  const preferredOutputDirectory = path.resolve(
     serviceOptions.outputDirectory ?? process.cwd(),
+  );
+  const fallbackOutputDirectory = path.resolve(
+    serviceOptions.fallbackDirectory
+      ?? path.join(os.homedir(), ".anti-ai", "exports"),
   );
   const preparedPreviews = new WeakMap();
   return {
@@ -339,8 +412,22 @@ function createTuiShareController(options = {}, serviceOptions = {}) {
       const { card, id } = shareCardForContext(context);
       const prepared = await prepareTuiShareCard(card, id, context.date, lang);
       if (!prepared.available) return prepared;
+      const output = await shareOutputDirectory(
+        preferredOutputDirectory,
+        fallbackOutputDirectory,
+      );
+      if (!output.available) {
+        return unavailable(
+          "share_directory_not_writable",
+          localized(
+            lang,
+            `当前目录和备用目录都不可写：${fallbackOutputDirectory}`,
+            `Neither the current nor fallback directory is writable: ${fallbackOutputDirectory}`,
+          ),
+        );
+      }
       const target = await availableShareTarget(
-        outputDirectory,
+        output.directory,
         card,
         context.date,
       );
@@ -359,14 +446,19 @@ function createTuiShareController(options = {}, serviceOptions = {}) {
         title: localized(lang, "导出分享卡", "EXPORT SHARE CARD"),
         warning: localized(
           lang,
-          "确认后会在当前目录新建 SVG；已有文件不会被覆盖。",
-          "Confirmation creates a new SVG in the current directory; existing files are never overwritten.",
+          output.fallback
+            ? `当前目录不可写；确认后将保存到 ${target.targetPath}，已有文件不会被覆盖。`
+            : "确认后会在当前目录新建 SVG；已有文件不会被覆盖。",
+          output.fallback
+            ? `The current directory is not writable; confirmation saves to ${target.targetPath}. Existing files are never overwritten.`
+            : "Confirmation creates a new SVG in the current directory; existing files are never overwritten.",
         ),
       };
       preparedPreviews.set(preview, {
         card,
         filename: target.filename,
         targetPath: target.targetPath,
+        outputDirectory: output.directory,
         svg: prepared.svg,
       });
       return preview;
@@ -378,6 +470,10 @@ function createTuiShareController(options = {}, serviceOptions = {}) {
       }
       preparedPreviews.delete(preview);
       try {
+        await mkdir(prepared.outputDirectory, {
+          recursive: true,
+          mode: 0o700,
+        });
         await writeFile(prepared.targetPath, prepared.svg, {
           encoding: "utf8",
           flag: "wx",
@@ -394,13 +490,7 @@ function createTuiShareController(options = {}, serviceOptions = {}) {
           ),
         };
       } catch (error) {
-        return {
-          status: "failed",
-          reason:
-            error?.code === "EEXIST"
-              ? "share_target_exists"
-              : "share_export_failed",
-        };
+        return shareExportFailure(error, prepared.targetPath, lang);
       }
     },
   };

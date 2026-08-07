@@ -4,11 +4,11 @@ Containment Expeditions are a small, local exploration loop for the mutation cre
 
 ## Daily opportunity
 
-- Each new creature experience day offers at most one expedition.
-- Opportunities do not stack. Skipping a day has no penalty, but an old opportunity cannot be recovered after a newer experience day is settled.
-- Starting a run consumes the current opportunity immediately.
+- Each local calendar day offers at most one expedition, even when that date has not been settled into Creature growth yet.
+- Opportunities do not stack. Skipping a day has no penalty, but an old date cannot be recovered after the file advances to a newer settled or Expedition date.
+- Starting a run consumes that local date's opportunity immediately.
 - Exiting pauses the run. The same run can be resumed later.
-- Abandoning seals the cells already reached and consumes the opportunity. It cannot reroll the destination or event sequence.
+- Completing or abandoning a resumed older run on a later date does not consume the later date's opportunity. Abandoning seals the cells already reached and cannot reroll the destination or event sequence.
 - Heavy use, restrained use, and AI-free days create opportunities at the same rate. Token volume never increases run count, cell count, rarity, artifact odds, or achievement progress.
 
 ## Destinations
@@ -56,7 +56,7 @@ anti-ai expedition abandon
 anti-ai share --card expedition > anti-ai-expedition.svg
 ```
 
-Use `anti-ai help expedition` or `anti-ai help expedition <action>` for focused bilingual Help. `status`, `history`, and sharing are read-only. Starting, advancing, choosing, and abandoning write only after the command succeeds. Historical `status`, `history`, and share views exclude later runs and later discoveries.
+Use `anti-ai help expedition` or `anti-ai help expedition <action>` for focused bilingual Help. `status`, `history`, and sharing are read-only. Starting, advancing, choosing, and abandoning write only after the command succeeds. Historical `status`, `history`, and share views exclude later runs and later discoveries. Status JSON includes the requested `date` and `lastStartedDate`; the existing experience-day fields remain available as historical context, not as the daily entitlement clock.
 
 ## TUI controls
 

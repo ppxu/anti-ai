@@ -408,8 +408,8 @@ function expeditionPreview(state, date, lang, action) {
       ),
       warning: localized(
         lang,
-        "开始会消耗本阅历日机会；退出可恢复，但目的地和事件不能重抽。",
-        "Starting consumes this experience-day opportunity; the run can resume, but its destination and events cannot be rerolled.",
+        "每个本地自然日最多启程一次；开始会消耗今日机会，退出可恢复但目的地和事件不能重抽。",
+        "Start at most once on each local calendar day; starting consumes today's opportunity, and the run can resume but cannot reroll its destination or events.",
       ),
       irreversible: true,
       choices: EXPEDITION_DESTINATIONS.map(({ id }) => {
@@ -475,8 +475,8 @@ function expeditionPreview(state, date, lang, action) {
     ),
     warning: localized(
       lang,
-      "本阅历日机会不会返还；已经发生的永久变化和收藏继续保留。",
-      "The experience-day opportunity is not refunded; reached permanent changes and artifacts remain.",
+      "今日机会不会返还；已经发生的永久变化和收藏继续保留。",
+      "Today's opportunity is not refunded; reached permanent changes and artifacts remain.",
     ),
     irreversible: true,
     choices: [],

@@ -15,6 +15,7 @@ import {
   writeCodexUsage,
 } from "./helpers.mjs";
 import { pathToFileURL } from "node:url";
+import { chmodSync } from "node:fs";
 
 import { build } from "esbuild";
 import { render } from "ink-testing-library";
@@ -275,6 +276,19 @@ test("the 80-column TUI starts and advances an expedition with one Enter per ord
       .split("\n")
       .every((line) => terminalWidth(line) <= 80),
   );
+
+  const nextDateScreen = render(
+    React.createElement(TuiApp, {
+      snapshot: deriveTuiSnapshot(completedState, "2026-08-15", "zh"),
+      lang: "zh",
+      initialMotion: "off",
+      terminalColumns: 80,
+    }),
+  );
+  t.after(() => nextDateScreen.unmount());
+  nextDateScreen.stdin.write("3");
+  await waitForFrame(nextDateScreen, /今日远征可用/u);
+  assert.doesNotMatch(nextDateScreen.lastFrame(), /先结算|阅历日机会/u);
 });
 
 test("TUI sharing previews a private local target before exporting SVG", async (t) => {
@@ -350,9 +364,22 @@ test("TUI sharing previews a private local target before exporting SVG", async (
   const refused = await controller.execute(collision);
   assert.equal(refused.status, "failed");
   assert.equal(refused.reason, "share_target_exists");
+  assert.match(refused.reasonLabel, /target file already exists/iu);
   assert.equal(readFileSync(previewedCollisionPath, "utf8"), "existing export");
   assert.equal(spawnSync("test", ["-e", collision.targetPath]).status, 1);
   assert.equal(readFileSync(statePath, "utf8"), original);
+
+  const permissionPreview = await controller.preview({
+    screen: "overview",
+    date: "2026-07-23",
+  });
+  chmodSync(outputDirectory, 0o500);
+  const permissionFailure = await controller.execute(permissionPreview);
+  chmodSync(outputDirectory, 0o700);
+  assert.equal(permissionFailure.status, "failed");
+  assert.equal(permissionFailure.reason, "share_directory_not_writable");
+  assert.match(permissionFailure.reasonLabel, /target directory is not writable/iu);
+  assert.match(permissionFailure.reasonLabel, new RegExp(outputDirectory, "u"));
 });
 
 test("the consequence cabinet and daily interactions persist only explicit narrative choices", async (t) => {

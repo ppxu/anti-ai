@@ -32,12 +32,12 @@ function eventEffectLine(effect, lang) {
 
 function renderExpeditionStatus(status, lang) {
   const eligibility = status.eligibility.available
-    ? localized(lang, "可开启", "AVAILABLE")
+    ? localized(lang, "今日可开启", "AVAILABLE TODAY")
     : {
         active: localized(lang, "远征进行中", "EXPEDITION ACTIVE"),
         unhatched: localized(lang, "异变体尚未孵化", "CREATURE NOT HATCHED"),
-        used: localized(lang, "本阅历日机会已使用", "OPPORTUNITY USED"),
-        expired: localized(lang, "过去机会不累计", "PAST OPPORTUNITY EXPIRED"),
+        used: localized(lang, "今日机会已使用", "USED TODAY"),
+        expired: localized(lang, "所选日期已过期", "SELECTED DATE EXPIRED"),
       }[status.eligibility.reason];
   const active = status.active ?? status.latest;
   const destination = active
@@ -188,13 +188,13 @@ async function runExpedition(options) {
         ),
         used: localized(
           options.lang,
-          "本阅历日的远征机会已经使用。",
-          "This experience day's expedition opportunity is already used.",
+          "今天的远征机会已经使用。",
+          "Today's expedition opportunity is already used.",
         ),
         expired: localized(
           options.lang,
-          "过去阅历日的远征机会不会累计；请选择最新已结算日期。",
-          "Past experience-day expedition opportunities do not stack; select the latest settled date.",
+          "所选日期的远征机会已过期；机会按本地自然日开放且不会累计。",
+          "The selected date's expedition opportunity has expired; local-calendar-day opportunities do not stack.",
         ),
       }[started.error];
       process.stderr.write(`${message}\n`);

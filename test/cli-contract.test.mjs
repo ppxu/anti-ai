@@ -398,8 +398,9 @@ test("explain discloses ecology, expedition guardrails, and schema v14", () => {
   );
   assert.match(
     result.stdout,
-    /每个新阅历日.*一局十格收容远征.*机会不累计.*Token 量不改变局数、格数、事件、遗物概率或稀有度.*24 件固定遗物.*12 项固定成就/s,
+    /每个本地自然日.*一局十格收容远征.*不依赖结算.*机会不累计.*Token 量不改变局数、格数、事件、遗物概率或稀有度.*24 件固定遗物.*12 项固定成就/s,
   );
+  assert.match(result.stdout, /当前目录不可写.*~\/\.anti-ai\/exports/s);
   assert.match(
     result.stdout,
     /schema v14.*schema v1-v13.*不保存.*精确 Token.*模型名.*路径.*对话/s,
@@ -445,8 +446,9 @@ test("doctor, explain, and help support English output", () => {
   );
   assert.match(
     explain.stdout,
-    /Each new experience day.*one ten-cell containment expedition.*opportunities do not stack.*Token volume changes neither run count, cells, event sequence, artifact odds, nor rarity.*24 fixed artifacts.*12 fixed achievements/s,
+    /Each local calendar day.*one ten-cell containment expedition.*does not depend on settlement.*opportunities do not stack.*Token volume changes neither run count, cells, event sequence, artifact odds, nor rarity.*24 fixed artifacts.*12 fixed achievements/s,
   );
+  assert.match(explain.stdout, /current directory is not writable.*~\/\.anti-ai\/exports/is);
   assert.match(
     explain.stdout,
     /schema v14.*schema v1-v13 migrate sequentially.*local backup/s,
@@ -831,7 +833,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 3.1.0\n");
+  assert.equal(result.stdout, "anti-ai 3.2.0\n");
   assert.equal(result.stderr, "");
 });
 

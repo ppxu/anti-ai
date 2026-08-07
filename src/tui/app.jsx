@@ -419,13 +419,17 @@ function ExpeditionScreen({
         <Panel title={zh ? "收容远征" : "CONTAINMENT EXPEDITION"} color="yellow">
           <Text bold color={expedition.eligibility.available ? "green" : "gray"}>
             {expedition.eligibility.available
-              ? zh ? "一个新阅历日机会可用" : "ONE EXPERIENCE-DAY OPPORTUNITY AVAILABLE"
-              : zh ? "当前没有新的远征机会" : "NO NEW EXPEDITION OPPORTUNITY"}
+              ? zh ? "今日远征可用" : "TODAY'S EXPEDITION AVAILABLE"
+              : expedition.eligibility.reason === "unhatched"
+                ? zh ? "异变体尚未孵化" : "CREATURE NOT HATCHED"
+                : expedition.eligibility.reason === "expired"
+                  ? zh ? "所选日期的机会已过期" : "SELECTED DATE EXPIRED"
+                  : zh ? "今日远征机会已使用" : "TODAY'S EXPEDITION USED"}
           </Text>
           <Text dimColor>
             {zh
-              ? "机会不累计；Token 量不改变格数、稀有率或收藏概率。"
-              : "Opportunities do not stack; Token volume changes no cells, rarity, or collection odds."}
+              ? "按本地自然日刷新，不依赖结算；机会不累计，Token 量不改变结果。"
+              : "Refreshes by local calendar day without settlement; no stacking or Token advantage."}
           </Text>
         </Panel>
         {expedition.eligibility.available ? (
@@ -1145,7 +1149,7 @@ function ShareOverlay({ mode, preview, result, error, lang }) {
     <Panel title={zh ? "分享卡预览" : "SHARE CARD PREVIEW"} color="yellow">
       <Text bold>{preview.title}</Text>
       <Text>{zh ? "卡片类型" : "CARD"}　{preview.card.toUpperCase()}</Text>
-      <Text>{zh ? "目标文件" : "TARGET"}　{preview.filename}</Text>
+      <Text>{zh ? "目标文件" : "TARGET"}　{preview.targetPath ?? preview.filename}</Text>
       <Text color="cyan">{preview.privacy}</Text>
       <Text color="yellow">{preview.warning}</Text>
       <Text dimColor>

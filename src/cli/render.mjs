@@ -8,9 +8,10 @@ import {
 import { encounterLabel } from "../encounter.mjs";
 import { laboratoryLabel } from "../laboratory.mjs";
 import { incidentLabel } from "../incidents.mjs";
-import { color, formatTokens } from "../reporting.mjs";
+import { color, formatTokens, terminalWidth } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
-import { collectionSetCopy } from "../collection-sets.mjs";
+import { presentCollectionSet } from "../collection-sets.mjs";
+import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 import {
   EXPEDITION_ACHIEVEMENT_DEFINITIONS,
   expeditionArtifact,
@@ -32,6 +33,7 @@ const CODEX_RARITY_COLORS = {
   rare: "35",
   epic: CREATURE_RARE_ABILITY_RANKS.epic.color,
   mythic: CREATURE_RARE_ABILITY_RANKS.mythic.color,
+  legendary: "1;31",
 };
 
 function achievementLabel(achievement, lang) {
@@ -55,6 +57,25 @@ function achievementLabel(achievement, lang) {
 
 function generationLabel(generation, lang) {
   return lang === "zh" ? `第 ${generation} 代` : `GEN ${generation}`;
+}
+
+function wrapCodexText(value, width = 54) {
+  const source = String(value);
+  if (terminalWidth(source) <= width) return [source];
+  const units = source.includes(" ") ? source.split(/(\s+)/u) : Array.from(source);
+  const lines = [];
+  let line = "";
+  for (const unit of units) {
+    const candidate = `${line}${unit}`;
+    if (line && terminalWidth(candidate.trimEnd()) > width) {
+      lines.push(line.trim());
+      line = unit.trimStart();
+    } else {
+      line = candidate;
+    }
+  }
+  if (line.trim()) lines.push(line.trim());
+  return lines;
 }
 
 function renderEvolutionOptions(evolution, lang) {
@@ -302,7 +323,55 @@ function codexDiscoveryLabel(discovery, lang) {
   );
 }
 
-function renderCodex(codex, lang) {
+function renderCodex(codex, lang, focusedSetId = null) {
+  const collectionSetViews = codex.collectionSets.map((entry) =>
+    presentCollectionSet(entry, lang)
+  );
+  const focusedSet = focusedSetId
+    ? collectionSetViews.find(({ id }) => id === focusedSetId)
+    : null;
+  if (focusedSet) {
+    const routeLabel = {
+      pollution: localized(lang, "污染", "POLLUTION"),
+      clarity: localized(lang, "清醒", "CLARITY"),
+      paradox: localized(lang, "悖论", "PARADOX"),
+    }[focusedSet.routeId];
+    const phaseLabel = {
+      unknown: localized(lang, "未形成", "UNFORMED"),
+      started: localized(lang, "已起病", "STARTED"),
+      near: localized(lang, "接近确诊", "NEAR DIAGNOSIS"),
+      complete: localized(lang, "已确诊", "DIAGNOSED"),
+    }[focusedSet.phase];
+    const requirementLines = focusedSet.requirements.map((requirement) =>
+      `  ${requirement.completed ? "◆" : "◇"} ${requirement.label}${requirement.discoveredAt ? ` · ${requirement.discoveredAt}` : ""}`
+    );
+    return [
+      color("2", "┌────────────────────────────────────────────────────────┐"),
+      `  ${color("1;35", localized(lang, `病理星图 · ${codex.date}`, `PATHOLOGY CONSTELLATION · ${codex.date}`))}`,
+      color("2", "├────────────────────────────────────────────────────────┤"),
+      `  ${color(CODEX_RARITY_COLORS[focusedSet.rarity], `[${focusedSet.rarity.toUpperCase()}] ${focusedSet.name}`)}`,
+      `  ${localized(lang, "路线 / 阶段", "ROUTE / PHASE")}  ${routeLabel} · ${phaseLabel}`,
+      `  ${localized(lang, "进度", "PROGRESS")}  ${focusedSet.progress.completed} / ${focusedSet.progress.total} · ${focusedSet.progress.percent}%`,
+      ...(focusedSet.hidden && !focusedSet.revealed
+        ? [`  ${localized(lang, "揭示进度", "REVEAL PROGRESS")}  ${focusedSet.revealProgress.completed} / ${focusedSet.revealProgress.total}`]
+        : []),
+      "",
+      ...wrapCodexText(focusedSet.description).map((line) => `  ${line}`),
+      ...wrapCodexText(focusedSet.phaseNote).map((line) => `  ${color("2", line)}`),
+      "",
+      `  ${localized(lang, "证据节点", "EVIDENCE NODES")}`,
+      ...requirementLines,
+      ...(focusedSet.completed
+        ? ["", `  ${localized(lang, "档案印章", "DOSSIER STAMP")}  ${focusedSet.stamp}`]
+        : []),
+      "",
+      ...wrapCodexText(
+        localized(lang, "只读诊断：节点来自已有馆藏，不提供数值、次数或成长奖励。", "READ-ONLY DIAGNOSIS: nodes derive from existing collections and grant no stats, attempts, or growth rewards."),
+      ).map((line) => `  ${color("2", line)}`),
+      color("2", "└────────────────────────────────────────────────────────┘"),
+      "",
+    ].join("\n");
+  }
   const fixedSection = (
     title,
     entries,
@@ -364,11 +433,28 @@ function renderCodex(codex, lang) {
     (discovery) =>
       `  + ${codexDiscoveryLabel(discovery, lang)}`,
   );
-  const collectionSetLines = codex.collectionSets.map((entry) => {
-    const copy = collectionSetCopy(entry.id, lang);
-    const text = `[${entry.rarity.toUpperCase()}] ${entry.completed ? "◆" : "◇"} ${copy.name} · ${entry.progress.completed}/${entry.progress.total}${entry.completed ? ` · ${copy.stamp}` : ""}`;
-    return `  ${color(CODEX_RARITY_COLORS[entry.rarity], text)}`;
-  });
+  const routeLabels = {
+    pollution: localized(lang, "污染", "POLLUTION"),
+    clarity: localized(lang, "清醒", "CLARITY"),
+    paradox: localized(lang, "悖论", "PARADOX"),
+  };
+  const collectionSetLines = Object.entries(routeLabels).flatMap(
+    ([routeId, routeLabel]) => {
+      const routeSets = collectionSetViews.filter((entry) => entry.routeId === routeId);
+      const completed = routeSets.filter((entry) => entry.completed).length;
+      const focus = routeSets
+        .filter((entry) => !entry.completed && entry.revealed)
+        .sort((left, right) =>
+          right.progress.percent - left.progress.percent ||
+          left.id.localeCompare(right.id)
+        )[0] ?? routeSets.find((entry) => !entry.completed) ?? routeSets.at(-1);
+      return [
+        `  ${routeLabel.padEnd(lang === "zh" ? 4 : 10)} ${completed}/4 · ${focus.completed ? localized(lang, "最高诊断", "TOP DIAGNOSIS") : localized(lang, "接近诊断", "NEAREST")} ${color(CODEX_RARITY_COLORS[focus.rarity], focus.name)} ${focus.progress.completed}/${focus.progress.total}`,
+        `    anti-ai codex --set ${focus.id}`,
+      ];
+    },
+  );
+  const phenotype = collectionPhenotypeCopy(codex.collectionPhenotype, lang);
 
   return [
     color("2", "┌────────────────────────────────────────────────────────┐"),
@@ -376,7 +462,9 @@ function renderCodex(codex, lang) {
     color("2", "├────────────────────────────────────────────────────────┤"),
     `  ${localized(lang, "标本编号", "SPECIMEN ID")}  ${codex.specimenId}`,
     `  ${localized(lang, "理论物种容量", "THEORETICAL SPECIES CAPACITY")}  ${formatTokens(codex.capacity.finalAsciiForms)} · ${localized(lang, "去重后的最终 ASCII 形象", "DEDUPLICATED FINAL ASCII FORMS")}`,
+    `  ${localized(lang, "理论展示容量", "THEORETICAL DISPLAY CAPACITY")}  ${formatTokens(codex.capacity.displayedAsciiForms)} · ${codex.capacity.collectionPhenotypes} ${localized(lang, "种馆藏表型", "COLLECTION PHENOTYPES")}`,
     `  ${localized(lang, "固定收藏", "FIXED COLLECTION")}  ${codex.summary.fixed.discovered} / ${codex.summary.fixed.total} · ${codex.summary.fixed.percent}%`,
+    `  ${localized(lang, "馆藏异变", "COLLECTION MUTATION")}  ${phenotype ? `${phenotype.name} · ${localized(lang, `阶段 ${phenotype.tier}`, `TIER ${phenotype.tier}`)}` : localized(lang, "尚未诱发", "NOT YET INDUCED")}`,
     `  ${localized(lang, "后果陈列柜", "CONSEQUENCE CABINET")}  ${codex.cabinet.featured.length > 0 ? codex.cabinet.featured.join(" · ") : localized(lang, "空置", "VACANT")}`,
     "",
     ...fixedSection(
@@ -440,9 +528,11 @@ function renderCodex(codex, lang) {
         return `${achievement.name[lang]} · ${entry.rarity.toUpperCase()}`;
       },
     ),
-    `${localized(lang, "病理收藏套组", "PATHOLOGY COLLECTION SETS")}  [${codex.collectionSets.filter(({ completed }) => completed).length} / ${codex.collectionSets.length}]`,
+    `${localized(lang, "病理星图", "PATHOLOGY CONSTELLATIONS")}  [${codex.collectionSets.filter(({ completed }) => completed).length} / ${codex.collectionSets.length}]`,
     ...collectionSetLines,
-    `  ${color("2", localized(lang, "套组只解锁名称、印章和展示语料，不提供数值奖励。", "Sets unlock names, stamps, and display copy only—never numeric rewards."))}`,
+    ...wrapCodexText(
+      localized(lang, "使用上方命令查看单组证据星图；星座只解锁展示，不提供数值奖励。", "Use the command above to inspect one evidence constellation; constellations unlock presentation only, never stats."),
+    ).map((line) => `  ${color("2", line)}`),
     "",
     `${localized(lang, "动态标本", "DYNAMIC SPECIMENS")}  [${codex.summary.specimens.discovered}]`,
     ...(specimenLines.length > 0
@@ -492,7 +582,9 @@ function renderCodex(codex, lang) {
       ? recentLines
       : [`  ${localized(lang, "无 · 今天只是在重复昨天的病理。", "NONE · today merely repeated yesterday's pathology.")}`]),
     "",
-    `  ${color("2", localized(lang, "隐私图鉴：只保存离散成长结果，不保存对话、路径、模型名或精确 Token", "PRIVATE CODEX: stores derived growth outcomes only; no chats, paths, model names, or exact tokens"))}`,
+    ...wrapCodexText(
+      localized(lang, "隐私图鉴：只保存离散成长结果，不保存对话、路径、模型名或精确 Token", "PRIVATE CODEX: stores derived growth outcomes only; no chats, paths, model names, or exact tokens"),
+    ).map((line) => `  ${color("2", line)}`),
     color("2", "└────────────────────────────────────────────────────────┘"),
     "",
   ].join("\n");

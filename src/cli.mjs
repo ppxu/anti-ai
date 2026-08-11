@@ -203,10 +203,25 @@ async function runCodex(options) {
     creatureContext.state,
     creatureContext.result.date,
   );
+  const focusedCollectionSet = options.set
+    ? codex.collectionSets.find(({ id }) => id === options.set)
+    : null;
+  if (options.set && !focusedCollectionSet) {
+    process.stderr.write(
+      `${localized(options.lang, `未知病理套组：${options.set}`, `Unknown pathology set: ${options.set}`)}\n`,
+    );
+    process.exitCode = 2;
+    return;
+  }
   if (options.json) {
-    process.stdout.write(`${JSON.stringify(codex, null, 2)}\n`);
+    process.stdout.write(
+      `${JSON.stringify({
+        ...codex,
+        ...(focusedCollectionSet ? { focusedCollectionSet } : {}),
+      }, null, 2)}\n`,
+    );
   } else {
-    process.stdout.write(renderCodex(codex, options.lang));
+    process.stdout.write(renderCodex(codex, options.lang, options.set));
   }
 }
 

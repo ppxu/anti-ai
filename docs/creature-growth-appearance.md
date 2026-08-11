@@ -129,8 +129,21 @@ ordinary genome pattern
 
 Stages I–III do not display the ordinary genome pattern or achievement mark. Their chest shows a chromatic overlay when awakened, otherwise an inherited scar when present, otherwise the current Ecology mark. Stage IV separates the Ecology mark into its own slot and resolves the chest using the precedence above. The generation graft is independent of this stack.
 
+## Collection-induced crowns · 28
+
+After the stable base specimen is rendered, fixed Codex breadth can add one of seven evidence motifs at four milestones. This produces 28 crown/exoskeleton variants plus the unchanged specimen. The motif is selected by the fixed discovery that crosses the milestone; it is not a random reroll.
+
+| Milestone | Requirement | Visible scale |
+|---|---|---|
+| I | 34 / 134 fixed discoveries · 3 / 7 categories | single evidence glyph |
+| II | 67 / 134 · 5 / 7 | paired crown |
+| III | 101 / 134 · 6 / 7 | extended crown |
+| IV | 134 / 134 · 7 / 7 | full crown or exoskeleton |
+
+The seven motifs correspond to form families, achievements, chromatic abilities, scars, habitat phenomena, Expedition artifacts, and Expedition achievements. They multiply theoretical presentation capacity by 29, but remain outside the base appearance fingerprint and pollution-code identity.
+
 ## Motion is presentation, not identity
 
 The TUI can animate six poses (`idle`, `feeding`, `withdrawal`, `dormant`, `alert`, `mutation`) using seven temperament rhythms. Each chromatic ability has its own deterministic glitch signature; companion movement also reflects route, stage, and anomaly. Observation briefly renders a two-frame organ reaction.
 
-These frames are transient. Motion is capped at 4 FPS, pauses outside living screens, respects `--motion off` and `NO_COLOR`, and never changes the stored appearance fingerprint or theoretical species capacity.
+These frames are transient. Motion is capped at 4 FPS, pauses outside living screens, respects `--motion off` and `NO_COLOR`, and never changes the stored appearance fingerprint or either theoretical capacity.

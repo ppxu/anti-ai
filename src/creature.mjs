@@ -20,6 +20,7 @@ import {
 import { ensureIncidentState } from "./incidents.mjs";
 import { ensureConsequenceCabinetState } from "./consequence-cabinet.mjs";
 import { deriveCollectionSets } from "./collection-sets.mjs";
+import { deriveCollectionPhenotype } from "./collection-phenotype.mjs";
 import {
   CREATURE_STAGES,
   CREATURE_CONTENT_VERSION,
@@ -1025,6 +1026,13 @@ function creatureCodex(state, date) {
     companions,
     fossils,
   };
+  const collectionSets = deriveCollectionSets({
+    sections: { ...sections, cultures: collectionCultures },
+  });
+  const collectionPhenotype = deriveCollectionPhenotype(
+    { sections },
+    creature.ecology.type,
+  );
 
   return {
     date,
@@ -1083,9 +1091,8 @@ function creatureCodex(state, date) {
       fossils: { discovered: fossils.length },
     },
     sections,
-    collectionSets: deriveCollectionSets({
-      sections: { ...sections, cultures: collectionCultures },
-    }),
+    collectionSets,
+    collectionPhenotype,
     recent,
   };
 }

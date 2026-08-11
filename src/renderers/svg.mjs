@@ -19,6 +19,7 @@ import {
   habitatRelationshipCopy,
 } from "../habitat.mjs";
 import { presentHabitatScene } from "../habitat-scenes.mjs";
+import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 
 function escapeXml(value) {
   return String(value)
@@ -248,15 +249,16 @@ function renderDossierShareSvg(view, lang = "zh") {
   <text x="610" y="198" class="mono body" font-size="21">${escapeXml(truncateSvgText(view.identity.title, 44))}</text>
   <text x="610" y="236" class="mono body" font-size="17">${escapeXml(`${view.identity.stageLabel} · ${view.identity.ecologyLabel}`)}</text>
   <text x="610" y="266" class="mono body" font-size="17">${escapeXml(`${view.identity.pathologyLabel} · ${view.identity.abilityLabel}`)}</text>
-  <text x="610" y="304" class="mono muted" font-size="15">${escapeXml(localized(lang, "当前诊断", "CURRENT DIAGNOSIS"))}</text>
-  <text x="610" y="336" class="mono warn" font-size="16">${svgTextTspans(view.diagnosis, 610, 48, 2, 22)}</text>
+  <text x="610" y="294" class="mono rare" font-size="14">${escapeXml(localized(lang, `馆藏异变 · ${view.collectionPhenotype.copy ? `${view.collectionPhenotype.copy.name} · 阶段 ${view.collectionPhenotype.tier}` : "尚未诱发"}`, `COLLECTION MUTATION · ${view.collectionPhenotype.copy ? `${view.collectionPhenotype.copy.name} · TIER ${view.collectionPhenotype.tier}` : "NOT YET INDUCED"}`))}</text>
+  <text x="610" y="320" class="mono muted" font-size="15">${escapeXml(localized(lang, "当前诊断", "CURRENT DIAGNOSIS"))}</text>
+  <text x="610" y="350" class="mono warn" font-size="16">${svgTextTspans(view.diagnosis, 610, 48, 2, 20)}</text>
 
   <line x1="72" y1="388" x2="1128" y2="388" stroke="#324052" stroke-width="2"/>
   <text x="72" y="420" class="mono accent" font-size="16">${escapeXml(localized(lang, "30 天病程", "30-DAY COURSE"))}</text>
   <text x="72" y="450" class="mono body" font-size="16">${escapeXml(truncateSvgText(period.summary, 108))}</text>
   <text x="72" y="488" class="mono accent" font-size="16">${escapeXml(localized(lang, "世代对照", "GENERATION COMPARISON"))}</text>
   <text x="72" y="518" class="mono body" font-size="16">${escapeXml(truncateSvgText(view.comparison.summary, 108))}</text>
-  <text x="72" y="552" class="mono rare" font-size="15">${escapeXml(localized(lang, `套组 ${view.collectionSets.completed}/${view.collectionSets.total} · ${completedSets}`, `SETS ${view.collectionSets.completed}/${view.collectionSets.total} · ${completedSets}`))}</text>
+  <text x="72" y="552" class="mono rare" font-size="15">${escapeXml(localized(lang, `星图 ${view.collectionSets.completed}/${view.collectionSets.total} · ${completedSets}`, `CONSTELLATIONS ${view.collectionSets.completed}/${view.collectionSets.total} · ${completedSets}`))}</text>
   <line x1="72" y1="568" x2="1128" y2="568" stroke="#324052" stroke-width="2"/>
   <text x="72" y="594" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
   <text x="1128" y="594" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
@@ -682,6 +684,10 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
     "READ-ONLY: no chats, paths, model names, or exact tokens",
   );
   const scene = presentHabitatScene(habitat.scene, lang);
+  const phenotype = collectionPhenotypeCopy(
+    habitat.specimen.collectionPhenotype,
+    lang,
+  );
   const sceneArt = scene.art
     .map(
       (line, index) =>
@@ -768,7 +774,7 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
   <text x="626" y="224" class="mono muted" font-size="13">${escapeXml(`${displayLabel} · ${truncateSvgText(displayText, 62)}`)}</text>
   <line x1="72" y1="250" x2="1128" y2="250" stroke="#345247" stroke-width="2"/>
 
-  <text x="72" y="278" class="mono warn" font-size="14">${escapeXml(`${localized(lang, "标本", "SPECIMEN")} #${habitat.specimen.id} · ${labels.specimenStage}`)}</text>
+  <text x="72" y="278" class="mono warn" font-size="14">${escapeXml(truncateSvgText(`${localized(lang, "标本", "SPECIMEN")} #${habitat.specimen.id} · ${labels.specimenStage}${phenotype ? ` · ${phenotype.name} T${phenotype.tier}` : ""}`, 64))}</text>
   <text x="72" y="306" class="mono body" font-size="13" xml:space="preserve">${specimenArt}</text>
 
   <text x="626" y="278" class="mono warn" font-size="14">${escapeXml(`${localized(lang, "伴生位", "COMPANION BAY")} · ${labels.companionStage}`)}</text>

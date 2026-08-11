@@ -11,6 +11,7 @@ import {
   terminalWidth,
 } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
+import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 
 const ROUTE_COLORS = {
   pollution: "1;31",
@@ -123,6 +124,10 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
     `│ ${padTerminal(truncateTerminal(line, contentWidth), contentWidth)} │`;
   const rows = (lines) => lines.map(row);
   const scene = presentHabitatScene(habitat.scene, lang);
+  const phenotype = collectionPhenotypeCopy(
+    habitat.specimen.collectionPhenotype,
+    lang,
+  );
   const routeColor = ROUTE_COLORS[scene.routeId ?? "unformed"];
   const nextEvent = localized(
     lang,
@@ -269,6 +274,9 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
     ...rows(sceneLines),
     middle,
     ...rows(artHeaderLines),
+    row(
+      `${localized(lang, "馆藏异变", "COLLECTION MUTATION")}  ${phenotype ? `${phenotype.name} · ${localized(lang, `阶段 ${phenotype.tier}`, `TIER ${phenotype.tier}`)}` : localized(lang, "尚未诱发", "NOT YET INDUCED")}`,
+    ),
     ...rows([""]),
     ...rows(artLines),
     middle,

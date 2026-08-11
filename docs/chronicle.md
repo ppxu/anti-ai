@@ -42,30 +42,51 @@ The current generation is compared with the latest prior permanent fossil. Befor
 
 The comparison includes visible form identity, dominant ability, Pollution/Clarity deltas, and ability-total deltas. It is a retrospective record, not a forecast, score, combat rating, or optimization target.
 
-## Pathology collection sets
+## Pathology constellations
 
-Six presentation-only sets are derived from discoveries that already exist in the Codex. Each route receives one Rare and one Epic set.
+Twelve presentation-only constellations are derived from discoveries that already exist in the Codex. Pollution, Clarity, and Paradox each receive one Rare sign, two Epic syndromes, and one initially concealed Legendary compound diagnosis.
 
-| Route | Set | Broad requirements |
-| --- | --- | --- |
-| Pollution | Licensed Overfeed | polluted form, offense badge, Pollution phenomenon, Reactor Graveyard artifact |
-| Pollution | Cache Afterlife | Cache form, Cache evidence, Cache Swamp artifact, Cache culture |
-| Clarity | Manual Override | Lucid form, Sobriety badge, Clarity phenomenon |
-| Clarity | Quiet Inheritance | Lucid scar, Clarity case, Clarity companion, negative Expedition adjustment |
-| Paradox | Compliant Contradiction | Paradox form, Paradox badge, Paradox phenomenon |
-| Paradox | Mutual Misdiagnosis | Paradox case, Resonance incident, Paradox companion, mixed-sign Expedition return |
+| Route | Rarity | Constellation | Broad evidence |
+| --- | --- | --- | --- |
+| Pollution | Rare | Licensed Overfeed | polluted form, offense badge, Pollution phenomenon, Reactor Graveyard artifact |
+| Pollution | Epic | Cache Afterlife | Cache form, Cache evidence, Cache Swamp artifact, Cache culture |
+| Pollution | Epic | Request Supply Chain | Frenzy form, request evidence, Request Nest artifact, Frenzy culture |
+| Pollution | Legendary | Authorized Collapse | three Pollution diagnoses and a carbonized scar |
+| Clarity | Rare | Manual Override | Lucid form, Sobriety badge, Clarity phenomenon |
+| Clarity | Epic | Quiet Inheritance | Lucid scar, Clarity case, Clarity companion, negative Expedition adjustment |
+| Clarity | Epic | Low-Power Absolution | Sobriety badge, Clarity phenomenon, Clarity case, Lucid culture |
+| Clarity | Legendary | Zero-Watt Beatification | three Clarity diagnoses and a sterile scar |
+| Paradox | Rare | Compliant Contradiction | Paradox form, Paradox badge, Paradox phenomenon |
+| Paradox | Epic | Mutual Misdiagnosis | Paradox case, Resonance incident, Paradox companion, mixed-sign Expedition return |
+| Paradox | Epic | Dual Custody | Paradox evidence, split inheritance, Resonance culture, mixed-sign return |
+| Paradox | Legendary | Bilateral Reality Failure | three Paradox diagnoses and a split-shadow scar |
 
-Completing a set reveals its stamp and copy. It grants no ability points, experience, extra Expedition, improved probability, daily action, or faster growth. The fixed Codex denominator remains 134; these six derived trials sit outside it.
+Every constellation has four deterministic bilingual case phases: unknown, started, near, and complete. A Legendary name and exact requirements remain concealed until two diagnoses on the same route are complete; before that, human output exposes only broad evidence domains. Use `anti-ai codex --set <set-id>` for a focused terminal view or the language-neutral focused JSON object.
+
+Completing a constellation reveals its stamp and copy. It grants no ability points, experience, extra Expedition, improved probability, daily action, or faster growth. The fixed Codex denominator remains 134; these twelve derived diagnoses sit outside it.
+
+## Collection-induced mutation
+
+Fixed Codex discoveries can alter the specimen's presentation at four deliberately slow milestones:
+
+| Tier | Fixed discoveries | Category breadth |
+| --- | ---: | ---: |
+| I | 34 / 134 | 3 / 7 |
+| II | 67 / 134 | 5 / 7 |
+| III | 101 / 134 | 6 / 7 |
+| IV | 134 / 134 | 7 / 7 |
+
+The discovery that crosses a milestone chooses one of seven stable evidence motifs. Combined with four tiers, this creates 28 Collection Mutations plus the unchanged form. The mutation is reconstructed from dated fixed discoveries and may add a crown or exoskeleton to Creature, Chronicle, Habitat, TUI, and dossier/habitat cards. It does not alter stats, the base appearance fingerprint, the pollution code, collection odds, or saved state.
 
 ## TUI and sharing
 
-The existing five-area TUI remains unchanged. Overview includes a compact Chronicle panel, while Codex includes a `SETS` category with progress and requirement details. These TUI projections use the already loaded Creature state and do not scan Agent records. Set entries cannot occupy the Consequence Cabinet because they are presentation groupings rather than collected objects.
+The existing five-area TUI remains unchanged. Overview includes a compact Chronicle panel, while Codex presents the three routes as a Pathology Constellation star map with focused evidence and phase details. These TUI projections use the already loaded Creature state and do not scan Agent records. Constellations cannot occupy the Consequence Cabinet because they are presentation groupings rather than collected objects.
 
 Overview sharing now prepares the dossier card. The 1200×630 SVG contains the specimen silhouette, optional companion, current diagnosis, 30-day course, generation comparison, and completed-set stamps. It is generated locally, omits sensitive accounting fields, and follows the existing preview, explicit confirmation, fallback-directory, and no-overwrite rules.
 
 ## State and privacy
 
-Creature state remains schema v14. Chronicle and set progress are recalculated for the requested historical date and are not stored in `~/.anti-ai/creature.json`.
+Creature state remains schema v14. Chronicle, constellation progress, Legendary reveal, and Collection Mutation are recalculated for the requested historical date and are not stored in `~/.anti-ai/creature.json`.
 
 Historical views exclude later discoveries and later Expedition results. Public Chronicle JSON and dossier SVG never expose exact Tokens, request counts, model or Agent names, prompts, responses, tool calls, local paths, per-request timestamps, internal plan hashes, or unopened Expedition events.
 

@@ -7,6 +7,7 @@ import {
   CREATURE_RARE_ABILITY_RANKS,
   creatureAbilityBar,
   creatureArt,
+  creatureCodex,
   creatureEvolutionSummary,
   creatureLabel,
   creatureMalignancyRankLabel,
@@ -17,6 +18,7 @@ import {
   resetCreatureState,
   saveCreatureState,
 } from "../creature.mjs";
+import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 import {
   color,
   padTerminal,
@@ -521,6 +523,7 @@ async function runCreature(options, mode = "render") {
   const previousCreature = deriveCreature(state, shiftDate(date, -1));
   const today = state.days[date];
   const currentIncident = currentCreatureIncident(state, date);
+  const codex = creatureCodex(state, date);
   const newTalents = creature.talents.filter(
     (talent) => !previousCreature.talents.includes(talent),
   );
@@ -528,6 +531,7 @@ async function runCreature(options, mode = "render") {
     date,
     status: today.active ? "active" : "dormant",
     ...creature,
+    collectionPhenotype: codex.collectionPhenotype,
     mood: creatureMood(creature, today),
     today: {
       contentVersion: today.contentVersion ?? 1,
@@ -606,6 +610,10 @@ async function runCreature(options, mode = "render") {
   }
 
   const lang = options.lang;
+  const collectionPhenotype = collectionPhenotypeCopy(
+    result.collectionPhenotype,
+    lang,
+  );
   const eventCopy = today.event
     ? CREATURE_COPY.events[today.event.id]
     : undefined;
@@ -825,6 +833,7 @@ async function runCreature(options, mode = "render") {
       `${localized(lang, "生态人格", "ECOLOGY")}  ${creatureLabel("ecologies", result.ecology.type, lang)} · ${localized(lang, `污染 ${result.ecology.pollution} / 清醒 ${result.ecology.clarity}`, `pollution ${result.ecology.pollution} / clarity ${result.ecology.clarity}`)}`,
       `${localized(lang, "今日生态", "TODAY'S ECOLOGY")}  ${ecologyGain || localized(lang, "惯常波动", "HABITUAL DRIFT")}`,
       `${localized(lang, "形态", "FORM")}  ${creatureLabel("ecologyForms", result.ecologyForm, lang)}`,
+      `${localized(lang, "馆藏异变", "COLLECTION MUTATION")}  ${collectionPhenotype ? `${collectionPhenotype.name} · ${localized(lang, `阶段 ${collectionPhenotype.tier}`, `TIER ${collectionPhenotype.tier}`)}` : localized(lang, "尚未诱发", "NOT YET INDUCED")}`,
       `${localized(lang, "称号", "EPITHET")}  ${creatureTitle(result, lang)}`,
       `${localized(lang, "性格", "TEMPERAMENT")}  ${creatureLabel("temperaments", result.temperament, lang)} · ${localized(lang, "心情", "MOOD")}  ${creatureLabel("moods", result.mood, lang)}`,
       `${localized(lang, "阅历", "EXPERIENCE")}  ${result.experienceDays}${result.nextStageAt === null ? localized(lang, " 天", " days") : localized(lang, ` / ${result.nextStageAt} 天`, ` / ${result.nextStageAt} days`)}`,
@@ -906,6 +915,7 @@ async function runCreature(options, mode = "render") {
     `${localized(lang, "进化分支", "EVOLUTION BRANCH")}  ${creatureLabel("branches", result.branch, lang)}`,
     `${localized(lang, "生态人格", "ECOLOGY")}  ${creatureLabel("ecologies", result.ecology.type, lang)} · ${localized(lang, `污染 ${result.ecology.pollution} / 清醒 ${result.ecology.clarity}`, `pollution ${result.ecology.pollution} / clarity ${result.ecology.clarity}`)}`,
     `${localized(lang, "形态", "FORM")}  ${creatureLabel("ecologyForms", result.ecologyForm, lang)}`,
+    `${localized(lang, "馆藏异变", "COLLECTION MUTATION")}  ${collectionPhenotype ? `${collectionPhenotype.name} · ${localized(lang, `阶段 ${collectionPhenotype.tier}`, `TIER ${collectionPhenotype.tier}`)}` : localized(lang, "尚未诱发", "NOT YET INDUCED")}`,
     ...(companionPanel.length > 0 ? ["", ...companionPanel] : []),
   ];
   const stateLines = [

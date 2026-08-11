@@ -30,6 +30,7 @@ import {
 } from "../laboratory.mjs";
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
+import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 import { expeditionStatus } from "../expedition.mjs";
 import {
   EXPEDITION_ACHIEVEMENT_DEFINITIONS,
@@ -417,8 +418,20 @@ function codexEntryPresentation(entry, lang) {
 function deriveTuiSnapshot(state, date, lang = "zh") {
   const creature = deriveCreature(state, date);
   const companion = laboratoryCompanion(state, date).companion;
-  const specimen = { ...creature, companion };
   const codex = creatureCodex(state, date);
+  const phenotypeCopy = collectionPhenotypeCopy(
+    codex.collectionPhenotype,
+    lang,
+  );
+  const collectionPhenotype = {
+    ...codex.collectionPhenotype,
+    name: phenotypeCopy?.name ?? null,
+  };
+  const creatureView = {
+    ...creature,
+    collectionPhenotype: codex.collectionPhenotype,
+  };
+  const specimen = { ...creatureView, companion };
   const chronicle = presentMutationChronicle(
     deriveMutationChronicle(state, date),
     lang,
@@ -429,9 +442,9 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     state,
     specimen,
     date,
-    creatureArt(creature),
+    creatureArt(creatureView),
   );
-  const art = creatureArt(creature)
+  const art = creatureArt(creatureView)
     .replaceAll(ANSI_PATTERN, "")
     .split("\n")
     .filter(Boolean);
@@ -609,11 +622,13 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
             total: chronicle.collectionSets.total,
           }
         : codex.summary[id]),
-      entries: [...(collectionBySection.get(id) ?? [])].sort(
-        (left, right) =>
-          Number(right.discovered) - Number(left.discovered) ||
-          String(left.id).localeCompare(String(right.id)),
-      ),
+      entries: id === "collectionSets"
+        ? [...(collectionBySection.get(id) ?? [])]
+        : [...(collectionBySection.get(id) ?? [])].sort(
+            (left, right) =>
+              Number(right.discovered) - Number(left.discovered) ||
+              String(left.id).localeCompare(String(right.id)),
+          ),
     })),
     dynamic: [
       ["specimens", "本地标本", "Local specimens"],
@@ -629,6 +644,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       discovered: codex.summary[id].discovered,
     })),
     recent,
+    collectionPhenotype,
     cabinet: cabinetModel,
     archive: {
       defaultSpan: 7,
@@ -691,6 +707,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       temperament: creature.temperament,
       chromaticAbilityId: creature.appearance.rareAbilityId,
       evolutionId: creature.appearance.evolutionId,
+      collectionPhenotype,
       art,
       actions: actions.filter(({ available }) => available).slice(0, 2),
       chronicle: {
@@ -729,6 +746,10 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     },
     habitat: {
       ...habitat,
+      specimen: {
+        ...habitat.specimen,
+        collectionPhenotype,
+      },
       scene: presentHabitatScene(habitat.scene, lang),
       cabinet: cabinetModel,
       relationship: habitat.relationship

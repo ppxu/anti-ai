@@ -1,8 +1,8 @@
 import { chronicleDiagnosis } from "../chronicle.mjs";
 import {
-  collectionSetCopy,
-  collectionSetRequirementCopy,
+  presentCollectionSet,
 } from "../collection-sets.mjs";
+import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 import { companionLabel } from "../companion.mjs";
 import { creatureLabel, creatureTitle } from "../creature.mjs";
 import { localized } from "../shared.mjs";
@@ -84,15 +84,7 @@ function comparisonPresentation(comparison, lang) {
 }
 
 function setPresentation(entry, lang) {
-  const copy = collectionSetCopy(entry.id, lang);
-  return {
-    ...entry,
-    ...copy,
-    requirements: entry.requirements.map((requirement) => ({
-      ...requirement,
-      label: collectionSetRequirementCopy(requirement.id, lang),
-    })),
-  };
+  return presentCollectionSet(entry, lang);
 }
 
 function presentMutationChronicle(chronicle, lang = "zh") {
@@ -117,6 +109,10 @@ function presentMutationChronicle(chronicle, lang = "zh") {
         : null,
     },
     diagnosis: chronicleDiagnosis(chronicle.diagnosisId, lang),
+    collectionPhenotype: {
+      ...chronicle.collectionPhenotype,
+      copy: collectionPhenotypeCopy(chronicle.collectionPhenotype, lang),
+    },
     latestChangeLabel: latestChangeLabel(chronicle.latestChange, lang),
     periods: chronicle.periods.map((period) => periodPresentation(period, lang)),
     comparison: comparisonPresentation(chronicle.comparison, lang),
@@ -131,9 +127,21 @@ function presentMutationChronicle(chronicle, lang = "zh") {
 
 function renderMutationChronicle(chronicle, lang = "zh") {
   const view = presentMutationChronicle(chronicle, lang);
-  const setLines = view.collectionSets.entries.map((entry) =>
-    `  ${entry.completed ? "◆" : "◇"} ${entry.name}  ${entry.progress.completed}/${entry.progress.total}${entry.completed ? ` · ${entry.stamp}` : ""}`
-  );
+  const setLines = [
+    ["pollution", localized(lang, "污染", "POLLUTION")],
+    ["clarity", localized(lang, "清醒", "CLARITY")],
+    ["paradox", localized(lang, "悖论", "PARADOX")],
+  ].map(([routeId, routeLabel]) => {
+    const routeSets = view.collectionSets.entries.filter(
+      (entry) => entry.routeId === routeId,
+    );
+    const focus = routeSets
+      .filter((entry) => !entry.completed && entry.revealed)
+      .sort((left, right) => right.progress.percent - left.progress.percent)[0]
+      ?? routeSets.find((entry) => !entry.completed)
+      ?? routeSets.at(-1);
+    return `  ${routeLabel} ${routeSets.filter((entry) => entry.completed).length}/4 · ${focus.name} ${focus.progress.completed}/${focus.progress.total}`;
+  });
   return [
     localized(lang, `异变年鉴 · ${view.date}`, `MUTATION CHRONICLE · ${view.date}`),
     localized(lang, "7 天 · 30 天 · 90 天", "7 DAYS · 30 DAYS · 90 DAYS"),
@@ -142,6 +150,7 @@ function renderMutationChronicle(chronicle, lang = "zh") {
     `${localized(lang, "阶段 / 生态", "STAGE / ECOLOGY")}  ${view.identity.stageLabel} · ${view.identity.ecologyLabel}`,
     `${localized(lang, "病理 / 主导", "PATHOLOGY / DOMINANT")}  ${view.identity.pathologyLabel} · ${view.identity.abilityLabel}`,
     `${localized(lang, "伴生", "COMPANION")}  ${view.identity.companion ? `${view.identity.companion.stageLabel} · ${view.identity.companion.routeLabel}` : localized(lang, "未绑定", "UNBONDED")}`,
+    `${localized(lang, "馆藏异变", "COLLECTION MUTATION")}  ${view.collectionPhenotype.copy ? `${view.collectionPhenotype.copy.name} · ${localized(lang, `阶段 ${view.collectionPhenotype.tier}`, `TIER ${view.collectionPhenotype.tier}`)}` : localized(lang, "尚未诱发", "NOT YET INDUCED")}`,
     "",
     `${localized(lang, "诊断", "DIAGNOSIS")}  ${view.diagnosis}`,
     `${localized(lang, "最近变化", "LATEST CHANGE")}  ${view.latestChangeLabel}`,
@@ -155,8 +164,9 @@ function renderMutationChronicle(chronicle, lang = "zh") {
     `  ${view.comparison.baseline.label} → ${view.comparison.current.label}`,
     `  ${view.comparison.summary}`,
     "",
-    `${localized(lang, "收藏套组", "COLLECTION SETS")}  ${view.collectionSets.completed}/${view.collectionSets.total}`,
+    `${localized(lang, "病理星图", "PATHOLOGY CONSTELLATIONS")}  ${view.collectionSets.completed}/${view.collectionSets.total}`,
     ...setLines,
+    `  ${localized(lang, "查看星图", "CONSTELLATION")}  anti-ai codex --set <set-id>`,
     "",
     localized(
       lang,

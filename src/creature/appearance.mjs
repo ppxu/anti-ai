@@ -20,6 +20,11 @@ import {
   V2_ACHIEVEMENT_DEFINITIONS,
   V2_RARE_ABILITY_POOLS,
 } from "./content-v2.mjs";
+import {
+  COLLECTION_PHENOTYPE_GLYPHS,
+  COLLECTION_PHENOTYPE_MILESTONES,
+  collectionPhenotypeGlyph,
+} from "../collection-phenotype.mjs";
 
 const V2_ACHIEVEMENT_IDS = new Set(
   V2_ACHIEVEMENT_DEFINITIONS.map(({ id }) => id),
@@ -202,6 +207,15 @@ function creatureArt(creature) {
   }
   if (appearance.evolutionId) {
     lines.splice(-1, 0, center(CREATURE_GRAFT_MARKS[appearance.evolutionId]));
+  }
+  const collectionGlyph = collectionPhenotypeGlyph(
+    creature.collectionPhenotype,
+  );
+  if (collectionGlyph) {
+    lines.unshift(center(collectionGlyph));
+    if (creature.collectionPhenotype.tier >= 3) {
+      lines.splice(-1, 0, center(collectionGlyph));
+    }
   }
   const colorCode = appearance.rareAbilityId
     ? CREATURE_RARE_ABILITY_RANKS[
@@ -533,10 +547,18 @@ function creatureAppearanceCapacity() {
     Object.keys(CREATURE_ECOLOGY_PARTS).length *
     chestVariants *
     graftVariants;
+  const finalAsciiForms = structuralForms * growthVariants;
+  const collectionPhenotypes =
+    1 +
+    Object.keys(COLLECTION_PHENOTYPE_GLYPHS).length *
+      COLLECTION_PHENOTYPE_MILESTONES.length;
   return {
     structuralForms,
     growthVariants,
-    finalAsciiForms: structuralForms * growthVariants,
+    finalAsciiForms,
+    baseSpecimenForms: finalAsciiForms,
+    collectionPhenotypes,
+    displayedAsciiForms: finalAsciiForms * collectionPhenotypes,
   };
 }
 

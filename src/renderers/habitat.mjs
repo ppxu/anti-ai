@@ -4,6 +4,7 @@ import {
   habitatEventCopy,
   habitatRelationshipCopy,
 } from "../habitat.mjs";
+import { presentHabitatScene } from "../habitat-scenes.mjs";
 import {
   color,
   padTerminal,
@@ -121,8 +122,8 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
   const row = (line = "") =>
     `│ ${padTerminal(truncateTerminal(line, contentWidth), contentWidth)} │`;
   const rows = (lines) => lines.map(row);
-  const routeColor =
-    ROUTE_COLORS[habitat.relationship?.routeId ?? "unformed"];
+  const scene = presentHabitatScene(habitat.scene, lang);
+  const routeColor = ROUTE_COLORS[scene.routeId ?? "unformed"];
   const nextEvent = localized(
     lang,
     `下次生态事件 ${habitat.cadence.daysUntilNext} 天后`,
@@ -142,6 +143,21 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
     localized(lang, "      [ 空置伴生位 ]", "      [ UNBONDED BAY ]"),
     "",
     "  anti-ai lab bond <culture-id>",
+  ];
+  const sceneLines = [
+    `${localized(lang, "活体场景", "LIVING SCENE")}  ${color(routeColor, scene.name)} · ${scene.cycle}`,
+    ...scene.art.map((line) => color(routeColor, line)),
+    `${localized(lang, "舱内气候", "HABITAT CLIMATE")}  ${scene.climate}`,
+    ...wrapTerminal(
+      `${localized(lang, "生态短讯", "HABITAT BULLETIN")}  ${scene.bulletin}`,
+      contentWidth,
+      lang,
+    ),
+    ...(scene.layers.trace
+      ? [
+          `${localized(lang, "近期痕迹", "RECENT TRACE")}  ${scene.layers.trace.label} · ${scene.layers.trace.date}`,
+        ]
+      : []),
   ];
   const artHeaderLines = joinArt(
     [
@@ -249,6 +265,8 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
     ),
     top,
     row(`${generation} · ${experience} · ${nextEvent}`),
+    middle,
+    ...rows(sceneLines),
     middle,
     ...rows(artHeaderLines),
     ...rows([""]),

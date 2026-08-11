@@ -5,6 +5,7 @@ import {
   deriveAnatomyAnchors,
   deriveCompanionFrame,
   deriveEventReplay,
+  deriveHabitatSceneFrame,
   deriveObservationTargets,
   deriveSpecimenFrame,
   isGlitchFrame,
@@ -20,6 +21,24 @@ test("motion levels stay low-rate and cycle predictably", () => {
   assert.equal(nextMotionLevel("off"), "low");
   assert.equal(nextMotionLevel("low"), "full");
   assert.equal(nextMotionLevel("full"), "off");
+});
+
+test("living habitat weather animates locally and motion-off stays exact", () => {
+  const art = [
+    "╭─$─≈─$─────────────$─≈─$─╮",
+    "│  ≋≋    $      ↻↻      ☢  │",
+    "╰─☢──────≋≋≋──────────↻─╯",
+  ];
+
+  assert.deepEqual(
+    deriveHabitatSceneFrame(art, "pollution", 1, "off"),
+    art,
+  );
+  const living = deriveHabitatSceneFrame(art, "pollution", 1, "low");
+  assert.equal(living.length, art.length);
+  assert.notDeepEqual(living, art);
+  assert.match(living.join("\n"), /¢|∿/u);
+  assert.deepEqual(art[0], "╭─$─≈─$─────────────$─≈─$─╮");
 });
 
 test("specimen idle frames preserve static mode and animate only local anatomy", () => {

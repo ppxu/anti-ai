@@ -1,4 +1,4 @@
-# Containment Habitat
+# Living Containment Habitat
 
 [简体中文](./habitat.zh-CN.md)
 
@@ -16,7 +16,20 @@ anti-ai share --card habitat > anti-ai-habitat.svg
 
 Use `anti-ai help creature habitat` for focused help.
 
-The default view is the selected single-screen layout: specimen and companion share one chamber, recent collection traces become scenery, and the lower file shows the relationship diagnosis, joint symptom, latest incident, and next seven-day observation point. `--full` expands the sealed event history.
+The default view is the selected single-screen layout: a Living Habitat scene surrounds the specimen and companion, while the lower file keeps the relationship diagnosis, joint symptom, latest ecological incident, and next seven-day observation point. `--full` expands the sealed event history.
+
+## Fifteen living scenes
+
+The shared scene model has 15 deterministic archetypes, balanced five per Pollution, Clarity, and Paradox. Each archetype contributes a three-line ASCII environment, a chamber climate, and two bilingual satirical bulletins, for 30 bulletins in total. Four deterministic chamber cycles add inspection, feeding, maintenance, or lights-out context.
+
+Every view layers the same information in the same order:
+
+1. environment archetype and chamber climate;
+2. specimen pose derived from the selected day's discrete usage band;
+3. current relationship and active companion, or a solitary bay;
+4. one latest existing trace from same-day interaction, Expedition activity, containment incident, companion bond, culture, case, or seven-day ecological event.
+
+The most recent date wins; same-day trace types use a fixed priority so repeated views cannot reorder or reroll the result. This model is shared by terminal output, stable JSON, the TUI Habitat area, and the Habitat SVG card. The TUI adds only low-frequency route-aware weather glyph changes. `--no-motion` preserves the exact static scene.
 
 ## Read-only snapshots
 
@@ -93,10 +106,10 @@ In Habitat, `o` records one deterministic Observation and `c` records one restra
 
 - `today` adds one current habitat observation.
 - `week` and `month` show the current relationship, events sealed in the period, and new scenery without duplicating the full chamber.
-- `share --card habitat` prints a 1200×630 SVG containing the two bays, current diagnosis, displayed Cabinet when occupied, or scenery when it is empty, plus the latest incident.
+- `share --card habitat` prints a 1200×630 SVG containing the same scene name, climate, bulletin, two bays, current diagnosis, displayed Cabinet or scenery, and recent trace.
 
 The card is written only to stdout. It omits exact Tokens, requests, source/model names, paths, prompts, responses, tool calls, and local record names.
 
 ## Product guardrail
 
-Pollution, Clarity, and Paradox have equal content pools. Heavy use, restrained use, and AI-free days can create different stories, but they all advance the event clock at the same rate. The habitat has no server, account, background process, leaderboard, combat, daily task, missed-day penalty, consumable item, or paid reroll.
+Pollution, Clarity, and Paradox have equal scene, bulletin, and event pools. Heavy use, restrained use, and AI-free days can create different stories, but they all advance the event clock at the same rate. The habitat has no server, account, background process, leaderboard, combat, daily task, missed-day penalty, consumable item, or paid reroll.

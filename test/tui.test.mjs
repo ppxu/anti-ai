@@ -74,6 +74,10 @@ test("the TUI snapshot unifies five product areas without mutating state", (t) =
   assert.ok(snapshot.overview.title.length > 0);
   assert.ok(snapshot.overview.art.length >= 8);
   assert.equal(snapshot.habitat.companion, null);
+  assert.ok(snapshot.habitat.scene.name.length > 0);
+  assert.ok(snapshot.habitat.scene.climate.length > 0);
+  assert.ok(snapshot.habitat.scene.bulletin.length > 0);
+  assert.equal(snapshot.habitat.scene.art.length, 3);
   assert.equal(snapshot.laboratory.cultures, 0);
   assert.equal(snapshot.codex.fixed.total, 134);
   assert.equal(snapshot.codex.categories[0].entries.length, 16);
@@ -472,13 +476,19 @@ test("the consequence cabinet and daily interactions persist only explicit narra
   assert.equal(after.days["2026-07-23"].interactions.contact.targetId, "glass");
   const { interactions, ...afterDay } = after.days["2026-07-23"];
   assert.deepEqual(afterDay, beforeDay);
+  const afterSnapshot = deriveTuiSnapshot(after, "2026-07-23", "zh");
   assert.deepEqual(
-    deriveTuiSnapshot(after, "2026-07-23", "zh")
-      .codex.archive.days[0].activities
+    afterSnapshot.codex.archive.days[0].activities
       .filter(({ type }) => type === "interaction")
       .map(({ label }) => label),
     ["今日观察已封存", "今日接触已封存"],
   );
+  assert.deepEqual(afterSnapshot.habitat.scene.layers.trace, {
+    type: "interaction",
+    id: `contact:glass:${after.days["2026-07-23"].interactions.contact.reactionId}`,
+    date: "2026-07-23",
+    label: "今日轻接触",
+  });
 
   const habitat = runCli(
     ["creature", "habitat", "--date", "2026-07-23"],
@@ -887,7 +897,9 @@ test("the containment console navigates all five product areas by keyboard", asy
 
   screen.stdin.write("2");
   await new Promise((resolve) => setImmediate(resolve));
-  assert.match(screen.lastFrame(), /生态舱状态/u);
+  assert.match(screen.lastFrame(), /活体生态舱/u);
+  assert.match(screen.lastFrame(), /生态短讯/u);
+  assert.match(screen.lastFrame(), new RegExp(snapshot.habitat.scene.name, "u"));
   assert.match(screen.lastFrame(), /伴生收容进度.*0 \/ 3/u);
   assert.match(screen.lastFrame(), /尚无培养原料/u);
   assert.match(screen.lastFrame(), /l 前往实验室/u);
@@ -900,7 +912,7 @@ test("the containment console navigates all five product areas by keyboard", asy
   assert.match(screen.lastFrame(), /请求口器/u);
   screen.stdin.write("\u001B");
   await waitForFrame(screen, /器官观察/u, { absent: true });
-  assert.match(screen.lastFrame(), /生态舱状态/u);
+  assert.match(screen.lastFrame(), /活体生态舱/u);
   screen.stdin.write("r");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /事件回放/u);
@@ -1477,7 +1489,7 @@ test("an empty habitat can open a direct companion bond preview", async (t) => {
   assert.match(screen.lastFrame(), new RegExp(`> ${cultureId}\\. #${cultureId}`, "u"));
 
   screen.stdin.write("\u001B");
-  await waitForFrame(screen, /生态舱状态/u);
+  await waitForFrame(screen, /活体生态舱/u);
   screen.stdin.write("4");
   await waitForFrame(screen, /污染实验室/u);
   screen.stdin.write("\t");
@@ -1593,9 +1605,8 @@ test("the TUI completes incubation and bonding without leaving the console", asy
   screen.stdin.write("\r");
   await waitForFrame(screen, /协议执行完成/u);
   screen.stdin.write("\r");
-  await waitForFrame(screen, /培养流程 · 3 \/ 3/u);
-  screen.stdin.write("2");
-  await waitForFrame(screen, /伴生位/u);
+  await waitForFrame(screen, /活体生态舱/u);
+  assert.match(screen.lastFrame(), /近期痕迹 · 伴生绑定痕迹/u);
   assert.doesNotMatch(screen.lastFrame(), /尚无培养原料|可以建立伴生关系/u);
   assert.match(screen.lastFrame(), /#\w+ · 1 天/u);
 

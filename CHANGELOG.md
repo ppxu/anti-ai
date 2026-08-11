@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-08-11
+
+### Added
+
+- Added a deterministic Living Habitat layer with 15 route-balanced ASCII scene archetypes, 30 bilingual habitat bulletins, four chamber cycles, specimen poses, relationship context, and one recent trace selected from existing interactions, Expeditions, incidents, bonds, cultures, cases, or ecological events.
+- Added low-frequency route-aware environmental motion to the Habitat TUI while preserving exact static output under `--no-motion`.
+
+### Changed
+
+- Upgraded `creature habitat`, the TUI Habitat area, and `share --card habitat` to consume the same structured scene model, so terminal, interactive, JSON, and SVG views describe the same chamber state.
+- Bonding a culture inside the TUI now returns directly to the Living Habitat and shows the new companion with its bond trace; incubation still remains in Laboratory until the workflow is complete.
+- Updated bilingual Help, Explain, READMEs, Habitat and architecture guides, Security Policy, contribution guidance, and the Agent Skill for Living Habitat behavior.
+
+### Security
+
+- Living scenes derive only from stable local IDs, dates, route/stage context, and already-private state. Public views add no prompts, responses, paths, model/source names, exact Tokens, requests, or per-request timestamps.
+- Creature schema remains v14. This release adds no persistent field, migration, required runtime dependency, network access, telemetry, background process, daily action, Token-volume reward, missed-day pressure, or probability change.
+
 ## [3.3.0] - 2026-08-11
 
 ### Added

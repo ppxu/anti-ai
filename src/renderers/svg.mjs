@@ -18,6 +18,7 @@ import {
   habitatEventCopy,
   habitatRelationshipCopy,
 } from "../habitat.mjs";
+import { presentHabitatScene } from "../habitat-scenes.mjs";
 
 function escapeXml(value) {
   return String(value)
@@ -674,16 +675,23 @@ function renderCompanionShareSvg(view, lang = "zh") {
 }
 
 function renderHabitatShareSvg(habitat, labels, lang = "zh") {
-  const title = localized(lang, "收容生态舱", "CONTAINMENT HABITAT");
+  const title = localized(lang, "今日生态快照", "LIVING HABITAT SNAPSHOT");
   const privacy = localized(
     lang,
     "只读模式：无对话、路径、模型名或精确 Token",
     "READ-ONLY: no chats, paths, model names, or exact tokens",
   );
+  const scene = presentHabitatScene(habitat.scene, lang);
+  const sceneArt = scene.art
+    .map(
+      (line, index) =>
+        `<tspan x="72" dy="${index === 0 ? 0 : 19}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
   const specimenArt = habitat.specimen.art
     .map(
       (line, index) =>
-        `<tspan x="72" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
+        `<tspan x="72" dy="${index === 0 ? 0 : 18}">${escapeXml(line)}</tspan>`,
     )
     .join("");
   const companionLines = habitat.companion?.art ?? [
@@ -694,15 +702,11 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
   const companionArt = companionLines
     .map(
       (line, index) =>
-        `<tspan x="626" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
+        `<tspan x="626" dy="${index === 0 ? 0 : 18}">${escapeXml(line)}</tspan>`,
     )
     .join("");
   const relationship = habitat.relationship
     ? habitatRelationshipCopy(habitat.relationship.id, lang)
-    : null;
-  const latestEvent = habitat.events.at(-1);
-  const latest = latestEvent
-    ? habitatEventCopy(latestEvent.id, lang)
     : null;
   const decorationText =
     habitat.decorations
@@ -729,58 +733,56 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
         lang,
       )
     : "anti-ai lab bond <culture-id>";
-  const eventName =
-    latest?.name ??
-    localized(
-      lang,
-      "尚未达到第 7 个阅历日",
-      "NOT YET AT EXPERIENCE DAY 7",
-    );
-  const eventBody =
-    latest?.body ??
-    localized(
-      lang,
-      "生态舱尚未积累足够的共同事故。",
-      "The habitat has not accumulated enough shared incidents.",
-    );
+  const traceText = scene.layers.trace
+    ? `${scene.layers.trace.label} · ${scene.layers.trace.date}`
+    : localized(lang, "尚无近期痕迹", "NO RECENT TRACE");
+  const sceneColor = {
+    pollution: "#ff7b72",
+    clarity: "#6dd6e7",
+    paradox: "#f1c66f",
+  }[scene.routeId] ?? "#78e0aa";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
   <title id="title">${escapeXml(title)}</title>
   <desc id="desc">${escapeXml(privacy)}</desc>
   <rect width="1200" height="630" rx="28" fill="#090d0c"/>
   <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#345247" stroke-width="2"/>
-  <rect x="24" y="24" width="12" height="582" rx="6" fill="#78e0aa"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="${sceneColor}"/>
   <style>
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .muted { fill: #7e9a90; }
     .body { fill: #edf8f4; }
     .accent { fill: #78e0aa; }
+    .scene { fill: ${sceneColor}; }
     .warn { fill: #f1c66f; }
   </style>
   <text x="72" y="78" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
   <text x="1128" y="78" class="mono muted" font-size="17" text-anchor="end">${escapeXml(habitat.date)}</text>
-  <text x="72" y="108" class="mono muted" font-size="15">${escapeXml(localized(lang, `第 ${habitat.specimen.generation} 世代 · 阅历 ${habitat.specimen.experienceDays} 天 · 下次事件 ${habitat.cadence.daysUntilNext} 天后`, `GENERATION ${habitat.specimen.generation} · ${habitat.specimen.experienceDays} EXPERIENCE DAYS · NEXT EVENT IN ${habitat.cadence.daysUntilNext} DAYS`))}</text>
-  <line x1="72" y1="126" x2="1128" y2="126" stroke="#345247" stroke-width="2"/>
+  <text x="72" y="108" class="mono muted" font-size="15">${escapeXml(localized(lang, `第 ${habitat.specimen.generation} 世代 · 阅历 ${habitat.specimen.experienceDays} 天 · ${scene.cycle}`, `GENERATION ${habitat.specimen.generation} · ${habitat.specimen.experienceDays} EXPERIENCE DAYS · ${scene.cycle}`))}</text>
+  <line x1="72" y1="122" x2="1128" y2="122" stroke="#345247" stroke-width="2"/>
 
-  <text x="72" y="158" class="mono warn" font-size="15">${escapeXml(`${localized(lang, "标本", "SPECIMEN")} #${habitat.specimen.id} · ${labels.specimenStage}`)}</text>
-  <text x="72" y="194" class="mono body" font-size="16" xml:space="preserve">${specimenArt}</text>
+  <text x="72" y="148" class="mono scene" font-size="16" font-weight="700">${escapeXml(`${localized(lang, "活体场景", "LIVING SCENE")} · ${scene.name} · ${scene.climate}`)}</text>
+  <text x="72" y="174" class="mono scene" font-size="14" xml:space="preserve">${sceneArt}</text>
+  <text x="626" y="148" class="mono muted" font-size="14">${escapeXml(localized(lang, "生态短讯", "HABITAT BULLETIN"))}</text>
+  <text x="626" y="174" class="mono body" font-size="15">${svgTextTspans(scene.bulletin, 626, 55, 2, 21)}</text>
+  <text x="626" y="224" class="mono muted" font-size="13">${escapeXml(`${displayLabel} · ${truncateSvgText(displayText, 62)}`)}</text>
+  <line x1="72" y1="250" x2="1128" y2="250" stroke="#345247" stroke-width="2"/>
 
-  <text x="626" y="158" class="mono warn" font-size="15">${escapeXml(`${localized(lang, "伴生位", "COMPANION BAY")} · ${labels.companionStage}`)}</text>
-  <text x="626" y="194" class="mono body" font-size="16" xml:space="preserve">${companionArt}</text>
+  <text x="72" y="278" class="mono warn" font-size="14">${escapeXml(`${localized(lang, "标本", "SPECIMEN")} #${habitat.specimen.id} · ${labels.specimenStage}`)}</text>
+  <text x="72" y="306" class="mono body" font-size="13" xml:space="preserve">${specimenArt}</text>
 
-  <line x1="72" y1="424" x2="1128" y2="424" stroke="#345247" stroke-width="2"/>
-  <text x="72" y="456" class="mono muted" font-size="14">${escapeXml(displayLabel)}</text>
-  <text x="72" y="482" class="mono body" font-size="15">${escapeXml(displayText)}</text>
-  <text x="72" y="516" class="mono muted" font-size="14">${escapeXml(localized(lang, "关系诊断", "RELATIONSHIP DIAGNOSIS"))}</text>
-  <text x="72" y="542" class="mono warn" font-size="17">${escapeXml(`${relationName} · ${relationDetail}`)}</text>
+  <text x="626" y="278" class="mono warn" font-size="14">${escapeXml(`${localized(lang, "伴生位", "COMPANION BAY")} · ${labels.companionStage}`)}</text>
+  <text x="626" y="306" class="mono body" font-size="13" xml:space="preserve">${companionArt}</text>
 
-  <text x="626" y="456" class="mono muted" font-size="14">${escapeXml(localized(lang, "最近事件", "LATEST EVENT"))}</text>
-  <text x="626" y="482" class="mono accent" font-size="17">${escapeXml(eventName)}</text>
-  <text x="626" y="510" class="mono body" font-size="14">${escapeXml(eventBody)}</text>
+  <line x1="72" y1="466" x2="1128" y2="466" stroke="#345247" stroke-width="2"/>
+  <text x="72" y="494" class="mono muted" font-size="13">${escapeXml(localized(lang, "关系诊断", "RELATIONSHIP DIAGNOSIS"))}</text>
+  <text x="72" y="520" class="mono warn" font-size="15">${escapeXml(truncateSvgText(`${relationName} · ${relationDetail}`, 64))}</text>
+  <text x="626" y="494" class="mono muted" font-size="13">${escapeXml(localized(lang, "近期痕迹", "RECENT TRACE"))}</text>
+  <text x="626" y="520" class="mono scene" font-size="15">${escapeXml(traceText)}</text>
 
-  <line x1="72" y1="558" x2="1128" y2="558" stroke="#345247" stroke-width="2"/>
-  <text x="72" y="586" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
-  <text x="1128" y="586" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+  <line x1="72" y1="552" x2="1128" y2="552" stroke="#345247" stroke-width="2"/>
+  <text x="72" y="580" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="580" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
 </svg>
 `;
 }

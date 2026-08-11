@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { laboratoryCompanion } from "./companion.mjs";
 import { V2_HABITAT_COPY } from "./habitat-v2.mjs";
+import { deriveHabitatScene } from "./habitat-scenes.mjs";
 
 const HABITAT_EVENT_CADENCE_DAYS = 7;
 
@@ -591,8 +592,8 @@ function deriveHabitat(state, creature, date, specimenArt) {
   const relationship = habitatRelationship(state, creature, companion, date);
   const experienceDays = creature.experienceDays;
   const remainder = experienceDays % HABITAT_EVENT_CADENCE_DAYS;
-  return {
-    version: 1,
+  const habitat = {
+    version: 2,
     date,
     status: companion ? "cohabiting" : "solitary",
     specimen: {
@@ -639,6 +640,8 @@ function deriveHabitat(state, creature, date, specimenArt) {
     decorations: habitatDecorations(events, companion),
     events,
   };
+  habitat.scene = deriveHabitatScene(state, creature, habitat, date);
+  return habitat;
 }
 
 function habitatEventCopy(id, lang = "zh") {

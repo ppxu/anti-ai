@@ -99,4 +99,4 @@ The base organ genes establish the stable silhouette. The final specimen can sti
 - three visible achievement marks;
 - three chromatic rarity overlays.
 
-Those growth layers expand the current generator from `82,944` structural combinations to **204,374,016 deduplicated final ASCII forms**. Browse their literal glyphs in the [Growth Appearance Codex](./creature-growth-appearance.md), or see the [Creature Guide](./creature.md#theoretical-species-capacity) for the complete calculation.
+Those growth layers expand the current generator from `82,944` structural combinations to **204,374,016 deduplicated base specimen forms**. A separate collection-induced crown/exoskeleton layer creates 29 presentation variants without changing the base fingerprint, for **5,926,846,464 theoretical displayed forms**. Browse the literal growth glyphs in the [Growth Appearance Codex](./creature-growth-appearance.md), or see the [Creature Guide](./creature.md#theoretical-species-capacity) for the complete calculation.

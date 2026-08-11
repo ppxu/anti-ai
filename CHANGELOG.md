@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-08-11
+
+### Added
+
+- Expanded the six Pathology Set trials into twelve Pathology Constellations: Pollution, Clarity, and Paradox now each receive one Rare sign, two Epic syndromes, and one initially concealed Legendary compound diagnosis.
+- Added four deterministic bilingual case phases for every constellation, progressive Legendary reveal after two same-route diagnoses, and focused `codex --set <set-id>` terminal/JSON inspection.
+- Added four read-only Collection Mutation milestones at 34/67/101/134 fixed discoveries with 3/5/6/7-category breadth. Seven stable evidence motifs can visibly crown the main specimen in Creature, Chronicle, Habitat, TUI, and dossier/habitat cards without changing its specimen fingerprint.
+
+### Changed
+
+- Reworked the TUI set category into a three-column Pathology Constellation view with route summaries, focused diagnosis, evidence nodes, phase copy, and concealed Legendary silhouettes; the five top-level areas remain unchanged.
+- Compact Chronicle and Codex output now summarize the three routes instead of vertically listing every set. Codex reports the unchanged 204,374,016-form base specimen space separately from 29 Collection Phenotypes and 5,926,846,464 theoretical display forms.
+- Updated bilingual Help, Explain, READMEs, Creature, Chronicle, architecture, organ/appearance guides, Security Policy, contribution guidance, AGENTS.md, and the installable Agent Skill.
+
+### Security
+
+- Constellations and Collection Mutations are reconstructed in memory from already-private Codex discovery IDs and dates. Concealed human views expose only broad evidence domains, while no prompt, response, path, model/source name, exact Token count, request timestamp, or conversation text is added.
+- Creature schema remains v14. This release adds no persistent field, migration, required runtime dependency, network access, telemetry, background process, daily action, Token-volume reward, missed-day pressure, probability change, or pollution-code incompatibility.
+
 ## [3.4.0] - 2026-08-11
 
 ### Added

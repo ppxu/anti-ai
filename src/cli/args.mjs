@@ -24,6 +24,7 @@ function parseArgs(argv) {
     id: undefined,
     topic: undefined,
     destination: undefined,
+    set: undefined,
     unknown: [],
     missing: undefined,
   };
@@ -73,6 +74,12 @@ function parseArgs(argv) {
         options.missing ??= arg;
       } else {
         options.with = rest[++index];
+      }
+    } else if (arg === "--set" && command === "codex") {
+      if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
+        options.missing ??= arg;
+      } else {
+        options.set = rest[++index];
       }
     } else if (
       command === "expedition" &&

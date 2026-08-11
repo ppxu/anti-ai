@@ -41,6 +41,7 @@ Preserve these product rules:
 - `src/application/settlement.mjs` owns the settlement pipeline shared by CLI and TUI.
 - `src/chronicle.mjs` owns read-only historical and generation projections.
 - `src/collection-sets.mjs` owns presentation-only, route-balanced set definitions.
+- `src/collection-phenotype.mjs` owns read-only fixed-collection milestones and display-only specimen motifs; it must not alter appearance fingerprints or state.
 - Domain modules own calculations and gameplay rules.
 - `src/cli/` and `src/renderers/` own terminal and SVG presentation.
 - `src/tui/` owns Ink source; `dist/tui.mjs` is generated and must not be edited directly.

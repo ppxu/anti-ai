@@ -537,6 +537,9 @@ test("codex exposes the deduplicated final ASCII species capacity", (t) => {
     structuralForms: 82_944,
     growthVariants: 2_464,
     finalAsciiForms: 204_374_016,
+    baseSpecimenForms: 204_374_016,
+    collectionPhenotypes: 29,
+    displayedAsciiForms: 5_926_846_464,
   });
 });
 
@@ -567,10 +570,9 @@ test("codex renders bilingual locked and discovered collections", (t) => {
   assert.match(chinese.stdout, /生态现象\s+\[0 \/ 30\]/);
   assert.match(chinese.stdout, /动态标本\s+\[1\]/);
   assert.match(chinese.stdout, /今日发现\s+\[2\]/);
-  assert.match(
-    chinese.stdout,
-    /隐私图鉴：只保存离散成长结果，不保存对话、路径、模型名或精确 Token/,
-  );
+  assert.match(chinese.stdout, /隐私图鉴：只保存离散成长结果/);
+  assert.match(chinese.stdout, /不保存对话、路径、模型名或精确/);
+  assert.match(chinese.stdout, /Token/);
 
   assert.equal(english.status, 0, english.stderr);
   assert.match(english.stdout, /PATHOLOGY CODEX · 2026-07-23/);

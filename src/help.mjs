@@ -86,9 +86,10 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期状态", "Inspect state at a date"],
+      ["--set <set-id>", "聚焦一组病理星图", "Focus one pathology constellation"],
       ["--json", "输出稳定 ID 和发现状态", "Print stable IDs and discovery state"],
     ],
-    examples: ["anti-ai codex", "anti-ai codex --json", "NO_COLOR=1 anti-ai codex"],
+    examples: ["anti-ai codex", "anti-ai codex --set set_licensed_overfeed", "anti-ai codex --json", "NO_COLOR=1 anti-ai codex"],
     note: [
       "图鉴只接受完整来源；锁定条目在人类输出中保持 ???。",
       "The codex requires complete sources; locked human entries remain ???.",
@@ -156,8 +157,8 @@ const COMMAND_HELP = {
     usage: "anti-ai creature [options]",
     summary: ["查看由长期 AI 使用方式塑造的异变体档案。", "Inspect the mutation shaped by long-term AI usage."],
     output: [
-      "默认显示紧凑档案与活动伴生异物；--full 展示完整病历、能力、收藏和事件。",
-      "Shows a compact file and active companion by default; --full reveals the complete casebook, abilities, collections, and events.",
+      "默认显示彩色紧凑档案、活动伴生异物和馆藏异变；--full 展示完整病历、能力、收藏和事件。",
+      "Shows a colored compact file, active companion, and Collection Mutation by default; --full reveals the complete casebook, abilities, collections, and events.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "结算并查看指定日期", "Settle and inspect a date"],
@@ -378,8 +379,8 @@ const ACTION_HELP = {
       "Inspect the read-only chronicle combining the mutation, companion, collection, and historical changes.",
     ],
     output: [
-      "显示当前标本档案、7/30/90 天变化、世代对照和六个病理收藏套组。",
-      "Shows the current dossier, 7/30/90-day changes, generation comparison, and six pathology collection sets.",
+      "显示当前标本档案、7/30/90 天变化、世代对照、十二组病理星图和馆藏异变。",
+      "Shows the current dossier, 7/30/90-day changes, generation comparison, twelve Pathology Constellations, and the Collection Mutation.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的派生年鉴", "Inspect the derived chronicle on a date"],
@@ -391,8 +392,8 @@ const ACTION_HELP = {
       "anti-ai share --card dossier > dossier.svg",
     ],
     note: [
-      "年鉴和套组都从已有本地记录派生，不增加每日操作、数值奖励或成长速度。",
-      "The chronicle and sets derive from existing local records and add no daily action, numeric reward, or growth speed.",
+      "年鉴、星图和馆藏异变都从已有本地记录派生，不增加每日操作、数值奖励或成长速度。",
+      "The Chronicle, constellations, and Collection Mutation derive from existing local records and add no daily action, numeric reward, or growth speed.",
     ],
     related: ["creature", "codex", "share", "tui"],
   },

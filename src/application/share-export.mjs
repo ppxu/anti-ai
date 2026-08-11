@@ -10,6 +10,7 @@ import {
 } from "../companion.mjs";
 import {
   creatureArt,
+  creatureCodex,
   creatureLabel,
   creatureTitle,
   deriveCreature,
@@ -144,6 +145,11 @@ function shareExportFailure(error, targetPath, lang) {
 
 function creatureShareView(state, date, lang) {
   const creature = deriveCreature(state, date);
+  const codex = creatureCodex(state, date);
+  const creatureView = {
+    ...creature,
+    collectionPhenotype: codex.collectionPhenotype,
+  };
   const today = state.days[date];
   const ecologyGain = [
     today.ecologyGains?.pollution > 0
@@ -164,21 +170,21 @@ function creatureShareView(state, date, lang) {
     .filter(Boolean)
     .join(" · ");
   return {
-    creature,
+    creature: creatureView,
     view: {
       date,
       specimenId: creature.appearance.specimenId,
-      art: creatureArt(creature),
-      ecology: creatureLabel("ecologies", creature.ecology.type, lang),
-      pathology: creatureLabel("branches", creature.branch, lang),
-      form: creatureLabel("ecologyForms", creature.ecologyForm, lang),
-      stage: creatureLabel("stages", creature.stage, lang),
+      art: creatureArt(creatureView),
+      ecology: creatureLabel("ecologies", creatureView.ecology.type, lang),
+      pathology: creatureLabel("branches", creatureView.branch, lang),
+      form: creatureLabel("ecologyForms", creatureView.ecologyForm, lang),
+      stage: creatureLabel("stages", creatureView.stage, lang),
       experience: localized(
         lang,
-        `阅历 ${creature.experienceDays} 天`,
-        `${creature.experienceDays} experience days`,
+        `阅历 ${creatureView.experienceDays} 天`,
+        `${creatureView.experienceDays} experience days`,
       ),
-      epithet: creatureTitle(creature, lang),
+      epithet: creatureTitle(creatureView, lang),
       ecologyGain:
         ecologyGain || localized(lang, "惯常波动", "habitual drift"),
     },

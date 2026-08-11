@@ -606,6 +606,7 @@ function deriveHabitat(state, creature, date, specimenArt) {
       temperament: creature.temperament,
       chromaticAbilityId: creature.appearance.rareAbilityId,
       evolutionId: creature.appearance.evolutionId,
+      collectionPhenotype: creature.collectionPhenotype ?? null,
       art: String(specimenArt ?? "")
         .replaceAll(/\u001B\[[0-9;]*m/g, "")
         .split("\n")

@@ -61,6 +61,7 @@ function specimenIdentity(creature, companion = null) {
     achievementId: creature.appearance.achievementId,
     chromaticAbilityId: creature.appearance.rareAbilityId,
     scarId: creature.appearance.scarId,
+    collectionPhenotype: creature.collectionPhenotype ?? null,
     art: plainArt(creature),
     companion: companion
       ? {
@@ -243,17 +244,22 @@ function deriveMutationChronicle(state, date) {
   const creature = deriveCreature(state, date);
   const companion = laboratoryCompanion(state, date).companion;
   const codex = creatureCodex(state, date);
+  const creatureView = {
+    ...creature,
+    collectionPhenotype: codex.collectionPhenotype,
+  };
   const sets = codex.collectionSets;
   return {
     version: 1,
     date,
-    identity: specimenIdentity(creature, companion),
+    identity: specimenIdentity(creatureView, companion),
     diagnosisId: diagnosisId(state.seed, date, creature.ecology.type),
     latestChange: latestMeaningfulChange(state, date),
     periods: CHRONICLE_PERIOD_DAYS.map((days) =>
       periodChange(state, date, days)
     ),
     comparison: generationComparison(state, date, creature),
+    collectionPhenotype: codex.collectionPhenotype,
     collectionSets: {
       completed: sets.filter(({ completed }) => completed).length,
       total: sets.length,

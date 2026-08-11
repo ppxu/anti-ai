@@ -67,7 +67,7 @@ The same local file always renders the same specimen. Language and ANSI color do
 
 ### Theoretical species capacity
 
-The current generator can render **204,374,016 deduplicated final ASCII forms**:
+The current generator has **204,374,016 deduplicated base specimen forms**:
 
 ```text
 Structural forms
@@ -83,7 +83,7 @@ Growth variants
 82,944 × 2,464 = 204,374,016
 ```
 
-This is not the same as the 16 core form families shown in the codex. A family is one Ecology/Pathology pairing; the capacity counts individualized final ASCII specimens after visible genes and overlays are applied.
+This is not the same as the 16 core form families shown in the codex. A family is one Ecology/Pathology pairing; the base capacity counts individualized stable specimens after visible genes and growth overlays are applied. It remains the identity space used by appearance fingerprints and pollution codes.
 
 Browse the literal `6 + 8 + 8 + 6 + 6 + 6` source glyphs in the [Base Organ Codex](./creature-organs.md).
 
@@ -95,7 +95,20 @@ Overlay precedence matters:
 2. An achievement mark overrides scar and genome patterns.
 3. A scar overrides the ordinary genome pattern.
 
-The 36 achievement IDs collapse into six visible category/version marks, and the 12 chromatic abilities collapse into six visible rank/version overlays. A v2 generation choice adds one of six independent graft organs. Ability levels, titles, moods, transient motion poses, and exact growth values do not multiply the stable ASCII capacity.
+The 36 achievement IDs collapse into six visible category/version marks, and the 12 chromatic abilities collapse into six visible rank/version overlays. A v2 generation choice adds one of six independent graft organs. Ability levels, titles, moods, transient motion poses, and exact growth values do not multiply the stable base capacity.
+
+Fixed collection breadth adds a separate read-only display layer:
+
+```text
+Collection Phenotypes
+1 unchanged form + 7 evidence motifs × 4 collection milestones
+= 29 display variants
+
+204,374,016 base specimen forms × 29 display variants
+= 5,926,846,464 theoretical displayed forms
+```
+
+Milestones require both fixed discovery count and category breadth: `34/134 + 3/7`, `67/134 + 5/7`, `101/134 + 6/7`, and `134/134 + 7/7`. The discovery that crosses a milestone deterministically chooses its motif. This crown or exoskeleton appears after the stable skeleton is rendered, but never changes the appearance fingerprint, pollution code, stats, rarity, or saved schema.
 
 Run `anti-ai codex` to see the current capacity alongside collection progress. `codex --json` exposes:
 
@@ -104,7 +117,10 @@ Run `anti-ai codex` to see the current capacity alongside collection progress. `
   "capacity": {
     "structuralForms": 82944,
     "growthVariants": 2464,
-    "finalAsciiForms": 204374016
+    "finalAsciiForms": 204374016,
+    "baseSpecimenForms": 204374016,
+    "collectionPhenotypes": 29,
+    "displayedAsciiForms": 5926846464
   }
 }
 ```
@@ -273,7 +289,7 @@ A local seed plus the date selects one reproducible event per active day. After 
 - 30 route-balanced habitat phenomena;
 - 24 expedition artifacts;
 - 12 expedition achievements;
-- 6 derived presentation-only pathology sets outside the fixed denominator;
+- 12 derived presentation-only Pathology Constellations outside the fixed denominator;
 - unlimited dynamic specimen fingerprints;
 - unlimited foreign encounter specimens;
 - unlimited permanent fossils;
@@ -283,7 +299,7 @@ A local seed plus the date selects one reproducible event per active day. After 
 
 Locked fixed entries remain `???`. Collection discovery does not prefer high Token use: Pollution, Clarity, AI-free days, achievements, rare abilities, generations, and explicit evolution choices all have independent routes.
 
-Inside the TUI, Codex supports category → entry → detail navigation. Details show first discovery, provenance, a related record, and Cabinet status without leaking locked names or conditions. Press `h` for the nested Containment Archive, `t` to toggle 7/30 days, and `Enter` for a daily record. Six route-balanced pathology sets appear in their own category, derive progress from existing discoveries, and cannot occupy a Cabinet slot. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. Press `s` from Overview, Habitat, Expedition, a discovered record, or a daily archive detail to preview and explicitly export an existing privacy-safe SVG card; Overview prepares the dossier card. The cabinet, set stamps, and exported files add no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
+Inside the TUI, Codex supports category → entry → detail navigation. Details show first discovery, provenance, a related record, and Cabinet status without leaking locked names or conditions. Press `h` for the nested Containment Archive, `t` to toggle 7/30 days, and `Enter` for a daily record. Twelve route-balanced Pathology Constellations appear as a three-route star map, derive progress from existing discoveries, and cannot occupy a Cabinet slot. Legendary names remain concealed until two same-route diagnoses are complete. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. Press `s` from Overview, Habitat, Expedition, a discovered record, or a daily archive detail to preview and explicitly export an existing privacy-safe SVG card; Overview prepares the dossier card. The cabinet, constellation stamps, Collection Mutations, and exported files add no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
 
 Eleven privacy-safe SVG cards are available:
 
@@ -301,7 +317,7 @@ anti-ai share --card expedition > anti-ai-expedition.svg
 anti-ai share --card dossier > anti-ai-dossier.svg
 ```
 
-`anti-ai creature chronicle` adds a read-only 7/30/90-day course, generation comparison, deterministic diagnosis, and the same six presentation-only set trials. See the [Mutation Chronicle Guide](./chronicle.md) for the complete model and privacy boundary.
+`anti-ai creature chronicle` adds a read-only 7/30/90-day course, generation comparison, deterministic diagnosis, twelve presentation-only constellations, and the current Collection Mutation. See the [Mutation Chronicle Guide](./chronicle.md) for the complete model and privacy boundary.
 
 A fossil certificate becomes available after experience day 90.
 Cross-machine collection is local and optional. Read [Local Mutation Encounters](./encounters.md) for pollution-code and foreign-specimen behavior.

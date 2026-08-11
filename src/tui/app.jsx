@@ -120,6 +120,11 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch, compact }) {
             }).join("\n")}
           </Text>
           <Text dimColor>#{overview.specimenId}</Text>
+          <Text color="magenta">
+            {zh ? "馆藏异变" : "COLLECTION MUTATION"} · {overview.collectionPhenotype.name
+              ? `${overview.collectionPhenotype.name} · ${zh ? "阶段" : "TIER"} ${overview.collectionPhenotype.tier}`
+              : zh ? "尚未诱发" : "NOT YET INDUCED"}
+          </Text>
         </Panel>
         <Panel
           title={zh ? "病理摘要" : "PATHOLOGY SUMMARY"}
@@ -199,7 +204,7 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch, compact }) {
         </Text>
         <Text dimColor>{overview.chronicle.comparison.summary}</Text>
         <Text color="green">
-          {zh ? "收藏套组" : "COLLECTION SETS"} · {overview.chronicle.collectionSets.completed}/{overview.chronicle.collectionSets.total}
+          {zh ? "病理星图" : "PATHOLOGY CONSTELLATIONS"} · {overview.chronicle.collectionSets.completed}/{overview.chronicle.collectionSets.total}
         </Text>
       </Panel>
       <Panel
@@ -316,6 +321,11 @@ function HabitatScreen({
                 </Text>
               );
             })}
+            <Text color="magenta">
+              {zh ? "馆藏异变" : "COLLECTION MUTATION"} · {habitat.specimen.collectionPhenotype.name
+                ? `${habitat.specimen.collectionPhenotype.name} · ${zh ? "阶段" : "TIER"} ${habitat.specimen.collectionPhenotype.tier}`
+                : zh ? "尚未诱发" : "NOT YET INDUCED"}
+            </Text>
           </Box>
           <Box flexDirection="column" flexGrow={1}>
             <Text bold>{zh ? "伴生位" : "COMPANION BAY"}</Text>
@@ -653,6 +663,7 @@ const RARITY_COLORS = {
   rare: "magenta",
   epic: "yellow",
   mythic: "red",
+  legendary: "red",
 };
 
 function LaboratoryScreen({
@@ -982,16 +993,35 @@ function CodexScreen({
   if (mode === "detail" && entry) {
     return (
       <Box flexDirection="column">
-        <Panel title={zh ? "条目档案" : "COLLECTION RECORD"} color={RARITY_COLORS[entry.rarity]}>
+        <Panel title={entry.type === "collectionSet" ? zh ? "病理星图" : "PATHOLOGY CONSTELLATION" : zh ? "条目档案" : "COLLECTION RECORD"} color={RARITY_COLORS[entry.rarity]}>
           <Text bold color={RARITY_COLORS[entry.rarity]}>
             {entry.discovered ? "◆" : "▒"} {entry.label}
           </Text>
           <Text>{entry.detail}</Text>
           {entry.type === "collectionSet" ? (
             <>
+              <Text>
+                {zh ? "路线 / 阶段" : "ROUTE / PHASE"}　{{
+                  pollution: zh ? "污染" : "POLLUTION",
+                  clarity: zh ? "清醒" : "CLARITY",
+                  paradox: zh ? "悖论" : "PARADOX",
+                }[entry.routeId]} · {{
+                  unknown: zh ? "未形成" : "UNFORMED",
+                  started: zh ? "已起病" : "STARTED",
+                  near: zh ? "接近确诊" : "NEAR DIAGNOSIS",
+                  complete: zh ? "已确诊" : "DIAGNOSED",
+                }[entry.phase]}
+              </Text>
               <Text color={RARITY_COLORS[entry.rarity]}>
                 {zh ? "进度" : "PROGRESS"}　{entry.progress.completed} / {entry.progress.total}
               </Text>
+              {entry.hidden && !entry.revealed ? (
+                <Text color="gray">
+                  {zh ? "揭示进度" : "REVEAL PROGRESS"}　{entry.revealProgress.completed} / {entry.revealProgress.total}
+                </Text>
+              ) : null}
+              <Text dimColor>{entry.phaseNote}</Text>
+              <Text bold>{zh ? "证据节点" : "EVIDENCE NODES"}</Text>
               {entry.requirements.map((requirement) => (
                 <Text key={requirement.id} color={requirement.completed ? "green" : "gray"}>
                   {requirement.completed ? "✓" : "◇"} {requirement.label}
@@ -1049,6 +1079,57 @@ function CodexScreen({
     );
   }
   if (mode === "entries") {
+    if (category.id === "collectionSets") {
+      const routePanels = [
+        ["pollution", zh ? "污染" : "POLLUTION", "red"],
+        ["clarity", zh ? "清醒" : "CLARITY", "cyan"],
+        ["paradox", zh ? "悖论" : "PARADOX", "yellow"],
+      ];
+      return (
+        <Box flexDirection="column">
+          <Panel title={zh ? "病理星图" : "PATHOLOGY CONSTELLATIONS"} color="magenta">
+            <Box gap={1} flexDirection={compact ? "column" : "row"}>
+              {routePanels.map(([routeId, routeLabel, routeColor]) => {
+                const routeEntries = category.entries.filter((candidate) => candidate.routeId === routeId);
+                return (
+                  <Panel
+                    key={routeId}
+                    title={`${routeLabel} · ${routeEntries.filter((candidate) => candidate.completed).length}/4`}
+                    color={routeColor}
+                    width={compact ? undefined : "33%"}
+                  >
+                    {routeEntries.map((candidate) => {
+                      const index = category.entries.indexOf(candidate);
+                      const selected = index === entryIndex;
+                      return (
+                        <Text
+                          key={candidate.key}
+                          bold={selected}
+                          color={selected ? "yellow" : RARITY_COLORS[candidate.rarity]}
+                        >
+                          {selected ? "> " : "  "}{candidate.completed ? "◆" : candidate.revealed ? "◇" : "▒"} {candidate.name} · {candidate.progress.completed}/{candidate.progress.total}
+                        </Text>
+                      );
+                    })}
+                  </Panel>
+                );
+              })}
+            </Box>
+            {entry ? (
+              <>
+                <Text bold color={RARITY_COLORS[entry.rarity]}>
+                  {zh ? "重点诊断" : "FOCUSED DIAGNOSIS"} · {entry.name}
+                </Text>
+                <Text dimColor>{entry.phaseNote}</Text>
+              </>
+            ) : null}
+            <Text dimColor>
+              {zh ? "↑↓ / Tab 选择 · Enter 查看节点 · Esc 返回分类" : "↑↓ / Tab select · Enter opens nodes · Esc returns to categories"}
+            </Text>
+          </Panel>
+        </Box>
+      );
+    }
     return (
       <Box flexDirection="column">
         <Panel title={`${zh ? "收藏条目" : "COLLECTION ENTRIES"} · ${category.label}`} color="cyan">

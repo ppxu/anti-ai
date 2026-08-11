@@ -623,6 +623,7 @@ test("nested creature actions expose focused help", () => {
 
 test("forked casebook actions expose focused bilingual help", () => {
   const expectations = [
+    ["chronicle", "Usage: anti-ai creature chronicle [options]"],
     ["history", "Usage: anti-ai creature history [options]"],
     ["intervene", "Usage: anti-ai creature intervene [<1|2|3>] [options]"],
     ["incident", "Usage: anti-ai creature incident [<1|2|3>] [options]"],
@@ -655,7 +656,7 @@ test("forked casebook actions expose focused bilingual help", () => {
   assert.equal(share.status, 0, share.stderr);
   assert.match(
     share.stdout,
-    /receipt\|pathology\|specimen\|wanted\|fossil\|encounter\|prognosis/,
+    /receipt\|dossier\|pathology\|specimen\|wanted\|fossil\|encounter\|prognosis/,
   );
 });
 
@@ -833,7 +834,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 3.2.0\n");
+  assert.equal(result.stdout, "anti-ai 3.3.0\n");
   assert.equal(result.stderr, "");
 });
 

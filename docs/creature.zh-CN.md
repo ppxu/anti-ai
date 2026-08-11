@@ -15,6 +15,7 @@ anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
 anti-ai creature history
+anti-ai creature chronicle
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature incident
@@ -272,6 +273,7 @@ min(35, 5 + min(10, floor(累计能力值 / 25))
 - 30 个路线对等的生态现象；
 - 24 件远征遗物；
 - 12 项远征成就；
+- 6 组不计入固定分母、只影响展示的病理套组；
 - 不限数量的动态标本指纹；
 - 不限数量的外来遭遇标本；
 - 不限数量的永久化石；
@@ -281,9 +283,9 @@ min(35, 5 + min(10, floor(累计能力值 / 25))
 
 未解锁的固定收藏保持 `???`。收藏系统不会偏爱高 Token：污染、清醒、AI 清醒日、成就、稀有能力、世代和显式进化选择都有独立路线。
 
-在 TUI 中，图鉴支持“分类 → 条目 → 详情”浏览。详情会展示首次发现、来源、关联记录与陈列状态，但不会泄露锁定名称或条件。按 `h` 打开内嵌收容档案，按 `t` 切换 7/30 天，按 `Enter` 查看每日记录。已发现条目可在影响预览并明确确认后放入 3 个“后果陈列柜”展示位；在总览、生态舱、远征、已发现条目或每日档案详情按 `s`，可以预览并明确导出现有的隐私安全 SVG 卡。陈列和导出文件都不增加数值、概率或成长。生态舱还提供每个已结算日各一次的确定性“观察”和克制“接触”；两者只保存叙事 ID，不能重抽出奖励。
+在 TUI 中，图鉴支持“分类 → 条目 → 详情”浏览。详情会展示首次发现、来源、关联记录与陈列状态，但不会泄露锁定名称或条件。按 `h` 打开内嵌收容档案，按 `t` 切换 7/30 天，按 `Enter` 查看每日记录。六组路线对等的病理套组位于独立分类，从现有发现派生进度，不能占用陈列位。已发现条目可在影响预览并明确确认后放入 3 个“后果陈列柜”展示位；在总览、生态舱、远征、已发现条目或每日档案详情按 `s`，可以预览并明确导出现有的隐私安全 SVG 卡，总览默认准备异变档案卡。陈列、套组印章和导出文件都不增加数值、概率或成长。生态舱还提供每个已结算日各一次的确定性“观察”和克制“接触”；两者只保存叙事 ID，不能重抽出奖励。
 
-当前支持十种隐私安全的 SVG 卡片：
+当前支持十一种隐私安全的 SVG 卡片：
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -296,7 +298,10 @@ anti-ai share --card culture --id <培养物编号> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
 anti-ai share --card habitat > anti-ai-habitat.svg
 anti-ai share --card expedition > anti-ai-expedition.svg
+anti-ai share --card dossier > anti-ai-dossier.svg
 ```
+
+`anti-ai creature chronicle` 会提供只读的 7/30/90 天病程、世代对照、确定性诊断和同一组六项展示套组。完整模型与隐私边界见[异变年鉴指南](./chronicle.zh-CN.md)。
 
 化石证书会在第 90 个阅历日后开放。
 跨机器收藏完全在本地完成，并且是可选项。污染编码和外来标本规则见[本地异变体遭遇](./encounters.zh-CN.md)。

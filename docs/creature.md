@@ -15,6 +15,7 @@ anti-ai creature --lang en
 anti-ai creature --json
 anti-ai creature --full
 anti-ai creature history
+anti-ai creature chronicle
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature incident
@@ -272,6 +273,7 @@ A local seed plus the date selects one reproducible event per active day. After 
 - 30 route-balanced habitat phenomena;
 - 24 expedition artifacts;
 - 12 expedition achievements;
+- 6 derived presentation-only pathology sets outside the fixed denominator;
 - unlimited dynamic specimen fingerprints;
 - unlimited foreign encounter specimens;
 - unlimited permanent fossils;
@@ -281,9 +283,9 @@ A local seed plus the date selects one reproducible event per active day. After 
 
 Locked fixed entries remain `???`. Collection discovery does not prefer high Token use: Pollution, Clarity, AI-free days, achievements, rare abilities, generations, and explicit evolution choices all have independent routes.
 
-Inside the TUI, Codex supports category → entry → detail navigation. Details show first discovery, provenance, a related record, and Cabinet status without leaking locked names or conditions. Press `h` for the nested Containment Archive, `t` to toggle 7/30 days, and `Enter` for a daily record. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. Press `s` from Overview, Habitat, Expedition, a discovered record, or a daily archive detail to preview and explicitly export an existing privacy-safe SVG card. The cabinet and exported files add no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
+Inside the TUI, Codex supports category → entry → detail navigation. Details show first discovery, provenance, a related record, and Cabinet status without leaking locked names or conditions. Press `h` for the nested Containment Archive, `t` to toggle 7/30 days, and `Enter` for a daily record. Six route-balanced pathology sets appear in their own category, derive progress from existing discoveries, and cannot occupy a Cabinet slot. A discovered record can be placed in one of three Consequence Cabinet slots after an explicit preview and confirmation. Press `s` from Overview, Habitat, Expedition, a discovered record, or a daily archive detail to preview and explicitly export an existing privacy-safe SVG card; Overview prepares the dossier card. The cabinet, set stamps, and exported files add no stats, probability, or progression. Habitat also offers one deterministic Observation and one restrained Contact per settled day. Each stores narrative IDs only and cannot be rerolled into a reward.
 
-Ten privacy-safe SVG cards are available:
+Eleven privacy-safe SVG cards are available:
 
 ```bash
 anti-ai share --card pathology > anti-ai-pathology.svg
@@ -296,7 +298,10 @@ anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
 anti-ai share --card habitat > anti-ai-habitat.svg
 anti-ai share --card expedition > anti-ai-expedition.svg
+anti-ai share --card dossier > anti-ai-dossier.svg
 ```
+
+`anti-ai creature chronicle` adds a read-only 7/30/90-day course, generation comparison, deterministic diagnosis, and the same six presentation-only set trials. See the [Mutation Chronicle Guide](./chronicle.md) for the complete model and privacy boundary.
 
 A fossil certificate becomes available after experience day 90.
 Cross-machine collection is local and optional. Read [Local Mutation Encounters](./encounters.md) for pollution-code and foreign-specimen behavior.

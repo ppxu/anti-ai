@@ -21,6 +21,7 @@ import {
   renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
+  renderDossierShareSvg,
   renderEncounterShareSvg,
   renderExpeditionShareSvg,
   renderHabitatShareSvg,
@@ -28,6 +29,8 @@ import {
   renderPrognosisShareSvg,
   renderShareSvg,
 } from "../renderers/svg.mjs";
+import { deriveMutationChronicle } from "../chronicle.mjs";
+import { presentMutationChronicle } from "../renderers/chronicle.mjs";
 import { localDate, reportsForDates } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
 import { deriveHabitat } from "../habitat.mjs";
@@ -45,6 +48,37 @@ function shareSuccess(svg) {
 }
 
 async function renderShareCard(options) {
+  if (options.card === "dossier") {
+    const context = await runCreature(
+      {
+        ...options,
+        action: undefined,
+        command: "creature",
+        json: false,
+      },
+      "snapshot-context",
+    );
+    if (!context) {
+      return shareFailure(
+        localized(
+          options.lang,
+          "标本档案卡无法读取异变体档案。运行 anti-ai creature reset 后可重新孵化。",
+          "The dossier card cannot read the mutation file. Run anti-ai creature reset to hatch again.",
+        ),
+        1,
+      );
+    }
+    const chronicle = deriveMutationChronicle(
+      context.state,
+      context.result.date,
+    );
+    return shareSuccess(
+      renderDossierShareSvg(
+        presentMutationChronicle(chronicle, options.lang),
+        options.lang,
+      ),
+    );
+  }
   if (options.card === "expedition") {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const date = options.date ?? localDate(new Date(), timezone);

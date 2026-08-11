@@ -19,6 +19,7 @@ import {
 } from "./expedition/content.mjs";
 import { ensureIncidentState } from "./incidents.mjs";
 import { ensureConsequenceCabinetState } from "./consequence-cabinet.mjs";
+import { deriveCollectionSets } from "./collection-sets.mjs";
 import {
   CREATURE_STAGES,
   CREATURE_CONTENT_VERSION,
@@ -690,20 +691,27 @@ function creatureCodex(state, date) {
       chainDepth: entry.chainDepth ?? 1,
       parentIncidentId: entry.parentIncidentId ?? null,
     }));
-  const cultures = (state.laboratory?.cultures ?? [])
+  const collectionCultures = (state.laboratory?.cultures ?? [])
     .filter((entry) => entry.createdAt <= date)
     .map((entry) => ({
       id: entry.id,
       discoveredAt: entry.createdAt,
       typeId: entry.typeId,
       rarity: entry.rarity,
+      ecologyId: entry.ecologyId,
+      pathologyId: entry.pathologyId,
       fingerprint: entry.appearance.fingerprint,
       ingredientTypes: entry.ingredients.map(({ type }) => type),
       ...(entry.companion?.bondedAt <= date
         ? { companion: companionView(entry, date) }
         : {}),
     }));
-  const companions = cultures
+  const cultures = collectionCultures.map(({
+    ecologyId: _ecologyId,
+    pathologyId: _pathologyId,
+    ...entry
+  }) => entry);
+  const companions = collectionCultures
     .filter((entry) => entry.companion)
     .map((entry) => ({
       id: entry.id,
@@ -1001,6 +1009,23 @@ function creatureCodex(state, date) {
     .filter((entry) => entry.discovered && entry.discoveredAt === date)
     .map(({ type, id, discoveredAt }) => ({ type, id, discoveredAt }));
 
+  const sections = {
+    forms,
+    achievements,
+    chromaticAbilities,
+    scars,
+    habitatPhenomena,
+    expeditionArtifacts,
+    expeditionAchievements,
+    specimens,
+    foreignSpecimens,
+    caseSlices,
+    incidentReports,
+    cultures,
+    companions,
+    fossils,
+  };
+
   return {
     date,
     specimenId: creature.appearance.specimenId,
@@ -1057,22 +1082,10 @@ function creatureCodex(state, date) {
       companions: { discovered: companions.length },
       fossils: { discovered: fossils.length },
     },
-    sections: {
-      forms,
-      achievements,
-      chromaticAbilities,
-      scars,
-      habitatPhenomena,
-      expeditionArtifacts,
-      expeditionAchievements,
-      specimens,
-      foreignSpecimens,
-      caseSlices,
-      incidentReports,
-      cultures,
-      companions,
-      fossils,
-    },
+    sections,
+    collectionSets: deriveCollectionSets({
+      sections: { ...sections, cultures: collectionCultures },
+    }),
     recent,
   };
 }

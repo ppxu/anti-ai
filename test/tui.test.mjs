@@ -329,8 +329,8 @@ test("TUI sharing previews a private local target before exporting SVG", async (
     date: "2026-07-23",
   });
 
-  assert.equal(preview.card, "pathology");
-  assert.equal(preview.filename, "anti-ai-pathology-2026-07-23.svg");
+  assert.equal(preview.card, "dossier");
+  assert.equal(preview.filename, "anti-ai-dossier-2026-07-23.svg");
   assert.equal(preview.privacy, "LOCAL ONLY · NO CHATS, PATHS, MODELS, OR EXACT TOKENS");
   assert.equal(
     preview.warning,

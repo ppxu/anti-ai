@@ -43,6 +43,8 @@ import {
 } from "../expedition/presentation.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
 import { containmentArchive, containmentBrief } from "./archive.mjs";
+import { deriveMutationChronicle } from "../chronicle.mjs";
+import { presentMutationChronicle } from "../renderers/chronicle.mjs";
 
 const ANSI_PATTERN = /\u001B\[[0-9;]*m/g;
 
@@ -416,6 +418,10 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
   const companion = laboratoryCompanion(state, date).companion;
   const specimen = { ...creature, companion };
   const codex = creatureCodex(state, date);
+  const chronicle = presentMutationChronicle(
+    deriveMutationChronicle(state, date),
+    lang,
+  );
   const laboratory = laboratoryView(state, date);
   const shelf = laboratoryShelf(state, date);
   const habitat = deriveHabitat(
@@ -502,6 +508,21 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       },
     };
   });
+  collectionEntries.push(
+    ...chronicle.collectionSets.entries.map((entry) => ({
+      ...entry,
+      key: `collectionSet:${entry.id}`,
+      type: "collectionSet",
+      sectionId: "collectionSets",
+      discovered: entry.completed,
+      label: entry.name,
+      detail: entry.description,
+      rarityLabel: rarityLabel(entry.rarity, lang),
+      provenance: null,
+      canDisplay: false,
+      cabinet: { displayed: false, slot: null },
+    })),
+  );
   const collectionBySection = new Map();
   for (const entry of collectionEntries) {
     const entries = collectionBySection.get(entry.sectionId) ?? [];
@@ -569,6 +590,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       ["habitatPhenomena", "生态现象", "Phenomena", "fixed"],
       ["expeditionArtifacts", "远征遗物", "Expedition artifacts", "fixed"],
       ["expeditionAchievements", "远征成就", "Expedition achievements", "fixed"],
+      ["collectionSets", "病理套组", "Pathology sets", "sets"],
       ["specimens", "本地标本", "Local specimens", "dynamic"],
       ["foreignSpecimens", "外来标本", "Foreign specimens", "dynamic"],
       ["caseSlices", "病例切片", "Case slices", "dynamic"],
@@ -580,7 +602,12 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       id,
       label: localized(lang, zh, en),
       group,
-      ...codex.summary[id],
+      ...(id === "collectionSets"
+        ? {
+            discovered: chronicle.collectionSets.completed,
+            total: chronicle.collectionSets.total,
+          }
+        : codex.summary[id]),
       entries: [...(collectionBySection.get(id) ?? [])].sort(
         (left, right) =>
           Number(right.discovered) - Number(left.discovered) ||
@@ -665,6 +692,20 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
       evolutionId: creature.appearance.evolutionId,
       art,
       actions: actions.filter(({ available }) => available).slice(0, 2),
+      chronicle: {
+        diagnosis: chronicle.diagnosis,
+        latestChangeLabel: chronicle.latestChangeLabel,
+        periods: chronicle.periods.map(({ days, summary }) => ({ days, summary })),
+        comparison: {
+          baselineLabel: chronicle.comparison.baseline.label,
+          currentLabel: chronicle.comparison.current.label,
+          summary: chronicle.comparison.summary,
+        },
+        collectionSets: {
+          completed: chronicle.collectionSets.completed,
+          total: chronicle.collectionSets.total,
+        },
+      },
       brief: {
         day: brief.day ? archiveDayPresentation(brief.day, lang) : null,
         nextMilestone: {

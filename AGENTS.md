@@ -39,6 +39,8 @@ Preserve these product rules:
 - `src/application/action-catalog.mjs` derives action availability and disabled reasons.
 - `src/application/actions.mjs` owns shared preview, confirmation, execution, and session orchestration.
 - `src/application/settlement.mjs` owns the settlement pipeline shared by CLI and TUI.
+- `src/chronicle.mjs` owns read-only historical and generation projections.
+- `src/collection-sets.mjs` owns presentation-only, route-balanced set definitions.
 - Domain modules own calculations and gameplay rules.
 - `src/cli/` and `src/renderers/` own terminal and SVG presentation.
 - `src/tui/` owns Ink source; `dist/tui.mjs` is generated and must not be edited directly.

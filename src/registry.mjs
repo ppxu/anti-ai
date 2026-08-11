@@ -145,6 +145,7 @@ const COMMAND_REGISTRY = Object.freeze([
 
 const SHARE_CARD_IDS = Object.freeze([
   "receipt",
+  "dossier",
   "pathology",
   "specimen",
   "wanted",
@@ -159,6 +160,7 @@ const SHARE_CARD_IDS = Object.freeze([
 
 const CREATURE_ACTION_IDS = Object.freeze([
   "reset",
+  "chronicle",
   "evolve",
   "export",
   "habitat",
@@ -240,6 +242,10 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
   "creature habitat": {
     zh: "只读快照；不会创建、迁移、推进或改写成长档案。",
     en: "Read-only snapshot; it does not create, migrate, advance, or rewrite the growth file.",
+  },
+  "creature chronicle": {
+    zh: "只读派生年鉴，不会创建、迁移、推进或改写成长档案。",
+    en: "Read-only derived chronicle; it does not create, migrate, advance, or rewrite the growth file.",
   },
   encounter: {
     zh: "结算本地异变体；只有 --save 会额外收藏混种。",

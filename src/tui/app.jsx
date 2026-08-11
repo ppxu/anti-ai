@@ -177,6 +177,31 @@ function OverviewScreen({ snapshot, lang, frame, motion, glitch, compact }) {
         <Text color="yellow">{overview.brief.nextMilestone.label}</Text>
       </Panel>
       <Panel
+        title={zh ? "异变年鉴" : "MUTATION CHRONICLE"}
+        color="magenta"
+        marginTop={1}
+      >
+        <Text color="magenta">{overview.chronicle.diagnosis}</Text>
+        <Text dimColor>
+          {zh ? "最近变化" : "LATEST"} · {overview.chronicle.latestChangeLabel}
+        </Text>
+        <Box gap={compact ? 0 : 2} flexDirection={compact ? "column" : "row"}>
+          {overview.chronicle.periods.map((period) => (
+            <Text key={period.days}>
+              <Text bold color="cyan">{period.days}{zh ? "天" : "D"}</Text>{" "}
+              {period.summary}
+            </Text>
+          ))}
+        </Box>
+        <Text color="yellow">
+          {zh ? "世代" : "GEN"} · {overview.chronicle.comparison.baselineLabel} → {overview.chronicle.comparison.currentLabel}
+        </Text>
+        <Text dimColor>{overview.chronicle.comparison.summary}</Text>
+        <Text color="green">
+          {zh ? "收藏套组" : "COLLECTION SETS"} · {overview.chronicle.collectionSets.completed}/{overview.chronicle.collectionSets.total}
+        </Text>
+      </Panel>
+      <Panel
         title={zh ? "今天可做" : "AVAILABLE TODAY"}
         color="yellow"
         marginTop={1}
@@ -923,6 +948,21 @@ function CodexScreen({
             {entry.discovered ? "◆" : "▒"} {entry.label}
           </Text>
           <Text>{entry.detail}</Text>
+          {entry.type === "collectionSet" ? (
+            <>
+              <Text color={RARITY_COLORS[entry.rarity]}>
+                {zh ? "进度" : "PROGRESS"}　{entry.progress.completed} / {entry.progress.total}
+              </Text>
+              {entry.requirements.map((requirement) => (
+                <Text key={requirement.id} color={requirement.completed ? "green" : "gray"}>
+                  {requirement.completed ? "✓" : "◇"} {requirement.label}
+                </Text>
+              ))}
+              {entry.completed ? (
+                <Text color="yellow">{zh ? "档案印章" : "DOSSIER STAMP"}　{entry.stamp}</Text>
+              ) : null}
+            </>
+          ) : null}
           <Text color={RARITY_COLORS[entry.rarity]}>
             {zh ? "稀有性" : "RARITY"}　{entry.rarityLabel}
           </Text>
@@ -948,7 +988,15 @@ function CodexScreen({
             </>
           ) : null}
           <Text dimColor>
-            {entry.discovered
+            {entry.type === "collectionSet"
+              ? entry.completed
+                ? zh
+                  ? "s 分享标本档案 · Esc 返回条目"
+                  : "s shares dossier · Esc returns to entries"
+                : zh
+                  ? "套组按既有记录自动完成，不提供数值奖励 · Esc 返回"
+                  : "Sets complete from existing records and grant no numeric reward · Esc returns"
+              : entry.discovered
               ? zh
                 ? "d 陈列 · s 分享 · Esc 返回条目"
                 : "d display · s share · Esc returns to entries"
@@ -991,7 +1039,7 @@ function CodexScreen({
       </Box>
     );
   }
-  const fixed = codex.categories.filter(({ group }) => group === "fixed");
+  const fixed = codex.categories.filter(({ group }) => group !== "dynamic");
   const dynamic = codex.categories.filter(({ group }) => group === "dynamic");
   const categoryRow = (item) => {
     const index = codex.categories.findIndex(({ id }) => id === item.id);
@@ -1002,7 +1050,7 @@ function CodexScreen({
           {selected ? "> " : "  "}{item.label}
         </Text>
         <Text color="cyan">
-          {item.group === "fixed" ? `${item.discovered} / ${item.total}` : item.discovered}
+          {Number.isInteger(item.total) ? `${item.discovered} / ${item.total}` : item.discovered}
         </Text>
       </Box>
     );
@@ -1653,7 +1701,11 @@ function TuiApp({
       } else if (codexMode === "detail" && input === "d") {
         const entry = entries[codexEntryIndex];
         const displayAction = actions.find(({ id }) => id === "curate_display");
-        if (entry?.discovered && displayAction?.available) {
+        if (
+          entry?.discovered &&
+          entry.canDisplay !== false &&
+          displayAction?.available
+        ) {
           void openActionPreview(displayAction, entry.key, "screen");
         }
         return;

@@ -129,13 +129,14 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion|habitat|expedition>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|dossier|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion|habitat|expedition>", "选择卡片类型", "Select card type"],
       ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
       ["--id <culture-id>", "指定 culture 卡的培养物", "Select the culture for a culture card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
     ],
     examples: [
       "anti-ai share > receipt.svg",
+      "anti-ai share --card dossier > dossier.svg",
       "anti-ai share --card pathology > pathology.svg",
       "anti-ai share --card wanted --lang en > wanted.svg",
       "anti-ai share --card encounter --with <pollution-code> > encounter.svg",
@@ -166,6 +167,7 @@ const COMMAND_HELP = {
     examples: [
       "anti-ai creature",
       "anti-ai creature --full",
+      "anti-ai creature chronicle",
       "anti-ai creature history",
       "anti-ai creature habitat",
       "anti-ai creature intervene",
@@ -178,7 +180,7 @@ const COMMAND_HELP = {
       "creature 必须使用完整来源；reset 会永久删除本地成长档案。",
       "creature requires complete sources; reset permanently deletes the local growth file.",
     ],
-    related: ["creature habitat", "creature history", "creature intervene", "creature incident", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
+    related: ["creature chronicle", "creature habitat", "creature history", "creature intervene", "creature incident", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
   },
   encounter: {
     usage: "anti-ai encounter <pollution-code> [options]",
@@ -368,6 +370,31 @@ const ACTION_HELP = {
       "Viewing is read-only; one event is derived per seven experience days and Token volume cannot reroll or accelerate it.",
     ],
     related: ["creature", "lab companion", "codex", "share"],
+  },
+  "creature chronicle": {
+    usage: "anti-ai creature chronicle [options]",
+    summary: [
+      "查看整合异变体、伴生物、收藏和历史变化的只读异变年鉴。",
+      "Inspect the read-only chronicle combining the mutation, companion, collection, and historical changes.",
+    ],
+    output: [
+      "显示当前标本档案、7/30/90 天变化、世代对照和六个病理收藏套组。",
+      "Shows the current dossier, 7/30/90-day changes, generation comparison, and six pathology collection sets.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定日期的派生年鉴", "Inspect the derived chronicle on a date"],
+      ["--json", "输出语言无关的机器可读年鉴", "Print the language-neutral machine-readable chronicle"],
+    ],
+    examples: [
+      "anti-ai creature chronicle",
+      "anti-ai creature chronicle --json",
+      "anti-ai share --card dossier > dossier.svg",
+    ],
+    note: [
+      "年鉴和套组都从已有本地记录派生，不增加每日操作、数值奖励或成长速度。",
+      "The chronicle and sets derive from existing local records and add no daily action, numeric reward, or growth speed.",
+    ],
+    related: ["creature", "codex", "share", "tui"],
   },
   "lab incubate": {
     usage: "anti-ai lab incubate <1|2|3> [options]",

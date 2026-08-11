@@ -374,6 +374,29 @@ function deriveCompanionFrame(
   });
 }
 
+function deriveHabitatSceneFrame(art, routeId, frame, motion = "low") {
+  const source = Array.isArray(art) ? art : [];
+  if (motion === "off") return [...source];
+  const phase = normalizeFrame(frame);
+  if (phase % 2 === 0) return [...source];
+  return source.map((line) => {
+    if (routeId === "pollution") {
+      return line.replaceAll("$", "¢").replaceAll("≈", "∿");
+    }
+    if (routeId === "clarity") {
+      return line.replaceAll("❀", "✦").replaceAll("·", "°");
+    }
+    if (routeId === "paradox") {
+      return line
+        .replaceAll("◐", "¤")
+        .replaceAll("◑", "◐")
+        .replaceAll("¤", "◑")
+        .replaceAll("∞", "⌁");
+    }
+    return line;
+  });
+}
+
 function deriveEventReplay(snapshot, frame, lang = "zh") {
   const event = snapshot?.habitat?.events?.[0];
   if (!event) return null;
@@ -493,6 +516,7 @@ export {
   deriveAnatomyAnchors,
   deriveCompanionFrame,
   deriveEventReplay,
+  deriveHabitatSceneFrame,
   deriveObservationTargets,
   deriveSpecimenFrame,
   isGlitchFrame,

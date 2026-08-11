@@ -4,6 +4,7 @@ import { Box, Text, useApp, useInput, useStdout } from "ink";
 import {
   deriveCompanionFrame,
   deriveEventReplay,
+  deriveHabitatSceneFrame,
   deriveObservationTargets,
   deriveSpecimenFrame,
   isGlitchFrame,
@@ -242,6 +243,11 @@ function HabitatScreen({
 }) {
   const { habitat } = snapshot;
   const zh = lang === "zh";
+  const sceneColor = {
+    pollution: "red",
+    clarity: "cyan",
+    paradox: "yellow",
+  }[habitat.scene.routeId] ?? "green";
   const observation = observationTargets[observationIndex] ?? null;
   const specimenFrame = deriveSpecimenFrame(
     habitat.specimen.art,
@@ -249,7 +255,9 @@ function HabitatScreen({
     motion,
     {
       glitch,
-      pose: glitch ? "mutation" : habitat.relationship ? "alert" : "idle",
+      pose: glitch
+        ? "mutation"
+        : habitat.scene.layers.subject.poseId,
       temperament: habitat.specimen.temperament,
       chromaticAbilityId: habitat.specimen.chromaticAbilityId,
       observedOrganId: observation?.target === "specimen"
@@ -257,9 +265,40 @@ function HabitatScreen({
         : null,
     },
   );
+  const sceneFrame = deriveHabitatSceneFrame(
+    habitat.scene.art,
+    habitat.scene.routeId,
+    frame,
+    motion,
+  );
   return (
     <Box flexDirection="column">
-      <Panel title={zh ? "生态舱状态" : "HABITAT STATUS"} color="green">
+      <Panel
+        title={`${zh ? "活体生态舱" : "LIVING HABITAT"} · ${habitat.scene.name}`}
+        color={sceneColor}
+      >
+        <Box flexDirection="column" marginBottom={1}>
+          {sceneFrame.map((line, index) => (
+            <Text key={`${habitat.scene.archetypeId}-${index}`} color={sceneColor}>
+              {line}
+            </Text>
+          ))}
+          <Text>
+            <Text bold>{zh ? "舱内气候" : "HABITAT CLIMATE"}</Text>
+            {" · "}{habitat.scene.climate}{" · "}{habitat.scene.cycle}
+          </Text>
+          <Text>
+            <Text bold color={sceneColor}>{zh ? "生态短讯" : "HABITAT BULLETIN"}</Text>
+            {" · "}{habitat.scene.bulletin}
+          </Text>
+          {habitat.scene.layers.trace ? (
+            <Text dimColor>
+              {zh ? "近期痕迹" : "RECENT TRACE"}{" · "}
+              {habitat.scene.layers.trace.label}{" · "}
+              {habitat.scene.layers.trace.date}
+            </Text>
+          ) : null}
+        </Box>
         <Box gap={2} flexDirection={compact ? "column" : "row"}>
           <Box flexDirection="column" width={compact ? undefined : "50%"}>
             <Text bold>{zh ? "主标本" : "SPECIMEN"}</Text>
@@ -396,7 +435,7 @@ function HabitatScreen({
           flexGrow={1}
         >
           {habitat.events.length > 0 ? (
-            habitat.events.map((event) => (
+            habitat.events.slice(0, 1).map((event) => (
               <Text key={`${event.id}-${event.discoveredAt}`}>
                 {event.name} <Text dimColor>· {event.discoveredAt}</Text>
               </Text>
@@ -1530,9 +1569,15 @@ function TuiApp({
         }
       }
       if (actionMode === "result" && key.return) {
+        const completedActionId = actionPreview?.id;
         setActionMode(null);
         setActionPreview(null);
         setActionResult(null);
+        if (completedActionId === "bond") {
+          setObservationIndex(null);
+          setReplayStartFrame(null);
+          setActiveIndex(SCREEN_IDS.indexOf("habitat"));
+        }
         return;
       }
       return;

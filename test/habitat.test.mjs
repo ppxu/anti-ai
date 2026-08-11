@@ -1,6 +1,11 @@
 import { existsSync } from "node:fs";
 
 import {
+  HABITAT_SCENE_ARCHETYPES,
+  presentHabitatScene,
+} from "../src/habitat-scenes.mjs";
+
+import {
   assert,
   mkdirSync,
   mkdtempSync,
@@ -11,8 +16,36 @@ import {
   test,
   terminalWidth,
   tmpdir,
+  writeCodexUsage,
   writeFileSync,
 } from "./helpers.mjs";
+
+test("living habitat keeps fifteen route-balanced deterministic scene archetypes", () => {
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(HABITAT_SCENE_ARCHETYPES).map(([routeId, scenes]) => [
+        routeId,
+        scenes.length,
+      ]),
+    ),
+    { pollution: 5, clarity: 5, paradox: 5 },
+  );
+  const scenes = Object.values(HABITAT_SCENE_ARCHETYPES).flat();
+  assert.equal(new Set(scenes.map(({ id }) => id)).size, 15);
+  assert.equal(
+    new Set(scenes.flatMap(({ bulletins }) => bulletins.map(({ id }) => id)))
+      .size,
+    30,
+  );
+  assert.ok(
+    scenes.every(
+      ({ art, bulletins }) =>
+        art.length === 3 &&
+        bulletins.length === 2 &&
+        bulletins.every(({ copy }) => copy.zh && copy.en),
+    ),
+  );
+});
 
 test("creature habitat derives a deterministic read-only snapshot", (t) => {
   const workspace = mkdtempSync(
@@ -46,7 +79,7 @@ test("creature habitat derives a deterministic read-only snapshot", (t) => {
   assert.equal(repeated.stdout, first.stdout);
   assert.equal(existsSync(statePath), false);
   const habitat = JSON.parse(first.stdout);
-  assert.equal(habitat.version, 1);
+  assert.equal(habitat.version, 2);
   assert.equal(habitat.date, "2026-07-23");
   assert.equal(habitat.status, "solitary");
   assert.equal(habitat.specimen.experienceDays, 0);
@@ -54,6 +87,15 @@ test("creature habitat derives a deterministic read-only snapshot", (t) => {
   assert.equal(habitat.relationship, null);
   assert.deepEqual(habitat.events, []);
   assert.equal(habitat.cadence.days, 7);
+  assert.equal(habitat.scene.version, 1);
+  assert.equal(habitat.scene.routeId, "paradox");
+  assert.equal(habitat.scene.layers.environment.id, habitat.scene.archetypeId);
+  assert.equal(habitat.scene.layers.subject.poseId, "dormant");
+  assert.equal(habitat.scene.layers.relationship.id, "solitary");
+  assert.equal(habitat.scene.layers.trace, null);
+  assert.match(habitat.scene.bulletinId, /^paradox_/u);
+  assert.equal(habitat.scene.art.length, 3);
+  assert.ok(habitat.scene.art.every((line) => typeof line === "string"));
   assert.doesNotMatch(
     first.stdout,
     /totalTokens|modelName|prompt|response|requestTimestamp|session\.jsonl/,
@@ -90,11 +132,30 @@ test("habitat share card renders a privacy-safe read-only SVG", (t) => {
     ],
     env,
   );
+  const habitatJson = runCli(
+    ["creature", "habitat", "--date", "2026-07-23", "--json"],
+    env,
+  );
 
   assert.equal(card.status, 0, card.stderr);
+  assert.equal(habitatJson.status, 0, habitatJson.stderr);
+  const scene = presentHabitatScene(
+    JSON.parse(habitatJson.stdout).scene,
+    "en",
+  );
   assert.match(card.stdout, /^<svg/);
   assert.match(card.stdout, /width="1200"[^>]+height="630"/);
-  assert.match(card.stdout, /CONTAINMENT HABITAT/);
+  assert.match(card.stdout, /LIVING HABITAT SNAPSHOT/);
+  assert.match(card.stdout, /HABITAT BULLETIN/);
+  assert.ok(card.stdout.includes(scene.name));
+  assert.ok(card.stdout.includes(scene.climate));
+  assert.ok(
+    card.stdout.includes(scene.bulletin.split(" ").slice(0, 5).join(" ")),
+  );
+  assert.match(
+    card.stdout,
+    /<text x="626" y="174"[^>]*><tspan x="626"/u,
+  );
   assert.match(card.stdout, /UNBONDED BAY/);
   assert.match(card.stdout, /READ-ONLY/);
   assert.match(
@@ -107,6 +168,60 @@ test("habitat share card renders a privacy-safe read-only SVG", (t) => {
     /session\.jsonl|\/Users\/|totalTokens|modelName|prompt|response/,
   );
   assert.equal(existsSync(statePath), false);
+});
+
+test("living habitat surfaces the latest expedition as a stable read-only trace", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-habitat-trace-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  const env = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "habitat-trace",
+    ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+    ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
+    ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
+    ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
+    ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
+    ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+  };
+  const date = "2026-07-23";
+  writeCodexUsage(
+    env.ANTI_AI_CODEX_DIR,
+    [{ input_tokens: 900, output_tokens: 100, total_tokens: 1_000 }],
+    date,
+  );
+  assert.equal(runCli(["creature", "--date", date, "--json"], env).status, 0);
+  const started = runCli(
+    ["expedition", "start", "context_mine", "--date", date, "--json"],
+    env,
+  );
+  assert.equal(started.status, 0, started.stderr);
+  const advanced = runCli(
+    ["expedition", "next", "--date", date, "--json"],
+    env,
+  );
+  assert.equal(advanced.status, 0, advanced.stderr);
+  const statePath = path.join(home, ".anti-ai", "creature.json");
+  const before = readFileSync(statePath, "utf8");
+
+  const first = runCli(
+    ["creature", "habitat", "--date", date, "--json"],
+    env,
+  );
+  const repeated = runCli(
+    ["creature", "habitat", "--date", date, "--json"],
+    env,
+  );
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(repeated.stdout, first.stdout);
+  assert.equal(readFileSync(statePath, "utf8"), before);
+  const trace = JSON.parse(first.stdout).scene.layers.trace;
+  assert.deepEqual(trace, {
+    type: "expedition",
+    id: "exp-0001",
+    date,
+  });
 });
 
 test("habitat command and share card expose focused bilingual help", () => {
@@ -144,6 +259,7 @@ test("habitat command and share card expose focused bilingual help", () => {
   assert.match(share.stdout, /habitat\.svg/);
   assert.match(explain.stdout, /read-only containment habitat/i);
   assert.match(explain.stdout, /seven experience days/i);
+  assert.match(explain.stdout, /15 deterministic scene archetypes/i);
   assert.match(explain.stdout, /cannot change creature or companion numbers/i);
 });
 
@@ -290,13 +406,27 @@ test("creature habitat renders one bilingual cohabitation scene within 80 column
     ["pollution", "clarity", "paradox"],
   );
   assert.equal(habitat.cadence.daysUntilNext, 5);
+  assert.equal(habitat.scene.routeId, "paradox");
+  assert.equal(
+    habitat.scene.layers.relationship.id,
+    habitat.relationship.id,
+  );
+  assert.equal(habitat.scene.layers.trace.type, "incident");
+  assert.equal(habitat.scene.layers.trace.date, "2026-07-23");
+  assert.match(habitat.scene.layers.trace.id, /^[0-9a-f]{8}$/u);
   assert.match(chinese.stdout, /收容生态舱/);
+  assert.match(chinese.stdout, /活体场景/);
+  assert.match(chinese.stdout, /生态短讯/);
+  assert.match(chinese.stdout, /近期痕迹\s+收容事故余波/);
   assert.match(chinese.stdout, /关系诊断/);
   assert.match(chinese.stdout, /联合症状/);
   assert.match(chinese.stdout, /最近事件/);
   assert.match(chinese.stdout, /下次生态事件\s+5 天后/);
   assert.match(chinese.stdout, /anti-ai creature habitat --full/);
   assert.match(english.stdout, /CONTAINMENT HABITAT/);
+  assert.match(english.stdout, /LIVING SCENE/);
+  assert.match(english.stdout, /HABITAT BULLETIN/);
+  assert.match(english.stdout, /RECENT TRACE\s+CONTAINMENT INCIDENT AFTERMATH/);
   assert.match(english.stdout, /RELATIONSHIP DIAGNOSIS/);
   assert.match(english.stdout, /SEALED ECOLOGICAL EVENTS/);
   assert.doesNotMatch(english.stdout, /[\p{Script=Han}]/u);

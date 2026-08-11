@@ -20,6 +20,7 @@ import {
   habitatEventCopy,
   habitatRelationshipCopy,
 } from "../habitat.mjs";
+import { presentHabitatScene } from "../habitat-scenes.mjs";
 import { encounterLabel } from "../encounter.mjs";
 import { incidentLabel } from "../incidents.mjs";
 import {
@@ -728,6 +729,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     },
     habitat: {
       ...habitat,
+      scene: presentHabitatScene(habitat.scene, lang),
       cabinet: cabinetModel,
       relationship: habitat.relationship
         ? {

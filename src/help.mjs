@@ -351,8 +351,8 @@ const ACTION_HELP = {
       "Inspect the read-only containment scene formed by the mutation, companion, and collections.",
     ],
     output: [
-      "以单屏 ASCII 生态舱展示双体关系、生态痕迹、七日事件和联合症状。",
-      "Shows a one-screen ASCII habitat with the duo relationship, ecological traces, seven-day events, and joint symptom.",
+      "以单屏活体 ASCII 场景展示环境、标本姿态、双体关系、近期痕迹和生态短讯。",
+      "Shows a one-screen living ASCII scene with environment, specimen pose, duo relationship, recent trace, and habitat bulletin.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的生态舱", "Inspect the habitat on a date"],
@@ -366,8 +366,8 @@ const ACTION_HELP = {
       "anti-ai share --card habitat > habitat.svg",
     ],
     note: [
-      "查看生态舱不会写入档案；事件每 7 个阅历日确定一次，Token 量不能重抽或加速。",
-      "Viewing is read-only; one event is derived per seven experience days and Token volume cannot reroll or accelerate it.",
+      "15 种场景原型按污染、清醒、悖论各 5 种平衡分布；查看不会写入档案，Token 量不能重抽或加速。",
+      "Fifteen scene archetypes are balanced five per Pollution, Clarity, and Paradox; viewing is read-only and Token volume cannot reroll or accelerate them.",
     ],
     related: ["creature", "lab companion", "codex", "share"],
   },

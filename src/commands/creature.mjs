@@ -50,6 +50,8 @@ import { renderHabitat } from "../renderers/habitat.mjs";
 import { settleCreatureState } from "../application/settlement.mjs";
 import { applyContainmentAction } from "../application/actions.mjs";
 import { expeditionDestination } from "../expedition/content.mjs";
+import { deriveMutationChronicle } from "../chronicle.mjs";
+import { renderMutationChronicle } from "../renderers/chronicle.mjs";
 
 async function runCreature(options, mode = "render") {
   if (options.action === "reset") {
@@ -105,6 +107,29 @@ async function runCreature(options, mode = "render") {
           { full: options.full },
         ),
       );
+    }
+    return;
+  }
+
+  if (options.action === "chronicle") {
+    const context = await runCreature(
+      {
+        ...options,
+        action: undefined,
+        command: "creature",
+        json: false,
+      },
+      "snapshot-context",
+    );
+    if (!context) return;
+    const chronicle = deriveMutationChronicle(
+      context.state,
+      context.result.date,
+    );
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(chronicle, null, 2)}\n`);
+    } else {
+      process.stdout.write(renderMutationChronicle(chronicle, options.lang));
     }
     return;
   }

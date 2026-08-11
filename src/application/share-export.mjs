@@ -25,10 +25,13 @@ import {
   renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
+  renderDossierShareSvg,
   renderHabitatShareSvg,
   renderExpeditionShareSvg,
   renderPathologyShareSvg,
 } from "../renderers/svg.mjs";
+import { deriveMutationChronicle } from "../chronicle.mjs";
+import { presentMutationChronicle } from "../renderers/chronicle.mjs";
 import { expeditionStatus } from "../expedition.mjs";
 import { expeditionShareView } from "../expedition/presentation.mjs";
 import { localized } from "../shared.mjs";
@@ -37,9 +40,10 @@ function shareCardForContext(context) {
   if (context.screen === "expedition") return { card: "expedition", id: null };
   if (context.screen === "habitat") return { card: "habitat", id: null };
   if (context.screen !== "codex" || !context.entry) {
-    return { card: "pathology", id: null };
+    return { card: "dossier", id: null };
   }
   const cardByType = {
+    collectionSet: "dossier",
     culture: "culture",
     companion: "companion",
     fossil: "fossil",
@@ -273,6 +277,18 @@ function renderCompanionCard(state, date, id, lang) {
 
 function renderCreatureCard(state, date, card, id, lang) {
   const { creature, view } = creatureShareView(state, date, lang);
+  if (card === "dossier") {
+    return {
+      available: true,
+      svg: renderDossierShareSvg(
+        presentMutationChronicle(
+          deriveMutationChronicle(state, date),
+          lang,
+        ),
+        lang,
+      ),
+    };
+  }
   if (card === "pathology") {
     return { available: true, svg: renderPathologyShareSvg(view, lang) };
   }

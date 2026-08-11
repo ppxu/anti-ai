@@ -140,6 +140,7 @@ anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
 anti-ai share --card habitat > anti-ai-habitat.svg
 anti-ai share --card expedition > anti-ai-expedition.svg
+anti-ai share --card dossier > anti-ai-dossier.svg
 
 anti-ai creature
 anti-ai creature --full
@@ -147,6 +148,7 @@ anti-ai creature --json
 anti-ai creature habitat
 anti-ai creature habitat --full
 anti-ai creature history
+anti-ai creature chronicle
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature intervene 2
@@ -189,11 +191,11 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-Running `anti-ai` with no arguments opens the console in an interactive terminal; a pipe or other non-interactive launch prints grouped Help instead. The console brings Overview, Habitat, Expedition, Laboratory, and Codex into one keyboard-navigable surface. Overview opens with a containment brief for the selected day: settled status, pathology changes, discoveries, local records, the next milestone, and no more than one primary plus one secondary action. Press `a` anywhere to open the available-now action center, or press `Enter` on a contextual primary action. Irreversible choices and higher-impact actions keep preview → explicit confirmation → result → refreshed file. Focused Expedition start, ordinary advance, and branch controls use the selected item plus `Enter` as the explicit confirmation so the ten-cell loop does not pass through a generic preview screen; abandonment still keeps its separate preview.
+Running `anti-ai` with no arguments opens the console in an interactive terminal; a pipe or other non-interactive launch prints grouped Help instead. The console brings Overview, Habitat, Expedition, Laboratory, and Codex into one keyboard-navigable surface. Overview opens with a containment brief and read-only Mutation Chronicle for the selected day: settled status, pathology changes, discoveries, local records, 7/30/90-day course, generation comparison, collection-set progress, the next milestone, and no more than one primary plus one secondary action. Press `a` anywhere to open the available-now action center, or press `Enter` on a contextual primary action. Irreversible choices and higher-impact actions keep preview → explicit confirmation → result → refreshed file. Focused Expedition start, ordinary advance, and branch controls use the selected item plus `Enter` as the explicit confirmation so the ten-cell loop does not pass through a generic preview screen; abandonment still keeps its separate preview.
 
 The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
 
-Press `1`–`5`, the arrow keys, or contextual `Tab` focus to move through the console. Expedition is area `3`: select one of four destinations and press `Enter` once to start; each ordinary cell then needs one `Enter`, while the single three-way branch asks for a response only when it appears. Revealed cells visibly separate the event card from the sealed system record and retain a three-cell trail. Completing or abandoning a run opens a return summary with event counts, effects, finds, achievements, and a satirical diagnosis. Leave with `q` without losing progress, or explicitly abandon with `x`. In Codex, press `h` for the nested Containment Archive, `t` to toggle the latest 7/30 days, and `Enter` to inspect one daily record. Collection details show first discovery, provenance, related record, and Cabinet status; locked entries remain spoiler-free silhouettes. Press `d` to preview displaying a discovered record. Press `s` from Overview, Habitat, Expedition, a discovered Codex detail, or a daily archive detail to preview the card type, privacy boundary, and target path; confirmation creates a new SVG without overwriting an existing file. The current directory is preferred, with `~/.anti-ai/exports` used when the launch directory is not writable. Laboratory shows a three-step material → culture → companion path: `Tab` switches between formulas and the complete culture shelf, `Enter` incubates or inspects the focused item, and `b` previews bonding the selected culture. An empty Habitat bay explains the next unmet step; press `l` to open Laboratory or, when a culture already exists, `b` to bond without leaving the console. Pollution-code exchange still uses the explicit `encounter --save` CLI because the TUI does not collect free-form codes. In Habitat, press `Enter` for read-only anatomy inspection, `r` to replay the latest sealed ecological event, `o` for today's Observation, or `c` for today's restrained Contact. Observation and Contact are each limited to once per settled day and create deterministic narrative only—no stats, rarity, or rewards.
+Press `1`–`5`, the arrow keys, or contextual `Tab` focus to move through the console. Expedition is area `3`: select one of four destinations and press `Enter` once to start; each ordinary cell then needs one `Enter`, while the single three-way branch asks for a response only when it appears. Revealed cells visibly separate the event card from the sealed system record and retain a three-cell trail. Completing or abandoning a run opens a return summary with event counts, effects, finds, achievements, and a satirical diagnosis. Leave with `q` without losing progress, or explicitly abandon with `x`. In Codex, press `h` for the nested Containment Archive, `t` to toggle the latest 7/30 days, and `Enter` to inspect one daily record. Collection details show first discovery, provenance, related record, and Cabinet status; locked entries remain spoiler-free silhouettes. The `SETS` category exposes six presentation-only pathology trials and their progress without changing the fixed denominator. Press `d` to preview displaying a discovered record; derived sets cannot occupy a Cabinet slot. Press `s` from Overview, Habitat, Expedition, a discovered Codex detail, or a daily archive detail to preview the card type, privacy boundary, and target path; Overview now prepares the richer dossier card. Confirmation creates a new SVG without overwriting an existing file. The current directory is preferred, with `~/.anti-ai/exports` used when the launch directory is not writable. Laboratory shows a three-step material → culture → companion path: `Tab` switches between formulas and the complete culture shelf, `Enter` incubates or inspects the focused item, and `b` previews bonding the selected culture. An empty Habitat bay explains the next unmet step; press `l` to open Laboratory or, when a culture already exists, `b` to bond without leaving the console. Pollution-code exchange still uses the explicit `encounter --save` CLI because the TUI does not collect free-form codes. In Habitat, press `Enter` for read-only anatomy inspection, `r` to replay the latest sealed ecological event, `o` for today's Observation, or `c` for today's restrained Contact. Observation and Contact are each limited to once per settled day and create deterministic narrative only—no stats, rarity, or rewards.
 
 Browsing, replaying, inspecting, archive navigation, provenance lookup, share preview, and cancelling remain read-only and do not scan Agent records. Opening the daily-settlement impact preview may scan supported usage metadata so it can show the exact local impact before confirmation; it does not write. Gameplay confirmation writes the Creature file through the same action service and atomic conflict checks used by CLI commands. Share confirmation renders through the existing local SVG service and writes only the previewed new file. Scripts and Agents should continue using explicit commands and `--json`; the TUI is a human-only interactive surface.
 
@@ -231,9 +233,9 @@ anti-ai codex --date 2026-07-23 --lang en
 anti-ai codex --json
 ```
 
-The fixed collection contains 134 entries: 16 form families, 36 achievements, 12 chromatic abilities, 4 generation scars, 30 route-balanced habitat phenomena, 24 expedition artifacts, and 12 expedition achievements. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, bonded companion forms, and resolved incident reports are collected without an artificial upper limit.
+The fixed collection contains 134 entries: 16 form families, 36 achievements, 12 chromatic abilities, 4 generation scars, 30 route-balanced habitat phenomena, 24 expedition artifacts, and 12 expedition achievements. Human output reveals only discovered names; locked entries remain `???`. Dynamic specimen fingerprints, foreign encounter specimens, permanent fossils, sealed case slices, laboratory cultures, bonded companion forms, and resolved incident reports are collected without an artificial upper limit. Six route-balanced pathology sets derive progress from these existing discoveries and sit outside the fixed denominator; completion unlocks presentation copy only.
 
-`codex --json` exposes stable IDs, discovery state and dates, provenance, collection counts, the selected day's `recent` discoveries, and the current three-slot Cabinet references. The TUI adds category → entry → detail navigation, first-discovery and related-record context, locked silhouettes, an explicitly confirmed display action, and a nested 7/30-day Containment Archive. Displaying a record changes only Codex, Habitat, and share presentation. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters and does not turn Token volume into a preferred collection route.
+`codex --json` exposes stable IDs, discovery state and dates, provenance, collection counts, derived set progress, the selected day's `recent` discoveries, and the current three-slot Cabinet references. The TUI adds category → entry → detail navigation, first-discovery and related-record context, locked silhouettes, an explicitly confirmed display action, and a nested 7/30-day Containment Archive. Displaying a record changes only Codex, Habitat, and share presentation. The codex uses the same complete six-source growth history as `creature`, so it rejects `--source` filters and does not turn Token volume into a preferred collection route. See the [Mutation Chronicle Guide](./docs/chronicle.md) for set requirements and longitudinal views.
 
 The human view also reports the generator's **204,374,016 deduplicated final ASCII forms**. This includes six new-generation graft organs and distinct legacy/v2 achievement and chromatic overlays. It is a theoretical species-space estimate, not collection progress. See the [Creature Guide](./docs/creature.md) for the capacity calculation and visual precedence rules.
 
@@ -309,9 +311,10 @@ anti-ai share --card culture --id <culture-id> > anti-ai-culture.svg
 anti-ai share --card companion > anti-ai-companion.svg
 anti-ai share --card habitat > anti-ai-habitat.svg
 anti-ai share --card expedition > anti-ai-expedition.svg
+anti-ai share --card dossier > anti-ai-dossier.svg
 ```
 
-Creature history and the laboratory support ten privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, `prognosis` for the current three-route case, `culture` for a sealed laboratory accident, `companion` for the currently bonded growth file, `habitat` for the combined containment scene, and `expedition` for the current or latest eligible run. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending; culture defaults to the latest sealed dish and accepts `--id`; companion becomes available after `lab bond`. Habitat cards also work with an empty companion bay; expedition cards reject future records when a historical date is selected.
+Creature history and the laboratory support eleven privacy-safe cards: `pathology` for a clinical snapshot, `specimen` for the current collected form, `wanted` for a satirical wanted poster, `fossil` for the latest sealed generation, `encounter` for a local contact accident, `prognosis` for the current three-route case, `culture` for a sealed laboratory accident, `companion` for the currently bonded growth file, `habitat` for the combined containment scene, `expedition` for the current or latest eligible run, and `dossier` for the current Chronicle, 30-day course, generation comparison, and set stamps. A fossil certificate becomes available after experience day 90; prognosis becomes available when a turning-point case is pending; culture defaults to the latest sealed dish and accepts `--id`; companion becomes available after `lab bond`. Habitat cards also work with an empty companion bay; expedition cards reject future records when a historical date is selected.
 
 Nothing is uploaded. Every card omits exact Token totals, requests, source/model names, paths, and conversation content. CLI output remains on stdout, so its destination is controlled entirely by your shell; confirmed TUI exports prefer the launch directory and fall back to `~/.anti-ai/exports` when it is not writable. Creature cards require the complete data set and therefore reject `--source` filters.
 
@@ -331,6 +334,7 @@ anti-ai creature habitat --json
 anti-ai creature export
 anti-ai creature history
 anti-ai creature history --full
+anti-ai creature chronicle
 anti-ai creature prognosis
 anti-ai creature intervene
 anti-ai creature intervene 2
@@ -344,7 +348,7 @@ Every settled day advances exactly one experience day, so high use, low use, and
 
 Regular abilities cycle through 255 visible points. Overflow becomes a lossless Malignancy rank, adds a route-specific diagnosis and evolution modifier, and is preserved in permanent fossils.
 
-Every 14 experience days may offer one turning-point case. Its three routes—Pollution, Clarity, and Paradox—always expose both a benefit and a cost; a pending case prevents a choice backlog. `history` compresses important events, while `prognosis` previews three explainable directions using qualitative labels rather than fake probabilities.
+Every 14 experience days may offer one turning-point case. Its three routes—Pollution, Clarity, and Paradox—always expose both a benefit and a cost; a pending case prevents a choice backlog. `history` compresses important events, `chronicle` compares the current file across 7/30/90-day windows and generations without writing state, while `prognosis` previews three explainable directions using qualitative labels rather than fake probabilities. See the [Mutation Chronicle Guide](./docs/chronicle.md).
 
 Every 7 experience days may also offer one containment incident. Emergency Quarantine, Continue Observation, and Allow Resonance each seal a visible trade-off; the aftermath appears 3 experience days later and may open one deterministic follow-up chapter. Pending incidents never build a backlog, and responses grant no abilities, experience, Ecology, or Token rewards.
 
@@ -461,6 +465,9 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/reporting.mjs`: terminal receipts, calendars, and verdicts
 - `src/renderers/svg.mjs`: privacy-safe SVG cards
 - `src/creature.mjs`: mutation growth and collection rules
+- `src/chronicle.mjs`: read-only 7/30/90-day and generation comparisons
+- `src/collection-sets.mjs`: route-balanced presentation-only set definitions
+- `src/renderers/chronicle.mjs`: bilingual Chronicle presentation
 - `src/creature/`: content pools, appearance generation, and versioned balance policy
 - `src/consequence-cabinet.mjs`: three-slot displays and deterministic daily narrative interactions
 - `src/state-store.mjs`: validation-aware atomic local state storage
@@ -475,6 +482,7 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `docs/companions.md`: complete Symbiotic Companion guide
 - `docs/habitat.md`: complete Containment Habitat guide
 - `docs/expeditions.md`: complete Containment Expedition guide
+- `docs/chronicle.md`: complete Mutation Chronicle and pathology-set guide
 
 ## Contributing
 

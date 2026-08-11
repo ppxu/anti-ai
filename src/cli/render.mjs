@@ -10,6 +10,7 @@ import { laboratoryLabel } from "../laboratory.mjs";
 import { incidentLabel } from "../incidents.mjs";
 import { color, formatTokens } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
+import { collectionSetCopy } from "../collection-sets.mjs";
 import {
   EXPEDITION_ACHIEVEMENT_DEFINITIONS,
   expeditionArtifact,
@@ -363,6 +364,11 @@ function renderCodex(codex, lang) {
     (discovery) =>
       `  + ${codexDiscoveryLabel(discovery, lang)}`,
   );
+  const collectionSetLines = codex.collectionSets.map((entry) => {
+    const copy = collectionSetCopy(entry.id, lang);
+    const text = `[${entry.rarity.toUpperCase()}] ${entry.completed ? "◆" : "◇"} ${copy.name} · ${entry.progress.completed}/${entry.progress.total}${entry.completed ? ` · ${copy.stamp}` : ""}`;
+    return `  ${color(CODEX_RARITY_COLORS[entry.rarity], text)}`;
+  });
 
   return [
     color("2", "┌────────────────────────────────────────────────────────┐"),
@@ -434,6 +440,10 @@ function renderCodex(codex, lang) {
         return `${achievement.name[lang]} · ${entry.rarity.toUpperCase()}`;
       },
     ),
+    `${localized(lang, "病理收藏套组", "PATHOLOGY COLLECTION SETS")}  [${codex.collectionSets.filter(({ completed }) => completed).length} / ${codex.collectionSets.length}]`,
+    ...collectionSetLines,
+    `  ${color("2", localized(lang, "套组只解锁名称、印章和展示语料，不提供数值奖励。", "Sets unlock names, stamps, and display copy only—never numeric rewards."))}`,
+    "",
     `${localized(lang, "动态标本", "DYNAMIC SPECIMENS")}  [${codex.summary.specimens.discovered}]`,
     ...(specimenLines.length > 0
       ? specimenLines

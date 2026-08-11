@@ -34,7 +34,7 @@ Use `anti-ai help lab`, `anti-ai help lab incubate`, `anti-ai help lab shelf`, `
 
 ## Interactive console
 
-The human-only `anti-ai tui` exposes the same main Laboratory workflow without requiring a return to the shell. Press `3` to open Laboratory. Its progress strip identifies the first unmet step in material → culture → companion intake. `Tab` switches between stable formulas and the complete culture shelf, arrow keys select an item, and `Enter` either opens incubation preview or a read-only culture file. Press `b` on a shelf item to preview bonding or switching the active companion; every write still requires explicit confirmation.
+The human-only `anti-ai tui` exposes the same main Laboratory workflow without requiring a return to the shell. Press `4` to open Laboratory. Its progress strip identifies the first unmet step in material → culture → companion intake. `Tab` switches between stable formulas and the complete culture shelf, arrow keys select an item, and `Enter` either opens incubation preview or a read-only culture file. Press `b` on a shelf item to preview bonding or switching the active companion; every write still requires explicit confirmation.
 
 An empty Habitat companion bay links back to Laboratory with `l`. If a culture has already been sealed, `b` opens the bond picker directly from Habitat. Pollution-code exchange remains an explicit `anti-ai encounter <pollution-code> --save` command because the TUI does not accept free-form visitor codes. This is navigation over existing actions, not a second growth or reward system.
 

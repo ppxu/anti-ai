@@ -190,6 +190,79 @@ function renderPathologyShareSvg(view, lang = "zh") {
 `;
 }
 
+function renderDossierShareSvg(view, lang = "zh") {
+  const title = localized(
+    lang,
+    "异变体标本档案",
+    "MUTATION DOSSIER",
+  );
+  const privacy = localized(
+    lang,
+    "隐私模式：无对话、路径、模型名或精确 Token",
+    "PRIVACY MODE: no chats, paths, model names, or exact tokens",
+  );
+  const artLines = view.identity.art
+    .map(
+      (line, index) =>
+        `<tspan x="72" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const companionLines = (view.identity.companion?.art ?? [])
+    .slice(0, 6)
+    .map(
+      (line, index) =>
+        `<tspan x="446" dy="${index === 0 ? 0 : 18}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const period = view.periods.find(({ days }) => days === 30) ?? view.periods[0];
+  const completedSets = view.collectionSets.entries
+    .filter(({ completed }) => completed)
+    .map(({ stamp }) => stamp)
+    .slice(0, 2)
+    .join(" · ") || localized(lang, "尚无完整套组", "NO COMPLETE SET YET");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(title)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#090c12"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#324052" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#58d6c7"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #8391a5; }
+    .body { fill: #eef6f5; }
+    .accent { fill: #58d6c7; }
+    .warn { fill: #f0c66d; }
+    .rare { fill: #c49aff; }
+  </style>
+  <text x="72" y="80" class="mono accent" font-size="31" font-weight="800">${escapeXml(title)}</text>
+  <text x="1128" y="80" class="mono muted" font-size="18" text-anchor="end">${escapeXml(view.date)}</text>
+  <text x="72" y="108" class="mono muted" font-size="14">#${escapeXml(view.identity.specimenId)} · ${escapeXml(view.identity.formLabel)}</text>
+  <line x1="72" y1="128" x2="1128" y2="128" stroke="#324052" stroke-width="2"/>
+
+  <text x="72" y="166" class="mono warn" font-size="16">${escapeXml(localized(lang, "当前标本", "CURRENT SPECIMEN"))}</text>
+  <text x="72" y="202" class="mono body" font-size="18" xml:space="preserve">${artLines}</text>
+  ${companionLines ? `<text x="446" y="236" class="mono rare" font-size="13" xml:space="preserve">${companionLines}</text>` : ""}
+
+  <text x="610" y="166" class="mono muted" font-size="15">${escapeXml(localized(lang, "档案身份", "DOSSIER IDENTITY"))}</text>
+  <text x="610" y="198" class="mono body" font-size="21">${escapeXml(truncateSvgText(view.identity.title, 44))}</text>
+  <text x="610" y="236" class="mono body" font-size="17">${escapeXml(`${view.identity.stageLabel} · ${view.identity.ecologyLabel}`)}</text>
+  <text x="610" y="266" class="mono body" font-size="17">${escapeXml(`${view.identity.pathologyLabel} · ${view.identity.abilityLabel}`)}</text>
+  <text x="610" y="304" class="mono muted" font-size="15">${escapeXml(localized(lang, "当前诊断", "CURRENT DIAGNOSIS"))}</text>
+  <text x="610" y="336" class="mono warn" font-size="16">${svgTextTspans(view.diagnosis, 610, 48, 2, 22)}</text>
+
+  <line x1="72" y1="388" x2="1128" y2="388" stroke="#324052" stroke-width="2"/>
+  <text x="72" y="420" class="mono accent" font-size="16">${escapeXml(localized(lang, "30 天病程", "30-DAY COURSE"))}</text>
+  <text x="72" y="450" class="mono body" font-size="16">${escapeXml(truncateSvgText(period.summary, 108))}</text>
+  <text x="72" y="488" class="mono accent" font-size="16">${escapeXml(localized(lang, "世代对照", "GENERATION COMPARISON"))}</text>
+  <text x="72" y="518" class="mono body" font-size="16">${escapeXml(truncateSvgText(view.comparison.summary, 108))}</text>
+  <text x="72" y="552" class="mono rare" font-size="15">${escapeXml(localized(lang, `套组 ${view.collectionSets.completed}/${view.collectionSets.total} · ${completedSets}`, `SETS ${view.collectionSets.completed}/${view.collectionSets.total} · ${completedSets}`))}</text>
+  <line x1="72" y1="568" x2="1128" y2="568" stroke="#324052" stroke-width="2"/>
+  <text x="72" y="594" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="594" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 function renderEncounterShareSvg(view, lang = "zh") {
   const title = localized(
     lang,
@@ -788,6 +861,7 @@ export {
   renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
+  renderDossierShareSvg,
   renderEncounterShareSvg,
   renderExpeditionShareSvg,
   renderHabitatShareSvg,

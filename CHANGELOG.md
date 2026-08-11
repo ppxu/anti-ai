@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-08-11
+
+### Added
+
+- Added `creature chronicle`, a bilingual read-only Mutation Chronicle with the current specimen file, deterministic diagnosis, latest meaningful change, 7/30/90-day course summaries, and current-generation comparison against the latest prior fossil or hatch baseline.
+- Added six route-balanced pathology collection sets across Pollution, Clarity, and Paradox. Their progress is derived from existing Codex discoveries; completion reveals only a set stamp and presentation copy, never stats, attempts, rarity, or growth speed.
+- Added a privacy-safe `share --card dossier` SVG combining the current specimen, optional companion, 30-day course, generation comparison, and collection-set stamps.
+- Added the Chronicle to TUI Overview and the six set trials to the existing Codex area without adding another top-level area or daily action.
+- Added standalone English and Simplified Chinese Mutation Chronicle guides.
+
+### Changed
+
+- TUI Overview sharing now defaults to the richer dossier card. Existing contextual collection and Expedition share targets are unchanged.
+- Updated bilingual Help, Explain, READMEs, Creature and architecture guides, Security Policy, contribution guidance, and the Agent Skill for Chronicle, dossier, and presentation-only set behavior.
+
+### Security
+
+- Chronicle, collection-set progress, Codex browsing, dossier sharing, and TUI presentation are derived read-only from existing state or an in-memory usage-metadata snapshot. Public views omit exact Tokens, request counts, model/source names, prompts, responses, paths, per-request timestamps, and unopened Expedition plans.
+- Creature schema remains v14. This release adds no persistent field, migration, required runtime dependency, network access, telemetry, background process, daily action, Token-volume reward, missed-day pressure, or probability change.
+
 ## [3.2.0] - 2026-08-07
 
 ### Changed

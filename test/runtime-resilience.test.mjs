@@ -354,41 +354,40 @@ test("migrating a creature file keeps one exact local backup", (t) => {
   assert.equal(existsSync(backupDirectory), false);
 });
 
-test("codex derives a current snapshot without creating local state", (t) => {
+test("codex and chronicle derive current snapshots without creating local state", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-pure-codex-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
   const home = path.join(workspace, "home");
   const statePath = path.join(home, ".anti-ai", "creature.json");
 
-  const result = spawnSync(
-    process.execPath,
-    [
-      path.join(projectDir, "bin", "anti-ai.mjs"),
-      "codex",
-      "--date",
-      "2026-07-23",
-      "--json",
-    ],
-    {
-      cwd: projectDir,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        HOME: home,
-        TZ: "Asia/Shanghai",
-        NO_COLOR: "1",
-        ANTI_AI_CREATURE_SEED: "pure-codex",
-        ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
-        ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
-        ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
-        ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
-        ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
-        ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+  for (const args of [
+    ["codex", "--date", "2026-07-23", "--json"],
+    ["creature", "chronicle", "--date", "2026-07-23", "--json"],
+  ]) {
+    const result = spawnSync(
+      process.execPath,
+      [path.join(projectDir, "bin", "anti-ai.mjs"), ...args],
+      {
+        cwd: projectDir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          HOME: home,
+          TZ: "Asia/Shanghai",
+          NO_COLOR: "1",
+          ANTI_AI_CREATURE_SEED: "pure-codex",
+          ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+          ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
+          ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
+          ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
+          ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
+          ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+        },
       },
-    },
-  );
+    );
 
-  assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.status, 0, result.stderr);
+  }
   assert.equal(existsSync(statePath), false);
 });
 
@@ -398,37 +397,39 @@ test("collection share cards render a snapshot without creating local state", (t
   const home = path.join(workspace, "home");
   const statePath = path.join(home, ".anti-ai", "creature.json");
 
-  const result = spawnSync(
-    process.execPath,
-    [
-      path.join(projectDir, "bin", "anti-ai.mjs"),
-      "share",
-      "--card",
-      "specimen",
-      "--date",
-      "2026-07-23",
-    ],
-    {
-      cwd: projectDir,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        HOME: home,
-        TZ: "Asia/Shanghai",
-        NO_COLOR: "1",
-        ANTI_AI_CREATURE_SEED: "pure-share",
-        ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
-        ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
-        ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
-        ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
-        ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
-        ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+  for (const card of ["specimen", "dossier"]) {
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.join(projectDir, "bin", "anti-ai.mjs"),
+        "share",
+        "--card",
+        card,
+        "--date",
+        "2026-07-23",
+      ],
+      {
+        cwd: projectDir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          HOME: home,
+          TZ: "Asia/Shanghai",
+          NO_COLOR: "1",
+          ANTI_AI_CREATURE_SEED: "pure-share",
+          ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+          ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
+          ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
+          ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
+          ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
+          ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+        },
       },
-    },
-  );
+    );
 
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^<svg/);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^<svg/);
+  }
   assert.equal(existsSync(statePath), false);
 });
 

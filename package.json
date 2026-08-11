@@ -1,7 +1,7 @@
 {
   "name": "anti-ai",
-  "version": "3.2.0",
-  "description": "Turn local coding-agent token usage into a satirical resource receipt, mutation creature, and containment expedition.",
+  "version": "3.3.0",
+  "description": "Turn local coding-agent token usage into a satirical resource receipt and evolving mutation chronicle.",
   "type": "module",
   "bin": {
     "anti-ai": "bin/anti-ai.mjs"

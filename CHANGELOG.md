@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-08-12
+
+### Changed
+
+- Reorganized the single package around explicit Core, Application, Infrastructure, and presentation boundaries without adding a monorepo, workspace, or runtime dependency.
+- Unified CLI and TUI mutations, request-local projections, and share-card preparation so command adapters no longer maintain parallel gameplay paths.
+- Split JSONL and SQLite source adapters behind the stable scanner facade; separated Creature state migration, Codex projection, period casebook queries, pure appearance composition, and ANSI rendering from the aggregate growth module; and isolated the large verdict-copy decision tree from report composition.
+- Replaced the TUI's independent local state fields with an explicit reducer-backed controller, split input orchestration from four bounded screen groups, and paused motion behind Help, action, and share overlays.
+- Extended `npm run check` with protected-layer rules, a 1,500-line source-module ceiling, and byte-for-byte freshness checks for `dist/tui.mjs` and its third-party notices.
+
+### Security
+
+- Nested Creature state envelopes are now validated before migration or derivation, malformed usage numbers are normalized consistently, and tests no longer load the optional SQLite native module unless a SQLite fixture is actually used.
+
 ## [3.5.0] - 2026-08-11
 
 ### Added

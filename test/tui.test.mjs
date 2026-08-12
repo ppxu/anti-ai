@@ -348,7 +348,14 @@ test("TUI sharing previews a private local target before exporting SVG", async (
 
   const result = await controller.execute(preview);
   assert.equal(result.status, "completed");
-  assert.match(readFileSync(result.targetPath, "utf8"), /^<svg/u);
+  const exported = readFileSync(result.targetPath, "utf8");
+  assert.match(exported, /^<svg/u);
+  const cliShare = runCli(
+    ["share", "--card", "dossier", "--date", "2026-07-23", "--lang", "en"],
+    environment,
+  );
+  assert.equal(cliShare.status, 0, cliShare.stderr);
+  assert.equal(exported, cliShare.stdout);
   assert.equal(readFileSync(statePath, "utf8"), original);
 
   const unsettled = await controller.preview({

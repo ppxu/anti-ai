@@ -33,21 +33,26 @@ Preserve these product rules:
 
 - `bin/anti-ai.mjs` is a minimal launcher.
 - `src/registry.mjs` owns command, card, and source metadata.
-- `src/scanner.mjs` owns isolated local-source adapters.
+- `src/scanner.mjs` is the stable source-scanning facade; isolated adapters live in `src/infrastructure/sources/`.
+- `src/core/` owns dependency-light validation, date, and usage primitives.
 - `src/commands/` owns command orchestration.
 - `src/application/` owns presentation-neutral query and action models.
 - `src/application/action-catalog.mjs` derives action availability and disabled reasons.
-- `src/application/actions.mjs` owns shared preview, confirmation, execution, and session orchestration.
+- `src/application/actions.mjs` owns TUI preview, confirmation, and session orchestration.
+- `src/application/action-execution.mjs` owns shared CLI/TUI state mutations; command handlers must not duplicate those writes.
+- `src/application/projections.mjs` owns request-local memoized query projections.
+- `src/application/tui-controller.mjs` owns explicit ephemeral TUI controller state.
 - `src/application/settlement.mjs` owns the settlement pipeline shared by CLI and TUI.
-- `src/chronicle.mjs` owns read-only historical and generation projections.
+- `src/application/creature-casebook.mjs` owns period casebook queries; `src/chronicle.mjs` composes read-only historical and generation projections.
 - `src/collection-sets.mjs` owns presentation-only, route-balanced set definitions.
 - `src/collection-phenotype.mjs` owns read-only fixed-collection milestones and display-only specimen motifs; it must not alter appearance fingerprints or state.
+- `src/creature/codex.mjs` owns collection projection assembly; `src/creature/state.mjs` owns Creature schema migration and persistence wiring.
 - Domain modules own calculations and gameplay rules.
 - `src/cli/` and `src/renderers/` own terminal and SVG presentation.
-- `src/tui/` owns Ink source; `dist/tui.mjs` is generated and must not be edited directly.
+- `src/tui/app.jsx` owns input orchestration, `src/tui/screens/` owns view components, and `dist/tui.mjs` is generated and must not be edited directly.
 - `src/state-store.mjs` owns validation-aware state loading, backups, locking, and atomic writes.
 
-Avoid runtime import cycles. Register new public IDs centrally instead of adding duplicate allowlists.
+Avoid runtime import cycles, protected-layer inversions, and source modules over 1,500 lines; `npm run check` enforces all three. Register new public IDs centrally instead of adding duplicate allowlists.
 TUI actions must call application services, never command handlers or arbitrary shell commands. Browsing and cancellation stay read-only; mutations require explicit user input. Irreversible or higher-impact actions use a confirmation screen, while focused Expedition start, advance, and branch keys may execute directly when the keypress itself is the documented confirmation.
 
 ## State invariants
@@ -95,7 +100,7 @@ npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org/
 git diff --check
 ```
 
-`npm run verify` combines the first three project gates. Tests must use synthetic fixtures and public CLI behavior wherever practical.
+`npm run check` verifies that committed TUI output is fresh without rewriting it, so run `npm run build:tui` after changing TUI or bundled dependencies. `npm run verify` combines the first three project gates. Tests must use synthetic fixtures and public CLI behavior wherever practical.
 
 ## Release boundary
 

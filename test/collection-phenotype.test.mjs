@@ -8,9 +8,9 @@ import {
 import {
   creatureAppearanceCapacity,
   creatureAppearanceState,
-  creatureArt,
   deriveCreatureAppearance,
 } from "../src/creature/appearance.mjs";
+import { creatureArt } from "../src/renderers/creature-art.mjs";
 
 const FIXED_SECTIONS = [
   "forms",

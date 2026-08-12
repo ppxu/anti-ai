@@ -1,8 +1,8 @@
 import {
-  creatureArt,
   creatureLabel,
   saveCreatureState,
 } from "../creature.mjs";
+import { creatureArt } from "../renderers/creature-art.mjs";
 import {
   SpecimenCodeError,
   createSpecimenEncounter,

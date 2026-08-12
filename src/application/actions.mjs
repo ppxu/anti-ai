@@ -1,18 +1,13 @@
 import {
   casebookLabel,
   currentCreatureIntervention,
-  selectCreatureIntervention,
 } from "../casebook.mjs";
 import {
-  bondLaboratoryCompanion,
   companionLabel,
-  laboratoryCompanion,
 } from "../companion.mjs";
 import {
   cabinetInteractionCopy,
   codexCollectionEntries,
-  featureCabinetEntry,
-  recordCabinetInteraction,
 } from "../consequence-cabinet.mjs";
 import {
   creatureCodex,
@@ -21,10 +16,8 @@ import {
   deriveCreature,
   loadCreatureState,
   saveCreatureState,
-  selectCreatureEvolution,
 } from "../creature.mjs";
 import {
-  incubateLaboratoryCulture,
   laboratoryLabel,
   laboratoryShelf,
   laboratoryView,
@@ -35,21 +28,21 @@ import {
   INCIDENT_AFTERMATH_DELAY,
   currentCreatureIncident,
   incidentLabel,
-  selectCreatureIncident,
 } from "../incidents.mjs";
 import { StateConflictError } from "../state-store.mjs";
 import {
   EXPEDITION_DESTINATIONS,
-  abandonExpedition,
-  advanceExpedition,
-  chooseExpedition,
-  startExpedition,
 } from "../expedition.mjs";
 import {
   expeditionChoiceCopy,
   expeditionDestination,
 } from "../expedition/content.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
+import {
+  applyContainmentAction,
+  availableInteractionTargets,
+  executeContainmentMutation,
+} from "./action-execution.mjs";
 import { settleCreatureState } from "./settlement.mjs";
 import { deriveTuiSnapshot } from "./tui.mjs";
 
@@ -278,18 +271,6 @@ function bondPreview(state, date, lang, action) {
     })),
     impact: { cultures: shelf.total },
   };
-}
-
-function availableInteractionTargets(state, date, kind) {
-  const hasCompanion = laboratoryCompanion(state, date).companion !== null;
-  if (kind === "observe") {
-    return [
-      "specimen",
-      ...(hasCompanion ? ["companion"] : []),
-      ...((state.cabinet?.featured?.length ?? 0) > 0 ? ["cabinet"] : []),
-    ];
-  }
-  return ["glass", ...(hasCompanion ? ["companion"] : []), "light"];
 }
 
 function interactionTargetCopy(targetId, lang) {
@@ -539,71 +520,7 @@ function failedAction(actionId, error) {
   };
 }
 
-function applyContainmentAction(state, date, actionId, choice) {
-  const creature = deriveCreature(state, date);
-  if (actionId === "start_expedition") {
-    return startExpedition(state, creature, date, choice);
-  }
-  if (actionId === "advance_expedition") {
-    return advanceExpedition(state, creature, date);
-  }
-  if (actionId === "choose_expedition") {
-    return chooseExpedition(state, date, choice);
-  }
-  if (actionId === "abandon_expedition") {
-    return abandonExpedition(state, date);
-  }
-  if (actionId === "choose_intervention") {
-    return selectCreatureIntervention(
-      state,
-      date,
-      choice,
-      deriveCreature(state, date).experienceDays,
-    );
-  }
-  if (actionId === "choose_evolution") {
-    return selectCreatureEvolution(state, date, choice);
-  }
-  if (actionId === "resolve_incident") {
-    return selectCreatureIncident(
-      state,
-      date,
-      choice,
-      deriveCreature(state, date).experienceDays,
-    );
-  }
-  if (actionId === "incubate") {
-    return incubateLaboratoryCulture(state, date, choice);
-  }
-  if (actionId === "bond") {
-    return bondLaboratoryCompanion(state, date, choice);
-  }
-  if (actionId === "curate_display") {
-    return featureCabinetEntry(state, creatureCodex(state, date), choice);
-  }
-  if (actionId === "observe_specimen") {
-    return recordCabinetInteraction(
-      state,
-      date,
-      "observe",
-      choice,
-      availableInteractionTargets(state, date, "observe"),
-    );
-  }
-  if (actionId === "contact_specimen") {
-    return recordCabinetInteraction(
-      state,
-      date,
-      "contact",
-      choice,
-      availableInteractionTargets(state, date, "contact"),
-    );
-  }
-  return { error: "unknown_action" };
-}
-
-async function completeAction(actionId, state, date, lang, result, message) {
-  await saveCreatureState(state);
+function completeAction(actionId, state, date, lang, result, message) {
   return {
     id: actionId,
     status: "completed",
@@ -654,53 +571,49 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
     };
   }
   if (actionId === "choose_intervention") {
-    const selected = applyContainmentAction(
-      state,
-      date,
+    const selected = await executeContainmentMutation(
       actionId,
-      options.choice,
+      { ...options, date, lang },
+      { state },
     );
-    if (selected.error) return failedAction(actionId, selected.error);
-    return completeAction(actionId, state, date, lang, selected.value, [
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+    return completeAction(actionId, selected.state, date, lang, selected.result, [
       "病例选择已封存。异变体拒绝提供第二诊疗意见。",
       "The case choice is sealed. The specimen refuses a second opinion.",
     ]);
   }
   if (actionId === "resolve_incident") {
-    const selected = applyContainmentAction(
-      state,
-      date,
+    const selected = await executeContainmentMutation(
       actionId,
-      options.choice,
+      { ...options, date, lang },
+      { state },
     );
-    if (selected.error) return failedAction(actionId, selected.error);
-    return completeAction(actionId, state, date, lang, selected.value, [
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+    return completeAction(actionId, selected.state, date, lang, selected.result, [
       "事故响应已封存。后果正在后台假装与选择无关。",
       "Incident response sealed. The aftermath is pretending to be unrelated.",
     ]);
   }
   if (actionId === "choose_evolution") {
-    const selected = applyContainmentAction(
-      state,
-      date,
+    const selected = await executeContainmentMutation(
       actionId,
-      options.choice,
+      { ...options, date, lang },
+      { state },
     );
-    if (selected.error) return failedAction(actionId, selected.error);
-    return completeAction(actionId, state, date, lang, selected.value, [
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+    return completeAction(actionId, selected.state, date, lang, selected.result, [
       "世代进化已封存。遗传错误正式转为家族传统。",
       "Evolution sealed. The hereditary defect is now a family tradition.",
     ]);
   }
   if (actionId === "incubate") {
-    const selected = applyContainmentAction(
-      state,
-      date,
+    const selected = await executeContainmentMutation(
       actionId,
-      options.choice,
+      { ...options, date, lang },
+      { state },
     );
-    if (selected.error) return failedAction(actionId, selected.error);
-    return completeAction(actionId, state, date, lang, selected.value, [
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+    return completeAction(actionId, selected.state, date, lang, selected.result, [
       "培养事故已入架。实验室再次把意外写成了流程。",
       "The incubation accident is shelved. The lab has documented surprise as procedure.",
     ]);
@@ -713,13 +626,12 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
       "abandon_expedition",
     ].includes(actionId)
   ) {
-    const selected = applyContainmentAction(
-      state,
-      date,
+    const selected = await executeContainmentMutation(
       actionId,
-      options.choice,
+      { ...options, date, lang },
+      { state },
     );
-    if (selected.error) return failedAction(actionId, selected.error);
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
     const messages = {
       start_expedition: [
         "远征序列已封存。它现在连后悔都具有确定性。",
@@ -740,51 +652,48 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
     }[actionId];
     return completeAction(
       actionId,
-      state,
+      selected.state,
       date,
       lang,
-      selected.value,
+      selected.result,
       messages,
     );
   }
   if (actionId === "curate_display") {
-    const selected = applyContainmentAction(
-      state,
-      date,
+    const selected = await executeContainmentMutation(
       actionId,
-      options.choice,
+      { ...options, date, lang },
+      { state },
     );
-    if (selected.error) return failedAction(actionId, selected.error);
-    return completeAction(actionId, state, date, lang, selected.value, [
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+    return completeAction(actionId, selected.state, date, lang, selected.result, [
       "收藏已进入后果陈列柜。它没有变强，只是更难装作没发生过。",
       "The collection entered the consequence cabinet. It gained no power, only visibility.",
     ]);
   }
   if (["observe_specimen", "contact_specimen"].includes(actionId)) {
     const kind = actionId === "observe_specimen" ? "observe" : "contact";
-    const selected = applyContainmentAction(
-      state,
-      date,
+    const selected = await executeContainmentMutation(
       actionId,
-      options.choice,
+      { ...options, date, lang },
+      { state },
     );
-    if (selected.error) return failedAction(actionId, selected.error);
-    const reaction = cabinetInteractionCopy(kind, selected.value, lang);
-    return completeAction(actionId, state, date, lang, selected.value, [
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+    const reaction = cabinetInteractionCopy(kind, selected.result, lang);
+    return completeAction(actionId, selected.state, date, lang, selected.result, [
       `${kind === "observe" ? "观察记录" : "接触记录"}已封存：${reaction}`,
       `${kind === "observe" ? "Observation" : "Contact"} sealed: ${reaction}`,
     ]);
   }
-  const selected = applyContainmentAction(
-    state,
-    date,
+  const selected = await executeContainmentMutation(
     actionId,
-    options.choice,
+    { ...options, date, lang },
+    { state },
   );
-  if (selected.error) return failedAction(actionId, selected.error);
-  return completeAction(actionId, state, date, lang, selected.value, [
-    `伴生关系已建立：${companionLabel("stages", selected.value.companion.stageId, lang)}。`,
-    `Symbiotic bond established: ${companionLabel("stages", selected.value.companion.stageId, lang)}.`,
+  if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+  return completeAction(actionId, selected.state, date, lang, selected.result, [
+    `伴生关系已建立：${companionLabel("stages", selected.result.companion.stageId, lang)}。`,
+    `Symbiotic bond established: ${companionLabel("stages", selected.result.companion.stageId, lang)}.`,
   ]);
 }
 

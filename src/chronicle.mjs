@@ -3,12 +3,12 @@ import { createHash } from "node:crypto";
 import { laboratoryCompanion } from "./companion.mjs";
 import {
   CREATURE_ABILITY_KEYS,
-  creatureArt,
-  creatureCasebook,
   creatureCodex,
   deriveCreature,
 } from "./creature.mjs";
-import { shiftDate } from "./reporting.mjs";
+import { creatureCasebook } from "./application/creature-casebook.mjs";
+import { shiftDate } from "./core/date.mjs";
+import { creatureArt } from "./renderers/creature-art.mjs";
 
 const CHRONICLE_PERIOD_DAYS = Object.freeze([7, 30, 90]);
 
@@ -82,13 +82,20 @@ function expeditionCount(state, startDate, endDate) {
   }).length;
 }
 
-function periodChange(state, endDate, days) {
+function periodChange(state, endDate, days, projections) {
   const startDate = shiftDate(endDate, -(days - 1));
-  const casebook = creatureCasebook(state, startDate, endDate);
-  const before = deriveCreature(state, shiftDate(startDate, -1));
-  const after = deriveCreature(state, endDate);
-  const beforeCompanion = laboratoryCompanion(state, shiftDate(startDate, -1)).companion;
-  const afterCompanion = laboratoryCompanion(state, endDate).companion;
+  const casebook = creatureCasebook(state, startDate, endDate, projections);
+  const beforeDate = shiftDate(startDate, -1);
+  const before = projections?.creature(beforeDate)
+    ?? deriveCreature(state, beforeDate);
+  const after = projections?.creature(endDate)
+    ?? deriveCreature(state, endDate);
+  const beforeCompanion = projections
+    ? projections.companion(beforeDate)
+    : laboratoryCompanion(state, beforeDate).companion;
+  const afterCompanion = projections
+    ? projections.companion(endDate)
+    : laboratoryCompanion(state, endDate).companion;
   return {
     days,
     startDate,
@@ -118,7 +125,7 @@ function periodChange(state, endDate, days) {
   };
 }
 
-function latestMeaningfulChange(state, date) {
+function latestMeaningfulChange(state, date, projections) {
   const discoveryDates = [
     ...(state.specimens ?? []).map(({ recordedAt }) => recordedAt),
     ...(state.generations?.fossils ?? []).map(({ sealedAt }) => sealedAt),
@@ -145,8 +152,11 @@ function latestMeaningfulChange(state, date) {
     .sort();
   const entryDate = discoveryDates.at(-1);
   if (!entryDate) return null;
-  const before = deriveCreature(state, shiftDate(entryDate, -1));
-  const after = deriveCreature(state, entryDate);
+  const beforeDate = shiftDate(entryDate, -1);
+  const before = projections?.creature(beforeDate)
+    ?? deriveCreature(state, beforeDate);
+  const after = projections?.creature(entryDate)
+    ?? deriveCreature(state, entryDate);
   const changes = [];
   for (const key of ["stage", "branch", "ecologyForm"]) {
     const from = key === "ecologyForm" ? before.ecologyForm : before[key];
@@ -187,7 +197,7 @@ function comparisonSnapshot(creature, kind, date, extra = {}) {
   };
 }
 
-function generationComparison(state, date, current) {
+function generationComparison(state, date, current, projections) {
   const fossil = current.fossils
     .filter((entry) => entry.generation < current.generation.number)
     .at(-1);
@@ -196,7 +206,8 @@ function generationComparison(state, date, current) {
     .sort(([left], [right]) => left.localeCompare(right))
     .at(0)?.[0] ?? date;
   const baselineDate = fossil?.sealedAt ?? hatchDate;
-  const baselineCreature = deriveCreature(state, baselineDate);
+  const baselineCreature = projections?.creature(baselineDate)
+    ?? deriveCreature(state, baselineDate);
   const baseline = comparisonSnapshot(
     baselineCreature,
     fossil ? "fossil" : "hatch",
@@ -240,10 +251,12 @@ function chronicleDiagnosis(id, lang = "zh") {
   return DIAGNOSIS_COPY[group]?.[Number(index)]?.[lang] ?? "";
 }
 
-function deriveMutationChronicle(state, date) {
-  const creature = deriveCreature(state, date);
-  const companion = laboratoryCompanion(state, date).companion;
-  const codex = creatureCodex(state, date);
+function deriveMutationChronicle(state, date, projections = null) {
+  const creature = projections?.creature(date) ?? deriveCreature(state, date);
+  const companion = projections
+    ? projections.companion(date)
+    : laboratoryCompanion(state, date).companion;
+  const codex = projections?.codex(date) ?? creatureCodex(state, date);
   const creatureView = {
     ...creature,
     collectionPhenotype: codex.collectionPhenotype,
@@ -254,11 +267,11 @@ function deriveMutationChronicle(state, date) {
     date,
     identity: specimenIdentity(creatureView, companion),
     diagnosisId: diagnosisId(state.seed, date, creature.ecology.type),
-    latestChange: latestMeaningfulChange(state, date),
+    latestChange: latestMeaningfulChange(state, date, projections),
     periods: CHRONICLE_PERIOD_DAYS.map((days) =>
-      periodChange(state, date, days)
+      periodChange(state, date, days, projections)
     ),
-    comparison: generationComparison(state, date, creature),
+    comparison: generationComparison(state, date, creature, projections),
     collectionPhenotype: codex.collectionPhenotype,
     collectionSets: {
       completed: sets.filter(({ completed }) => completed).length,

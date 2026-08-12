@@ -85,6 +85,36 @@ test("today --json counts Codex request usage on the requested local date", () =
   });
 });
 
+test("JSONL adapters clamp malformed and negative usage fields without changing accounting semantics", (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), "anti-ai-safe-usage-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  writeCodexUsage(root, [
+    {
+      input_tokens: -40,
+      cached_input_tokens: "not-a-number",
+      output_tokens: "7",
+      reasoning_output_tokens: -1,
+      total_tokens: "not-a-number",
+    },
+  ]);
+
+  const result = runCli(
+    ["today", "--date", "2026-07-23", "--source", "codex", "--json"],
+    { ANTI_AI_CODEX_DIR: root },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).sources.codex, {
+    requests: 1,
+    inputTokens: 0,
+    cachedInputTokens: 0,
+    cacheWriteInputTokens: 0,
+    outputTokens: 7,
+    reasoningOutputTokens: 0,
+    totalTokens: 7,
+  });
+});
+
 test("today --json deduplicates Claude Code streaming usage by message id", () => {
   const result = runCli(
     [

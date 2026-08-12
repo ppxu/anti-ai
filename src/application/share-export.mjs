@@ -7,15 +7,15 @@ import {
   companionLabel,
   companionView,
   laboratoryCompanion,
+  syncLaboratoryCompanion,
 } from "../companion.mjs";
 import {
-  creatureArt,
-  creatureCodex,
   creatureLabel,
   creatureTitle,
   deriveCreature,
   loadCreatureState,
 } from "../creature.mjs";
+import { creatureArt } from "../renderers/creature-art.mjs";
 import { deriveHabitat } from "../habitat.mjs";
 import {
   laboratoryCulture,
@@ -36,6 +36,7 @@ import { presentMutationChronicle } from "../renderers/chronicle.mjs";
 import { expeditionStatus } from "../expedition.mjs";
 import { expeditionShareView } from "../expedition/presentation.mjs";
 import { localized } from "../shared.mjs";
+import { createProjectionContext } from "./projections.mjs";
 
 function shareCardForContext(context) {
   if (context.screen === "expedition") return { card: "expedition", id: null };
@@ -143,9 +144,9 @@ function shareExportFailure(error, targetPath, lang) {
   return { status: "failed", reason, reasonLabel, targetPath };
 }
 
-function creatureShareView(state, date, lang) {
-  const creature = deriveCreature(state, date);
-  const codex = creatureCodex(state, date);
+function creatureShareView(state, date, lang, projections) {
+  const creature = projections.creature(date);
+  const codex = projections.codex(date);
   const creatureView = {
     ...creature,
     collectionPhenotype: codex.collectionPhenotype,
@@ -281,14 +282,19 @@ function renderCompanionCard(state, date, id, lang) {
   };
 }
 
-function renderCreatureCard(state, date, card, id, lang) {
-  const { creature, view } = creatureShareView(state, date, lang);
+function renderCreatureCard(state, date, card, id, lang, projections) {
+  const { creature, view } = creatureShareView(
+    state,
+    date,
+    lang,
+    projections,
+  );
   if (card === "dossier") {
     return {
       available: true,
       svg: renderDossierShareSvg(
         presentMutationChronicle(
-          deriveMutationChronicle(state, date),
+          deriveMutationChronicle(state, date, projections),
           lang,
         ),
         lang,
@@ -299,7 +305,7 @@ function renderCreatureCard(state, date, card, id, lang) {
     return { available: true, svg: renderPathologyShareSvg(view, lang) };
   }
   if (card === "habitat") {
-    const companion = laboratoryCompanion(state, date).companion;
+    const companion = projections.companion(date);
     const habitat = deriveHabitat(
       state,
       { ...creature, companion },
@@ -355,10 +361,10 @@ function renderCreatureCard(state, date, card, id, lang) {
   };
 }
 
-async function prepareTuiShareCard(card, id, date, lang) {
-  let state;
+async function prepareShareCard(card, id, date, lang, options = {}) {
+  let state = options.state;
   try {
-    state = await loadCreatureState();
+    state ??= await loadCreatureState();
   } catch {
     return unavailable(
       "creature_state_unreadable",
@@ -390,6 +396,7 @@ async function prepareTuiShareCard(card, id, date, lang) {
       ),
     };
   }
+  if (card === "culture") return renderCultureCard(state, date, id, lang);
   if (!state.days?.[date]) {
     return unavailable(
       "date_not_settled",
@@ -400,11 +407,18 @@ async function prepareTuiShareCard(card, id, date, lang) {
       ),
     );
   }
-  if (card === "culture") return renderCultureCard(state, date, id, lang);
   if (card === "companion") {
+    syncLaboratoryCompanion(state, date);
     return renderCompanionCard(state, date, id, lang);
   }
-  return renderCreatureCard(state, date, card, id, lang);
+  return renderCreatureCard(
+    state,
+    date,
+    card,
+    id,
+    lang,
+    createProjectionContext(state),
+  );
 }
 
 function createTuiShareController(options = {}, serviceOptions = {}) {
@@ -432,7 +446,7 @@ function createTuiShareController(options = {}, serviceOptions = {}) {
         );
       }
       const { card, id } = shareCardForContext(context);
-      const prepared = await prepareTuiShareCard(card, id, context.date, lang);
+      const prepared = await prepareShareCard(card, id, context.date, lang);
       if (!prepared.available) return prepared;
       const output = await shareOutputDirectory(
         preferredOutputDirectory,
@@ -518,4 +532,4 @@ function createTuiShareController(options = {}, serviceOptions = {}) {
   };
 }
 
-export { createTuiShareController };
+export { createTuiShareController, prepareShareCard };

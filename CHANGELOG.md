@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-08-12
+
+### Added
+
+- Added a deterministic bilingual Daily Containment Broadcast projection that reduces the selected day to system status, current diagnosis, one prioritized change, collection update, Living Habitat reaction, and at most one recommended response.
+- Added `share --card briefing`, a privacy-safe 1200×630 daily cover shared by the CLI and the TUI Overview export flow.
+
+### Changed
+
+- Reworked TUI Overview into a concise broadcast-first surface; `e` expands or collapses the complete specimen, pathology, milestone, Chronicle, generation, constellation, and action file without adding a sixth top-level area.
+- Kept `a` as the complete action center while `Enter` handles only the broadcast's single recommendation. Direct area keys, contextual sharing, motion controls, and the existing full Overview information remain available.
+- Updated bilingual Help, READMEs, the new Daily Broadcast guide, architecture/security/contribution guidance, AGENTS.md, and the installable Agent Skill.
+
+### Security
+
+- The broadcast and its SVG are read-only derivations from already-private Creature, Chronicle, Codex, action, and Living Habitat projections. They add no state field or scan path and expose no exact Tokens, requests, model/source names, prompts, responses, paths, per-request timestamps, or internal hashes.
+- Creature schema remains v14. This release adds no persistent field, migration, required runtime dependency, network access, telemetry, background process, daily action, Token-volume reward, missed-day pressure, or collection probability change.
+
 ## [3.6.0] - 2026-08-12
 
 ### Changed

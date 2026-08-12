@@ -26,6 +26,7 @@ import {
   renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
+  renderDailyBriefingShareSvg,
   renderDossierShareSvg,
   renderHabitatShareSvg,
   renderExpeditionShareSvg,
@@ -37,10 +38,12 @@ import { expeditionStatus } from "../expedition.mjs";
 import { expeditionShareView } from "../expedition/presentation.mjs";
 import { localized } from "../shared.mjs";
 import { createProjectionContext } from "./projections.mjs";
+import { deriveTuiSnapshot } from "./tui.mjs";
 
 function shareCardForContext(context) {
   if (context.screen === "expedition") return { card: "expedition", id: null };
   if (context.screen === "habitat") return { card: "habitat", id: null };
+  if (context.screen === "overview") return { card: "briefing", id: null };
   if (context.screen !== "codex" || !context.entry) {
     return { card: "dossier", id: null };
   }
@@ -283,6 +286,21 @@ function renderCompanionCard(state, date, id, lang) {
 }
 
 function renderCreatureCard(state, date, card, id, lang, projections) {
+  if (card === "briefing") {
+    const snapshot = deriveTuiSnapshot(state, date, lang);
+    return {
+      available: true,
+      svg: renderDailyBriefingShareSvg(
+        {
+          ...snapshot.dailyBriefing,
+          specimenId: snapshot.overview.specimenId,
+          specimenTitle: snapshot.overview.title,
+          art: snapshot.overview.art,
+        },
+        lang,
+      ),
+    };
+  }
   const { creature, view } = creatureShareView(
     state,
     date,

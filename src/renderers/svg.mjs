@@ -266,6 +266,74 @@ function renderDossierShareSvg(view, lang = "zh") {
 `;
 }
 
+function renderDailyBriefingShareSvg(view, lang = "zh") {
+  const title = localized(
+    lang,
+    "每日收容播报",
+    "DAILY CONTAINMENT BROADCAST",
+  );
+  const privacy = localized(
+    lang,
+    "隐私模式：无对话、路径、模型名、来源名或精确 Token",
+    "PRIVACY MODE: no chats, paths, model or source names, or exact tokens",
+  );
+  const section = (id) => view.sections.find((entry) => entry.id === id);
+  const system = section("system");
+  const diagnosis = section("diagnosis");
+  const change = section("change");
+  const collection = section("collection");
+  const habitat = section("habitat");
+  const artLines = view.art
+    .slice(0, 9)
+    .map(
+      (line, index) =>
+        `<tspan x="72" dy="${index === 0 ? 0 : 27}">${escapeXml(line)}</tspan>`,
+    )
+    .join("");
+  const response = view.recommendation?.label
+    ?? localized(lang, "无需处置 · 允许什么也不做", "NO RESPONSE REQUIRED · DOING NOTHING IS ALLOWED");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">${escapeXml(title)}</title>
+  <desc id="desc">${escapeXml(privacy)}</desc>
+  <rect width="1200" height="630" rx="28" fill="#080d0c"/>
+  <rect x="24" y="24" width="1152" height="582" rx="20" fill="none" stroke="#29483f" stroke-width="2"/>
+  <rect x="24" y="24" width="12" height="582" rx="6" fill="#55d6b0"/>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .muted { fill: #78958b; }
+    .body { fill: #eff8f5; }
+    .accent { fill: #55d6b0; }
+    .warn { fill: #f2c66d; }
+    .rare { fill: #cf91ff; }
+  </style>
+  <text x="72" y="80" class="mono accent" font-size="30" font-weight="800">${escapeXml(title)}</text>
+  <text x="1128" y="80" class="mono muted" font-size="18" text-anchor="end">${escapeXml(view.date)}</text>
+  <line x1="72" y1="112" x2="1128" y2="112" stroke="#29483f" stroke-width="2"/>
+
+  <text x="72" y="150" class="mono warn" font-size="15">${escapeXml(localized(lang, `今日标本 #${view.specimenId}`, `TODAY'S SPECIMEN #${view.specimenId}`))}</text>
+  <text x="72" y="182" class="mono body" font-size="18" xml:space="preserve">${artLines}</text>
+  <text x="72" y="454" class="mono rare" font-size="16">${escapeXml(truncateSvgText(view.specimenTitle, 42))}</text>
+
+  <text x="520" y="150" class="mono accent" font-size="14">${escapeXml(system.label)}</text>
+  <text x="520" y="176" class="mono body" font-size="15">${escapeXml(truncateSvgText(system.detail, 72))}</text>
+  <text x="520" y="218" class="mono rare" font-size="14">${escapeXml(diagnosis.label)}</text>
+  <text x="520" y="244" class="mono body" font-size="15">${svgTextTspans(diagnosis.detail, 520, 66, 2, 20)}</text>
+  <text x="520" y="304" class="mono warn" font-size="14">${escapeXml(change.label)}</text>
+  <text x="520" y="330" class="mono body" font-size="15">${escapeXml(truncateSvgText(change.detail, 72))}</text>
+  <text x="520" y="372" class="mono warn" font-size="14">${escapeXml(collection.label)}</text>
+  <text x="520" y="398" class="mono body" font-size="15">${escapeXml(truncateSvgText(collection.detail, 72))}</text>
+  <text x="520" y="440" class="mono accent" font-size="14">${escapeXml(habitat.label)}</text>
+  <text x="520" y="466" class="mono body" font-size="15">${escapeXml(truncateSvgText(habitat.detail, 72))}</text>
+  <text x="520" y="508" class="mono warn" font-size="14">${escapeXml(localized(lang, "建议处置", "RECOMMENDED RESPONSE"))}</text>
+  <text x="520" y="536" class="mono body" font-size="17">${escapeXml(truncateSvgText(response, 64))}</text>
+
+  <line x1="72" y1="558" x2="1128" y2="558" stroke="#29483f" stroke-width="2"/>
+  <text x="72" y="586" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="586" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+</svg>
+`;
+}
+
 function renderEncounterShareSvg(view, lang = "zh") {
   const title = localized(
     lang,
@@ -869,6 +937,7 @@ export {
   renderCompanionShareSvg,
   renderCultureShareSvg,
   renderCreatureCollectionShareSvg,
+  renderDailyBriefingShareSvg,
   renderDossierShareSvg,
   renderEncounterShareSvg,
   renderExpeditionShareSvg,

@@ -103,8 +103,8 @@ const COMMAND_HELP = {
       "Open the controlled interactive containment console.",
     ],
     output: [
-      "在五个区域中浏览今日简报、生态舱、十格远征、实验室、7/30 天档案与收藏来源。",
-      "Browse the daily brief, Habitat, ten-cell Expeditions, Laboratory, the 7/30-day archive, and collection provenance across five areas.",
+      "默认总览以每日收容播报呈现系统状态、诊断、关键变化、收藏、生态舱反应和一项建议处置；按 e 展开完整档案。",
+      "Overview opens with a Daily Containment Broadcast covering status, diagnosis, one key change, collection, Habitat reaction, and one recommended response; press e for the full file.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
@@ -116,8 +116,8 @@ const COMMAND_HELP = {
       "anti-ai tui --no-motion",
     ],
     note: [
-      "按 3 进入远征，h 打开图鉴档案，s 预览本地 SVG；浏览不写入，分享与玩法写入都需要明确确认。Agent 应使用显式命令及 --json。",
-      "Press 3 for Expeditions, h for the Codex archive, and s to preview a local SVG; browsing never writes, while sharing and gameplay writes require explicit confirmation. Agents should use explicit commands and --json.",
+      "按 e 展开总览完整档案、3 进入远征、h 打开图鉴档案、s 预览上下文 SVG；浏览不写入，分享与玩法写入都需要明确确认。Agent 应使用显式命令及 --json。",
+      "Press e for the full Overview file, 3 for Expeditions, h for the Codex archive, and s to preview a contextual SVG; browsing never writes, while sharing and gameplay writes require explicit confirmation. Agents should use explicit commands and --json.",
     ],
     related: ["today", "creature habitat", "lab", "codex"],
   },
@@ -130,13 +130,14 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "指定卡片日期", "Select card date"],
-      ["--card <receipt|dossier|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion|habitat|expedition>", "选择卡片类型", "Select card type"],
+      ["--card <receipt|briefing|dossier|pathology|specimen|wanted|fossil|encounter|prognosis|culture|companion|habitat|expedition>", "选择卡片类型", "Select card type"],
       ["--with <pollution-code>", "为 encounter 卡提供外来污染编码", "Provide a visitor pollution code for an encounter card"],
       ["--id <culture-id>", "指定 culture 卡的培养物", "Select the culture for a culture card"],
       [SOURCE_OPTION, "receipt 卡可过滤来源", "Receipt cards may filter sources"],
     ],
     examples: [
       "anti-ai share > receipt.svg",
+      "anti-ai share --card briefing > briefing.svg",
       "anti-ai share --card dossier > dossier.svg",
       "anti-ai share --card pathology > pathology.svg",
       "anti-ai share --card wanted --lang en > wanted.svg",

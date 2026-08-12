@@ -62,7 +62,7 @@ test("the TUI snapshot unifies five product areas without mutating state", (t) =
   const original = JSON.stringify(state);
   const snapshot = deriveTuiSnapshot(state, "2026-07-23", "zh");
 
-  assert.equal(snapshot.version, 2);
+  assert.equal(snapshot.version, 3);
   assert.equal(snapshot.date, "2026-07-23");
   assert.equal(snapshot.readOnly, true);
   assert.deepEqual(
@@ -219,7 +219,7 @@ test("the 80-column TUI starts and advances an expedition with one Enter per ord
   assert.match(screen.lastFrame(), /最近事件/u);
 
   screen.stdin.write("q");
-  await waitForFrame(screen, /今日收容简报/u);
+  await waitForFrame(screen, /每日收容播报/u);
   screen.stdin.write("a");
   await waitForFrame(screen, /行动中心/u);
   screen.stdin.write("\r");
@@ -333,8 +333,8 @@ test("TUI sharing previews a private local target before exporting SVG", async (
     date: "2026-07-23",
   });
 
-  assert.equal(preview.card, "dossier");
-  assert.equal(preview.filename, "anti-ai-dossier-2026-07-23.svg");
+  assert.equal(preview.card, "briefing");
+  assert.equal(preview.filename, "anti-ai-briefing-2026-07-23.svg");
   assert.equal(preview.privacy, "LOCAL ONLY · NO CHATS, PATHS, MODELS, OR EXACT TOKENS");
   assert.equal(
     preview.warning,
@@ -351,7 +351,7 @@ test("TUI sharing previews a private local target before exporting SVG", async (
   const exported = readFileSync(result.targetPath, "utf8");
   assert.match(exported, /^<svg/u);
   const cliShare = runCli(
-    ["share", "--card", "dossier", "--date", "2026-07-23", "--lang", "en"],
+    ["share", "--card", "briefing", "--date", "2026-07-23", "--lang", "en"],
     environment,
   );
   assert.equal(cliShare.status, 0, cliShare.stderr);
@@ -887,8 +887,11 @@ test("the containment console navigates all five product areas by keyboard", asy
   t.after(() => screen.unmount());
 
   assert.match(screen.lastFrame(), /收容控制台/u);
-  assert.match(screen.lastFrame(), /今天可做/u);
-  assert.match(screen.lastFrame(), /记录一次今日观察/u);
+  assert.match(screen.lastFrame(), /每日收容播报/u);
+  assert.match(screen.lastFrame(), /系统状态/u);
+  assert.match(screen.lastFrame(), /建议处置/u);
+  assert.match(screen.lastFrame(), /开启今日收容远征/u);
+  assert.doesNotMatch(screen.lastFrame(), /异变年鉴/u);
   assert.doesNotMatch(screen.lastFrame(), /null/u);
   assert.match(screen.lastFrame(), /动态 关闭/u);
   const staticFrame = screen.lastFrame();
@@ -937,13 +940,22 @@ test("the containment console navigates all five product areas by keyboard", asy
   assert.match(screen.lastFrame(), /病理图鉴/u);
   screen.stdin.write("1");
   await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /每日收容播报/u);
+  screen.stdin.write("e");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /异变年鉴/u);
   assert.match(screen.lastFrame(), /今天可做/u);
+  screen.stdin.write("e");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(screen.lastFrame(), /每日收容播报/u);
+  assert.doesNotMatch(screen.lastFrame(), /异变年鉴/u);
   screen.stdin.write("?");
   await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /m.*动态档位/u);
   assert.match(screen.lastFrame(), /a.*收容协议行动中心/u);
   assert.match(screen.lastFrame(), /Tab.*切换区域或当前焦点/u);
   assert.match(screen.lastFrame(), /Enter.*处理当前主要行动/u);
+  assert.match(screen.lastFrame(), /e.*展开或收起完整档案/u);
   assert.doesNotMatch(screen.lastFrame(), /回放最近事件/u);
   assert.equal(readFileSync(statePath, "utf8"), originalStateFile);
 });
@@ -1144,6 +1156,9 @@ test("the containment console previews, cancels, confirms, and refreshes one act
   refreshed.actions[0].reason = "already_settled";
   refreshed.actions[0].reasonLabel = "本日已经结算";
   refreshed.primaryAction = null;
+  refreshed.dailyBriefing.status = "settled";
+  refreshed.dailyBriefing.sections[0].detail = "今日已进食 · 本日事故已封存";
+  refreshed.dailyBriefing.recommendation = null;
   let executions = 0;
   const actionController = {
     preview: async (id) => ({

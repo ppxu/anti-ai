@@ -16,6 +16,7 @@ import { runCreature } from "./creature.mjs";
 import { encounterContext, encounterErrorMessage } from "./encounter.mjs";
 
 const STATE_SHARE_CARDS = new Set([
+  "briefing",
   "dossier",
   "expedition",
   "habitat",

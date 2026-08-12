@@ -1,6 +1,6 @@
 import { laboratoryCompanion } from "../companion.mjs";
 import { creatureCodex, deriveCreature } from "../creature.mjs";
-import { shiftDate } from "../reporting.mjs";
+import { shiftDate } from "../core/date.mjs";
 
 function pathologyChanges(before, after) {
   if (before.activeDays === 0 && after.activeDays > 0) {
@@ -57,12 +57,16 @@ function caseChanges(state, date) {
   ]);
 }
 
-function archiveDay(state, date) {
+function archiveDay(state, date, projections = null) {
   const day = state.days?.[date];
   if (!day) return null;
-  const before = deriveCreature(state, shiftDate(date, -1));
-  const after = deriveCreature(state, date);
-  const companion = laboratoryCompanion(state, date).companion;
+  const beforeDate = shiftDate(date, -1);
+  const before = projections?.creature(beforeDate)
+    ?? deriveCreature(state, beforeDate);
+  const after = projections?.creature(date) ?? deriveCreature(state, date);
+  const companion = projections
+    ? projections.companion(date)
+    : laboratoryCompanion(state, date).companion;
   return {
     date,
     status: day.active ? "active" : "quiet",
@@ -70,7 +74,7 @@ function archiveDay(state, date) {
     balanceVersion: day.balanceVersion ?? 1,
     ecologyGains: { ...(day.ecologyGains ?? { pollution: 0, clarity: 0 }) },
     pathologyChanges: pathologyChanges(before, after),
-    discoveries: creatureCodex(state, date).recent,
+    discoveries: (projections?.codex(date) ?? creatureCodex(state, date)).recent,
     mutationEvent: day.event ? { ...day.event } : null,
     achievementUnlockIds: [...(day.achievementUnlockIds ?? [])],
     incidentChanges: incidentChanges(state, date),
@@ -88,7 +92,7 @@ function archiveDay(state, date) {
   };
 }
 
-function containmentArchive(state, date, limit = 30) {
+function containmentArchive(state, date, limit = 30, projections = null) {
   const settledDates = Object.keys(state.days ?? {})
     .filter((entryDate) => entryDate <= date)
     .sort();
@@ -99,7 +103,7 @@ function containmentArchive(state, date, limit = 30) {
     .filter((entryDate) => hatchedAt && entryDate >= hatchedAt)
     .slice(-limit)
     .reverse();
-  return dates.map((entryDate) => archiveDay(state, entryDate));
+  return dates.map((entryDate) => archiveDay(state, entryDate, projections));
 }
 
 function nextContainmentMilestone(creature) {
@@ -123,10 +127,10 @@ function nextContainmentMilestone(creature) {
   };
 }
 
-function containmentBrief(state, date) {
-  const creature = deriveCreature(state, date);
+function containmentBrief(state, date, projections = null) {
+  const creature = projections?.creature(date) ?? deriveCreature(state, date);
   return {
-    day: archiveDay(state, date),
+    day: archiveDay(state, date, projections),
     nextMilestone: nextContainmentMilestone(creature),
   };
 }

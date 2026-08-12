@@ -1,5 +1,5 @@
 import { casebookLabel } from "../casebook.mjs";
-import { companionLabel, laboratoryCompanion } from "../companion.mjs";
+import { companionLabel } from "../companion.mjs";
 import {
   cabinetInteractionCopy,
   codexCollectionEntries,
@@ -7,13 +7,11 @@ import {
 } from "../consequence-cabinet.mjs";
 import {
   CREATURE_COPY,
-  creatureArt,
-  creatureCodex,
   creatureLabel,
   creatureTitle,
-  deriveCreature,
   loadCreatureState,
 } from "../creature.mjs";
+import { creatureArt } from "../renderers/creature-art.mjs";
 import {
   deriveHabitat,
   habitatDecorationCopy,
@@ -25,8 +23,6 @@ import { encounterLabel } from "../encounter.mjs";
 import { incidentLabel } from "../incidents.mjs";
 import {
   laboratoryLabel,
-  laboratoryShelf,
-  laboratoryView,
 } from "../laboratory.mjs";
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
@@ -45,6 +41,7 @@ import {
 } from "../expedition/presentation.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
 import { containmentArchive, containmentBrief } from "./archive.mjs";
+import { createProjectionContext } from "./projections.mjs";
 import { deriveMutationChronicle } from "../chronicle.mjs";
 import { presentMutationChronicle } from "../renderers/chronicle.mjs";
 
@@ -416,9 +413,10 @@ function codexEntryPresentation(entry, lang) {
 }
 
 function deriveTuiSnapshot(state, date, lang = "zh") {
-  const creature = deriveCreature(state, date);
-  const companion = laboratoryCompanion(state, date).companion;
-  const codex = creatureCodex(state, date);
+  const projections = createProjectionContext(state);
+  const creature = projections.creature(date);
+  const companion = projections.companion(date);
+  const codex = projections.codex(date);
   const phenotypeCopy = collectionPhenotypeCopy(
     codex.collectionPhenotype,
     lang,
@@ -433,11 +431,11 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
   };
   const specimen = { ...creatureView, companion };
   const chronicle = presentMutationChronicle(
-    deriveMutationChronicle(state, date),
+    deriveMutationChronicle(state, date, projections),
     lang,
   );
-  const laboratory = laboratoryView(state, date);
-  const shelf = laboratoryShelf(state, date);
+  const laboratory = projections.laboratory(date);
+  const shelf = projections.shelf(date);
   const habitat = deriveHabitat(
     state,
     specimen,
@@ -649,12 +647,12 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     archive: {
       defaultSpan: 7,
       availableSpans: [7, 30],
-      days: containmentArchive(state, date, 30).map((day) =>
+      days: containmentArchive(state, date, 30, projections).map((day) =>
         archiveDayPresentation(day, lang),
       ),
     },
   };
-  const brief = containmentBrief(state, date);
+  const brief = containmentBrief(state, date, projections);
   const actions = deriveContainmentActions(
     state,
     date,

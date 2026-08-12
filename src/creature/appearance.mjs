@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 
-import { color } from "../reporting.mjs";
 import {
   CREATURE_ABILITY_MAX,
   CREATURE_ACHIEVEMENT_BY_ID,
@@ -94,7 +93,7 @@ function centeredCreatureToken(value, width) {
   return `${" ".repeat(left)}${value}${" ".repeat(padding - left)}`;
 }
 
-function creatureArt(creature) {
+function creatureArtLines(creature) {
   const { appearance } = creature;
   const { geneIds } = appearance;
   const armor = CREATURE_KAIJU_GLYPHS.armor[geneIds.body];
@@ -217,17 +216,7 @@ function creatureArt(creature) {
       lines.splice(-1, 0, center(collectionGlyph));
     }
   }
-  const colorCode = appearance.rareAbilityId
-    ? CREATURE_RARE_ABILITY_RANKS[
-        CREATURE_RARE_ABILITY_DEFINITIONS[appearance.rareAbilityId].rarity
-      ].color
-    : {
-        unformed: "2",
-        polluted: "1;31",
-        lucid: "1;36",
-        paradox: "1;35",
-      }[appearance.ecology];
-  return lines.map((line) => color(colorCode, line)).join("\n");
+  return lines;
 }
 
 function creatureAbilityBar(value, maximum = CREATURE_ABILITY_MAX) {
@@ -568,7 +557,7 @@ export {
   creatureAppearanceCapacity,
   creatureAppearanceContentStats,
   creatureAppearanceState,
-  creatureArt,
+  creatureArtLines,
   creatureLabel,
   creatureMalignancyRankLabel,
   creatureSpecimenSnapshot,

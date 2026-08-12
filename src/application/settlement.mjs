@@ -14,7 +14,7 @@ import {
 import { syncCreatureInterventions } from "../casebook.mjs";
 import { syncLaboratoryCompanion } from "../companion.mjs";
 import { syncCreatureIncidents } from "../incidents.mjs";
-import { inclusiveDateRange, shiftDate } from "../reporting.mjs";
+import { inclusiveDateRange, shiftDate } from "../core/date.mjs";
 import { reportsForDates } from "../scanner.mjs";
 import { CREATURE_BASELINE_WINDOW } from "../creature/balance.mjs";
 

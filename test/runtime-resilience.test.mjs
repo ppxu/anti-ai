@@ -284,6 +284,70 @@ test("an invalid creature state envelope is rejected without overwriting local s
   assert.equal(readFileSync(statePath, "utf8"), before);
 });
 
+test("invalid nested creature collections are rejected before migration or writes", (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-invalid-nested-state-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+
+  const invalidStates = [
+    {
+      schemaVersion: 14,
+      seed: "invalid-day",
+      days: { "2026-07-23": [] },
+    },
+    {
+      schemaVersion: 14,
+      seed: "invalid-laboratory",
+      days: {},
+      laboratory: { cultures: {} },
+    },
+    {
+      schemaVersion: 14,
+      seed: "invalid-expedition",
+      days: {},
+      expeditions: { active: "already escaped", history: [] },
+    },
+  ];
+
+  for (const [index, invalidState] of invalidStates.entries()) {
+    const home = path.join(workspace, `home-${index}`);
+    const statePath = path.join(home, ".anti-ai", "creature.json");
+    mkdirSync(path.dirname(statePath), { recursive: true });
+    writeFileSync(statePath, `${JSON.stringify(invalidState, null, 2)}\n`);
+    const before = readFileSync(statePath, "utf8");
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.join(projectDir, "bin", "anti-ai.mjs"),
+        "creature",
+        "--date",
+        "2026-07-23",
+        "--json",
+      ],
+      {
+        cwd: projectDir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          HOME: home,
+          TZ: "Asia/Shanghai",
+          NO_COLOR: "1",
+          ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+          ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
+          ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
+          ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
+          ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
+          ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+        },
+      },
+    );
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /异变体档案无法读取/u);
+    assert.equal(readFileSync(statePath, "utf8"), before);
+  }
+});
+
 test("migrating a creature file keeps one exact local backup", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-state-backup-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));

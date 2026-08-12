@@ -1,11 +1,9 @@
 import { createRequire } from "node:module";
 
 import { companionPeriodSummary } from "./companion.mjs";
-import {
-  creatureArt,
-  creatureCasebook,
-  creatureCodex,
-} from "./creature.mjs";
+import { creatureCodex } from "./creature.mjs";
+import { creatureArt } from "./renderers/creature-art.mjs";
+import { creatureCasebook } from "./application/creature-casebook.mjs";
 import { deriveHabitat } from "./habitat.mjs";
 import { renderCommandHelp, renderTopLevelHelp } from "./help.mjs";
 import {

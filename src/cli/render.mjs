@@ -2,9 +2,9 @@ import { casebookLabel } from "../casebook.mjs";
 import { companionLabel } from "../companion.mjs";
 import {
   CREATURE_RARE_ABILITY_RANKS,
-  creatureClinicalNote,
   creatureLabel,
 } from "../creature.mjs";
+import { creatureClinicalNote } from "../application/creature-casebook.mjs";
 import { encounterLabel } from "../encounter.mjs";
 import { laboratoryLabel } from "../laboratory.mjs";
 import { incidentLabel } from "../incidents.mjs";

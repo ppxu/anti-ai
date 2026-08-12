@@ -19,7 +19,7 @@ import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
 import { CODEX_RARITY_COLORS } from "../cli/render.mjs";
 import { runCreature } from "./creature.mjs";
-import { applyContainmentAction } from "../application/actions.mjs";
+import { executeContainmentMutation } from "../application/action-execution.mjs";
 
 async function runLaboratory(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -112,26 +112,26 @@ async function runLaboratory(options) {
     return;
   }
   if (options.action === "bond") {
-    const result = applyContainmentAction(
-      state,
-      date,
+    const result = await executeContainmentMutation(
       "bond",
-      options.id,
+      { date, lang: options.lang, choice: options.id },
+      { state },
     );
-    if (result.error === "not_found") {
+    if (result.status !== "completed") {
       process.stderr.write(
-        `${localized(options.lang, `未找到培养物：${options.id ?? ""}`, `Culture not found: ${options.id ?? ""}`)}\n`,
+        `${result.reason === "not_found"
+          ? localized(options.lang, `未找到培养物：${options.id ?? ""}`, `Culture not found: ${options.id ?? ""}`)
+          : localized(options.lang, "培养架尚无可绑定标本。", "No culture is available to bond.")}\n`,
       );
       process.exitCode = 2;
       return;
     }
-    await saveCreatureState(state);
     if (options.json) {
-      process.stdout.write(`${JSON.stringify(result.value, null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify(result.result, null, 2)}\n`);
       return;
     }
     process.stdout.write(
-      `${localized(options.lang, `伴生关系已建立：#${result.value.companion.cultureId}`, `Symbiotic bond established: #${result.value.companion.cultureId}`)}\n`,
+      `${localized(options.lang, `伴生关系已建立：#${result.result.companion.cultureId}`, `Symbiotic bond established: #${result.result.companion.cultureId}`)}\n`,
     );
     return;
   }
@@ -229,29 +229,27 @@ async function runLaboratory(options) {
     return;
   }
   if (options.action === "incubate") {
-    const selection = applyContainmentAction(
-      state,
-      date,
+    const selection = await executeContainmentMutation(
       "incubate",
-      options.choice,
+      { date, lang: options.lang, choice: options.choice },
+      { state },
     );
-    if (selection.error === "unavailable") {
+    if (selection.reason === "no_material" || selection.reason === "unavailable") {
       process.stderr.write(
         `${localized(options.lang, "当前没有可培养的派生原料。", "No derived material is available for incubation.")}\n`,
       );
       process.exitCode = 2;
       return;
     }
-    if (selection.error === "invalid") {
+    if (selection.status !== "completed") {
       process.stderr.write(
         `${localized(options.lang, "培养方案必须是 1、2 或 3。", "Culture choice must be 1, 2, or 3.")}\n`,
       );
       process.exitCode = 2;
       return;
     }
-    await saveCreatureState(state);
     if (options.json) {
-      process.stdout.write(`${JSON.stringify(selection.value, null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify(selection.result, null, 2)}\n`);
       return;
     }
     process.stdout.write(
@@ -262,12 +260,12 @@ async function runLaboratory(options) {
         ),
         "",
         `  ${color(
-          CODEX_RARITY_COLORS[selection.value.culture.rarity],
-          `#${selection.value.culture.id} · ${laboratoryLabel("types", selection.value.culture.typeId, options.lang)} · ${selection.value.culture.rarity.toUpperCase()}`,
+          CODEX_RARITY_COLORS[selection.result.culture.rarity],
+          `#${selection.result.culture.id} · ${laboratoryLabel("types", selection.result.culture.typeId, options.lang)} · ${selection.result.culture.rarity.toUpperCase()}`,
         )}`,
-        ...selection.value.culture.appearance.lines.map((line) => `  ${line}`),
+        ...selection.result.culture.appearance.lines.map((line) => `  ${line}`),
         "",
-        `  ${localized(options.lang, "查看标本", "INSPECT")}  anti-ai lab inspect ${selection.value.culture.id}`,
+        `  ${localized(options.lang, "查看标本", "INSPECT")}  anti-ai lab inspect ${selection.result.culture.id}`,
         "",
       ].join("\n"),
     );

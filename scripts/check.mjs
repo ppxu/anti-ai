@@ -38,6 +38,15 @@ for (const file of files) {
       `${path.relative(projectRoot, file)}:${trailingWhitespace + 1} has trailing whitespace`,
     );
   }
+  const moduleLines = lines.at(-1) === "" ? lines.length - 1 : lines.length;
+  if (
+    file.startsWith(`${path.join(projectRoot, "src")}${path.sep}`) &&
+    moduleLines > 1_500
+  ) {
+    throw new Error(
+      `${path.relative(projectRoot, file)} has ${moduleLines} lines; split source modules before they exceed 1500`,
+    );
+  }
 }
 
 const runtimeFiles = files.filter((file) =>
@@ -47,6 +56,47 @@ const runtimeFiles = files.filter((file) =>
 );
 const runtimeSet = new Set(runtimeFiles);
 const graph = new Map();
+function sourceLayer(file) {
+  const relative = path.relative(projectRoot, file).split(path.sep).join("/");
+  if (!relative.startsWith("src/")) return null;
+  const segments = relative.split("/");
+  return segments.length === 2
+    ? segments[1].replace(/\.(?:mjs|jsx)$/u, "")
+    : segments[1];
+}
+
+function assertLayerDependency(file, dependency) {
+  const source = sourceLayer(file);
+  const target = sourceLayer(dependency);
+  if (source === null || target === null) return;
+  const relativeSource = path.relative(projectRoot, file);
+  const relativeTarget = path.relative(projectRoot, dependency);
+  const fail = (rule) => {
+    throw new Error(
+      `${relativeSource} imports ${relativeTarget}, violating ${rule}`,
+    );
+  };
+  if (
+    source === "core" &&
+    target !== "core" &&
+    relativeTarget !== path.join("src", "shared.mjs")
+  ) {
+    fail("the core boundary");
+  }
+  if (
+    source === "infrastructure" &&
+    ["application", "commands", "renderers", "tui", "cli"].includes(target)
+  ) {
+    fail("the infrastructure boundary");
+  }
+  if (source === "application" && ["commands", "tui", "cli"].includes(target)) {
+    fail("the application boundary");
+  }
+  if (source === "renderers" && ["application", "commands", "tui", "cli"].includes(target)) {
+    fail("the renderer boundary");
+  }
+}
+
 for (const file of runtimeFiles) {
   const dependencies = [
     ...readFileSync(file, "utf8").matchAll(
@@ -59,6 +109,7 @@ for (const file of runtimeFiles) {
         `${path.relative(projectRoot, file)} imports missing ${path.relative(projectRoot, dependency)}`,
       );
     }
+    assertLayerDependency(file, dependency);
   }
   graph.set(
     file,
@@ -120,6 +171,12 @@ for (const file of markdown) {
     }
   }
 }
+
+execFileSync(
+  process.execPath,
+  [path.join(projectRoot, "scripts", "build-tui.mjs"), "--check"],
+  { stdio: "inherit" },
+);
 
 process.stdout.write(
   `Checked ${files.length} JavaScript modules and ${markdown.length} Markdown files.\n`,

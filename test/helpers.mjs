@@ -9,24 +9,31 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import path from "node:path";
 import test from "node:test";
-import Database from "better-sqlite3";
 
 import {
   creatureAppearanceContentStats,
   creatureAppearanceState,
-  creatureArt,
-  creatureClinicalNote,
   creatureEvent,
   deriveCreatureAppearance,
 } from "../src/creature.mjs";
+import { creatureClinicalNote } from "../src/application/creature-casebook.mjs";
+import { creatureArt } from "../src/renderers/creature-art.mjs";
 
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 const projectDir = path.resolve(testDir, "..");
 const cliPath = path.join(projectDir, "bin", "anti-ai.mjs");
 const fixtureDir = path.join(testDir, "fixtures");
 const baselineCodexDir = path.join(fixtureDir, "baseline", "codex");
+const require = createRequire(import.meta.url);
+let sqliteDatabaseConstructor;
+
+function Database(...args) {
+  sqliteDatabaseConstructor ??= require("better-sqlite3");
+  return new sqliteDatabaseConstructor(...args);
+}
 
 function runCli(args, env = {}) {
   const isolatedHome = env.HOME ?? mkdtempSync(

@@ -6,7 +6,6 @@ import {
   CREATURE_RARE_ABILITY_MAX,
   CREATURE_RARE_ABILITY_RANKS,
   creatureAbilityBar,
-  creatureArt,
   creatureCodex,
   creatureEvolutionSummary,
   creatureLabel,
@@ -18,6 +17,7 @@ import {
   resetCreatureState,
   saveCreatureState,
 } from "../creature.mjs";
+import { creatureArt } from "../renderers/creature-art.mjs";
 import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 import {
   color,
@@ -50,7 +50,7 @@ import {
 import { deriveHabitat } from "../habitat.mjs";
 import { renderHabitat } from "../renderers/habitat.mjs";
 import { settleCreatureState } from "../application/settlement.mjs";
-import { applyContainmentAction } from "../application/actions.mjs";
+import { applyContainmentAction } from "../application/action-execution.mjs";
 import { expeditionDestination } from "../expedition/content.mjs";
 import { deriveMutationChronicle } from "../chronicle.mjs";
 import { renderMutationChronicle } from "../renderers/chronicle.mjs";

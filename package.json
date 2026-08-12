@@ -1,6 +1,6 @@
 {
   "name": "anti-ai",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "Turn local coding-agent token usage into a satirical resource receipt and evolving mutation chronicle.",
   "type": "module",
   "bin": {
@@ -11,8 +11,8 @@
     "test": "node --test test/*.test.mjs",
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**/*.mjs\" --test-coverage-lines=90 --test-coverage-functions=90 --test-coverage-branches=75 test/*.test.mjs",
     "test:package": "npm run build:tui && node scripts/verify-package.mjs",
-    "check": "npm run build:tui && node scripts/check.mjs",
-    "verify": "npm run build:tui && node scripts/check.mjs && npm run test:coverage && node scripts/verify-package.mjs",
+    "check": "node scripts/check.mjs",
+    "verify": "node scripts/check.mjs && npm run test:coverage && node scripts/verify-package.mjs",
     "prepublishOnly": "npm run verify",
     "start": "node ./bin/anti-ai.mjs"
   },

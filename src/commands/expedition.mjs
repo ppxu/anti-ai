@@ -5,16 +5,12 @@ import {
 } from "../creature.mjs";
 import {
   EXPEDITION_DESTINATIONS,
-  abandonExpedition,
-  advanceExpedition,
-  chooseExpedition,
   expeditionHistory,
   expeditionStatus,
-  startExpedition,
 } from "../expedition.mjs";
-import { saveCreatureState } from "../creature.mjs";
 import { localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
+import { executeContainmentMutation } from "../application/action-execution.mjs";
 import {
   expeditionChoiceCopy,
   expeditionDestination,
@@ -28,6 +24,58 @@ import {
 function eventEffectLine(effect, lang) {
   if (!effect) return null;
   return `  ${effect.ability} ${effect.delta >= 0 ? "+" : ""}${effect.delta} · ${effect.durationLabel}`;
+}
+
+function expeditionActionError(reason, options) {
+  const messages = {
+    invalid_destination: [
+      `未知远征目的地：${options.destination ?? ""}`,
+      `Unknown expedition destination: ${options.destination ?? ""}`,
+    ],
+    expedition_active: [
+      "已有远征正在进行；请继续或放弃当前远征。",
+      "An expedition is already active; continue or abandon it first.",
+    ],
+    unhatched: [
+      "异变体尚未孵化；请先运行 anti-ai today。",
+      "The creature has not hatched; run anti-ai today first.",
+    ],
+    expedition_used: [
+      "今天的远征机会已经使用。",
+      "Today's expedition opportunity is already used.",
+    ],
+    expedition_expired: [
+      "所选日期的远征机会已过期；机会按本地自然日开放且不会累计。",
+      "The selected date's expedition opportunity has expired; local-calendar-day opportunities do not stack.",
+    ],
+    no_active_expedition: [
+      "当前没有进行中的远征。",
+      "No expedition is currently active.",
+    ],
+    expedition_choice_required: [
+      "必须先处理当前分叉，再进入下一格。",
+      "Resolve the current branch before entering the next cell.",
+    ],
+    no_expedition_choice: [
+      "当前格没有需要处理的分叉。",
+      "The current cell has no unresolved branch.",
+    ],
+    invalid_choice: [
+      "远征选择必须是 1、2 或 3。",
+      "Expedition choice must be 1, 2, or 3.",
+    ],
+    expedition_date_before_last_action: [
+      "操作日期不能早于远征最近一次操作日期。",
+      "The action date cannot be earlier than the expedition's latest action date.",
+    ],
+  };
+  return localized(
+    options.lang,
+    ...(messages[reason] ?? [
+      "远征操作当前不可用。",
+      "The expedition action is currently unavailable.",
+    ]),
+  );
 }
 
 function renderExpeditionStatus(status, lang) {
@@ -162,106 +210,34 @@ async function runExpedition(options) {
   const date = options.date ?? localDate(new Date(), timezone);
   const state = await loadCreatureState();
   const creature = deriveCreature(state, date);
-  if (options.action === "start") {
-    const started = startExpedition(
-      state,
-      creature,
-      date,
-      options.destination,
+  const actionId = {
+    start: "start_expedition",
+    next: "advance_expedition",
+    choose: "choose_expedition",
+    abandon: "abandon_expedition",
+  }[options.action];
+  if (actionId) {
+    const execution = await executeContainmentMutation(
+      actionId,
+      {
+        date,
+        lang: options.lang,
+        choice: options.action === "start"
+          ? options.destination
+          : options.choice,
+      },
+      { state },
     );
-    if (started.error) {
-      const message = {
-        invalid_destination: localized(
-          options.lang,
-          `未知远征目的地：${options.destination ?? ""}`,
-          `Unknown expedition destination: ${options.destination ?? ""}`,
-        ),
-        active: localized(
-          options.lang,
-          "已有远征正在进行；请继续或放弃当前远征。",
-          "An expedition is already active; continue or abandon it first.",
-        ),
-        unhatched: localized(
-          options.lang,
-          "异变体尚未孵化；请先运行 anti-ai today。",
-          "The creature has not hatched; run anti-ai today first.",
-        ),
-        used: localized(
-          options.lang,
-          "今天的远征机会已经使用。",
-          "Today's expedition opportunity is already used.",
-        ),
-        expired: localized(
-          options.lang,
-          "所选日期的远征机会已过期；机会按本地自然日开放且不会累计。",
-          "The selected date's expedition opportunity has expired; local-calendar-day opportunities do not stack.",
-        ),
-      }[started.error];
-      process.stderr.write(`${message}\n`);
+    if (execution.status !== "completed") {
+      const reason = options.action === "choose"
+        && execution.reason === "no_expedition_choice"
+        && !state.expeditions?.active
+          ? "no_active_expedition"
+          : execution.reason;
+      process.stderr.write(`${expeditionActionError(reason, options)}\n`);
       process.exitCode = 2;
       return;
     }
-    await saveCreatureState(state);
-  } else if (options.action === "next") {
-    const advanced = advanceExpedition(state, creature, date);
-    if (advanced.error) {
-      const message = {
-        no_active: localized(
-          options.lang,
-          "当前没有进行中的远征。",
-          "No expedition is currently active.",
-        ),
-        choice_required: localized(
-          options.lang,
-          "必须先处理当前分叉，再进入下一格。",
-          "Resolve the current branch before entering the next cell.",
-        ),
-        complete: localized(
-          options.lang,
-          "当前远征已经返航。",
-          "The current expedition has already returned.",
-        ),
-        date_before_last_action: localized(
-          options.lang,
-          "操作日期不能早于远征最近一次操作日期。",
-          "The action date cannot be earlier than the expedition's latest action date.",
-        ),
-      }[advanced.error];
-      process.stderr.write(`${message}\n`);
-      process.exitCode = 2;
-      return;
-    }
-    await saveCreatureState(state);
-  } else if (options.action === "choose") {
-    const chosen = chooseExpedition(state, date, options.choice);
-    if (chosen.error) {
-      const message = {
-        no_active: localized(
-          options.lang,
-          "当前没有进行中的远征。",
-          "No expedition is currently active.",
-        ),
-        no_choice: localized(
-          options.lang,
-          "当前格没有需要处理的分叉。",
-          "The current cell has no unresolved branch.",
-        ),
-        invalid_choice: localized(
-          options.lang,
-          "远征选择必须是 1、2 或 3。",
-          "Expedition choice must be 1, 2, or 3.",
-        ),
-        date_before_last_action: localized(
-          options.lang,
-          "操作日期不能早于远征最近一次操作日期。",
-          "The action date cannot be earlier than the expedition's latest action date.",
-        ),
-      }[chosen.error];
-      process.stderr.write(`${message}\n`);
-      process.exitCode = 2;
-      return;
-    }
-    await saveCreatureState(state);
   } else if (options.action === "history") {
     const history = expeditionHistory(state, date);
     if (options.json) {
@@ -294,25 +270,6 @@ async function runExpedition(options) {
       ].join("\n"),
     );
     return;
-  } else if (options.action === "abandon") {
-    const abandoned = abandonExpedition(state, date);
-    if (abandoned.error) {
-      const message = abandoned.error === "date_before_last_action"
-        ? localized(
-            options.lang,
-            "操作日期不能早于远征最近一次操作日期。",
-            "The action date cannot be earlier than the expedition's latest action date.",
-          )
-        : localized(
-            options.lang,
-            "当前没有可放弃的远征。",
-            "No active expedition can be abandoned.",
-          );
-      process.stderr.write(`${message}\n`);
-      process.exitCode = 2;
-      return;
-    }
-    await saveCreatureState(state);
   }
   const status = expeditionStatus(state, creature, date);
   if (options.json) {

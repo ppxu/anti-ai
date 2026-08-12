@@ -454,23 +454,25 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/cli.mjs`: small command registry dispatcher
 - `src/cli/`: argument parsing, terminal rendering, and methodology explanation
 - `src/commands/`: focused Creature, Encounter, Laboratory, Share, and TUI handlers
-- `src/application/`: presentation-neutral read models, archive queries, confirmed local share export, and shared action orchestration
-- `src/tui/`: Ink source for the controlled interactive containment console
+- `src/core/`: dependency-light date, usage, and state-envelope primitives
+- `src/application/`: presentation-neutral projections, archive queries, confirmed local share export, and shared action orchestration
+- `src/infrastructure/sources/`: isolated streaming JSONL and optional read-only SQLite Agent adapters
+- `src/tui/app.jsx` and `src/tui/screens/`: Ink input orchestration and bounded screen components
 - `dist/tui.mjs`: generated self-contained Ink/React runtime bundle
 - `src/help.mjs`: global and command-specific help
 - `src/registry.mjs`: command, card, and local-source metadata
-- `src/scanner.mjs`: isolated six-source JSONL/optional-SQLite adapters
+- `src/scanner.mjs`: stable compatibility facade for local-source scanning
 - `src/methodology.mjs`: named public resource cases and high-side selection
 - `src/comparisons.mjs`: period-specific everyday comparisons
 - `src/content.mjs`: deterministic bilingual footer and share-copy pools
-- `src/reporting.mjs`: terminal receipts, calendars, and verdicts
+- `src/reporting.mjs` and `src/reporting/verdict.mjs`: terminal composition and deterministic verdict selection
 - `src/renderers/svg.mjs`: privacy-safe SVG cards
-- `src/creature.mjs`: mutation growth and collection rules
+- `src/creature.mjs`: aggregate mutation-growth rules and stable exports
 - `src/chronicle.mjs`: read-only 7/30/90-day and generation comparisons
 - `src/collection-sets.mjs`: route-balanced presentation-only set definitions
 - `src/collection-phenotype.mjs`: read-only collection milestones and display-only specimen motifs
 - `src/renderers/chronicle.mjs`: bilingual Chronicle presentation
-- `src/creature/`: content pools, appearance generation, and versioned balance policy
+- `src/creature/`: content, appearance, balance, Codex projection, and schema/persistence modules
 - `src/consequence-cabinet.mjs`: three-slot displays and deterministic daily narrative interactions
 - `src/state-store.mjs`: validation-aware atomic local state storage
 - `src/laboratory.mjs`: derived formulas, sealed cultures, and shelves

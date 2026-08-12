@@ -467,23 +467,25 @@ npm run test:package
 - `src/cli.mjs`：轻量命令注册与分发
 - `src/cli/`：参数解析、终端渲染和方法论说明
 - `src/commands/`：异变体、遭遇、实验室、分享和 TUI 命令
-- `src/application/`：与展示无关的读取模型、档案查询、确认式本地分享导出和共享动作编排
-- `src/tui/`：受控交互式收容控制台的 Ink 源码
+- `src/core/`：轻依赖的日期、用量与状态外壳基础能力
+- `src/application/`：与展示无关的投影、档案查询、确认式本地分享导出和共享动作编排
+- `src/infrastructure/sources/`：彼此隔离的流式 JSONL 与可选只读 SQLite Agent 适配器
+- `src/tui/app.jsx` 与 `src/tui/screens/`：Ink 输入编排与按职责拆分的页面组件
 - `dist/tui.mjs`：生成的自包含 Ink/React 运行时
 - `src/help.mjs`：全局与分命令帮助
 - `src/registry.mjs`：命令、卡片和本地来源元数据
-- `src/scanner.mjs`：彼此隔离的六来源 JSONL/可选 SQLite 适配器
+- `src/scanner.mjs`：本地来源扫描的稳定兼容门面
 - `src/methodology.mjs`：具名公开案例与高位选择
 - `src/comparisons.mjs`：按周期分级的生活对照
 - `src/content.mjs`：确定性中英文尾句与分享文案池
-- `src/reporting.mjs`：终端账单、日历与每日罪名
+- `src/reporting.mjs` 与 `src/reporting/verdict.mjs`：终端组合与确定性每日罪名选择
 - `src/renderers/svg.mjs`：隐私安全的 SVG 卡片
-- `src/creature.mjs`：异变体成长和收藏规则
+- `src/creature.mjs`：异变体聚合成长规则与稳定导出
 - `src/chronicle.mjs`：只读 7/30/90 天病程与世代对照
 - `src/collection-sets.mjs`：路线对等且只影响展示的套组定义
 - `src/collection-phenotype.mjs`：只读馆藏里程碑与本体展示母题
 - `src/renderers/chronicle.mjs`：双语年鉴展示
-- `src/creature/`：内容池、外观生成和带版本的平衡策略
+- `src/creature/`：内容、外观、平衡、图鉴投影与 schema/持久化模块
 - `src/consequence-cabinet.mjs`：三个陈列位与确定性的每日叙事互动
 - `src/state-store.mjs`：带校验、备份和冲突保护的本地状态存储
 - `src/laboratory.mjs`：派生配方、封存培养物和培养架

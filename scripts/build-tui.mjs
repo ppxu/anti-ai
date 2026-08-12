@@ -1,9 +1,12 @@
 import {
+  mkdtemp,
   mkdir,
   readFile,
   readdir,
+  rm,
   writeFile,
 } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,7 +16,11 @@ const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
-const outputDirectory = path.join(projectRoot, "dist");
+const distributionDirectory = path.join(projectRoot, "dist");
+const checkOnly = process.argv.includes("--check");
+const outputDirectory = checkOnly
+  ? await mkdtemp(path.join(tmpdir(), "anti-ai-tui-check-"))
+  : distributionDirectory;
 const output = path.join(outputDirectory, "tui.mjs");
 const noticesOutput = path.join(outputDirectory, "THIRD_PARTY_NOTICES.txt");
 const optionalDevtoolsStub = {
@@ -108,6 +115,36 @@ await writeFile(
   ].join("\n"),
 );
 
-process.stdout.write(
-  `Built ${path.relative(projectRoot, output)} (${Math.ceil(bytes / 1024)} KiB) with ${notices.length} third-party notices.\n`,
-);
+if (checkOnly) {
+  try {
+    const comparisons = [
+      [output, path.join(distributionDirectory, "tui.mjs")],
+      [noticesOutput, path.join(distributionDirectory, "THIRD_PARTY_NOTICES.txt")],
+    ];
+    for (const [generated, committed] of comparisons) {
+      let committedContents;
+      try {
+        committedContents = await readFile(committed);
+      } catch {
+        throw new Error(
+          `${path.relative(projectRoot, committed)} is missing; run npm run build:tui`,
+        );
+      }
+      const generatedContents = await readFile(generated);
+      if (!generatedContents.equals(committedContents)) {
+        throw new Error(
+          `${path.relative(projectRoot, committed)} is stale; run npm run build:tui`,
+        );
+      }
+    }
+  } finally {
+    await rm(outputDirectory, { recursive: true, force: true });
+  }
+  process.stdout.write(
+    `Verified generated TUI bundle (${Math.ceil(bytes / 1024)} KiB) and ${notices.length} third-party notices.\n`,
+  );
+} else {
+  process.stdout.write(
+    `Built ${path.relative(projectRoot, output)} (${Math.ceil(bytes / 1024)} KiB) with ${notices.length} third-party notices.\n`,
+  );
+}

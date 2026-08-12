@@ -38,18 +38,20 @@ test("the TUI controller keeps one explicit state envelope", () => {
   );
 });
 
-test("TUI motion pauses behind help, action, and share overlays", () => {
+test("TUI motion pauses behind help, action, share, and visitor overlays", () => {
   const active = {
     activeId: "habitat",
     motion: "low",
     showHelp: false,
     actionMode: null,
     shareMode: null,
+    visitorMode: null,
   };
   assert.equal(shouldRunTuiMotion(active), true);
   assert.equal(shouldRunTuiMotion({ ...active, showHelp: true }), false);
   assert.equal(shouldRunTuiMotion({ ...active, actionMode: "preview" }), false);
   assert.equal(shouldRunTuiMotion({ ...active, shareMode: "preview" }), false);
+  assert.equal(shouldRunTuiMotion({ ...active, visitorMode: "archive" }), false);
   assert.equal(shouldRunTuiMotion({ ...active, activeId: "codex" }), false);
   assert.equal(shouldRunTuiMotion({ ...active, motion: "off" }), false);
 });

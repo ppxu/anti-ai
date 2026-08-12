@@ -452,6 +452,40 @@ function HabitatScreen({
           </Box>
         </Box>
       </Panel>
+      <Panel
+        title={zh ? "外来访客位" : "FOREIGN VISITOR BAY"}
+        color={habitat.visitor ? "magenta" : "gray"}
+        marginTop={1}
+      >
+        {habitat.visitor ? (
+          <Box gap={2} flexDirection={compact ? "column" : "row"}>
+            <Box flexDirection="column" width={compact ? undefined : "42%"}>
+              {habitat.visitor.art.map((line, index) => (
+                <Text key={`${habitat.visitor.stayId}-${index}`} color="magenta">
+                  {line}
+                </Text>
+              ))}
+              <Text dimColor>
+                #{habitat.visitor.foreignSpecimenId} · {habitat.visitor.cohabitationDays}{zh ? " 天" : "d"}
+              </Text>
+            </Box>
+            <Box flexDirection="column" flexGrow={1}>
+              <Text bold color="magenta">{habitat.visitor.relationship.name}</Text>
+              <Text>{habitat.visitor.relationship.symptom}</Text>
+              <Text color="cyan">
+                {zh ? "访客短讯" : "VISITOR BULLETIN"} · {habitat.visitor.bulletin.copy}
+              </Text>
+              <Text color="yellow">
+                {zh ? "共同展品" : "JOINT EXHIBIT"} · {habitat.visitor.exhibit.glyph} {habitat.visitor.exhibit.name}
+              </Text>
+            </Box>
+          </Box>
+        ) : (
+          <Text dimColor>
+            {zh ? "当前空置 · v 打开访客接待台" : "VACANT · v opens the Visitor Intake Desk"}
+          </Text>
+        )}
+      </Panel>
       {replay ? (
         <Panel
           title={zh ? "事件回放" : "EVENT REPLAY"}

@@ -15,8 +15,9 @@ import {
 } from "../state-store.mjs";
 import { creatureAppearanceState } from "./appearance.mjs";
 import { CREATURE_CONTENT_VERSION } from "./content.mjs";
+import { ensureVisitationState } from "../visitation.mjs";
 
-const CREATURE_STATE_SCHEMA_VERSION = 15;
+const CREATURE_STATE_SCHEMA_VERSION = 16;
 
 function ensureAppearanceState(state) {
   state.appearance ??= creatureAppearanceState(state.seed);
@@ -124,6 +125,7 @@ const CREATURE_STATE_MIGRATIONS = new Map([
   [12, ensureCreatureContentVersion],
   [13, ensureExpeditionState],
   [14, ensureClinicState],
+  [15, ensureVisitationState],
 ]);
 
 function migrateCreatureState(state, growth) {
@@ -152,6 +154,7 @@ function migrateCreatureState(state, growth) {
   ensureCreatureContentVersion(state);
   ensureExpeditionState(state);
   ensureClinicState(state);
+  ensureVisitationState(state);
   ensureDailyGrowthState(state, growth);
   return state;
 }
@@ -179,6 +182,32 @@ function validateCreatureState(state) {
       )
     ) {
       throw new Error(`Invalid creature state field: days.${date}.metabolism`);
+    }
+  }
+  if (state.visitation) {
+    const foreignSpecimens = new Map(
+      (state.foreignSpecimens ?? []).map((specimen) => [specimen.id, specimen]),
+    );
+    const stayIds = new Set();
+    for (const [index, stay] of state.visitation.stays.entries()) {
+      const specimen = foreignSpecimens.get(stay.foreignSpecimenId);
+      if (
+        stayIds.has(stay.id) ||
+        !specimen ||
+        (specimen.collectedAt && stay.admittedAt < specimen.collectedAt)
+      ) {
+        throw new Error(`Invalid creature state field: visitation.stays.${index}`);
+      }
+      stayIds.add(stay.id);
+    }
+    if (
+      state.visitation.activeStayId !== null &&
+      !state.visitation.stays.some(
+        ({ id, releasedAt }) =>
+          id === state.visitation.activeStayId && releasedAt === null,
+      )
+    ) {
+      throw new Error("Invalid creature state field: visitation.activeStayId");
     }
   }
   return state;

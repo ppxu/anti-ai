@@ -43,6 +43,8 @@ anti-ai share --card encounter --with <污染编码> > encounter.svg
 
 已保存的外来标本可以被后续 `anti-ai lab` 配方引用。实验室培养不会消耗或改写遭遇记录。详见[污染实验室](./laboratory.zh-CN.md)。
 
+它们也可以通过访客档案进入本地生态舱。这是一段需要明确操作、只影响展示的共处，不是另一套成长系统。详见[本地访客共处](./visitors.zh-CN.md)。
+
 ## 污染编码协议
 
 版本 1 的格式是：

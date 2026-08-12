@@ -477,7 +477,7 @@ test("the consequence cabinet and daily interactions persist only explicit narra
   assert.equal(repeated.reason, "already_observed");
 
   const after = JSON.parse(readFileSync(statePath, "utf8"));
-  assert.equal(after.schemaVersion, 15);
+  assert.equal(after.schemaVersion, 16);
   assert.equal(after.cabinet.featured[0], displayKey);
   assert.equal(after.days["2026-07-23"].interactions.observe.targetId, "specimen");
   assert.equal(after.days["2026-07-23"].interactions.contact.targetId, "glass");
@@ -914,7 +914,7 @@ test("the containment console navigates all five product areas by keyboard", asy
   assert.match(screen.lastFrame(), /伴生收容进度.*0 \/ 3/u);
   assert.match(screen.lastFrame(), /尚无培养原料/u);
   assert.match(screen.lastFrame(), /l 前往实验室/u);
-  assert.match(screen.lastFrame(), /Enter 观察 · r 回放 · s 分享\s+q 退出/u);
+  assert.match(screen.lastFrame(), /Enter 观察 · r 回放 · v 访客 · s 分享\s+q 退出/u);
   screen.stdin.write("\r");
   await waitForFrame(screen, /器官观察/u);
   assert.match(screen.lastFrame(), /监测复眼/u);
@@ -1530,6 +1530,242 @@ test("an empty habitat can open a direct companion bond preview", async (t) => {
   screen.stdin.write("b");
   await waitForFrame(screen, /影响预览 · 建立伴生关系/u);
   assert.equal(previewTarget, cultureId);
+});
+
+test("the Habitat receives a pasted pollution code through preview and confirmation", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-tui-visitor-"));
+  const buildDirectory = mkdtempSync(
+    path.join(projectDir, ".anti-ai-tui-visitor-test-"),
+  );
+  t.after(() => {
+    rmSync(workspace, { recursive: true, force: true });
+    rmSync(buildDirectory, { recursive: true, force: true });
+  });
+  const home = path.join(workspace, "home");
+  mkdirSync(home, { recursive: true });
+  assert.equal(
+    runCli(["creature", "--date", "2026-07-23", "--json"], {
+      HOME: home,
+      ANTI_AI_CREATURE_SEED: "tui-visitor-seed",
+    }).status,
+    0,
+  );
+  const state = JSON.parse(
+    readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
+  );
+  const snapshot = deriveTuiSnapshot(state, "2026-07-23", "zh");
+  snapshot.visitors = {
+    version: 1,
+    date: "2026-07-23",
+    activeStayId: null,
+    visitors: [],
+  };
+  let previewedCode = null;
+  let receives = 0;
+  let hosts = 0;
+  let releases = 0;
+  const refreshed = structuredClone(snapshot);
+  refreshed.visitors.visitors = [
+    {
+      id: "abc123def456",
+      collectedAt: "2026-07-23",
+      specimenId: "abc123de",
+      fingerprint: "123456789abc",
+      formId: "reactor_kaiju",
+      ecology: "polluted",
+      pathology: "nuclear",
+      status: "archived",
+      admittedAt: null,
+      label: "反应堆巨兽",
+    },
+  ];
+  const visitorController = {
+    preview: async (code) => {
+      previewedCode = code;
+      if (code.length > 2048) {
+        return {
+          available: false,
+          reason: "too_long",
+          reasonLabel: "污染编码超过 2,048 字符，已拒绝。",
+        };
+      }
+      return {
+        available: true,
+        code,
+        title: "访客接待预览",
+        summary: "外来标本将生成一份本地接触事故。",
+        warning: "确认后只保存派生外观，不保存污染码。",
+        encounter: {
+          id: "abc123def456",
+          typeLabel: "缓存合租",
+          visitorId: "abc123de",
+          visitorForm: "反应堆巨兽",
+          hybridId: "123456789abc",
+          hybridForm: "缓存寄生体",
+        },
+      };
+    },
+    receive: async () => {
+      receives += 1;
+      return {
+        status: "completed",
+        message: "外来标本已进入访客档案。",
+        snapshot: refreshed,
+      };
+    },
+    host: async (id) => {
+      hosts += 1;
+      assert.equal(id, "abc123def456");
+      const hosted = structuredClone(refreshed);
+      hosted.visitors.activeStayId = "stay-abc123def456-2026-07-23";
+      hosted.visitors.visitors[0].status = "active";
+      hosted.visitors.visitors[0].admittedAt = "2026-07-23";
+      return {
+        status: "completed",
+        message: "访客已进入生态舱。",
+        snapshot: hosted,
+      };
+    },
+    release: async () => {
+      releases += 1;
+      return {
+        status: "completed",
+        message: "当前访客已送离。",
+        snapshot: refreshed,
+      };
+    },
+  };
+  const output = path.join(buildDirectory, "app.mjs");
+  await build({
+    entryPoints: [path.join(projectDir, "src", "tui", "app.jsx")],
+    outfile: output,
+    bundle: true,
+    platform: "node",
+    format: "esm",
+    external: ["ink", "react"],
+  });
+  const { TuiApp } = await import(pathToFileURL(output).href);
+  const screen = render(
+    React.createElement(TuiApp, {
+      snapshot,
+      lang: "zh",
+      initialMotion: "off",
+      visitorController,
+      terminalColumns: 80,
+    }),
+  );
+  t.after(() => screen.unmount());
+
+  screen.stdin.write("2");
+  await waitForFrame(screen, /活体生态舱/u);
+  screen.stdin.write("v");
+  await waitForFrame(screen, /访客接待台/u);
+  assert.match(screen.lastFrame(), /i 粘贴污染编码/u);
+  screen.stdin.write("i");
+  await waitForFrame(screen, /粘贴 AA1 污染编码/u);
+  screen.stdin.write("A".repeat(2049));
+  await waitForFrame(screen, /2049 \/ 2048/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /污染编码超过 2,048 字符/u);
+  assert.equal(previewedCode.length, 2049);
+  screen.stdin.write("\u001B");
+  await waitForFrame(screen, /访客接待台/u);
+  screen.stdin.write("i");
+  await waitForFrame(screen, /粘贴 AA1 污染编码/u);
+  screen.stdin.write("AA1.pay");
+  screen.stdin.write("q");
+  await waitForFrame(screen, /AA1\.payq/u);
+  screen.stdin.write("load.checksum");
+  await waitForFrame(screen, /AA1\.payqload\.checksum/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /访客接待预览/u);
+  assert.equal(previewedCode, "AA1.payqload.checksum");
+  assert.equal(receives, 0);
+  assert.match(screen.lastFrame(), /不保存污染码/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /访客操作完成/u);
+  assert.equal(receives, 1);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /abc123def456/u);
+  assert.match(screen.lastFrame(), /反应堆巨兽/u);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /访客已进入生态舱/u);
+  assert.equal(hosts, 1);
+  screen.stdin.write("\r");
+  await waitForFrame(screen, /入住中/u);
+  screen.stdin.write("x");
+  await waitForFrame(screen, /当前访客已送离/u);
+  assert.equal(releases, 1);
+  assert.ok(
+    screen.lastFrame().split("\n").every((line) => terminalWidth(line) <= 80),
+  );
+});
+
+test("the shared visitor controller previews read-only and persists only derived IDs", async (t) => {
+  const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-visitor-controller-"));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const home = path.join(workspace, "home");
+  const visitorHome = path.join(workspace, "visitor");
+  const visitor = runCli(
+    ["creature", "export", "--date", "2026-07-23", "--json"],
+    {
+      HOME: visitorHome,
+      ANTI_AI_CREATURE_SEED: "visitor-controller-remote",
+    },
+  );
+  assert.equal(visitor.status, 0, visitor.stderr);
+  const environment = {
+    HOME: home,
+    ANTI_AI_CREATURE_SEED: "visitor-controller-local",
+    ANTI_AI_CODEX_DIR: path.join(workspace, "missing-codex"),
+    ANTI_AI_CLAUDE_DIR: path.join(workspace, "missing-claude"),
+    ANTI_AI_OPENCODE_DB: path.join(workspace, "missing-opencode.db"),
+    ANTI_AI_OPENCLAW_DIR: path.join(workspace, "missing-openclaw"),
+    ANTI_AI_HERMES_DB: path.join(workspace, "missing-hermes.db"),
+    ANTI_AI_PI_DIR: path.join(workspace, "missing-pi"),
+  };
+  assert.equal(
+    runCli(["creature", "--date", "2026-07-23", "--json"], environment).status,
+    0,
+  );
+  const previousEnvironment = Object.fromEntries(
+    Object.keys(environment).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, environment);
+  t.after(() => {
+    for (const [key, value] of Object.entries(previousEnvironment)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const session = await createContainmentSession({
+    date: "2026-07-23",
+    lang: "en",
+    source: "all",
+  });
+  const statePath = path.join(home, ".anti-ai", "creature.json");
+  const before = readFileSync(statePath, "utf8");
+  const code = JSON.parse(visitor.stdout).code;
+  const preview = await session.visitorController.preview(code);
+  assert.equal(preview.available, true);
+  assert.equal(readFileSync(statePath, "utf8"), before);
+
+  const received = await session.visitorController.receive(preview);
+  assert.equal(received.status, "completed");
+  assert.equal(received.changed, true);
+  assert.equal(received.snapshot.visitors.visitors.length, 1);
+  const savedText = readFileSync(statePath, "utf8");
+  assert.doesNotMatch(savedText, new RegExp(code.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u"));
+  assert.doesNotMatch(savedText, /exactTokens|modelName|sourceName|prompt|response|conversation/i);
+
+  const hosted = await session.visitorController.host(preview.encounter.id);
+  assert.equal(hosted.status, "completed");
+  assert.ok(hosted.snapshot.visitors.activeStayId);
+  assert.equal(hosted.snapshot.habitat.visitor.foreignSpecimenId, preview.encounter.id);
+  const released = await session.visitorController.release();
+  assert.equal(released.status, "completed");
+  assert.equal(released.snapshot.visitors.activeStayId, null);
+  assert.equal(released.snapshot.habitat.visitor, null);
 });
 
 test("the TUI completes incubation and bonding without leaving the console", async (t) => {

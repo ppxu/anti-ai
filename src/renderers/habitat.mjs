@@ -12,6 +12,8 @@ import {
 } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
 import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
+import { creatureArt } from "./creature-art.mjs";
+import { visitationCopy } from "../visitation-content.mjs";
 
 const ROUTE_COLORS = {
   pollution: "1;31",
@@ -226,6 +228,43 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
         `${localized(lang, "关系诊断", "RELATIONSHIP DIAGNOSIS")}  ${localized(lang, "未建立伴生关系", "NO SYMBIOTIC BOND")}`,
         `${localized(lang, "查看培养架", "INSPECT SHELF")}  anti-ai lab shelf`,
       ];
+  const visitorLines = habitat.visitor
+    ? (() => {
+        const relationship = visitationCopy(
+          "relationships",
+          habitat.visitor.routeId,
+          habitat.visitor.relationshipId,
+          lang,
+        );
+        const bulletin = visitationCopy(
+          "bulletins",
+          habitat.visitor.routeId,
+          habitat.visitor.bulletinId,
+          lang,
+        );
+        const exhibit = visitationCopy(
+          "exhibits",
+          habitat.visitor.routeId,
+          habitat.visitor.exhibit.id,
+          lang,
+        );
+        const art = creatureArt({ appearance: habitat.visitor.appearance })
+          .replaceAll(/\u001B\[[0-9;]*m/g, "")
+          .split("\n")
+          .filter(Boolean);
+        return [
+          `${localized(lang, "访客位", "VISITOR BAY")}  #${habitat.visitor.foreignSpecimenId} · ${localized(lang, `共处 ${habitat.visitor.cohabitationDays} 天`, `${habitat.visitor.cohabitationDays} DAYS`)}`,
+          ...art,
+          `${localized(lang, "共处诊断", "COHABITATION DIAGNOSIS")}  ${relationship.name}`,
+          ...wrapTerminal(`  ${relationship.symptom}`, contentWidth, lang),
+          ...wrapTerminal(`${localized(lang, "访客短讯", "VISITOR BULLETIN")}  ${bulletin.copy}`, contentWidth, lang),
+          `${localized(lang, "共同展品", "JOINT EXHIBIT")}  ${exhibit.glyph} ${exhibit.name}`,
+        ];
+      })()
+    : [
+        `${localized(lang, "访客位", "VISITOR BAY")}  ${localized(lang, "空置", "VACANT")}`,
+        `${localized(lang, "查看访客档案", "VISITOR ARCHIVE")}  anti-ai encounter visitors`,
+      ];
   const recentLines = latestEvent
     ? [
         `${localized(lang, "最近事件", "LATEST EVENT")}  ${color(ROUTE_COLORS[latestEvent.routeId], latestCopy.name)} · ${latestEvent.discoveredAt}`,
@@ -279,6 +318,8 @@ function renderHabitat(habitat, labels, lang = "zh", options = {}) {
     ),
     ...rows([""]),
     ...rows(artLines),
+    middle,
+    ...rows(visitorLines),
     middle,
     row(localized(lang, "后果陈列柜", "CONSEQUENCE CABINET")),
     ...rows(cabinetLines),

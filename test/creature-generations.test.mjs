@@ -686,8 +686,8 @@ test("v0.6 creature files migrate without losing stored ability growth", (t) => 
   assert.ok(report.collections.rareAbilitiesUnlocked >= 0);
 });
 
-test("schema v1-v12 creature files migrate idempotently without inventing cabinet, companion, or incident history", (t) => {
-  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
+test("schema v1-v15 creature files migrate idempotently without inventing cabinet, companion, incident, or visitor history", (t) => {
+  for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
     const home = mkdtempSync(
       path.join(tmpdir(), `anti-ai-schema-${schemaVersion}-`),
     );
@@ -748,7 +748,7 @@ test("schema v1-v12 creature files migrate idempotently without inventing cabine
     const saved = JSON.parse(
       readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
     );
-    assert.equal(saved.schemaVersion, 15);
+    assert.equal(saved.schemaVersion, 16);
     assert.deepEqual(saved.cabinet, { version: 1, featured: [] });
     assert.equal(saved.appearance.version, 1);
     assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
@@ -765,6 +765,11 @@ test("schema v1-v12 creature files migrate idempotently without inventing cabine
       evolutions: {},
     });
     assert.deepEqual(saved.foreignSpecimens, []);
+    assert.deepEqual(saved.visitation, {
+      version: 1,
+      activeStayId: null,
+      stays: [],
+    });
     assert.deepEqual(saved.casebook, {
       cases: [],
       nextAtExperience: 14,
@@ -852,7 +857,7 @@ test("schema v9 cultures remain unbound after companion migration", (t) => {
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 15);
+  assert.equal(saved.schemaVersion, 16);
   assert.deepEqual(saved.cabinet, { version: 1, featured: [] });
   assert.deepEqual(saved.laboratory, {
     version: 2,

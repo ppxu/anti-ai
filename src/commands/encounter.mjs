@@ -1,5 +1,6 @@
 import {
   creatureLabel,
+  loadCreatureState,
   saveCreatureState,
 } from "../creature.mjs";
 import { creatureArt } from "../renderers/creature-art.mjs";
@@ -12,6 +13,9 @@ import {
 } from "../encounter.mjs";
 import { color } from "../reporting.mjs";
 import { localized } from "../shared.mjs";
+import { localDate } from "../scanner.mjs";
+import { VisitationError, deriveVisitorArchive } from "../visitation.mjs";
+import { executeVisitationMutation } from "../application/visitation.mjs";
 import { runCreature } from "./creature.mjs";
 
 function encounterErrorMessage(error, lang) {
@@ -79,6 +83,73 @@ async function encounterContext(options, mode = "context") {
 }
 
 async function runEncounter(options) {
+  if (["visitors", "host", "release"].includes(options.action)) {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const date = options.date ?? localDate(new Date(), timezone);
+    if (options.action === "host" && !options.id) {
+      process.stderr.write(`${localized(options.lang, "缺少外来标本编号。", "Missing foreign specimen ID.")}\n`);
+      process.exitCode = 2;
+      return;
+    }
+    let result;
+    try {
+      if (options.action === "visitors") {
+        const state = await loadCreatureState();
+        result = { archive: deriveVisitorArchive(state, date) };
+      } else {
+        result = await executeVisitationMutation(options.action, {
+          date,
+          foreignSpecimenId: options.id,
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof VisitationError)) throw error;
+      const message = {
+        visitor_not_found: localized(options.lang, "未找到外来标本，或它在所选日期尚未入柜。", "No foreign specimen was found, or it was not yet bottled on the selected date."),
+        date_before_active_stay: localized(options.lang, "所选日期早于当前访客的入住日期。", "The selected date precedes the active visitor stay."),
+        date_before_last_stay: localized(options.lang, "所选日期早于最近一次访客操作，不能回拨改写共处记录。", "The selected date precedes the latest visitor operation; stay history cannot be rewritten backward."),
+      }[error.code];
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 2;
+      return;
+    }
+    const archive = result.archive;
+    if (options.json) {
+      const machine = options.action === "visitors"
+        ? archive
+        : {
+            version: result.version,
+            action: result.action,
+            date: result.date,
+            changed: result.changed,
+            activeStay: result.activeStay,
+          };
+      process.stdout.write(`${JSON.stringify(machine, null, 2)}\n`);
+      return;
+    }
+    if (options.action !== "visitors") {
+      process.stdout.write(`${result.changed
+        ? options.action === "host"
+          ? localized(options.lang, `访客 #${options.id} 已进入生态舱。`, `Visitor #${options.id} entered the Habitat.`)
+          : localized(options.lang, "当前访客已送离生态舱。", "The active visitor left the Habitat.")
+        : options.action === "host"
+          ? localized(options.lang, "该访客已经入住；重复接待没有产生额外关系。", "The visitor is already hosted; repeated intake created no extra relationship.")
+          : localized(options.lang, "当前没有需要送离的访客。", "No active visitor needs release.")}\n`);
+      return;
+    }
+    const lines = [
+      localized(options.lang, "外来访客档案", "FOREIGN VISITOR ARCHIVE"),
+      "",
+      ...(archive.visitors.length === 0
+        ? [localized(options.lang, "尚无访客。先保存一次外来遭遇。", "No visitors yet. Save a foreign encounter first.")]
+        : archive.visitors.map((visitor) =>
+            `#${visitor.id} · ${visitor.status === "active" ? localized(options.lang, "当前入住", "ACTIVE STAY") : localized(options.lang, "已归档", "ARCHIVED")} · ${creatureLabel("ecologyForms", visitor.formId, options.lang)}`
+          )),
+      "",
+    ];
+    process.stdout.write(lines.join("\n"));
+    return;
+  }
   let context;
   try {
     context = await encounterContext(options);

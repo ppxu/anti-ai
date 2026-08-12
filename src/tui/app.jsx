@@ -31,6 +31,7 @@ import {
   HelpOverlay,
   ShareOverlay,
 } from "./screens.jsx";
+import { VisitorOverlay } from "./visitor-views.jsx";
 
 const SCREEN_IDS = [
   "overview",
@@ -46,6 +47,7 @@ function TuiApp({
   initialMotion = "low",
   actionController = null,
   shareController = null,
+  visitorController = null,
   terminalColumns = undefined,
 }) {
   const { exit } = useApp();
@@ -88,6 +90,12 @@ function TuiApp({
     expeditionDestinationIndex,
     expeditionChoiceIndex,
     inspectingCulture,
+    visitorMode,
+    visitorInput,
+    visitorPreview,
+    visitorResult,
+    visitorError,
+    visitorIndex,
   } = controller;
   const setSnapshot = bindTuiControllerField(dispatchController, "snapshot");
   const setActiveIndex = bindTuiControllerField(dispatchController, "activeIndex");
@@ -119,6 +127,12 @@ function TuiApp({
   const setExpeditionDestinationIndex = bindTuiControllerField(dispatchController, "expeditionDestinationIndex");
   const setExpeditionChoiceIndex = bindTuiControllerField(dispatchController, "expeditionChoiceIndex");
   const setInspectingCulture = bindTuiControllerField(dispatchController, "inspectingCulture");
+  const setVisitorMode = bindTuiControllerField(dispatchController, "visitorMode");
+  const setVisitorInput = bindTuiControllerField(dispatchController, "visitorInput");
+  const setVisitorPreview = bindTuiControllerField(dispatchController, "visitorPreview");
+  const setVisitorResult = bindTuiControllerField(dispatchController, "visitorResult");
+  const setVisitorError = bindTuiControllerField(dispatchController, "visitorError");
+  const setVisitorIndex = bindTuiControllerField(dispatchController, "visitorIndex");
   const inlineActionLock = useRef(false);
 
   const activeId = SCREEN_IDS[activeIndex];
@@ -305,6 +319,7 @@ function TuiApp({
         showHelp,
         actionMode,
         shareMode,
+        visitorMode,
       })
     ) {
       return undefined;
@@ -313,9 +328,131 @@ function TuiApp({
       setFrame((value) => value + 1);
     }, interval);
     return () => clearInterval(timer);
-  }, [activeId, motion, showHelp, actionMode, shareMode]);
+  }, [activeId, motion, showHelp, actionMode, shareMode, visitorMode]);
+
+  const previewVisitor = async () => {
+    if (!visitorController?.preview) return;
+    setVisitorMode("loading");
+    try {
+      const preview = await visitorController.preview(visitorInput);
+      if (!preview.available) {
+        setVisitorError(preview.reasonLabel ?? preview.reason);
+        setVisitorMode("error");
+        return;
+      }
+      setVisitorPreview(preview);
+      setVisitorMode("preview");
+    } catch (error) {
+      setVisitorError(error?.message ?? String(error));
+      setVisitorMode("error");
+    }
+  };
+
+  const receiveVisitor = async () => {
+    if (!visitorController?.receive || !visitorPreview) return;
+    setVisitorMode("loading");
+    const result = await visitorController.receive(visitorPreview);
+    if (result.snapshot) setSnapshot(result.snapshot);
+    if (result.status !== "completed") {
+      setVisitorError(result.reasonLabel ?? result.reason);
+      setVisitorMode("error");
+      return;
+    }
+    setVisitorPreview(null);
+    setVisitorInput("");
+    setVisitorResult(result);
+    setVisitorMode("result");
+  };
+
+  const mutateVisitor = async (operation, id = undefined) => {
+    const execute = visitorController?.[operation];
+    if (!execute) return;
+    setVisitorMode("loading");
+    const result = await execute(id);
+    if (result.snapshot) setSnapshot(result.snapshot);
+    if (result.status !== "completed") {
+      setVisitorError(result.reasonLabel ?? result.reason);
+      setVisitorMode("error");
+      return;
+    }
+    setVisitorResult(result);
+    setVisitorMode("result");
+  };
 
   useInput((input, key) => {
+    if (visitorMode !== null) {
+      if (visitorMode === "loading") return;
+      if (
+        key.escape ||
+        (input === "q" && visitorMode !== "input") ||
+        (visitorMode === "preview" && input === "n")
+      ) {
+        if (["input", "preview", "result", "error"].includes(visitorMode)) {
+          setVisitorMode("archive");
+        } else {
+          setVisitorMode(null);
+        }
+        return;
+      }
+      if (visitorMode === "archive") {
+        const visitors = snapshot.visitors?.visitors ?? [];
+        if (input === "i") {
+          setVisitorInput("");
+          setVisitorPreview(null);
+          setVisitorError(null);
+          setVisitorMode("input");
+          return;
+        }
+        if (visitors.length > 0 && key.upArrow) {
+          setVisitorIndex((value) => (value + visitors.length - 1) % visitors.length);
+          return;
+        }
+        if (visitors.length > 0 && (key.downArrow || key.tab)) {
+          setVisitorIndex((value) => (value + 1) % visitors.length);
+          return;
+        }
+        if (key.return && visitors[visitorIndex]?.status !== "active") {
+          void mutateVisitor("host", visitors[visitorIndex]?.id);
+          return;
+        }
+        if (input === "x" && snapshot.visitors?.activeStayId) {
+          void mutateVisitor("release");
+          return;
+        }
+        return;
+      }
+      if (visitorMode === "input") {
+        if (key.return) {
+          void previewVisitor();
+          return;
+        }
+        if (key.backspace || key.delete) {
+          setVisitorInput((value) => value.slice(0, -1));
+          return;
+        }
+        const printable = input.replaceAll(/[^\x20-\x7E]/gu, "");
+        if (printable) {
+          setVisitorInput((value) => `${value}${printable}`.slice(0, 2049));
+        }
+        return;
+      }
+      if (visitorMode === "preview" && (key.return || input === "y")) {
+        void receiveVisitor();
+        return;
+      }
+      if (visitorMode === "result" && key.return) {
+        setVisitorMode("archive");
+        setVisitorResult(null);
+        setVisitorInput("");
+        setVisitorIndex(0);
+        return;
+      }
+      if (visitorMode === "error" && key.return) {
+        setVisitorMode("input");
+        return;
+      }
+      return;
+    }
     if (shareMode !== null) {
       if (shareMode === "loading") return;
       if (
@@ -497,6 +634,11 @@ function TuiApp({
         snapshot.laboratory.proposals.length > 0 ? "formulas" : "shelf",
       );
       setActiveIndex(SCREEN_IDS.indexOf("laboratory"));
+      return;
+    }
+    if (activeId === "habitat" && input === "v") {
+      setVisitorIndex(0);
+      setVisitorMode("archive");
       return;
     }
     if (activeId === "habitat" && input === "b") {
@@ -854,7 +996,7 @@ function TuiApp({
         snapshot.habitat.events.length > 0
           ? ` · r ${zh ? "回放" : "replay"}`
           : ""
-      } · s ${zh ? "分享" : "share"}`
+      } · v ${zh ? "访客" : "visitors"} · s ${zh ? "分享" : "share"}`
     : activeId === "expedition" && snapshot.expedition.active
       ? ` · Enter ${zh ? "推进" : "advance"} · x ${zh ? "放弃" : "abandon"} · s ${zh ? "分享" : "share"}`
     : activeId === "expedition" && snapshot.expedition.eligibility.available
@@ -911,20 +1053,36 @@ function TuiApp({
       lang={lang}
     />
   );
+  const visitorOverlay = visitorMode === null ? null : (
+    <VisitorOverlay
+      mode={visitorMode}
+      archive={snapshot.visitors}
+      input={visitorInput}
+      preview={visitorPreview}
+      result={visitorResult}
+      error={visitorError}
+      selectedIndex={visitorIndex}
+      lang={lang}
+    />
+  );
 
   return (
     <Box flexDirection="column" paddingX={1} width={columns}>
       <Header snapshot={snapshot} lang={lang} />
       <Navigation
         navigation={snapshot.navigation}
-        activeId={showHelp || actionMode !== null || shareMode !== null ? null : activeId}
+        activeId={showHelp || actionMode !== null || shareMode !== null || visitorMode !== null ? null : activeId}
       />
       {showHelp ? (
         <HelpOverlay lang={lang} activeId={activeId} codexMode={codexMode} />
-      ) : shareOverlay ?? actionOverlay ?? screen}
+      ) : visitorOverlay ?? shareOverlay ?? actionOverlay ?? screen}
       <Box marginTop={1} justifyContent="space-between">
         <Text dimColor>
-          {shareMode !== null
+          {visitorMode !== null
+            ? zh
+              ? "本地访客 · 污染编码仅在当前预览内存中存在"
+              : "Local visitors · the pollution code exists only in preview memory"
+            : shareMode !== null
             ? zh
               ? "本地分享 · 预览不会写入，确认后才创建 SVG"
               : "Local sharing · preview is read-only; confirmation creates the SVG"
@@ -935,7 +1093,7 @@ function TuiApp({
             : `${navigationFooter}${contextualFooter}`}
         </Text>
         <Text dimColor>
-          {actionMode !== null || shareMode !== null
+          {actionMode !== null || shareMode !== null || visitorMode !== null
             ? `Esc ${zh ? "返回" : "back"}`
             : `q ${zh ? "退出" : "quit"}`}
         </Text>

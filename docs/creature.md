@@ -320,7 +320,7 @@ anti-ai share --card dossier > anti-ai-dossier.svg
 `anti-ai creature chronicle` adds a read-only 7/30/90-day course, generation comparison, deterministic diagnosis, twelve presentation-only constellations, and the current Collection Mutation. See the [Mutation Chronicle Guide](./chronicle.md) for the complete model and privacy boundary.
 
 A fossil certificate becomes available after experience day 90.
-Cross-machine collection is local and optional. Read [Local Mutation Encounters](./encounters.md) for pollution-code and foreign-specimen behavior.
+Cross-machine collection is local and optional. Read [Local Mutation Encounters](./encounters.md) for pollution-code and foreign-specimen behavior, then [Local Visitor Stays](./visitors.md) for explicit Habitat cohabitation.
 Turning-point cases are also local and optional. Read [Forked Casebook](./casebook.md) for history, intervention, prognosis, and case-slice behavior.
 Containment incidents are local delayed event chains. Read [Containment Incidents](./incidents.md) for cadence, responses, aftermaths, and incident-report collection behavior.
 Containment Expeditions are local ten-cell runs. Read [Containment Expeditions](./expeditions.md) for daily eligibility, event decks, choices, artifacts, achievements, and pause/resume behavior.
@@ -336,7 +336,7 @@ State lives at:
 ~/.anti-ai/creature.json
 ```
 
-The current schema is v15. It stores only:
+The current schema is v16. It stores only:
 
 - discrete usage bands and derived Ecology points;
 - integer content versions for settled days and generation choices, so v1 history is never rerolled by v2 content pools;
@@ -348,6 +348,7 @@ The current schema is v15. It stores only:
 - turning-point case IDs, privacy-safe triggers, and sealed route choices;
 - containment incident, response, aftermath, and chain IDs with privacy-safe trigger summaries and disposition counts;
 - saved foreign encounters as derived parent/form and hybrid appearance IDs;
+- visitor stays as stable foreign-specimen references plus admission/release dates;
 - laboratory batches and cultures as derived material, diagnosis, rarity, and appearance IDs;
 - companion bonds, discrete daily imprints, and sealed anomaly IDs;
 - up to three stable Consequence Cabinet collection keys;
@@ -358,7 +359,7 @@ The current schema is v15. It stores only:
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v14 files migrate sequentially and idempotently without losing existing ability points or inventing diagnoses, studies, case choices, containment incidents, expeditions, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, anomalies, or v2 discoveries. Missing historical content versions become v1; only newly settled days and newly sealed evolution choices use v2 pools. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` and Clinic browsing derive read-only snapshots without persisting another migration.
+Schema v1-v15 files migrate sequentially and idempotently without losing existing ability points or inventing diagnoses, studies, visitors, stays, case choices, containment incidents, expeditions, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, anomalies, or v2 discoveries. Missing historical content versions become v1; only newly settled days and newly sealed evolution choices use v2 pools. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex`, Clinic, and Visitor Archive browsing derive read-only snapshots without persisting another migration.
 
 One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 

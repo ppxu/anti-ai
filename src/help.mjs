@@ -185,7 +185,7 @@ const COMMAND_HELP = {
     related: ["creature chronicle", "creature habitat", "creature history", "creature intervene", "creature incident", "creature prognosis", "creature evolve", "creature export", "creature reset", "codex", "today"],
   },
   encounter: {
-    usage: "anti-ai encounter <pollution-code> [options]",
+    usage: "anti-ai encounter <pollution-code>|<visitors|host|release> [options]",
     summary: ["让本地异变体与一份外来污染编码发生确定性接触事故。", "Run a deterministic local contact accident with a visitor pollution code."],
     output: [
       "显示算力天气、接触类型、混种 ASCII 和隐私安全的事故编号。",
@@ -200,12 +200,51 @@ const COMMAND_HELP = {
       "anti-ai creature export",
       "anti-ai encounter <pollution-code>",
       "anti-ai encounter <pollution-code> --save",
+      "anti-ai encounter visitors",
+      "anti-ai encounter host <foreign-specimen-id>",
+      "anti-ai encounter release",
     ],
     note: [
       "遭遇完全在本地演算；污染编码不包含精确 Token、模型、路径或对话。",
       "Encounters are computed locally; pollution codes contain no exact tokens, models, paths, or chats.",
     ],
-    related: ["creature export", "codex", "share"],
+    related: ["encounter visitors", "encounter host", "encounter release", "creature export", "creature habitat", "codex", "share"],
+  },
+  "encounter visitors": {
+    usage: "anti-ai encounter visitors [options]",
+    summary: ["查看只读访客档案与当前入住状态。", "Inspect the read-only visitor archive and active stay."],
+    output: ["列出已保存外来标本、归档状态和当前访客。", "Lists saved foreign specimens, archive state, and the active visitor."],
+    options: [
+      ["--date <YYYY-MM-DD>", "查看指定自然日可见的访客", "Inspect visitors visible on a date"],
+      ["--json", "输出稳定访客档案", "Print the stable visitor archive"],
+    ],
+    examples: ["anti-ai encounter visitors", "anti-ai encounter visitors --json"],
+    note: ["该命令不扫描 Agent 记录，也不创建或改写状态。", "This command scans no Agent records and creates or rewrites no state."],
+    related: ["encounter", "encounter host", "encounter release", "creature habitat"],
+  },
+  "encounter host": {
+    usage: "anti-ai encounter host <foreign-specimen-id> [options]",
+    summary: ["选择一位已归档外来标本作为当前访客。", "Select one archived foreign specimen as the active visitor."],
+    output: ["封存一段自然日入住记录；重复接待保持幂等。", "Seals one calendar-day stay; repeated hosting remains idempotent."],
+    options: [
+      ["--date <YYYY-MM-DD>", "指定入住日期（默认今天）", "Select admission date (default: today)"],
+      ["--json", "输出稳定操作结果", "Print the stable action result"],
+    ],
+    examples: ["anti-ai encounter host abc123def456", "anti-ai encounter host abc123def456 --json"],
+    note: ["入住只改变访客展示，不增加能力、收藏、概率或 Token 奖励。", "Hosting changes visitor presentation only, never abilities, collections, odds, or Token rewards."],
+    related: ["encounter visitors", "encounter release", "creature habitat"],
+  },
+  "encounter release": {
+    usage: "anti-ai encounter release [options]",
+    summary: ["送离当前访客并封存入住结束日期。", "Release the active visitor and seal the stay end date."],
+    output: ["当前无访客时保持幂等，不伪造历史。", "Remains idempotent when no visitor is active and invents no history."],
+    options: [
+      ["--date <YYYY-MM-DD>", "指定送离日期（默认今天）", "Select release date (default: today)"],
+      ["--json", "输出稳定操作结果", "Print the stable action result"],
+    ],
+    examples: ["anti-ai encounter release", "anti-ai encounter release --json"],
+    note: ["访客档案继续保留；可在未来重新接待。", "The visitor archive remains available for a future stay."],
+    related: ["encounter visitors", "encounter host", "creature habitat"],
   },
   lab: {
     usage: "anti-ai lab [options]",
@@ -392,12 +431,12 @@ const ACTION_HELP = {
   "creature habitat": {
     usage: "anti-ai creature habitat [options]",
     summary: [
-      "查看异变体、伴生物与收藏共同形成的只读收容场景。",
-      "Inspect the read-only containment scene formed by the mutation, companion, and collections.",
+      "查看异变体、伴生物、可选访客与收藏共同形成的只读收容场景。",
+      "Inspect the read-only containment scene formed by the mutation, companion, optional visitor, and collections.",
     ],
     output: [
-      "以单屏活体 ASCII 场景展示环境、标本姿态、双体关系、近期痕迹和生态短讯。",
-      "Shows a one-screen living ASCII scene with environment, specimen pose, duo relationship, recent trace, and habitat bulletin.",
+      "以单屏活体 ASCII 场景展示环境、标本姿态、伴生关系、访客共处、近期痕迹和生态短讯。",
+      "Shows a one-screen living ASCII scene with environment, specimen pose, companion relationship, visitor cohabitation, recent trace, and habitat bulletin.",
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的生态舱", "Inspect the habitat on a date"],
@@ -414,7 +453,7 @@ const ACTION_HELP = {
       "15 种场景原型按污染、清醒、悖论各 5 种平衡分布；查看不会写入档案，Token 量不能重抽或加速。",
       "Fifteen scene archetypes are balanced five per Pollution, Clarity, and Paradox; viewing is read-only and Token volume cannot reroll or accelerate them.",
     ],
-    related: ["creature", "lab companion", "codex", "share"],
+    related: ["creature", "lab companion", "encounter visitors", "codex", "share"],
   },
   "creature chronicle": {
     usage: "anti-ai creature chronicle [options]",

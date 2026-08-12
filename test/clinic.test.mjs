@@ -681,7 +681,7 @@ test("clinic start seals one passive calendar-day study and rejects overlap", (t
 
   const statePath = path.join(home, ".anti-ai", "creature.json");
   const state = JSON.parse(readFileSync(statePath, "utf8"));
-  assert.equal(state.schemaVersion, 15);
+  assert.equal(state.schemaVersion, 16);
   assert.deepEqual(state.clinic, {
     version: 1,
     studies: [
@@ -780,7 +780,7 @@ test("clinic start migrates schema 14 once and rejects unknown protocols", (t) =
   const saved = JSON.parse(
     readFileSync(path.join(stateDirectory, "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 15);
+  assert.equal(saved.schemaVersion, 16);
   assert.equal(saved.clinic.studies[0].protocolId, "load_recovery");
 });
 

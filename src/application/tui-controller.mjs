@@ -32,6 +32,12 @@ function createTuiControllerState({ snapshot, motion = "low" }) {
     expeditionDestinationIndex: 0,
     expeditionChoiceIndex: 0,
     inspectingCulture: false,
+    visitorMode: null,
+    visitorInput: "",
+    visitorPreview: null,
+    visitorResult: null,
+    visitorError: null,
+    visitorIndex: 0,
   };
 }
 
@@ -58,12 +64,14 @@ function shouldRunTuiMotion({
   showHelp,
   actionMode,
   shareMode,
+  visitorMode,
 }) {
   return (
     motion !== "off" &&
     !showHelp &&
     actionMode === null &&
     shareMode === null &&
+    visitorMode == null &&
     ["overview", "habitat", "expedition"].includes(activeId)
   );
 }

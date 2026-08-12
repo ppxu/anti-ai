@@ -338,6 +338,7 @@ function HelpOverlay({ lang, activeId, codexMode }) {
       ["r", zh ? "回放最近生态事件" : "replay the latest habitat event"],
       ["l", zh ? "前往污染实验室" : "open the pollution laboratory"],
       ["b", zh ? "选择或切换伴生物" : "bond or switch a companion"],
+      ["v", zh ? "打开本地访客接待台" : "open the local visitor intake desk"],
       ["s", zh ? "导出生态舱分享卡" : "export the habitat share card"],
     ],
     laboratory: [

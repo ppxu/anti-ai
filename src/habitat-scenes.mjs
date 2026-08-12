@@ -215,6 +215,8 @@ const TRACE_LABELS = Object.freeze({
   culture: { zh: "新培养物封存", en: "NEW CULTURE SEALED" },
   case: { zh: "病例转折", en: "CASE TURNING POINT" },
   habitat_event: { zh: "七日生态事件", en: "SEVEN-DAY HABITAT EVENT" },
+  visitor_admission: { zh: "外来访客入住", en: "FOREIGN VISITOR ADMISSION" },
+  visitor_release: { zh: "外来访客送离", en: "FOREIGN VISITOR RELEASE" },
 });
 
 function digestIndex(length, ...parts) {
@@ -281,6 +283,10 @@ function latestHabitatTrace(state, habitat, date) {
   for (const bond of state.laboratory?.bondHistory ?? []) {
     add("companion_bond", bond.cultureId, bond.bondedAt, 70);
   }
+  for (const stay of state.visitation?.stays ?? []) {
+    add("visitor_admission", stay.id, stay.admittedAt, 75);
+    add("visitor_release", stay.id, stay.releasedAt, 76);
+  }
   for (const culture of state.laboratory?.cultures ?? []) {
     add("culture", culture.id, culture.createdAt, 60);
   }
@@ -343,6 +349,10 @@ function deriveHabitatScene(state, creature, habitat, date) {
       relationship: {
         id: habitat.relationship?.id ?? "solitary",
         companionId: habitat.companion?.cultureId ?? null,
+      },
+      visitor: {
+        stayId: habitat.visitor?.stayId ?? null,
+        relationshipId: habitat.visitor?.relationshipId ?? null,
       },
       trace: latestHabitatTrace(state, habitat, date),
     },

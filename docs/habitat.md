@@ -42,6 +42,8 @@ The most recent date wins; same-day trace types use a fixed priority so repeated
 
 If the file has not hatched or no culture is bonded, the habitat still renders an empty companion bay and points to `anti-ai lab shelf`.
 
+The separate visitor bay may also be empty. Use `anti-ai encounter visitors` or press `v` in the TUI Habitat to open the local intake desk.
+
 ## One event per seven experience days
 
 The habitat derives at most one event at experience days 7, 14, 21, and so on. A settled calendar day remains the only clock; Token volume cannot move the interval forward.
@@ -77,6 +79,20 @@ The diagnosis may change as cohabitation crosses 7, 21, and 42 observed days. It
 
 Each relationship also selects one of 36 route-balanced duo titles and a joint symptom. These labels change presentation only; they do not modify either organism.
 
+## Optional visitor bay
+
+A saved foreign encounter can occupy one additional visitor bay without replacing the active companion:
+
+```bash
+anti-ai encounter visitors
+anti-ai encounter host <foreign-specimen-id>
+anti-ai encounter release
+```
+
+In the TUI Habitat, press `v` to paste and preview an AA1 code, browse the Visitor Archive, host one saved visitor, or release the current stay. The intake preview is read-only; saving, hosting, and release each require explicit input.
+
+The active stay adds one route-balanced cohabitation diagnosis, visitor bulletin, and joint exhibit to terminal, JSON, TUI, and Habitat SVG views. Intake, Settled, and Resident presentation stages advance by natural date. Repeated viewing, Token volume, language, and terminal motion cannot reroll or accelerate them. See [Local Visitor Stays](./visitors.md).
+
 ## Scenery and Codex
 
 The latest unique incidents leave up to four visible traces selected from 24 decorations. The pools are balanced across Pollution, Clarity, and Paradox and include waste-heat pipes, clarity moss, cache bone piles, manual switches, mirrored dishes, recursive cable nests, and their v2 proliferations.
@@ -106,10 +122,10 @@ In Habitat, `o` records one deterministic Observation and `c` records one restra
 
 - `today` adds one current habitat observation.
 - `week` and `month` show the current relationship, events sealed in the period, and new scenery without duplicating the full chamber.
-- `share --card habitat` prints a 1200×630 SVG containing the same scene name, climate, bulletin, two bays, current diagnosis, displayed Cabinet or scenery, and recent trace.
+- `share --card habitat` prints a 1200×630 SVG containing the same scene name, climate, bulletin, specimen/companion bays, optional visitor diagnosis and exhibit, displayed Cabinet or scenery, and recent trace.
 
 The card is written only to stdout. It omits exact Tokens, requests, source/model names, paths, prompts, responses, tool calls, and local record names.
 
 ## Product guardrail
 
-Pollution, Clarity, and Paradox have equal scene, bulletin, and event pools. Heavy use, restrained use, and AI-free days can create different stories, but they all advance the event clock at the same rate. The habitat has no server, account, background process, leaderboard, combat, daily task, missed-day penalty, consumable item, or paid reroll.
+Pollution, Clarity, and Paradox have equal scene, bulletin, event, and visitor-cohabitation pools. Heavy use, restrained use, and AI-free days can create different stories, but they all advance the event clock at the same rate. The habitat has no server, account, background process, leaderboard, combat, daily task, missed-day penalty, consumable item, or paid reroll.

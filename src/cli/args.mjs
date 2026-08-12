@@ -1,6 +1,7 @@
 import {
   CLINIC_ACTION_IDS,
   CREATURE_ACTION_IDS,
+  ENCOUNTER_ACTION_IDS,
   EXPEDITION_ACTION_IDS,
   EXPLAIN_TOPIC_IDS,
   LAB_ACTION_IDS,
@@ -117,6 +118,20 @@ function parseArgs(argv) {
       options.choice = arg;
     } else if (
       command === "encounter" &&
+      ENCOUNTER_ACTION_IDS.includes(arg) &&
+      options.action === undefined
+    ) {
+      options.action = arg;
+    } else if (
+      command === "encounter" &&
+      options.action === "host" &&
+      options.id === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.id = arg;
+    } else if (
+      command === "encounter" &&
+      options.action === undefined &&
       options.code === undefined &&
       !arg.startsWith("-")
     ) {

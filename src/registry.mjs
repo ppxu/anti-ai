@@ -196,6 +196,8 @@ const EXPEDITION_ACTION_IDS = Object.freeze([
 
 const CLINIC_ACTION_IDS = Object.freeze(["start", "history"]);
 
+const ENCOUNTER_ACTION_IDS = Object.freeze(["visitors", "host", "release"]);
+
 const EXPLAIN_TOPIC_IDS = Object.freeze([
   "resources",
   "comparisons",
@@ -258,8 +260,8 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
     en: "Read-only derived chronicle; it does not create, migrate, advance, or rewrite the growth file.",
   },
   encounter: {
-    zh: "结算本地异变体；只有 --save 会额外收藏混种。",
-    en: "Settles the local mutation; only --save additionally bottles the hybrid.",
+    zh: "遭遇会结算本地异变体；--save 收藏混种，visitors 只读，host/release 仅写访客入住记录。",
+    en: "An encounter settles the local mutation; --save bottles the hybrid, visitors is read-only, and host/release write only stay records.",
   },
   lab: {
     zh: "查看配方和培养架只读；培养、绑定与伴生结算会写入档案。",
@@ -289,6 +291,7 @@ export {
   COMMAND_STATE_BEHAVIOR,
   CLINIC_ACTION_IDS,
   CREATURE_ACTION_IDS,
+  ENCOUNTER_ACTION_IDS,
   EXPEDITION_ACTION_IDS,
   EXPLAIN_TOPIC_IDS,
   FULL_SOURCE_COMMAND_IDS,

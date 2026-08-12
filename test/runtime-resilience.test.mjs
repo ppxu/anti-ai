@@ -359,6 +359,96 @@ test("invalid nested creature collections are rejected before migration or write
       },
       clinic: { version: 1, studies: [] },
     },
+    {
+      schemaVersion: 16,
+      seed: "invalid-active-visitor",
+      days: {},
+      visitation: {
+        version: 1,
+        activeStayId: "stay-missing-2026-07-23",
+        stays: [],
+      },
+    },
+    {
+      schemaVersion: 16,
+      seed: "invalid-visitor-reference",
+      days: {},
+      foreignSpecimens: [],
+      visitation: {
+        version: 1,
+        activeStayId: null,
+        stays: [
+          {
+            id: "stay-missing-2026-07-23",
+            foreignSpecimenId: "missing",
+            admittedAt: "2026-07-23",
+            releasedAt: null,
+          },
+        ],
+      },
+    },
+    {
+      schemaVersion: 16,
+      seed: "multiple-active-visitors",
+      days: {},
+      foreignSpecimens: [{ id: "visitor-one" }, { id: "visitor-two" }],
+      visitation: {
+        version: 1,
+        activeStayId: "stay-one",
+        stays: [
+          {
+            id: "stay-one",
+            foreignSpecimenId: "visitor-one",
+            admittedAt: "2026-07-23",
+            releasedAt: null,
+          },
+          {
+            id: "stay-two",
+            foreignSpecimenId: "visitor-two",
+            admittedAt: "2026-07-24",
+            releasedAt: null,
+          },
+        ],
+      },
+    },
+    {
+      schemaVersion: 16,
+      seed: "untracked-active-visitor",
+      days: {},
+      foreignSpecimens: [{ id: "visitor-one" }],
+      visitation: {
+        version: 1,
+        activeStayId: null,
+        stays: [
+          {
+            id: "stay-one",
+            foreignSpecimenId: "visitor-one",
+            admittedAt: "2026-07-23",
+            releasedAt: null,
+          },
+        ],
+      },
+    },
+    {
+      schemaVersion: 16,
+      seed: "visitor-before-collection",
+      days: {},
+      foreignSpecimens: [
+        { id: "visitor-one", collectedAt: "2026-07-24" },
+      ],
+      visitation: {
+        version: 1,
+        activeStayId: "stay-one",
+        stays: [
+          {
+            id: "stay-one",
+            foreignSpecimenId: "visitor-one",
+            admittedAt: "2026-07-23",
+            releasedAt: null,
+          },
+        ],
+      },
+    },
   ];
 
   for (const [index, invalidState] of invalidStates.entries()) {

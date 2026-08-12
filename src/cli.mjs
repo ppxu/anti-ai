@@ -375,7 +375,7 @@ async function main(rawArgs = process.argv.slice(2)) {
       : options.command && !options.command.startsWith("-")
         ? [
             options.command,
-            ...(["creature", "lab", "expedition", "clinic"].includes(options.command) && options.action
+            ...(["creature", "lab", "expedition", "clinic", "encounter"].includes(options.command) && options.action
               ? [options.action]
               : []),
           ]

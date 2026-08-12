@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { laboratoryCompanion } from "./companion.mjs";
 import { V2_HABITAT_COPY } from "./habitat-v2.mjs";
 import { deriveHabitatScene } from "./habitat-scenes.mjs";
+import { deriveVisitorCohabitation } from "./visitation.mjs";
 
 const HABITAT_EVENT_CADENCE_DAYS = 7;
 
@@ -592,10 +593,11 @@ function deriveHabitat(state, creature, date, specimenArt) {
   const relationship = habitatRelationship(state, creature, companion, date);
   const experienceDays = creature.experienceDays;
   const remainder = experienceDays % HABITAT_EVENT_CADENCE_DAYS;
+  const visitor = deriveVisitorCohabitation(state, creature, date);
   const habitat = {
-    version: 2,
+    version: 3,
     date,
-    status: companion ? "cohabiting" : "solitary",
+    status: companion ? "cohabiting" : visitor ? "hosting" : "solitary",
     specimen: {
       id: creature.appearance.specimenId,
       stageId: creature.stage,
@@ -622,6 +624,7 @@ function deriveHabitat(state, creature, date, specimenArt) {
           art: [...companion.appearance.lines],
         }
       : null,
+    visitor,
     relationship,
     cadence: {
       days: HABITAT_EVENT_CADENCE_DAYS,

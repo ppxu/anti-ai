@@ -34,6 +34,7 @@ async function runTui(options) {
     lang: options.lang,
     motion: options.noMotion ? "off" : "low",
     actionController: session.actionController,
+    visitorController: session.visitorController,
     shareController: createTuiShareController(options),
   });
 }

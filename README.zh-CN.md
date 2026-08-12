@@ -119,6 +119,9 @@ anti-ai codex --json
 anti-ai creature export
 anti-ai encounter <污染编码>
 anti-ai encounter <污染编码> --save
+anti-ai encounter visitors
+anti-ai encounter host <外来标本编号>
+anti-ai encounter release
 
 anti-ai lab
 anti-ai lab --json
@@ -203,7 +206,7 @@ anti-ai tui --no-motion
 
 异变体与当前伴生物会以刻意克制的默认频率呼吸、眨眼和脉动，生态舱环境也会按当前路线呈现低频气候变化。按 `m` 在“低频 / 完整 / 关闭”之间切换，也可以用 `--no-motion` 直接进入完全静态模式；动态效果不会改变成长或存档。
 
-使用 `1`–`5`、方向键和页面内 `Tab` 焦点移动。生态舱位于第 `2` 区：环境、本体姿态、伴生关系、已有事件中的最新痕迹和讽刺短讯会共同组成一个活体场景，场景来自三条路线各 5 种的 15 个平衡原型。远征位于第 `3` 区：选择四个目的地之一后按一次 `Enter` 即启程，普通格每次只需一次 `Enter`，只有真正遇到三选一分叉时才要求额外选择。已揭示格会明确区分事件卡与系统封存记录，并保留最近三格轨迹；完成或放弃后会展示事件计数、变化、遗物、成就和讽刺诊断组成的返航总结。按 `q` 离开不会丢失进度，按 `x` 可明确放弃。在图鉴中按 `h` 打开内嵌“收容档案”，按 `t` 切换最近 7/30 天，按 `Enter` 查看某天详情。收藏详情会展示首次发现、来源、关联记录和陈列状态；锁定项仍是无剧透剪影。“套组”分类升级为三列病理星图，共 12 组只影响展示的诊断，每条路线 4 组。传说复合诊断会在完成同路线两组诊断前保持剪影，详情只公开宽泛证据域。对已发现条目按 `d` 可预览放入 3 个“后果陈列柜”展示位；派生套组不能占用陈列位。在总览、生态舱、远征、已发现收藏详情或每日档案详情按 `s`，会先预览卡片类型、隐私边界和完整目标路径；总览准备新的每日 `briefing` 封面，显式 `dossier` 卡继续承担长期年鉴摘要。确认后新建 SVG 且不覆盖已有文件。优先使用启动目录；如果该目录不可写，则自动改存 `~/.anti-ai/exports`。实验室会显示“原料 → 培养物 → 伴生物”三步流程：`Tab` 在配方和完整培养架之间切换，`Enter` 培养或查看当前项目，`b` 预览绑定所选培养物。生态舱伴生位空置时会说明尚缺哪一步；按 `l` 进入实验室，已有培养物时也可直接按 `b` 完成绑定；绑定完成后会直接返回生态舱，并把这次绑定展示为近期痕迹。污染编码交换仍使用明确的 `encounter --save` 命令，因为 TUI 不采集自由文本编码。生态舱中 `Enter` 是只读器官观察，`r` 回放最近事件，`o` 记录今日观察，`c` 进行今日接触；观察和接触每个已结算日各最多一次，只增加确定性叙事，不增加数值、稀有率或奖励。
+使用 `1`–`5`、方向键和页面内 `Tab` 焦点移动。生态舱位于第 `2` 区：环境、本体姿态、伴生关系、已有事件中的最新痕迹和讽刺短讯会共同组成一个活体场景，场景来自三条路线各 5 种的 15 个平衡原型。在这里按 `v` 可打开本地访客接待台：粘贴 AA1 污染编码，先校验和预览再保存，浏览已归档访客，使一位访客入住或送离当前访客。活动访客可以与伴生物同时存在，只增加确定性的共处文案和共同展品。远征位于第 `3` 区：选择四个目的地之一后按一次 `Enter` 即启程，普通格每次只需一次 `Enter`，只有真正遇到三选一分叉时才要求额外选择。已揭示格会明确区分事件卡与系统封存记录，并保留最近三格轨迹；完成或放弃后会展示事件计数、变化、遗物、成就和讽刺诊断组成的返航总结。按 `q` 离开不会丢失进度，按 `x` 可明确放弃。在图鉴中按 `h` 打开内嵌“收容档案”，按 `t` 切换最近 7/30 天，按 `Enter` 查看某天详情。收藏详情会展示首次发现、来源、关联记录和陈列状态；锁定项仍是无剧透剪影。“套组”分类升级为三列病理星图，共 12 组只影响展示的诊断，每条路线 4 组。传说复合诊断会在完成同路线两组诊断前保持剪影，详情只公开宽泛证据域。对已发现条目按 `d` 可预览放入 3 个“后果陈列柜”展示位；派生套组不能占用陈列位。在总览、生态舱、远征、已发现收藏详情或每日档案详情按 `s`，会先预览卡片类型、隐私边界和完整目标路径；总览准备新的每日 `briefing` 封面，显式 `dossier` 卡继续承担长期年鉴摘要。确认后新建 SVG 且不覆盖已有文件。优先使用启动目录；如果该目录不可写，则自动改存 `~/.anti-ai/exports`。实验室会显示“原料 → 培养物 → 伴生物”三步流程：`Tab` 在配方和完整培养架之间切换，`Enter` 培养或查看当前项目，`b` 预览绑定所选培养物。生态舱伴生位空置时会说明尚缺哪一步；按 `l` 进入实验室，已有培养物时也可直接按 `b` 完成绑定；绑定完成后会直接返回生态舱，并把这次绑定展示为近期痕迹。生态舱中 `Enter` 是只读器官观察，`r` 回放最近事件，`o` 记录今日观察，`c` 进行今日接触；观察和接触每个已结算日各最多一次，只增加确定性叙事，不增加数值、稀有率或奖励。
 
 浏览、回放、观察、档案导航、来源查看、分享预览和取消操作都保持只读，不会扫描 Agent 记录。打开“今日结算”的影响预览时，控制台可能扫描受支持的用量元数据，以便在确认前展示准确影响，但不会写入；玩法确认会通过与 CLI 相同的动作服务和原子并发检查更新异变体档案，分享确认则通过现有本地 SVG 服务只写入预览过的新文件。脚本与 Agent 应继续使用明确命令和 `--json`；`anti-ai tui` 是面向人类的交互界面。
 
@@ -290,11 +293,14 @@ anti-ai creature export
 anti-ai encounter <污染编码>
 anti-ai encounter <污染编码> --save
 anti-ai encounter <污染编码> --json
+anti-ai encounter visitors
+anti-ai encounter host <外来标本编号>
+anti-ai encounter release
 ```
 
-同一对外观指纹始终生成同一个事故编号、接触类型和混种标本；算力天气则由所选日期确定。`--save` 只会把混种放进一次本地外来标本柜，不是必选项，也不会改变成长速度、评分或 Token 激励。
+同一对外观指纹始终生成同一个事故编号、接触类型和混种标本；算力天气则由所选日期确定。`--save` 只会把混种放进一次本地外来标本柜，不是必选项，也不会改变成长速度、评分或 Token 激励。保存后可用 `encounter host` 让它进入生态舱，`encounter release` 结束共处，`encounter visitors` 始终只是只读档案。
 
-污染编码只包含协议版本和派生外观 ID，不包含精确 Token、来源/模型名、路径、Prompt、回复或请求时间。这个玩法没有服务器、上传、排行榜、战力或 Token 排名。协议、安全边界和收藏逻辑见[本地异变体遭遇](./docs/encounters.zh-CN.md)。
+污染编码只包含协议版本和派生外观 ID，不包含精确 Token、来源/模型名、路径、Prompt、回复或请求时间。这个玩法没有服务器、上传、排行榜、战力或 Token 排名。协议和收藏逻辑见[本地异变体遭遇](./docs/encounters.zh-CN.md)；TUI 接待、入住、共处、档案和隐私边界见[本地访客共处](./docs/visitors.zh-CN.md)。
 
 ### `lab`
 
@@ -380,9 +386,9 @@ anti-ai creature evolve 2
 
 核能巨兽生成器包含 16 个核心形态家族，以及 **204,374,016 种去重基础 ASCII 形态**。本地稳定基因决定器官，使用病型、生态人格、伤疤、成就、异色稀有度和已封存世代嫁接器官继续改写同一条骨架；四个固定馆藏里程碑还可增加 28 种不改变标本指纹的冠层或外骨骼。运行 `anti-ai codex` 可以对照基础容量、展示容量与个人收藏。
 
-`creature habitat` 会把当前标本、活动伴生物、收藏痕迹和后果陈列柜组合成“活体生态舱”。共享场景模型从污染、清醒、悖论各 5 种的 15 个平衡原型中确定一个，再叠加舱内气候、本体姿态、伴生关系、已有事件中的最新痕迹和 30 条双语讽刺短讯。终端、TUI、稳定 JSON 和生态舱 SVG 卡片都消费同一份模型。生态舱快照保持只读，每 7 个阅历日派生一个确定性生态事件，不能靠重复查看或增加 Token 重抽、加速；陈列与两项每日轻互动只会在 TUI 明确确认后写入，且不会改变成长数值。
+`creature habitat` 会把当前标本、活动伴生物、可选外来访客、收藏痕迹和后果陈列柜组合成“活体生态舱”。共享场景模型从污染、清醒、悖论各 5 种的 15 个平衡原型中确定一个，再叠加舱内气候、本体姿态、伴生关系、已有事件中的最新痕迹和 30 条双语讽刺短讯；活动访客会额外增加路线对等的共处诊断、短讯和共同展品。终端、TUI、稳定 JSON 和生态舱 SVG 卡片都消费同一份模型。生态舱快照保持只读，每 7 个阅历日派生一个确定性生态事件，不能靠重复查看或增加 Token 重抽、加速；陈列、访客共处与两项每日轻互动都需要明确操作，且不会改变成长数值。
 
-生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；代谢证据与被动研究见[Token 代谢门诊](./docs/clinic.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；十格探索见[收容远征](./docs/expeditions.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Token Metabolic Clinic](./docs/clinic.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Containment Expeditions](./docs/expeditions.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
+生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；代谢证据与被动研究见[Token 代谢门诊](./docs/clinic.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；十格探索见[收容远征](./docs/expeditions.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)；无服务器接待与共处见[本地访客共处](./docs/visitors.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Token Metabolic Clinic](./docs/clinic.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Containment Expeditions](./docs/expeditions.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md) · [Local Visitor Stays](./docs/visitors.md)。
 
 ### `doctor`
 
@@ -519,6 +525,7 @@ npm run test:package
 - `src/companion.mjs`：伴生绑定、印记、路线和 ASCII 成长
 - `src/habitat.mjs`：只读关系、场景装饰和七日生态事件
 - `src/habitat-scenes.mjs`：确定性活体场景原型、时段、姿态、短讯与近期痕迹
+- `src/visitation.mjs`：本地访客档案、共处状态约束与确定性关系投影
 - `src/expedition.mjs`：不累计的十格远征、变化、遗物与成就
 - `src/expedition/`：双语远征内容与隐私安全展示
 - `src/shared.mjs`：共享的语言和空统计结构
@@ -526,6 +533,7 @@ npm run test:package
 - `docs/creature.zh-CN.md`：完整的异变体系统与理论物种容量指南
 - `docs/companions.zh-CN.md`：完整的伴生异物成长指南
 - `docs/habitat.zh-CN.md`：完整的收容生态舱指南
+- `docs/visitors.zh-CN.md`：完整的本地访客档案与共处指南
 - `docs/expeditions.zh-CN.md`：完整的收容远征指南
 - `docs/chronicle.zh-CN.md`：完整的异变年鉴与病理套组指南
 

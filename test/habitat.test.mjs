@@ -79,7 +79,7 @@ test("creature habitat derives a deterministic read-only snapshot", (t) => {
   assert.equal(repeated.stdout, first.stdout);
   assert.equal(existsSync(statePath), false);
   const habitat = JSON.parse(first.stdout);
-  assert.equal(habitat.version, 2);
+  assert.equal(habitat.version, 3);
   assert.equal(habitat.date, "2026-07-23");
   assert.equal(habitat.status, "solitary");
   assert.equal(habitat.specimen.experienceDays, 0);

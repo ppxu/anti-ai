@@ -46,6 +46,11 @@ import {
 import { settleCreatureState } from "./settlement.mjs";
 import { deriveTuiSnapshot } from "./tui.mjs";
 import { CLINIC_PROTOCOLS } from "../clinic-studies.mjs";
+import {
+  executeVisitationMutation,
+  executeVisitorIntake,
+  previewVisitorIntake,
+} from "./visitation.mjs";
 
 function actionDate(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -748,6 +753,26 @@ async function createContainmentSession(options = {}) {
   const { date } = actionDate(options);
   const lang = options.lang ?? "zh";
   let state = await loadCreatureState();
+  const recoverVisitorFailure = async (error) => {
+    state = await loadCreatureState();
+    const conflict = error instanceof StateConflictError;
+    return {
+      status: "failed",
+      reason: conflict ? "state_conflict" : "execution_failed",
+      reasonLabel: conflict
+        ? localized(
+            lang,
+            "访客档案刚被另一个进程更新；本次操作已取消，并重新载入最新档案。",
+            "Another process updated the visitor archive; this operation was cancelled and the latest file was reloaded.",
+          )
+        : localized(
+            lang,
+            "访客操作失败，档案未被覆盖。请返回后重试。",
+            "The visitor operation failed without overwriting the archive. Return and retry.",
+          ),
+      snapshot: deriveTuiSnapshot(state, date, lang),
+    };
+  };
   return {
     snapshot: deriveTuiSnapshot(state, date, lang),
     actionController: {
@@ -780,6 +805,66 @@ async function createContainmentSession(options = {}) {
                 ),
             snapshot: deriveTuiSnapshot(state, date, lang),
           };
+        }
+      },
+    },
+    visitorController: {
+      preview: (code) => previewVisitorIntake(
+        code,
+        { ...options, date, lang },
+        { state },
+      ),
+      receive: async (preview) => {
+        try {
+          const result = await executeVisitorIntake(
+            preview,
+            { ...options, date, lang },
+            { state },
+          );
+          return {
+            ...result,
+            snapshot: deriveTuiSnapshot(state, date, lang),
+          };
+        } catch (error) {
+          return recoverVisitorFailure(error);
+        }
+      },
+      host: async (foreignSpecimenId) => {
+        try {
+          const result = await executeVisitationMutation(
+            "host",
+            { date, foreignSpecimenId },
+            { state },
+          );
+          return {
+            status: "completed",
+            changed: result.changed,
+            message: result.changed
+              ? localized(lang, "访客已进入生态舱。", "The visitor entered the Habitat.")
+              : localized(lang, "该访客已经入住。", "The visitor is already hosted."),
+            snapshot: deriveTuiSnapshot(state, date, lang),
+          };
+        } catch (error) {
+          return recoverVisitorFailure(error);
+        }
+      },
+      release: async () => {
+        try {
+          const result = await executeVisitationMutation(
+            "release",
+            { date },
+            { state },
+          );
+          return {
+            status: "completed",
+            changed: result.changed,
+            message: result.changed
+              ? localized(lang, "当前访客已送离。", "The active visitor was released.")
+              : localized(lang, "当前没有访客。", "There is no active visitor."),
+            snapshot: deriveTuiSnapshot(state, date, lang),
+          };
+        } catch (error) {
+          return recoverVisitorFailure(error);
         }
       },
     },

@@ -33,6 +33,27 @@ import {
   writeOpenCodeDb,
   writeOpenCodeSessionMessageDb,
 } from "./helpers.mjs";
+import {
+  VISITOR_CONTENT,
+  visitationCopy,
+} from "../src/visitation-content.mjs";
+
+test("visitor cohabitation content is route-balanced", () => {
+  for (const routeId of ["pollution", "clarity", "paradox"]) {
+    assert.equal(VISITOR_CONTENT[routeId].relationships.length, 4);
+    assert.equal(VISITOR_CONTENT[routeId].bulletins.length, 4);
+    assert.equal(VISITOR_CONTENT[routeId].exhibits.length, 4);
+    assert.equal(
+      new Set(VISITOR_CONTENT[routeId].relationships.map(({ id }) => id)).size,
+      4,
+    );
+    assert.ok(
+      VISITOR_CONTENT[routeId].relationships.every(({ id }) =>
+        id.startsWith(`${routeId}_`)
+      ),
+    );
+  }
+});
 
 test("creature export emits a versioned privacy-safe pollution code", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-creature-export-"));
@@ -329,10 +350,289 @@ test("encounter save bottles one privacy-safe foreign specimen in the codex", (t
     "utf8",
   );
   const state = JSON.parse(savedState);
-  assert.equal(state.schemaVersion, 15);
+  assert.equal(state.schemaVersion, 16);
   assert.equal(state.foreignSpecimens.length, 1);
   assert.doesNotMatch(
     savedState,
     /pollutionCode|exactTokens|modelName|conversation|session\.jsonl/,
   );
+});
+
+test("saved encounters appear in a read-only visitor archive", (t) => {
+  const localHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-visitor-archive-local-"),
+  );
+  const visitorHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-visitor-archive-remote-"),
+  );
+  t.after(() => {
+    rmSync(localHome, { recursive: true, force: true });
+    rmSync(visitorHome, { recursive: true, force: true });
+  });
+  const visitor = JSON.parse(
+    runCli(
+      ["creature", "export", "--date", "2026-07-23", "--json"],
+      {
+        HOME: visitorHome,
+        ANTI_AI_CREATURE_SEED: "visitor-archive-remote",
+      },
+    ).stdout,
+  );
+  const env = {
+    HOME: localHome,
+    ANTI_AI_CREATURE_SEED: "visitor-archive-local",
+  };
+  const saved = runCli(
+    ["encounter", visitor.code, "--date", "2026-07-23", "--save", "--json"],
+    env,
+  );
+  assert.equal(saved.status, 0, saved.stderr);
+
+  const statePath = path.join(localHome, ".anti-ai", "creature.json");
+  const before = readFileSync(statePath, "utf8");
+  const archive = runCli(
+    ["encounter", "visitors", "--date", "2026-07-24", "--json"],
+    env,
+  );
+  const after = readFileSync(statePath, "utf8");
+
+  assert.equal(archive.status, 0, archive.stderr);
+  assert.equal(after, before);
+  assert.deepEqual(JSON.parse(archive.stdout), {
+    version: 1,
+    date: "2026-07-24",
+    activeStayId: null,
+    visitors: [
+      {
+        id: JSON.parse(saved.stdout).encounterId,
+        collectedAt: "2026-07-23",
+        specimenId: JSON.parse(saved.stdout).hybrid.specimenId,
+        fingerprint: JSON.parse(saved.stdout).hybrid.fingerprint,
+        formId: JSON.parse(saved.stdout).hybrid.formId,
+        ecology: JSON.parse(saved.stdout).hybrid.ecology,
+        pathology: JSON.parse(saved.stdout).hybrid.pathology,
+        status: "archived",
+        admittedAt: null,
+      },
+    ],
+  });
+});
+
+test("visitor hosting and release are explicit, idempotent, and date bounded", (t) => {
+  const localHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-visitor-host-local-"),
+  );
+  const visitorHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-visitor-host-remote-"),
+  );
+  t.after(() => {
+    rmSync(localHome, { recursive: true, force: true });
+    rmSync(visitorHome, { recursive: true, force: true });
+  });
+  const visitor = JSON.parse(
+    runCli(
+      ["creature", "export", "--date", "2026-07-23", "--json"],
+      {
+        HOME: visitorHome,
+        ANTI_AI_CREATURE_SEED: "visitor-host-remote",
+      },
+    ).stdout,
+  );
+  const env = {
+    HOME: localHome,
+    ANTI_AI_CREATURE_SEED: "visitor-host-local",
+  };
+  const saved = JSON.parse(
+    runCli(
+      ["encounter", visitor.code, "--date", "2026-07-23", "--save", "--json"],
+      env,
+    ).stdout,
+  );
+
+  const hosted = runCli(
+    ["encounter", "host", saved.encounterId, "--date", "2026-07-24", "--json"],
+    env,
+  );
+  const repeated = runCli(
+    ["encounter", "host", saved.encounterId, "--date", "2026-07-24", "--json"],
+    env,
+  );
+  assert.equal(hosted.status, 0, hosted.stderr);
+  assert.equal(repeated.status, 0, repeated.stderr);
+  assert.equal(JSON.parse(hosted.stdout).changed, true);
+  assert.equal(JSON.parse(repeated.stdout).changed, false);
+
+  const active = JSON.parse(
+    runCli(
+      ["encounter", "visitors", "--date", "2026-07-24", "--json"],
+      env,
+    ).stdout,
+  );
+  assert.match(active.activeStayId, /^stay-[a-f0-9]{12}-2026-07-24$/u);
+  assert.equal(active.visitors[0].status, "active");
+  assert.equal(active.visitors[0].admittedAt, "2026-07-24");
+
+  const released = runCli(
+    ["encounter", "release", "--date", "2026-07-25", "--json"],
+    env,
+  );
+  const releasedAgain = runCli(
+    ["encounter", "release", "--date", "2026-07-25", "--json"],
+    env,
+  );
+  assert.equal(released.status, 0, released.stderr);
+  assert.equal(releasedAgain.status, 0, releasedAgain.stderr);
+  assert.equal(JSON.parse(released.stdout).changed, true);
+  assert.equal(JSON.parse(releasedAgain.stdout).changed, false);
+
+  const historical = JSON.parse(
+    runCli(
+      ["encounter", "visitors", "--date", "2026-07-24", "--json"],
+      env,
+    ).stdout,
+  );
+  const current = JSON.parse(
+    runCli(
+      ["encounter", "visitors", "--date", "2026-07-25", "--json"],
+      env,
+    ).stdout,
+  );
+  assert.equal(historical.visitors[0].status, "active");
+  assert.equal(current.activeStayId, null);
+  assert.equal(current.visitors[0].status, "archived");
+
+  const rollback = runCli(
+    ["encounter", "host", saved.encounterId, "--date", "2026-07-24"],
+    env,
+  );
+  assert.equal(rollback.status, 2);
+  assert.match(rollback.stderr, /早于最近一次访客操作/);
+
+  const invalid = runCli(
+    ["encounter", "host", "missing", "--date", "2026-07-25"],
+    env,
+  );
+  assert.equal(invalid.status, 2);
+  assert.match(invalid.stderr, /未找到外来标本/);
+
+  const stateText = readFileSync(
+    path.join(localHome, ".anti-ai", "creature.json"),
+    "utf8",
+  );
+  const state = JSON.parse(stateText);
+  assert.equal(state.schemaVersion, 16);
+  assert.equal(state.visitation.stays.length, 1);
+  assert.equal(state.visitation.stays[0].releasedAt, "2026-07-25");
+  assert.doesNotMatch(
+    stateText,
+    /pollutionCode|exactTokens|modelName|sourceName|prompt|response|conversation/i,
+  );
+});
+
+test("an active visitor creates one deterministic date-driven Habitat projection", (t) => {
+  const localHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-visitor-habitat-local-"),
+  );
+  const visitorHome = mkdtempSync(
+    path.join(tmpdir(), "anti-ai-visitor-habitat-remote-"),
+  );
+  t.after(() => {
+    rmSync(localHome, { recursive: true, force: true });
+    rmSync(visitorHome, { recursive: true, force: true });
+  });
+  const visitor = JSON.parse(
+    runCli(
+      ["creature", "export", "--date", "2026-07-23", "--json"],
+      {
+        HOME: visitorHome,
+        ANTI_AI_CREATURE_SEED: "visitor-habitat-remote",
+      },
+    ).stdout,
+  );
+  const env = {
+    HOME: localHome,
+    ANTI_AI_CREATURE_SEED: "visitor-habitat-local",
+  };
+  const saved = JSON.parse(
+    runCli(
+      ["encounter", visitor.code, "--date", "2026-07-23", "--save", "--json"],
+      env,
+    ).stdout,
+  );
+  assert.equal(
+    runCli(
+      ["encounter", "host", saved.encounterId, "--date", "2026-07-23"],
+      env,
+    ).status,
+    0,
+  );
+
+  const statePath = path.join(localHome, ".anti-ai", "creature.json");
+  const before = readFileSync(statePath, "utf8");
+  const arrival = runCli(
+    ["creature", "habitat", "--date", "2026-07-23", "--json"],
+    env,
+  );
+  const repeated = runCli(
+    ["creature", "habitat", "--date", "2026-07-23", "--json"],
+    env,
+  );
+  const resident = runCli(
+    ["creature", "habitat", "--date", "2026-07-30", "--json"],
+    env,
+  );
+  const after = readFileSync(statePath, "utf8");
+
+  assert.equal(arrival.status, 0, arrival.stderr);
+  assert.equal(resident.status, 0, resident.stderr);
+  assert.equal(after, before);
+  assert.deepEqual(JSON.parse(arrival.stdout), JSON.parse(repeated.stdout));
+  const first = JSON.parse(arrival.stdout).visitor;
+  const later = JSON.parse(resident.stdout).visitor;
+  assert.equal(first.foreignSpecimenId, saved.encounterId);
+  assert.equal(first.cohabitationDays, 1);
+  assert.equal(first.stageId, "intake");
+  assert.match(first.relationshipId, /^(pollution|clarity|paradox)_/u);
+  assert.match(first.bulletinId, /^(pollution|clarity|paradox)_/u);
+  assert.match(first.exhibit.id, /^(pollution|clarity|paradox)_/u);
+  assert.equal(later.cohabitationDays, 8);
+  assert.equal(later.stageId, "resident");
+  assert.deepEqual(later.appearance, first.appearance);
+  assert.doesNotMatch(
+    JSON.stringify(first),
+    /exactTokens|modelName|sourceName|filePath|prompt|response|conversation/i,
+  );
+
+  const human = runCli(
+    ["creature", "habitat", "--date", "2026-07-30", "--lang", "en"],
+    env,
+  );
+  assert.equal(human.status, 0, human.stderr);
+  assert.match(human.stdout, /VISITOR BAY/);
+  assert.match(human.stdout, /COHABITATION DIAGNOSIS/);
+  assert.match(human.stdout, /JOINT EXHIBIT/);
+  assert.doesNotMatch(human.stdout, /[\p{Script=Han}]/u);
+
+  const card = runCli(
+    ["share", "--card", "habitat", "--date", "2026-07-30", "--lang", "en"],
+    env,
+  );
+  const relationship = visitationCopy(
+    "relationships",
+    later.routeId,
+    later.relationshipId,
+    "en",
+  );
+  const exhibit = visitationCopy(
+    "exhibits",
+    later.routeId,
+    later.exhibit.id,
+    "en",
+  );
+  assert.equal(card.status, 0, card.stderr);
+  assert.match(card.stdout, /VISITOR COHABITATION/);
+  assert.ok(card.stdout.includes(relationship.name));
+  assert.ok(card.stdout.includes(exhibit.name));
+  assert.doesNotMatch(card.stdout, /AA1\.|exactTokens|modelName|prompt|response/u);
+  assert.equal(readFileSync(statePath, "utf8"), before);
 });

@@ -63,7 +63,10 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
-  assert.match(skill, /schema v15/);
+  assert.match(skill, /schema v16/);
+  assert.match(skill, /encounter visitors/);
+  assert.match(skill, /host <foreign-specimen-id>/);
+  assert.match(skill, /pollution code must never enter persisted state/i);
   assert.match(skill, /correlation.*not.*productivity|相关性.*不.*生产力/is);
   assert.match(skill, /missed days.*never reset|漏日.*不清零/is);
   assert.match(skill, /does not.*abilities.*experience.*rarity.*collection|不.*能力.*阅历.*稀有.*收藏/is);

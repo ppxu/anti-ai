@@ -165,7 +165,7 @@ test("expedition start seals one deterministic ten-cell run without rerolls", (t
   const state = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(state.schemaVersion, 15);
+  assert.equal(state.schemaVersion, 16);
   assert.equal(state.expeditions.lastStartedExperienceDay, 1);
   assert.equal(state.expeditions.active.eventPlan.length, 10);
   assert.equal(new Set(state.expeditions.active.eventPlan).size, 10);
@@ -795,7 +795,7 @@ test("schema v13 migrates read-only until the first explicit expedition write", 
   );
   assert.equal(started.status, 0, started.stderr);
   const migrated = JSON.parse(readFileSync(statePath, "utf8"));
-  assert.equal(migrated.schemaVersion, 15);
+  assert.equal(migrated.schemaVersion, 16);
   assert.equal(migrated.expeditions.active.destinationId, "context_mine");
   const backupDirectory = path.join(home, ".anti-ai", "backups");
   const backups = readdirSync(backupDirectory);

@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-08-12
+
+### Added
+
+- Added a local Visitor Archive and explicit `encounter visitors`, `encounter host <foreign-specimen-id>`, and `encounter release` commands on top of the existing AA1 pollution-code protocol.
+- Added a Habitat visitor intake desk to the TUI with paste, validation, privacy preview, explicit confirmation, archive browsing, hosting, and release without adding another top-level area.
+- Added deterministic date-driven visitor cohabitation with route-balanced relationship diagnoses, bulletins, and joint exhibits shared by terminal, TUI, JSON, and Habitat SVG views.
+
+### Changed
+
+- Advanced Creature state from schema v15 to v16 with a versioned visitor-stay ledger. Existing foreign specimens remain compatible and old files migrate to an empty ledger without inventing visitors or stays.
+- Expanded Living Habitat from the specimen/companion scene to an optional third visitor bay while preserving companion growth, the five-area TUI structure, the 134-entry fixed Codex denominator, and AA1 compatibility.
+- Updated bilingual READMEs, Visitor/Encounter and Habitat guides, architecture/security/contribution guidance, AGENTS.md, Explain, nested Help, and the installable Agent Skill.
+
+### Security
+
+- Pollution codes are treated as untrusted, capped at 2,048 characters, checksum-validated, previewed before storage, and never persisted. Visitor records retain only existing derived foreign-specimen appearance data and stable stay/date IDs.
+- Visitor browsing and Habitat projection are read-only. Intake, hosting, and release require explicit CLI or TUI input and use the same validated atomic optimistic-concurrency store; they grant no abilities, experience, Ecology, rarity, collection odds, companion growth, Expedition opportunities, or Token rewards.
+- This release adds no server, account, network request, telemetry, background process, required runtime dependency, leaderboard, chat, friend graph, or raw-log exchange.
+
 ## [3.8.0] - 2026-08-12
 
 ### Added

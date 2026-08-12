@@ -83,6 +83,45 @@ function validateNestedCollections(state) {
       throw new Error(`Invalid creature state field: clinic.studies.${index}`);
     }
   }
+
+  assertPlainObject(state.visitation, "visitation");
+  assertArray(state.visitation?.stays, "visitation.stays");
+  if (state.visitation && state.visitation.version !== 1) {
+    throw new Error("Invalid creature state field: visitation.version");
+  }
+  if (
+    state.visitation?.activeStayId !== undefined &&
+    state.visitation.activeStayId !== null &&
+    typeof state.visitation.activeStayId !== "string"
+  ) {
+    throw new Error("Invalid creature state field: visitation.activeStayId");
+  }
+  for (const [index, stay] of (state.visitation?.stays ?? []).entries()) {
+    if (
+      !isPlainObject(stay) ||
+      typeof stay.id !== "string" || stay.id.length === 0 ||
+      typeof stay.foreignSpecimenId !== "string" ||
+      stay.foreignSpecimenId.length === 0 ||
+      !DATE_PATTERN.test(stay.admittedAt ?? "") ||
+      (stay.releasedAt !== null && !DATE_PATTERN.test(stay.releasedAt ?? "")) ||
+      (stay.releasedAt !== null && stay.releasedAt < stay.admittedAt)
+    ) {
+      throw new Error(`Invalid creature state field: visitation.stays.${index}`);
+    }
+  }
+  if (state.visitation) {
+    const openStayIds = state.visitation.stays
+      .filter(({ releasedAt }) => releasedAt === null)
+      .map(({ id }) => id);
+    if (
+      openStayIds.length > 1 ||
+      (openStayIds.length === 1 &&
+        state.visitation.activeStayId !== openStayIds[0]) ||
+      (openStayIds.length === 0 && state.visitation.activeStayId !== null)
+    ) {
+      throw new Error("Invalid creature state field: visitation.activeStayId");
+    }
+  }
 }
 
 function validateCreatureStateEnvelope(state, currentVersion) {

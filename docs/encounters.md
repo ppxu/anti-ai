@@ -43,6 +43,8 @@ Saving is idempotent: the same incident cannot create duplicate inventory. A sav
 
 Saved foreign specimens can later be referenced by `anti-ai lab` formulas. Laboratory incubation never consumes or rewrites the encounter record. See [Pollution Laboratory](./laboratory.md).
 
+They can also enter the local Habitat through the Visitor Archive. This is an explicit presentation-only stay, not another growth system. See [Local Visitor Stays](./visitors.md).
+
 ## Pollution-code protocol
 
 Version 1 uses:

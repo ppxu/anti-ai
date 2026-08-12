@@ -51,6 +51,8 @@ import {
   deriveSealedClinicTrends,
 } from "../clinic-studies.mjs";
 import { DIAGNOSIS_CONTENT, STUDY_RESULTS } from "../renderers/clinic.mjs";
+import { visitationCopy } from "../visitation-content.mjs";
+import { deriveVisitorArchive } from "../visitation.mjs";
 
 const ANSI_PATTERN = /\u001B\[[0-9;]*m/g;
 
@@ -716,6 +718,36 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
   ) ?? null;
   const presentedDay = brief.day ? archiveDayPresentation(brief.day, lang) : null;
   const habitatScene = presentHabitatScene(habitat.scene, lang);
+  const habitatVisitor = habitat.visitor
+    ? {
+        ...habitat.visitor,
+        art: creatureArt({ appearance: habitat.visitor.appearance })
+          .replaceAll(ANSI_PATTERN, "")
+          .split("\n")
+          .filter(Boolean),
+        relationship: visitationCopy(
+          "relationships",
+          habitat.visitor.routeId,
+          habitat.visitor.relationshipId,
+          lang,
+        ),
+        bulletin: visitationCopy(
+          "bulletins",
+          habitat.visitor.routeId,
+          habitat.visitor.bulletinId,
+          lang,
+        ),
+        exhibit: {
+          ...habitat.visitor.exhibit,
+          ...visitationCopy(
+            "exhibits",
+            habitat.visitor.routeId,
+            habitat.visitor.exhibit.id,
+            lang,
+          ),
+        },
+      }
+    : null;
   const dailyBriefing = deriveDailyBriefing({
     date,
     status,
@@ -726,6 +758,11 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     recommendation: primaryAction,
     lang,
   });
+  const visitors = deriveVisitorArchive(state, date);
+  visitors.visitors = visitors.visitors.map((visitor) => ({
+    ...visitor,
+    label: creatureLabel("ecologyForms", visitor.formId, lang),
+  }));
 
   return {
     version: 3,
@@ -736,6 +773,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     primaryAction,
     clinic,
     dailyBriefing,
+    visitors,
     navigation: tuiCopy(lang).navigation,
     expedition: {
       ...expedition,
@@ -813,6 +851,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     },
     habitat: {
       ...habitat,
+      visitor: habitatVisitor,
       specimen: {
         ...habitat.specimen,
         collectionPhenotype,

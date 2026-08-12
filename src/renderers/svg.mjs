@@ -19,6 +19,7 @@ import {
   habitatRelationshipCopy,
 } from "../habitat.mjs";
 import { presentHabitatScene } from "../habitat-scenes.mjs";
+import { visitationCopy } from "../visitation-content.mjs";
 import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
 
 function escapeXml(value) {
@@ -810,6 +811,28 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
   const traceText = scene.layers.trace
     ? `${scene.layers.trace.label} · ${scene.layers.trace.date}`
     : localized(lang, "尚无近期痕迹", "NO RECENT TRACE");
+  const visitorRelationship = habitat.visitor
+    ? visitationCopy(
+        "relationships",
+        habitat.visitor.routeId,
+        habitat.visitor.relationshipId,
+        lang,
+      )
+    : null;
+  const visitorExhibit = habitat.visitor
+    ? visitationCopy(
+        "exhibits",
+        habitat.visitor.routeId,
+        habitat.visitor.exhibit.id,
+        lang,
+      )
+    : null;
+  const visitorLabel = habitat.visitor
+    ? `${localized(lang, "访客", "VISITOR")} #${habitat.visitor.foreignSpecimenId} · ${visitorRelationship.name}`
+    : localized(lang, "访客位空置", "VISITOR BAY VACANT");
+  const visitorDetail = habitat.visitor
+    ? `${visitorExhibit.glyph} ${visitorExhibit.name} · ${habitat.visitor.cohabitationDays}${localized(lang, " 天", "D")}`
+    : traceText;
   const sceneColor = {
     pollution: "#ff7b72",
     clarity: "#6dd6e7",
@@ -851,12 +874,13 @@ function renderHabitatShareSvg(habitat, labels, lang = "zh") {
   <line x1="72" y1="466" x2="1128" y2="466" stroke="#345247" stroke-width="2"/>
   <text x="72" y="494" class="mono muted" font-size="13">${escapeXml(localized(lang, "关系诊断", "RELATIONSHIP DIAGNOSIS"))}</text>
   <text x="72" y="520" class="mono warn" font-size="15">${escapeXml(truncateSvgText(`${relationName} · ${relationDetail}`, 64))}</text>
-  <text x="626" y="494" class="mono muted" font-size="13">${escapeXml(localized(lang, "近期痕迹", "RECENT TRACE"))}</text>
-  <text x="626" y="520" class="mono scene" font-size="15">${escapeXml(traceText)}</text>
+  <text x="626" y="494" class="mono muted" font-size="13">${escapeXml(habitat.visitor ? localized(lang, "访客共处", "VISITOR COHABITATION") : localized(lang, "近期痕迹", "RECENT TRACE"))}</text>
+  <text x="626" y="520" class="mono scene" font-size="15">${escapeXml(truncateSvgText(visitorLabel, 58))}</text>
+  <text x="626" y="544" class="mono muted" font-size="13">${escapeXml(truncateSvgText(visitorDetail, 58))}</text>
 
-  <line x1="72" y1="552" x2="1128" y2="552" stroke="#345247" stroke-width="2"/>
-  <text x="72" y="580" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
-  <text x="1128" y="580" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
+  <line x1="72" y1="564" x2="1128" y2="564" stroke="#345247" stroke-width="2"/>
+  <text x="72" y="592" class="mono muted" font-size="14">${escapeXml(privacy)}</text>
+  <text x="1128" y="592" class="mono muted" font-size="14" text-anchor="end">anti-ai · github.com/ppxu/anti-ai</text>
 </svg>
 `;
 }

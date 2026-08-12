@@ -353,12 +353,12 @@ test("explain discloses creature growth, chance, recovery, and state privacy", (
   assert.match(result.stdout, /~\/\.anti-ai\/creature\.json/);
   assert.match(
     result.stdout,
-    /schema v14.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*收容事故.*培养物.*伴生绑定\/离散印记\/异常 ID.*陈列条目 ID.*每日轻互动 ID.*远征计划\/事件\/变化\/收藏 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
+    /schema v15.*用量带、派生生态点、基因\/部件 ID、成就.*化石.*进化选择.*转折病例.*收容事故.*培养物.*伴生绑定\/离散印记\/异常 ID.*陈列条目 ID.*每日轻互动 ID.*远征计划\/事件\/变化\/收藏 ID.*代谢诊断\/研究 ID.*不保存精确 Token、模型名、路径、对话或逐请求时间/s,
   );
   assert.match(result.stdout, /anti-ai creature reset/);
 });
 
-test("explain discloses ecology, expedition guardrails, and schema v14", () => {
+test("explain discloses ecology, clinic guardrails, and schema v15", () => {
   const result = runCli(["explain"]);
 
   assert.equal(result.status, 0, result.stderr);
@@ -400,10 +400,14 @@ test("explain discloses ecology, expedition guardrails, and schema v14", () => {
     result.stdout,
     /每个本地自然日.*一局十格收容远征.*不依赖结算.*机会不累计.*Token 量不改变局数、格数、事件、遗物概率或稀有度.*24 件固定遗物.*12 项固定成就/s,
   );
+  assert.match(
+    result.stdout,
+    /Token 代谢门诊.*相关性观察.*最多 14 个活跃日.*至少 3 个.*7.*14.*30 天.*漏日.*不会清零.*不会增加能力、阅历、稀有率或收藏/s,
+  );
   assert.match(result.stdout, /当前目录不可写.*~\/\.anti-ai\/exports/s);
   assert.match(
     result.stdout,
-    /schema v14.*schema v1-v13.*不保存.*精确 Token.*模型名.*路径.*对话/s,
+    /schema v15.*schema v1-v14.*不保存.*精确 Token.*模型名.*路径.*对话/s,
   );
 });
 
@@ -448,10 +452,14 @@ test("doctor, explain, and help support English output", () => {
     explain.stdout,
     /Each local calendar day.*one ten-cell containment expedition.*does not depend on settlement.*opportunities do not stack.*Token volume changes neither run count, cells, event sequence, artifact odds, nor rarity.*24 fixed artifacts.*12 fixed achievements/s,
   );
+  assert.match(
+    explain.stdout,
+    /Token Metabolic Clinic.*correlation.*up to 14 active days.*at least 3.*7-, 14-, and 30-day.*missed days.*never reset.*abilities, experience, rarity, or collection/s,
+  );
   assert.match(explain.stdout, /current directory is not writable.*~\/\.anti-ai\/exports/is);
   assert.match(
     explain.stdout,
-    /schema v14.*schema v1-v13 migrate sequentially.*local backup/s,
+    /schema v15.*schema v1-v14 migrate sequentially.*local backup/s,
   );
   assert.doesNotMatch(explain.stdout, /模型统计|个人基线与判词/);
 
@@ -834,7 +842,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 3.7.0\n");
+  assert.equal(result.stdout, "anti-ai 3.8.0\n");
   assert.equal(result.stderr, "");
 });
 

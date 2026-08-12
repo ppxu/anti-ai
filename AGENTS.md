@@ -42,6 +42,7 @@ Preserve these product rules:
 - `src/application/action-execution.mjs` owns shared CLI/TUI state mutations; command handlers must not duplicate those writes.
 - `src/application/projections.mjs` owns request-local memoized query projections.
 - `src/application/daily-briefing.mjs` owns the deterministic read-only Daily Containment Broadcast; renderers must consume its sections instead of rebuilding priority rules.
+- `src/clinic.mjs` owns pure Token-metabolism diagnosis and trend rules; `src/clinic-studies.mjs` owns passive-study derivation, while `src/application/clinic.mjs` owns the shared explicit study-start mutation.
 - `src/application/tui-controller.mjs` owns explicit ephemeral TUI controller state.
 - `src/application/settlement.mjs` owns the settlement pipeline shared by CLI and TUI.
 - `src/application/creature-casebook.mjs` owns period casebook queries; `src/chronicle.mjs` composes read-only historical and generation projections.
@@ -56,6 +57,7 @@ Preserve these product rules:
 Avoid runtime import cycles, protected-layer inversions, and source modules over 1,500 lines; `npm run check` enforces all three. Register new public IDs centrally instead of adding duplicate allowlists.
 TUI actions must call application services, never command handlers or arbitrary shell commands. Browsing and cancellation stay read-only; mutations require explicit user input. Irreversible or higher-impact actions use a confirmation screen, while focused Expedition start, advance, and branch keys may execute directly when the keypress itself is the documented confirmation.
 Overview must remain broadcast-first with at most one recommended response. Its expanded file and the action center may expose existing detail, but the broadcast cannot invent another daily action or persist an opened/read state.
+Clinic conclusions must expose their evidence boundary, keep missing fields distinct from zero, compare request semantics within each source, and remain correlations rather than productivity, health, or causal claims. Passive studies advance by natural date without check-ins, penalties, acceleration, numeric rewards, or collection progress.
 
 ## State invariants
 
@@ -66,7 +68,7 @@ Overview must remain broadcast-first with at most one recommended response. Its 
 - Never silently rewrite a future or invalid schema.
 - Preserve the exact pre-migration file in the content-addressed backup directory.
 - Reject stale concurrent writes instead of overwriting newer progress.
-- `codex`, every `share` card, `doctor`, `explain`, Help, source-filtered reports, and `today --json` must remain read-only.
+- `clinic`, `clinic history`, `codex`, every `share` card, `doctor`, `explain`, Help, source-filtered reports, and `today --json` must remain read-only. Only explicit `clinic start` may write a study protocol.
 - Only `creature reset` may deliberately delete the gameplay file and migration backups; it must never delete Agent logs.
 
 Never run a stateful command against the developer's real home directory while testing. Use a temporary `HOME` and synthetic records.

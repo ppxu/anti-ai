@@ -49,6 +49,9 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /anti-ai expedition next/);
   assert.match(skill, /anti-ai expedition choose <1\|2\|3>/);
   assert.match(skill, /anti-ai expedition abandon/);
+  assert.match(skill, /anti-ai clinic --json/);
+  assert.match(skill, /anti-ai clinic start <cache-rehab\|context-diet\|load-recovery>/);
+  assert.match(skill, /anti-ai clinic history/);
   assert.match(skill, /anti-ai creature evolve <1\|2\|3>/);
   assert.match(skill, /anti-ai creature reset/);
   assert.match(skill, /deterministic|确定性/i);
@@ -60,7 +63,10 @@ test("skills installer can discover a complete anti-ai agent workflow", async ()
   assert.match(skill, /90 experience days.*permanent fossil/is);
   assert.match(skill, /POLLUTION.*CLARITY.*PARADOX.*choice/is);
   assert.match(skill, /benefit.*cost/is);
-  assert.match(skill, /schema v14/);
+  assert.match(skill, /schema v15/);
+  assert.match(skill, /correlation.*not.*productivity|相关性.*不.*生产力/is);
+  assert.match(skill, /missed days.*never reset|漏日.*不清零/is);
+  assert.match(skill, /does not.*abilities.*experience.*rarity.*collection|不.*能力.*阅历.*稀有.*收藏/is);
   assert.match(skill, /PARASITIC HATCHLING.*SYMBIOTIC ABERRATION.*ACCOMPLICE ORGAN/is);
   assert.match(skill, /one imprint per observed day/i);
   assert.match(skill, /heavy.*restrained.*AI-free.*same rate/is);

@@ -21,6 +21,7 @@ import {
   startExpedition,
 } from "../expedition.mjs";
 import { selectCreatureIncident } from "../incidents.mjs";
+import { startClinicStudy } from "../clinic-studies.mjs";
 import {
   incubateLaboratoryCulture,
   laboratoryView,
@@ -43,6 +44,9 @@ function applyContainmentAction(state, date, actionId, choice) {
   const creature = deriveCreature(state, date);
   if (actionId === "start_expedition") {
     return startExpedition(state, creature, date, choice);
+  }
+  if (actionId === "start_study") {
+    return startClinicStudy(state, date, choice);
   }
   if (actionId === "advance_expedition") {
     return advanceExpedition(state, creature, date);

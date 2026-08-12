@@ -1,4 +1,5 @@
 import {
+  CLINIC_ACTION_IDS,
   CREATURE_ACTION_IDS,
   EXPEDITION_ACTION_IDS,
   EXPLAIN_TOPIC_IDS,
@@ -81,6 +82,19 @@ function parseArgs(argv) {
       } else {
         options.set = rest[++index];
       }
+    } else if (
+      command === "clinic" &&
+      CLINIC_ACTION_IDS.includes(arg) &&
+      options.action === undefined
+    ) {
+      options.action = arg;
+    } else if (
+      command === "clinic" &&
+      options.action === "start" &&
+      options.choice === undefined &&
+      !arg.startsWith("-")
+    ) {
+      options.choice = arg;
     } else if (
       command === "expedition" &&
       EXPEDITION_ACTION_IDS.includes(arg) &&

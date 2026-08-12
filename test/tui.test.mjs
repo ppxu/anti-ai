@@ -109,7 +109,7 @@ test("the TUI snapshot unifies five product areas without mutating state", (t) =
   assert.equal(lockedEntry.provenance, null);
   assert.deepEqual(
     snapshot.overview.actions.map(({ id }) => id),
-    ["start_expedition", "observe_specimen"],
+    ["start_expedition", "start_study"],
   );
   assert.ok(snapshot.expedition.destinations.every(({ mood }) => mood.length > 0));
   assert.equal(
@@ -477,7 +477,7 @@ test("the consequence cabinet and daily interactions persist only explicit narra
   assert.equal(repeated.reason, "already_observed");
 
   const after = JSON.parse(readFileSync(statePath, "utf8"));
-  assert.equal(after.schemaVersion, 14);
+  assert.equal(after.schemaVersion, 15);
   assert.equal(after.cabinet.featured[0], displayKey);
   assert.equal(after.days["2026-07-23"].interactions.observe.targetId, "specimen");
   assert.equal(after.days["2026-07-23"].interactions.contact.targetId, "glass");
@@ -554,6 +554,7 @@ test("the TUI distinguishes a settled AI-free day from an unsettled date", (t) =
       { id: "advance_expedition", available: false, reason: "no_active_expedition" },
       { id: "choose_expedition", available: false, reason: "no_expedition_choice" },
       { id: "abandon_expedition", available: false, reason: "no_active_expedition" },
+      { id: "start_study", available: true, reason: null },
       { id: "observe_specimen", available: false, reason: "date_not_settled" },
       { id: "contact_specimen", available: false, reason: "date_not_settled" },
       { id: "curate_display", available: true, reason: null },

@@ -4,6 +4,7 @@ import {
   expeditionEligibility,
   expeditionLastActionAt,
 } from "../expedition.mjs";
+import { deriveClinicStudyHistory } from "../clinic-studies.mjs";
 import { localized } from "../shared.mjs";
 
 const ACTION_DEFINITIONS = Object.freeze([
@@ -67,6 +68,14 @@ const ACTION_DEFINITIONS = Object.freeze([
     label: ["放弃当前远征", "Abandon the active expedition"],
   },
   {
+    id: "start_study",
+    actor: "observer",
+    target: "clinic",
+    execution: "select",
+    command: () => "anti-ai clinic start <protocol>",
+    label: ["启动一项代谢研究", "Start a metabolic study"],
+  },
+  {
     id: "observe_specimen",
     actor: "observer",
     target: "habitat",
@@ -112,6 +121,7 @@ const REASON_COPY = Object.freeze({
   expedition_used: ["今日远征机会已使用", "Today's expedition opportunity is used"],
   expedition_expired: ["所选日期的机会已过期", "The selected date's opportunity has expired"],
   no_active_expedition: ["当前没有进行中的远征", "No expedition is active"],
+  study_active: ["已有代谢研究正在进行", "A metabolic study is active"],
   expedition_choice_required: ["必须先处理当前分叉", "Resolve the current branch first"],
   no_expedition_choice: ["当前没有待处理分叉", "No expedition branch is pending"],
   expedition_date_before_last_action: [
@@ -159,6 +169,11 @@ function actionAvailability(id, state, date, creature, laboratory) {
     return eligibility.available
       ? { available: true, reason: null }
       : { available: false, reason };
+  }
+  if (id === "start_study") {
+    return deriveClinicStudyHistory(state, date).active
+      ? { available: false, reason: "study_active" }
+      : { available: true, reason: null };
   }
   if (id === "advance_expedition") {
     if (!state.expeditions?.active) {

@@ -45,6 +45,7 @@ import {
 } from "./action-execution.mjs";
 import { settleCreatureState } from "./settlement.mjs";
 import { deriveTuiSnapshot } from "./tui.mjs";
+import { CLINIC_PROTOCOLS } from "../clinic-studies.mjs";
 
 function actionDate(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -240,6 +241,37 @@ function incubationPreview(laboratory, lang, action) {
       detail: `${creatureLabel("ecologies", proposal.ecologyId, lang)} / ${creatureLabel("branches", proposal.pathologyId, lang)} · ${laboratoryLabel("complications", proposal.complicationId, lang)}`,
     })),
     impact: { batch: laboratory.batch },
+  };
+}
+
+function studyPreview(lang, action) {
+  return {
+    ...action,
+    title: localized(lang, "启动代谢研究", "START METABOLIC STUDY"),
+    summary: localized(
+      lang,
+      "选择一项按自然日推进的被动观察课题。",
+      "Choose one passive observation driven by calendar days.",
+    ),
+    warning: localized(
+      lang,
+      "同时只能进行一项；漏日不清零、不惩罚、不延长，也不提供成长奖励。",
+      "Only one can run at a time; missed days never reset, punish, or extend it, and studies grant no growth reward.",
+    ),
+    irreversible: true,
+    choices: CLINIC_PROTOCOLS.map((protocol) => ({
+      id: protocol.cli,
+      label: localized(lang, ...protocol.labels),
+      detail: localized(
+        lang,
+        `${protocol.durationDays} 个自然日 · 被动观察`,
+        `${protocol.durationDays} calendar days · passive observation`,
+      ),
+    })),
+    impact: {
+      durationOptions: CLINIC_PROTOCOLS.map(({ durationDays }) => durationDays).join(" / "),
+      numericRewards: localized(lang, "无", "NONE"),
+    },
   };
 }
 
@@ -490,6 +522,9 @@ async function previewContainmentAction(actionId, options = {}, session = {}) {
   if (actionId === "incubate") {
     return incubationPreview(context.laboratory, lang, action);
   }
+  if (actionId === "start_study") {
+    return studyPreview(lang, action);
+  }
   if (actionId === "observe_specimen") {
     return interactionPreview(state, date, lang, action, "observe");
   }
@@ -616,6 +651,18 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
     return completeAction(actionId, selected.state, date, lang, selected.result, [
       "培养事故已入架。实验室再次把意外写成了流程。",
       "The incubation accident is shelved. The lab has documented surprise as procedure.",
+    ]);
+  }
+  if (actionId === "start_study") {
+    const selected = await executeContainmentMutation(
+      actionId,
+      { ...options, date, lang },
+      { state },
+    );
+    if (selected.status !== "completed") return failedAction(actionId, selected.reason);
+    return completeAction(actionId, selected.state, date, lang, selected.result, [
+      "代谢研究已启动。接下来不需要打卡，门诊会安静地数日历。",
+      "Metabolic study started. No check-in is required; the clinic will quietly count calendar days.",
     ]);
   }
   if (

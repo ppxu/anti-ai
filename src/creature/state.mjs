@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 
 import { ensureConsequenceCabinetState } from "../consequence-cabinet.mjs";
+import { SIGNAL_FIELDS } from "../clinic.mjs";
+import { clinicProtocol, ensureClinicState } from "../clinic-studies.mjs";
 import { validateCreatureStateEnvelope } from "../core/creature-state.mjs";
 import { ensureExpeditionState } from "../expedition.mjs";
 import { ensureIncidentState } from "../incidents.mjs";
@@ -14,7 +16,7 @@ import {
 import { creatureAppearanceState } from "./appearance.mjs";
 import { CREATURE_CONTENT_VERSION } from "./content.mjs";
 
-const CREATURE_STATE_SCHEMA_VERSION = 14;
+const CREATURE_STATE_SCHEMA_VERSION = 15;
 
 function ensureAppearanceState(state) {
   state.appearance ??= creatureAppearanceState(state.seed);
@@ -121,6 +123,7 @@ const CREATURE_STATE_MIGRATIONS = new Map([
   [11, ensureConsequenceCabinetState],
   [12, ensureCreatureContentVersion],
   [13, ensureExpeditionState],
+  [14, ensureClinicState],
 ]);
 
 function migrateCreatureState(state, growth) {
@@ -148,6 +151,7 @@ function migrateCreatureState(state, growth) {
   ensureConsequenceCabinetState(state);
   ensureCreatureContentVersion(state);
   ensureExpeditionState(state);
+  ensureClinicState(state);
   ensureDailyGrowthState(state, growth);
   return state;
 }
@@ -157,10 +161,27 @@ function creatureStatePath() {
 }
 
 function validateCreatureState(state) {
-  return validateCreatureStateEnvelope(
+  validateCreatureStateEnvelope(
     state,
     CREATURE_STATE_SCHEMA_VERSION,
   );
+  for (const [index, study] of (state.clinic?.studies ?? []).entries()) {
+    if (!clinicProtocol(study.protocolId)) {
+      throw new Error(`Invalid creature state field: clinic.studies.${index}`);
+    }
+  }
+  for (const [date, day] of Object.entries(state.days)) {
+    if (!day.metabolism) continue;
+    if (
+      !Object.hasOwn(SIGNAL_FIELDS, day.metabolism.mainDiagnosisId) ||
+      day.metabolism.signals.some(
+        ({ id }) => !Object.hasOwn(SIGNAL_FIELDS, id),
+      )
+    ) {
+      throw new Error(`Invalid creature state field: days.${date}.metabolism`);
+    }
+  }
+  return state;
 }
 
 async function loadCreatureState(growth) {

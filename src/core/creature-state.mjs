@@ -20,6 +20,13 @@ function assertArray(value, field) {
   }
 }
 
+function assertStringArray(value, field) {
+  assertArray(value, field);
+  if (value !== undefined && value.some((entry) => typeof entry !== "string")) {
+    throw new Error(`Invalid creature state field: ${field}`);
+  }
+}
+
 function validateNestedCollections(state) {
   assertPlainObject(state.appearance, "appearance");
   assertPlainObject(state.achievements, "achievements");
@@ -57,6 +64,25 @@ function validateNestedCollections(state) {
   ) {
     throw new Error("Invalid creature state field: expeditions.active");
   }
+
+  assertPlainObject(state.clinic, "clinic");
+  assertArray(state.clinic?.studies, "clinic.studies");
+  if (state.clinic && state.clinic.version !== 1) {
+    throw new Error("Invalid creature state field: clinic.version");
+  }
+  for (const [index, study] of (state.clinic?.studies ?? []).entries()) {
+    if (
+      !isPlainObject(study) ||
+      typeof study.id !== "string" || study.id.length === 0 ||
+      typeof study.protocolId !== "string" || study.protocolId.length === 0 ||
+      !DATE_PATTERN.test(study.startedAt ?? "") ||
+      !DATE_PATTERN.test(study.endsAt ?? "") ||
+      study.startedAt > study.endsAt ||
+      study.contentVersion !== 1
+    ) {
+      throw new Error(`Invalid creature state field: clinic.studies.${index}`);
+    }
+  }
 }
 
 function validateCreatureStateEnvelope(state, currentVersion) {
@@ -85,6 +111,37 @@ function validateCreatureStateEnvelope(state, currentVersion) {
     }
     for (const field of ["achievementUnlockIds", "talentUnlockIds"]) {
       assertArray(day[field], `days.${date}.${field}`);
+    }
+    assertPlainObject(day.metabolism, `days.${date}.metabolism`);
+    if (day.metabolism) {
+      const metabolism = day.metabolism;
+      if (
+        metabolism.version !== 1 ||
+        typeof metabolism.mainDiagnosisId !== "string" ||
+        !Number.isInteger(metabolism.baselineActiveDays) ||
+        metabolism.baselineActiveDays < 0 ||
+        typeof metabolism.provisional !== "boolean"
+      ) {
+        throw new Error(`Invalid creature state field: days.${date}.metabolism`);
+      }
+      assertArray(metabolism.signals, `days.${date}.metabolism.signals`);
+      for (const [index, signal] of metabolism.signals.entries()) {
+        if (
+          !isPlainObject(signal) ||
+          typeof signal.id !== "string" ||
+          typeof signal.severityBand !== "string"
+        ) {
+          throw new Error(
+            `Invalid creature state field: days.${date}.metabolism.signals.${index}`,
+          );
+        }
+      }
+      for (const field of ["fieldsUsed", "sourceIds", "excludedSourceIds"]) {
+        assertStringArray(
+          metabolism[field],
+          `days.${date}.metabolism.${field}`,
+        );
+      }
     }
   }
 

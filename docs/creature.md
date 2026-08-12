@@ -336,7 +336,7 @@ State lives at:
 ~/.anti-ai/creature.json
 ```
 
-The current schema is v14. It stores only:
+The current schema is v15. It stores only:
 
 - discrete usage bands and derived Ecology points;
 - integer content versions for settled days and generation choices, so v1 history is never rerolled by v2 content pools;
@@ -353,11 +353,12 @@ The current schema is v14. It stores only:
 - up to three stable Consequence Cabinet collection keys;
 - at most one Observation target/reaction ID and one Contact target/reaction ID per settled day;
 - stable expedition destinations, event plans, revealed events, choices, effects, artifacts, achievements, status, sequence, experience-day, and date fields;
+- privacy-safe daily metabolism diagnosis, signal, field, source, exclusion, evidence-band IDs, plus passive-study protocol and date IDs;
 - a local seed.
 
 It does **not** store prompts, responses, paths, model names, exact Token totals, personal-baseline values, or per-request timestamps.
 
-Schema v1-v13 files migrate sequentially and idempotently without losing existing ability points or inventing case choices, containment incidents, expeditions, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, anomalies, or v2 discoveries. Missing historical content versions become v1; only newly settled days and newly sealed evolution choices use v2 pools. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` derives a read-only snapshot without persisting another migration.
+Schema v1-v14 files migrate sequentially and idempotently without losing existing ability points or inventing diagnoses, studies, case choices, containment incidents, expeditions, laboratory cultures, companion bonds, Cabinet displays, daily interactions, imprints, anomalies, or v2 discoveries. Missing historical content versions become v1; only newly settled days and newly sealed evolution choices use v2 pools. The first persisted migration keeps an exact original backup under `~/.anti-ai/backups/`. Existing daily gains are reinterpreted into the 255-point cycle, so an old total such as 267 becomes `MALIGNANT I · 12/255` rather than being truncated. `anti-ai codex` and Clinic browsing derive read-only snapshots without persisting another migration.
 
 One mutation history always uses the complete supported data set, so `creature`, `codex`, and `lab` reject `--source` filters.
 

@@ -83,6 +83,6 @@ Artifacts and achievements add collection history only. They grant no combat pow
 
 ## State and privacy
 
-Creature schema v14 adds one `expeditions` section to the existing `~/.anti-ai/creature.json` file. It stores stable destination, event, choice, effect, artifact, achievement, status, sequence, experience-day, and date fields plus a derived local plan hash. It does not store prompts, responses, paths, model names, exact Tokens, request counts, or per-request timestamps.
+The Expedition section was introduced in schema v14 and remains unchanged in current schema v15. It stores stable destination, event, choice, effect, artifact, achievement, status, sequence, experience-day, and date fields plus a derived local plan hash. It does not store prompts, responses, paths, model names, exact Tokens, request counts, or per-request timestamps.
 
 Schema v13 migrates to an empty expedition history; migration never invents past runs or discoveries. The first persisted migration keeps the existing exact local backup, and writes retain the same atomic lock and optimistic-concurrency checks as every other creature action.

@@ -102,6 +102,13 @@ anti-ai week --date 2026-07-23
 anti-ai month
 anti-ai month --date 2026-07-23
 
+anti-ai clinic
+anti-ai clinic --json
+anti-ai clinic start cache-rehab
+anti-ai clinic start context-diet
+anti-ai clinic start load-recovery
+anti-ai clinic history
+
 anti-ai tui
 anti-ai tui --lang en
 anti-ai tui --no-motion
@@ -179,7 +186,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json`、`codex --json`、`creature --json`、`encounter --json`、`lab --json` 和 `expedition --json` 不受展示语言影响，字段名和结构保持稳定。
+`today --json`、`codex --json`、`creature --json`、`encounter --json`、`lab --json`、`expedition --json` 和 `clinic --json` 不受展示语言影响，字段名和结构保持稳定。
 
 ### `tui`
 
@@ -192,7 +199,7 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-在交互终端中无参数运行 `anti-ai` 会直接打开控制台；通过管道或其他非交互方式运行时，则成功输出分组 Help。控制台把总览、生态舱、远征、实验室和图鉴放进同一个键盘界面。总览现在默认显示“每日收容播报”：系统状态、当前诊断、一项按优先级选出的关键变化、独立收藏更新、生态舱反应和最多一个建议处置。按 `e` 展开或收起完整的标本、病理、里程碑、7/30/90 天年鉴、世代对照、星图与行动档案。播报不是开屏弹窗，`1`–`5` 始终可以直接离开。在任意区域按 `a` 可打开完整行动中心，也可对播报唯一建议直接按 `Enter`。不可逆选择与影响较大的动作仍遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”；远征的定向启程、普通推进和分叉处置则把当前选中项加 `Enter` 视为明确确认，不再经过通用预览页，放弃远征仍保留独立预览。详见[每日收容播报指南](./docs/daily-briefing.zh-CN.md)。
+在交互终端中无参数运行 `anti-ai` 会直接打开控制台；通过管道或其他非交互方式运行时，则成功输出分组 Help。控制台把总览、生态舱、远征、实验室和图鉴放进同一个键盘界面。总览现在默认显示“每日收容播报”：系统状态、当前 Token 代谢诊断、一项按优先级选出的关键变化、独立收藏更新、生态舱反应和最多一个建议处置。按 `e` 展开或收起完整的标本、病理、里程碑、Token 代谢门诊、7/30/90 天年鉴、世代对照、星图与行动档案；门诊不会增加第六个一级区域。在任意区域按 `a` 可打开完整行动中心；没有进行中课题时，可在预览和明确确认后启动三种被动研究之一。播报不是开屏弹窗，`1`–`5` 始终可以直接离开。不可逆选择与影响较大的动作仍遵循“影响预览 → 明确确认 → 执行结果 → 档案刷新”；远征的定向启程、普通推进和分叉处置则把当前选中项加 `Enter` 视为明确确认，不再经过通用预览页，放弃远征仍保留独立预览。详见[每日收容播报指南](./docs/daily-briefing.zh-CN.md)和[Token 代谢门诊指南](./docs/clinic.zh-CN.md)。
 
 异变体与当前伴生物会以刻意克制的默认频率呼吸、眨眼和脉动，生态舱环境也会按当前路线呈现低频气候变化。按 `m` 在“低频 / 完整 / 关闭”之间切换，也可以用 `--no-motion` 直接进入完全静态模式；动态效果不会改变成长或存档。
 
@@ -210,19 +217,35 @@ anti-ai tui --no-motion
 
 `--json` 按来源和具体模型输出可核对的 Token 统计，不把资源参照、个人基线或吐槽混入机器数据。Hermes 的日期归档是明确标注的会话级近似。
 
-默认的完整来源人类账单会在末尾结算当天异变体，并追加生态变化、当前形态、今日成就、新封存化石、待选择进化、当日图鉴入库反馈和一句当前生态舱观察；`today --json` 与带 `--source` 的账单不会改动这条完整成长史。
+人类账单会追加一段 Token 代谢门诊，展示目标日主诊断与证据范围。默认的完整来源视图还会结算当天异变体，并追加生态变化、当前形态、今日成就、新封存化石、待选择进化、当日图鉴入库反馈和一句当前生态舱观察；`today --json` 保持不变，带 `--source` 的账单和门诊浏览不会改动完整成长史。
 
 人类可读账单会直接扫描比较窗口；本地日志很多时可能需要数秒。当前版本仍不创建持久化用量索引。
 
 ### `week`
 
-打印截至指定日期的最近 7 个自然日趋势，并展示模型账单、资源账单和生活化对照。完整来源的人类可读报告还会结算成长史，追加“活体病历”：本周主症状、污染/清醒变化、阶段与世代成长、本期新化石、新徽章、新增收藏、固定轮换的主治意见，以及当前生态舱关系与本期封存事件。带 `--source` 的报告只展示用量，不改动完整成长史。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
+打印截至指定日期的最近 7 个自然日趋势，并展示模型账单、资源账单、生活化对照和 7 天代谢复查。完整来源的人类可读报告还会结算成长史，追加“活体病历”：本周主症状、污染/清醒变化、阶段与世代成长、本期新化石、新徽章、新增收藏、固定轮换的主治意见，以及当前生态舱关系与本期封存事件。带 `--source` 的报告只展示用量，不改动完整成长史。当前直接扫描近期日志，不建立索引；日志很多时可能需要数秒。
 
 ### `month`
 
-打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日比例（例如 `7 天 / 23 天`）、最长清醒期、最重一天、模型账单和本月资源对照。
+打印本月第一天至指定日期的终端日历热力图，同时展示 AI 清醒日比例（例如 `7 天 / 23 天`）、最长清醒期、最重一天、模型账单、本月资源对照和 30 天代谢复查。
 
 完整来源的人类可读报告还会追加“月度复诊”，汇总孵化后的有效观察期、主症状、生态人格迁移、阶段与世代成长、本月化石、成就、新增收藏和生态舱事故；孵化前的空白日不会被误诊为戒断。
+
+### `clinic`
+
+查看确定性的 Token 代谢模式，但不把它包装成生产力分数或健康诊断：
+
+```bash
+anti-ai clinic
+anti-ai clinic --date 2026-07-23 --source codex
+anti-ai clinic --json
+anti-ai clinic start <cache-rehab|context-diet|load-recovery>
+anti-ai clinic history
+```
+
+门诊在 31 天窗口内，把目标日与此前最多 14 个活跃日比较。请求、缓存、上下文和模型信号先在各来源内部判断，再汇总主诊断；相对规则至少需要 3 个可比活跃日。输出会说明实际使用的字段与来源、被排除来源及原因、今天是否仍在观察，以及 7/30 天趋势。模型变化只公开稳定信号 ID，具体模型名不会进入门诊输出或存档。
+
+三个被动研究协议分别持续 7、14、30 个自然日，不要求每天打卡：漏日不会清零、惩罚或延长课题，下次打开 CLI/TUI 时即时派生完成状态。研究只封存一枚报告标签，不改变异变体能力、阅历、生态、稀有率、收藏分母或 Token 奖励。`clinic`、`clinic history` 与所有门诊浏览都只读；只有明确执行 `clinic start` 才会写入一个协议。阈值、证据边界、状态与隐私规则见[Token 代谢门诊](./docs/clinic.zh-CN.md)。[English](./docs/clinic.md)。
 
 ### `codex`
 
@@ -359,7 +382,7 @@ anti-ai creature evolve 2
 
 `creature habitat` 会把当前标本、活动伴生物、收藏痕迹和后果陈列柜组合成“活体生态舱”。共享场景模型从污染、清醒、悖论各 5 种的 15 个平衡原型中确定一个，再叠加舱内气候、本体姿态、伴生关系、已有事件中的最新痕迹和 30 条双语讽刺短讯。终端、TUI、稳定 JSON 和生态舱 SVG 卡片都消费同一份模型。生态舱快照保持只读，每 7 个阅历日派生一个确定性生态事件，不能靠重复查看或增加 Token 重抽、加速；陈列与两项每日轻互动只会在 TUI 明确确认后写入，且不会改变成长数值。
 
-生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；十格探索见[收容远征](./docs/expeditions.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Containment Expeditions](./docs/expeditions.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
+生命周期和外观规则见[异变体成长指南](./docs/creature.zh-CN.md)；代谢证据与被动研究见[Token 代谢门诊](./docs/clinic.zh-CN.md)；关键病程和选择见[分叉病历](./docs/casebook.zh-CN.md)；延迟事件链见[收容事故](./docs/incidents.zh-CN.md)；十格探索见[收容远征](./docs/expeditions.zh-CN.md)；培养配方与陈列见[污染实验室](./docs/laboratory.zh-CN.md)；伴生路线见[伴生异物](./docs/companions.zh-CN.md)；关系、场景和生态现象见[收容生态舱](./docs/habitat.zh-CN.md)。[Creature Guide](./docs/creature.md) · [Token Metabolic Clinic](./docs/clinic.md) · [Forked Casebook](./docs/casebook.md) · [Containment Incidents](./docs/incidents.md) · [Containment Expeditions](./docs/expeditions.md) · [Pollution Laboratory](./docs/laboratory.md) · [Symbiotic Companions](./docs/companions.md) · [Containment Habitat](./docs/habitat.md)。
 
 ### `doctor`
 
@@ -448,6 +471,7 @@ WaterSense 淋浴采用 EPA 的 `2.0 gal/min` 上限（约 `7.6L/min`），标�
 - 不采集、不保存、不输出 Prompt、回复或工具调用正文
 - 默认分享卡片不包含路径、模型名、请求数或精确 Token
 - 不创建用量数据库或后台进程；`creature` 只维护一个不含精确用量的本地成长档案
+- 门诊状态只保存稳定诊断/证据/协议 ID 与日期；`clinic`、`clinic history` 只读，只有明确执行 `clinic start` 才写入协议
 - `codex` 与全部 `share` 卡片只派生只读快照，不会结算或改写成长档案
 - TUI 的浏览与取消保持只读；结算预览可能扫描用量元数据，任何写入都需要明确确认
 - 持久化 schema 迁移会保留精确的内容寻址备份；并发写入会被拒绝，不会静默覆盖成长进度
@@ -468,7 +492,7 @@ npm run test:package
 - `bin/anti-ai.mjs`：最小可执行入口
 - `src/cli.mjs`：轻量命令注册与分发
 - `src/cli/`：参数解析、终端渲染和方法论说明
-- `src/commands/`：异变体、遭遇、实验室、分享和 TUI 命令
+- `src/commands/`：门诊、异变体、遭遇、实验室、分享和 TUI 命令
 - `src/core/`：轻依赖的日期、用量与状态外壳基础能力
 - `src/application/`：与展示无关的投影、档案查询、确认式本地分享导出和共享动作编排
 - `src/infrastructure/sources/`：彼此隔离的流式 JSONL 与可选只读 SQLite Agent 适配器
@@ -478,6 +502,7 @@ npm run test:package
 - `src/registry.mjs`：命令、卡片和本地来源元数据
 - `src/scanner.mjs`：本地来源扫描的稳定兼容门面
 - `src/methodology.mjs`：具名公开案例与高位选择
+- `src/clinic.mjs` 与 `src/clinic-studies.mjs`：纯代谢诊断/趋势规则与被动研究派生
 - `src/comparisons.mjs`：按周期分级的生活对照
 - `src/content.mjs`：确定性中英文尾句与分享文案池
 - `src/reporting.mjs` 与 `src/reporting/verdict.mjs`：终端组合与确定性每日罪名选择

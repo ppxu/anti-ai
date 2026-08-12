@@ -15,10 +15,12 @@ import { syncCreatureInterventions } from "../casebook.mjs";
 import { syncLaboratoryCompanion } from "../companion.mjs";
 import { syncCreatureIncidents } from "../incidents.mjs";
 import { inclusiveDateRange, shiftDate } from "../core/date.mjs";
-import { reportsForDates } from "../scanner.mjs";
+import { localDate, reportsForDates } from "../scanner.mjs";
 import { CREATURE_BASELINE_WINDOW } from "../creature/balance.mjs";
+import { deriveMetabolismSnapshot } from "../clinic.mjs";
 
 async function settleCreatureState(state, date, options, timezone) {
+  const currentDate = localDate(new Date(), timezone);
   const defaultStart = shiftDate(date, -29);
   const observedDates = Object.keys(state.days);
   const latestObservedDate = observedDates
@@ -40,7 +42,18 @@ async function settleCreatureState(state, date, options, timezone) {
     scannedReports.map((report) => [report.date, report]),
   );
 
+  for (const [entryDate, day] of Object.entries(state.days)) {
+    if (!day.metabolism?.provisional || entryDate >= currentDate) continue;
+    if (!reportsByDate.has(entryDate)) continue;
+    day.metabolism = deriveMetabolismSnapshot(
+      scannedReports,
+      entryDate,
+      currentDate,
+    );
+  }
+
   for (const report of dates.map((entryDate) => reportsByDate.get(entryDate))) {
+    const sealedMetabolism = state.days[report.date]?.metabolism;
     const previousCreature = deriveCreature(state, shiftDate(report.date, -1));
     const historicalReports = Array.from(
       { length: CREATURE_BASELINE_WINDOW },
@@ -50,6 +63,11 @@ async function settleCreatureState(state, date, options, timezone) {
         ),
     );
     const record = dailyCreatureRecord(report, historicalReports);
+    record.metabolism = sealedMetabolism ?? deriveMetabolismSnapshot(
+      scannedReports,
+      report.date,
+      currentDate,
+    );
     const evolutionEffect = creatureEvolutionEffect(
       state,
       report.date,

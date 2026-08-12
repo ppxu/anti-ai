@@ -98,7 +98,7 @@ Using more AI creates more Pollution-shaped evidence; using less AI or taking AI
 
 ## State and privacy
 
-Creature state uses schema v14. The Laboratory v2 section stores only:
+Creature state uses schema v15. The Laboratory v2 section stores only:
 
 - the active culture ID and privacy-safe bond history;
 - one discrete imprint ID per observed date;

@@ -60,7 +60,11 @@ try {
   if (Object.keys(packageJson.dependencies ?? {}).length > 0) {
     throw new Error("Published package must keep zero required dependencies");
   }
-  const installedPackage = path.join(workspace, "node_modules", "anti-ai");
+  const installedPackage = path.join(
+    workspace,
+    "node_modules",
+    ...packageJson.name.split("/"),
+  );
   if (!existsSync(path.join(installedPackage, "dist", "tui.mjs"))) {
     throw new Error("Packed CLI is missing the bundled TUI runtime");
   }

@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Split JSONL and SQLite source adapters behind the stable scanner facade; separated Creature state migration, Codex projection, period casebook queries, pure appearance composition, and ANSI rendering from the aggregate growth module; and isolated the large verdict-copy decision tree from report composition.
 - Replaced the TUI's independent local state fields with an explicit reducer-backed controller, split input orchestration from four bounded screen groups, and paused motion behind Help, action, and share overlays.
 - Extended `npm run check` with protected-layer rules, a 1,500-line source-module ceiling, and byte-for-byte freshness checks for `dist/tui.mjs` and its third-party notices.
+- Made packed-package verification resolve both unscoped public and scoped private install paths.
 
 ### Security
 

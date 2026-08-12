@@ -80,9 +80,9 @@ The discovery that crosses a milestone chooses one of seven stable evidence moti
 
 ## TUI and sharing
 
-The existing five-area TUI remains unchanged. Overview includes a compact Chronicle panel, while Codex presents the three routes as a Pathology Constellation star map with focused evidence and phase details. These TUI projections use the already loaded Creature state and do not scan Agent records. Constellations cannot occupy the Consequence Cabinet because they are presentation groupings rather than collected objects.
+The five-area TUI remains unchanged. Overview opens with the Daily Containment Broadcast; press `e` to expose the complete Chronicle panel. Codex presents the three routes as a Pathology Constellation star map with focused evidence and phase details. These TUI projections use the already loaded Creature state and do not scan Agent records. Constellations cannot occupy the Consequence Cabinet because they are presentation groupings rather than collected objects.
 
-Overview sharing now prepares the dossier card. The 1200×630 SVG contains the specimen silhouette, optional companion, current diagnosis, 30-day course, generation comparison, and completed-set stamps. It is generated locally, omits sensitive accounting fields, and follows the existing preview, explicit confirmation, fallback-directory, and no-overwrite rules.
+Overview sharing now prepares the short daily `briefing` card. The explicit 1200×630 `dossier` SVG still contains the specimen silhouette, optional companion, current diagnosis, 30-day course, generation comparison, and completed-set stamps. Both are generated locally, omit sensitive accounting fields, and follow the existing preview, explicit confirmation, fallback-directory, and no-overwrite rules.
 
 ## State and privacy
 

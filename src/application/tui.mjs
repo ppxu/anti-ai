@@ -41,6 +41,7 @@ import {
 } from "../expedition/presentation.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
 import { containmentArchive, containmentBrief } from "./archive.mjs";
+import { deriveDailyBriefing } from "./daily-briefing.mjs";
 import { createProjectionContext } from "./projections.mjs";
 import { deriveMutationChronicle } from "../chronicle.mjs";
 import { presentMutationChronicle } from "../renderers/chronicle.mjs";
@@ -660,14 +661,28 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     laboratoryModel,
     lang,
   );
+  const primaryAction = actions.find(({ available }) => available) ?? null;
+  const presentedDay = brief.day ? archiveDayPresentation(brief.day, lang) : null;
+  const habitatScene = presentHabitatScene(habitat.scene, lang);
+  const dailyBriefing = deriveDailyBriefing({
+    date,
+    status,
+    statusLabel,
+    day: presentedDay,
+    diagnosis: chronicle.diagnosis,
+    habitat: habitatScene,
+    recommendation: primaryAction,
+    lang,
+  });
 
   return {
-    version: 2,
+    version: 3,
     date,
     lastSettledDate: latestSettledDate(state, date),
     readOnly: true,
     actions,
-    primaryAction: actions.find(({ available }) => available) ?? null,
+    primaryAction,
+    dailyBriefing,
     navigation: tuiCopy(lang).navigation,
     expedition: {
       ...expedition,
@@ -723,7 +738,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
         },
       },
       brief: {
-        day: brief.day ? archiveDayPresentation(brief.day, lang) : null,
+        day: presentedDay,
         nextMilestone: {
           ...brief.nextMilestone,
           label: brief.nextMilestone.type === "hatch"
@@ -748,7 +763,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
         ...habitat.specimen,
         collectionPhenotype,
       },
-      scene: presentHabitatScene(habitat.scene, lang),
+      scene: habitatScene,
       cabinet: cabinetModel,
       relationship: habitat.relationship
         ? {

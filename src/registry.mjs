@@ -145,6 +145,7 @@ const COMMAND_REGISTRY = Object.freeze([
 
 const SHARE_CARD_IDS = Object.freeze([
   "receipt",
+  "briefing",
   "dossier",
   "pathology",
   "specimen",

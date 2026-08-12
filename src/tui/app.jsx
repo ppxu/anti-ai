@@ -60,6 +60,7 @@ function TuiApp({
   const {
     snapshot,
     activeIndex,
+    overviewMode,
     showHelp,
     motion,
     frame,
@@ -90,6 +91,7 @@ function TuiApp({
   } = controller;
   const setSnapshot = bindTuiControllerField(dispatchController, "snapshot");
   const setActiveIndex = bindTuiControllerField(dispatchController, "activeIndex");
+  const setOverviewMode = bindTuiControllerField(dispatchController, "overviewMode");
   const setShowHelp = bindTuiControllerField(dispatchController, "showHelp");
   const setMotion = bindTuiControllerField(dispatchController, "motion");
   const setFrame = bindTuiControllerField(dispatchController, "frame");
@@ -484,6 +486,10 @@ function TuiApp({
       openActionMenu();
       return;
     }
+    if (activeId === "overview" && input === "e") {
+      setOverviewMode((value) => value === "briefing" ? "details" : "briefing");
+      return;
+    }
     if (activeId === "habitat" && input === "l") {
       setObservationIndex(null);
       setReplayStartFrame(null);
@@ -782,6 +788,7 @@ function TuiApp({
       <OverviewScreen
         snapshot={snapshot}
         lang={lang}
+        mode={overviewMode}
         frame={frame}
         motion={motion}
         glitch={glitch}
@@ -855,9 +862,13 @@ function TuiApp({
       : activeId === "expedition" && snapshot.expedition.latest
         ? ` · s ${zh ? "分享返航总结" : "share return summary"}`
     : activeId === "overview" && snapshot.primaryAction
-      ? ` · Enter ${snapshot.primaryAction.target === "expedition" ? (zh ? "前往远征" : "open expedition") : (zh ? "处理" : "act")} · s ${zh ? "分享" : "share"}`
+      ? compact
+        ? ` · e ${zh ? "档案" : "file"} · Enter ${snapshot.primaryAction.target === "expedition" ? (zh ? "远征" : "expedition") : (zh ? "处理" : "act")} · s ${zh ? "分享" : "share"}`
+        : ` · e ${overviewMode === "briefing" ? (zh ? "完整档案" : "full file") : (zh ? "收起档案" : "collapse")} · Enter ${snapshot.primaryAction.target === "expedition" ? (zh ? "前往远征" : "open expedition") : (zh ? "处理" : "act")} · s ${zh ? "分享播报" : "share broadcast"}`
       : activeId === "overview"
-        ? ` · s ${zh ? "分享" : "share"}`
+        ? compact
+          ? ` · e ${zh ? "档案" : "file"} · s ${zh ? "分享" : "share"}`
+          : ` · e ${overviewMode === "briefing" ? (zh ? "完整档案" : "full file") : (zh ? "收起档案" : "collapse")} · s ${zh ? "分享播报" : "share broadcast"}`
         : activeId === "codex" && ["detail", "archive_detail"].includes(codexMode)
           ? ` · s ${zh ? "分享" : "share"}`
       : activeId === "laboratory" && inspectingCulture

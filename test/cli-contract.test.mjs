@@ -656,7 +656,7 @@ test("forked casebook actions expose focused bilingual help", () => {
   assert.equal(share.status, 0, share.stderr);
   assert.match(
     share.stdout,
-    /receipt\|dossier\|pathology\|specimen\|wanted\|fossil\|encounter\|prognosis/,
+    /receipt\|briefing\|dossier\|pathology\|specimen\|wanted\|fossil\|encounter\|prognosis/,
   );
 });
 
@@ -834,7 +834,7 @@ test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 3.6.0\n");
+  assert.equal(result.stdout, "anti-ai 3.7.0\n");
   assert.equal(result.stderr, "");
 });
 

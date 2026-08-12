@@ -17,6 +17,7 @@ test("the TUI controller keeps one explicit state envelope", () => {
     motion: "full",
   });
   assert.equal(initial.activeIndex, 0);
+  assert.equal(initial.overviewMode, "briefing");
   assert.equal(initial.laboratoryFocus, "formulas");
   assert.equal(initial.shareMode, null);
 

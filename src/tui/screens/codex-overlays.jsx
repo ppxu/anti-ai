@@ -329,7 +329,8 @@ function HelpOverlay({ lang, activeId, codexMode }) {
   const contextual = {
     overview: [
       ["Enter", zh ? "处理当前主要行动" : "open the primary action"],
-      ["s", zh ? "导出异变体分享卡" : "export the specimen share card"],
+      ["e", zh ? "展开或收起完整档案" : "expand or collapse the full file"],
+      ["s", zh ? "导出每日收容播报" : "export the daily containment broadcast"],
     ],
     habitat: [
       ["Enter", zh ? "进入只读器官观察" : "open read-only anatomy inspection"],

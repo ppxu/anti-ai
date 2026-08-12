@@ -2,6 +2,7 @@ function createTuiControllerState({ snapshot, motion = "low" }) {
   return {
     snapshot,
     activeIndex: 0,
+    overviewMode: "briefing",
     showHelp: false,
     motion,
     frame: 0,

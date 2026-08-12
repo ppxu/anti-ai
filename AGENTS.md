@@ -41,6 +41,7 @@ Preserve these product rules:
 - `src/application/actions.mjs` owns TUI preview, confirmation, and session orchestration.
 - `src/application/action-execution.mjs` owns shared CLI/TUI state mutations; command handlers must not duplicate those writes.
 - `src/application/projections.mjs` owns request-local memoized query projections.
+- `src/application/daily-briefing.mjs` owns the deterministic read-only Daily Containment Broadcast; renderers must consume its sections instead of rebuilding priority rules.
 - `src/application/tui-controller.mjs` owns explicit ephemeral TUI controller state.
 - `src/application/settlement.mjs` owns the settlement pipeline shared by CLI and TUI.
 - `src/application/creature-casebook.mjs` owns period casebook queries; `src/chronicle.mjs` composes read-only historical and generation projections.
@@ -54,6 +55,7 @@ Preserve these product rules:
 
 Avoid runtime import cycles, protected-layer inversions, and source modules over 1,500 lines; `npm run check` enforces all three. Register new public IDs centrally instead of adding duplicate allowlists.
 TUI actions must call application services, never command handlers or arbitrary shell commands. Browsing and cancellation stay read-only; mutations require explicit user input. Irreversible or higher-impact actions use a confirmation screen, while focused Expedition start, advance, and branch keys may execute directly when the keypress itself is the documented confirmation.
+Overview must remain broadcast-first with at most one recommended response. Its expanded file and the action center may expose existing detail, but the broadcast cannot invent another daily action or persist an opened/read state.
 
 ## State invariants
 

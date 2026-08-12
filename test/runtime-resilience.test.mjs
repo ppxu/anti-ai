@@ -306,6 +306,59 @@ test("invalid nested creature collections are rejected before migration or write
       days: {},
       expeditions: { active: "already escaped", history: [] },
     },
+    {
+      schemaVersion: 15,
+      seed: "invalid-clinic-study",
+      days: {},
+      clinic: {
+        version: 1,
+        studies: [
+          {
+            id: "study-invalid",
+            protocolId: "cache_rehab",
+            startedAt: "2026-07-23",
+            endsAt: "not-a-date",
+            contentVersion: 1,
+          },
+        ],
+      },
+    },
+    {
+      schemaVersion: 15,
+      seed: "unknown-clinic-protocol",
+      days: {},
+      clinic: {
+        version: 1,
+        studies: [
+          {
+            id: "study-unknown",
+            protocolId: "make_it_healthy",
+            startedAt: "2026-07-23",
+            endsAt: "2026-07-29",
+            contentVersion: 1,
+          },
+        ],
+      },
+    },
+    {
+      schemaVersion: 15,
+      seed: "invalid-metabolism",
+      days: {
+        "2026-07-23": {
+          metabolism: {
+            version: 1,
+            mainDiagnosisId: "stable_metabolism",
+            signals: [{ id: 42, severityBand: "stable" }],
+            fieldsUsed: ["totalTokens"],
+            sourceIds: ["codex"],
+            excludedSourceIds: [],
+            baselineActiveDays: 3,
+            provisional: false,
+          },
+        },
+      },
+      clinic: { version: 1, studies: [] },
+    },
   ];
 
   for (const [index, invalidState] of invalidStates.entries()) {

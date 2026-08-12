@@ -113,7 +113,7 @@ anti-ai share --card companion
 
 ## 档案与隐私
 
-异变体档案使用 schema v14。Laboratory v2 只保存：
+异变体档案使用 schema v15。Laboratory v2 只保存：
 
 - 实验室格式版本和下一批次；
 - 稳定培养物与原料 ID；

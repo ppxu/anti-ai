@@ -279,6 +279,31 @@ const COMMAND_HELP = {
     ],
     related: ["today", "explain sources", "explain privacy"],
   },
+  clinic: {
+    usage: "anti-ai clinic [options]",
+    summary: ["查看 Token 代谢诊断与证据边界。", "Inspect Token metabolism with explicit evidence boundaries."],
+    output: [
+      "每日一个主诊断、证据范围、7/30 天趋势，以及当前或最近的被动研究课题。",
+      "One daily primary diagnosis, evidence scope, 7/30-day trends, and the current or latest passive study.",
+    ],
+    options: [
+      ["--date <YYYY-MM-DD>", "指定诊断日期（默认今天）", "Select diagnosis date (default: today)"],
+      [SOURCE_OPTION, "过滤本地来源（默认 all）", "Filter local source (default: all)"],
+      ["--json", "输出语言无关的机器可读诊断", "Print a language-neutral machine-readable diagnosis"],
+    ],
+    examples: [
+      "anti-ai clinic",
+      "anti-ai clinic --source codex --lang en",
+      "anti-ai clinic --json",
+      "anti-ai clinic start cache-rehab",
+      "anti-ai clinic history",
+    ],
+    note: [
+      "只使用 usage metadata；结论是相关性观察，不评价生产力或因果关系。",
+      "Uses usage metadata only; conclusions are correlations, not productivity or causality judgments.",
+    ],
+    related: ["clinic start", "clinic history", "today", "doctor"],
+  },
   explain: {
     usage: "anti-ai explain [resources|comparisons|sources|creature|privacy]",
     summary: ["解释工具的计算依据和边界。", "Explain the tool's methods and boundaries."],
@@ -301,6 +326,24 @@ const COMMAND_HELP = {
 };
 
 const ACTION_HELP = {
+  "clinic start": {
+    usage: "anti-ai clinic start <cache-rehab|context-diet|load-recovery> [options]",
+    summary: ["启动一个按自然日推进的本地被动研究。", "Start one local passive study driven by calendar days."],
+    output: ["封存研究协议、开始日与结束日。", "Seals the protocol, start date, and end date."],
+    options: [["--date <YYYY-MM-DD>", "指定研究开始日期", "Select the study start date"], ["--json", "输出机器可读研究状态", "Print machine-readable study state"]],
+    examples: ["anti-ai clinic start cache-rehab", "anti-ai clinic start context-diet --json", "anti-ai clinic start load-recovery"],
+    note: ["同时最多一个进行中的课题；漏日不清零、不惩罚、不延长。", "At most one study is active; missed days never reset, punish, or extend it."],
+    related: ["clinic", "clinic history"],
+  },
+  "clinic history": {
+    usage: "anti-ai clinic history [options]",
+    summary: ["查看本地研究协议与派生报告。", "Inspect local study protocols and derived reports."],
+    output: ["按开始日期倒序展示研究状态、证据覆盖与结果印章。", "Shows study status, evidence coverage, and report seals newest first."],
+    options: [["--date <YYYY-MM-DD>", "截至指定日期派生状态", "Derive status through a selected date"], ["--json", "输出机器可读研究历史", "Print machine-readable study history"]],
+    examples: ["anti-ai clinic history", "anti-ai clinic history --json"],
+    note: ["历史只读，不扫描原始 Agent 日志。", "History is read-only and never scans raw Agent logs."],
+    related: ["clinic", "clinic start"],
+  },
   "expedition start": {
     usage: "anti-ai expedition start <context_mine|cache_swamp|request_nest|reactor_graveyard> [options]",
     summary: ["选择目的地并封存一局十格远征。", "Choose a destination and seal one ten-cell expedition."],
@@ -762,6 +805,7 @@ function renderTopLevelHelp(lang = "zh") {
       "encounter",
     ]),
     ...commandGroup(localized(lang, "诊断与说明", "DIAGNOSTICS & METHODS"), [
+      "clinic",
       "doctor",
       "explain",
     ]),

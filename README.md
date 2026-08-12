@@ -102,6 +102,13 @@ anti-ai week --date 2026-07-23
 anti-ai month
 anti-ai month --date 2026-07-23
 
+anti-ai clinic
+anti-ai clinic --json
+anti-ai clinic start cache-rehab
+anti-ai clinic start context-diet
+anti-ai clinic start load-recovery
+anti-ai clinic history
+
 anti-ai tui
 anti-ai tui --lang en
 anti-ai tui --no-motion
@@ -179,7 +186,7 @@ anti-ai creature --lang en
 anti-ai explain --lang en
 ```
 
-`today --json`, `codex --json`, `creature --json`, `encounter --json`, `lab --json`, and `expedition --json` ignore presentation language and keep stable machine-readable keys.
+`today --json`, `codex --json`, `creature --json`, `encounter --json`, `lab --json`, `expedition --json`, and `clinic --json` ignore presentation language and keep stable machine-readable keys.
 
 ### `tui`
 
@@ -192,7 +199,7 @@ anti-ai tui --lang en
 anti-ai tui --no-motion
 ```
 
-Running `anti-ai` with no arguments opens the console in an interactive terminal; a pipe or other non-interactive launch prints grouped Help instead. The console brings Overview, Habitat, Expedition, Laboratory, and Codex into one keyboard-navigable surface. Overview now opens with a Daily Containment Broadcast: system status, current diagnosis, one prioritized change, a separate collection update, the Living Habitat reaction, and at most one recommended response. Press `e` to expand or collapse the complete specimen, pathology, milestone, 7/30/90-day Chronicle, generation comparison, constellation, and action file. The broadcast is not a modal intro, so `1`–`5` always move directly to another area. Press `a` anywhere to open the complete available-now action center, or press `Enter` on the broadcast's single recommendation. Irreversible choices and higher-impact actions keep preview → explicit confirmation → result → refreshed file. Focused Expedition start, ordinary advance, and branch controls use the selected item plus `Enter` as the explicit confirmation so the ten-cell loop does not pass through a generic preview screen; abandonment still keeps its separate preview. See the [Daily Containment Broadcast guide](./docs/daily-briefing.md).
+Running `anti-ai` with no arguments opens the console in an interactive terminal; a pipe or other non-interactive launch prints grouped Help instead. The console brings Overview, Habitat, Expedition, Laboratory, and Codex into one keyboard-navigable surface. Overview now opens with a Daily Containment Broadcast: system status, current Token-metabolism diagnosis, one prioritized change, a separate collection update, the Living Habitat reaction, and at most one recommended response. Press `e` to expand or collapse the complete specimen, pathology, milestone, Token Metabolic Clinic, 7/30/90-day Chronicle, generation comparison, constellation, and action file. The Clinic does not add a sixth area. Press `a` anywhere to open the complete available-now action center; when no study is active, it can start one of the three passive protocols after preview and explicit confirmation. The broadcast is not a modal intro, so `1`–`5` always move directly to another area. Irreversible choices and higher-impact actions keep preview → explicit confirmation → result → refreshed file. Focused Expedition start, ordinary advance, and branch controls use the selected item plus `Enter` as the explicit confirmation so the ten-cell loop does not pass through a generic preview screen; abandonment still keeps its separate preview. See the [Daily Containment Broadcast guide](./docs/daily-briefing.md) and [Token Metabolic Clinic guide](./docs/clinic.md).
 
 The specimen and active companion breathe, blink, and pulse at a deliberately low default rate. Habitat also animates a route-aware chamber climate around them. Press `m` to cycle `LOW`, `FULL`, and `OFF`, or start with `--no-motion` for a completely static display. Motion never changes growth or saved state.
 
@@ -210,19 +217,35 @@ Every verdict category combines 11 charge titles with 13 detail lines. The pair 
 
 `--json` returns exact token data grouped by source and model. It deliberately excludes environmental proxies, baselines, and verdicts.
 
-The default all-source human receipt also settles that creature day and appends a concise mutation update with ecology gain, current form, today's achievements, newly sealed fossils, pending evolution choices, anything newly added to the codex, and one current habitat observation. `today --json` and source-filtered receipts do not mutate the complete growth history.
+The human receipt appends one Token Metabolic Clinic section with the selected day's primary diagnosis and evidence scope. The default all-source view also settles that creature day and appends a concise mutation update with ecology gain, current form, today's achievements, newly sealed fossils, pending evolution choices, anything newly added to the codex, and one current habitat observation. `today --json` remains unchanged; source-filtered receipts and Clinic views do not mutate the complete growth history.
 
 The human-readable receipt scans the comparison window directly and may take several seconds when local logs are large. The tool deliberately avoids a persistent usage index in this release.
 
 ### `week`
 
-Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons. A complete-source human report also settles the creature and appends a living casebook with the primary symptom, Pollution/Clarity change, stage and generation growth, fossils sealed during the period, newly unlocked badges, collection discoveries, a deterministic attending note, and the current habitat relationship plus events sealed in the period. Source-filtered reports remain usage-only. The current release scans recent logs directly and does not create an index.
+Print a seven-day token trend ending on the selected date, followed by model and resource summaries with everyday comparisons and a seven-day metabolic review. A complete-source human report also settles the creature and appends a living casebook with the primary symptom, Pollution/Clarity change, stage and generation growth, fossils sealed during the period, newly unlocked badges, collection discoveries, a deterministic attending note, and the current habitat relationship plus events sealed in the period. Source-filtered reports remain usage-only. The current release scans recent logs directly and does not create an index.
 
 ### `month`
 
-Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, and monthly resource comparisons.
+Print a terminal calendar heatmap from the first day of the month through the selected date. It includes the quiet-day ratio (for example, `7 days / 23 days`), longest quiet streak, peak day, model breakdown, monthly resource comparisons, and a 30-day metabolic review.
 
 A complete-source human report also appends a monthly follow-up. It counts only settled days after hatching, summarizes the dominant symptom and Ecology transition, and reviews stage/generation growth, fossils, achievements, collection discoveries, and habitat incidents without treating pre-hatch empty days as Withdrawal.
+
+### `clinic`
+
+Inspect deterministic Token-metabolism patterns without turning them into a productivity or health score:
+
+```bash
+anti-ai clinic
+anti-ai clinic --date 2026-07-23 --source codex
+anti-ai clinic --json
+anti-ai clinic start <cache-rehab|context-diet|load-recovery>
+anti-ai clinic history
+```
+
+The Clinic compares the selected day with up to 14 prior active days inside a 31-day window. Request, cache, context, and model signals are evaluated per source before aggregation; relative rules require at least three comparable active days. Output exposes the fields and sources used, any excluded source and reason, whether today's result is provisional, and 7/30-day trends. Model changes are reported only as a stable signal ID—the model names never enter public Clinic output or saved state.
+
+The three passive protocols last 7, 14, or 30 calendar days. They need no daily check-in: missed days never reset, punish, or extend a study, and completion is derived the next time the CLI or TUI opens. A study seals only a report label. It changes no Creature ability, experience, Ecology, rarity, collection denominator, or Token reward. `clinic`, `clinic history`, and every Clinic view are read-only; only the explicit `clinic start` action writes a protocol. See [Token Metabolic Clinic](./docs/clinic.md) for thresholds, evidence boundaries, state, and privacy rules. [中文版](./docs/clinic.zh-CN.md).
 
 ### `codex`
 
@@ -359,7 +382,7 @@ The Reactor Kaiju generator has 16 core form families and **204,374,016 deduplic
 
 `creature habitat` combines the current specimen, active companion, collection traces, and Consequence Cabinet into a Living Habitat. Its shared scene model selects one of 15 route-balanced archetypes and layers in chamber climate, specimen pose, relationship context, the latest existing trace, and one of 30 bilingual satirical bulletins. Terminal, TUI, stable JSON, and the Habitat SVG card all consume that same model. The snapshot is read-only, derives one deterministic ecological event every seven experience days, and cannot be rerolled or accelerated with Token volume. Cabinet curation and the two daily light interactions happen only after explicit TUI confirmation and never alter growth values.
 
-Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Forked Casebook](./docs/casebook.md) for history and choices, [Containment Incidents](./docs/incidents.md) for delayed event chains, [Containment Expeditions](./docs/expeditions.md) for the ten-cell field loop, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, [Symbiotic Companions](./docs/companions.md) for the sidekick growth model, and [Containment Habitat](./docs/habitat.md) for relationships, scenery, events, and the fixed phenomenon catalog. [中文版](./docs/creature.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [收容事故中文说明](./docs/incidents.zh-CN.md) · [收容远征中文说明](./docs/expeditions.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md) · [收容生态舱中文说明](./docs/habitat.zh-CN.md).
+Read the full [Creature Guide](./docs/creature.md) for lifecycle and appearance, [Token Metabolic Clinic](./docs/clinic.md) for evidence-bounded diagnoses and passive studies, [Forked Casebook](./docs/casebook.md) for history and choices, [Containment Incidents](./docs/incidents.md) for delayed event chains, [Containment Expeditions](./docs/expeditions.md) for the ten-cell field loop, [Pollution Laboratory](./docs/laboratory.md) for culture formulas, [Symbiotic Companions](./docs/companions.md) for the sidekick growth model, and [Containment Habitat](./docs/habitat.md) for relationships, scenery, events, and the fixed phenomenon catalog. [中文版](./docs/creature.zh-CN.md) · [代谢门诊中文说明](./docs/clinic.zh-CN.md) · [分叉病历中文说明](./docs/casebook.zh-CN.md) · [收容事故中文说明](./docs/incidents.zh-CN.md) · [收容远征中文说明](./docs/expeditions.zh-CN.md) · [污染实验室中文说明](./docs/laboratory.zh-CN.md) · [伴生异物中文说明](./docs/companions.zh-CN.md) · [收容生态舱中文说明](./docs/habitat.zh-CN.md).
 
 ### `doctor`
 
@@ -429,6 +452,7 @@ The remaining rounded consumer-item values are display assumptions, not environm
 - Does not store or print prompts, responses, or tool-call content
 - The default share card omits paths, model names, request counts, and exact token counts
 - Creates no usage database and starts no background process; `creature` maintains one local growth file without exact usage
+- Clinic state stores only stable diagnosis/evidence/protocol IDs and dates; `clinic` and `clinic history` are read-only, while only explicit `clinic start` writes a protocol
 - `codex` and every `share` card derive read-only snapshots and never settle or rewrite growth state
 - TUI browsing and cancellation are read-only; settlement preview may scan usage metadata, and every write requires explicit confirmation
 - Persisted schema migrations keep an exact content-addressed backup; concurrent writers are rejected instead of silently losing progress
@@ -455,7 +479,7 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `bin/anti-ai.mjs`: minimal executable launcher
 - `src/cli.mjs`: small command registry dispatcher
 - `src/cli/`: argument parsing, terminal rendering, and methodology explanation
-- `src/commands/`: focused Creature, Encounter, Laboratory, Share, and TUI handlers
+- `src/commands/`: focused Clinic, Creature, Encounter, Laboratory, Share, and TUI handlers
 - `src/core/`: dependency-light date, usage, and state-envelope primitives
 - `src/application/`: presentation-neutral projections, archive queries, confirmed local share export, and shared action orchestration
 - `src/infrastructure/sources/`: isolated streaming JSONL and optional read-only SQLite Agent adapters
@@ -465,6 +489,7 @@ Tests exercise the public CLI through exit codes and stdout/stderr using synthet
 - `src/registry.mjs`: command, card, and local-source metadata
 - `src/scanner.mjs`: stable compatibility facade for local-source scanning
 - `src/methodology.mjs`: named public resource cases and high-side selection
+- `src/clinic.mjs` and `src/clinic-studies.mjs`: pure metabolism diagnosis/trend rules and passive-study derivation
 - `src/comparisons.mjs`: period-specific everyday comparisons
 - `src/content.mjs`: deterministic bilingual footer and share-copy pools
 - `src/reporting.mjs` and `src/reporting/verdict.mjs`: terminal composition and deterministic verdict selection

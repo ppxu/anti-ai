@@ -748,7 +748,7 @@ test("schema v1-v12 creature files migrate idempotently without inventing cabine
     const saved = JSON.parse(
       readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
     );
-    assert.equal(saved.schemaVersion, 14);
+    assert.equal(saved.schemaVersion, 15);
     assert.deepEqual(saved.cabinet, { version: 1, featured: [] });
     assert.equal(saved.appearance.version, 1);
     assert.match(saved.appearance.specimenId, /^[0-9a-f]{8}$/);
@@ -852,7 +852,7 @@ test("schema v9 cultures remain unbound after companion migration", (t) => {
   const saved = JSON.parse(
     readFileSync(path.join(home, ".anti-ai", "creature.json"), "utf8"),
   );
-  assert.equal(saved.schemaVersion, 14);
+  assert.equal(saved.schemaVersion, 15);
   assert.deepEqual(saved.cabinet, { version: 1, featured: [] });
   assert.deepEqual(saved.laboratory, {
     version: 2,

@@ -65,6 +65,7 @@ function impactLabel(key, lang) {
     dailyLimit: ["每日额度", "DAILY LIMIT"],
     numericRewards: ["数值奖励", "NUMERIC REWARDS"],
     displaySlots: ["展示位", "DISPLAY SLOTS"],
+    durationOptions: ["可选时长", "DURATION OPTIONS"],
   };
   return labels[key]?.[lang === "zh" ? 0 : 1] ?? key;
 }

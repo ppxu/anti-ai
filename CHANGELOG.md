@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-08-12
+
+### Added
+
+- Added the deterministic bilingual `anti-ai clinic` with one primary Token-metabolism diagnosis, explicit field/source/exclusion evidence, provisional-day handling, and 7/30-day trends across Codex, Claude Code, OpenCode, OpenClaw, Hermes, and Pi capability boundaries.
+- Added `clinic start` and `clinic history` with three passive local protocols: 7-day Cache Rehab, 14-day Context Diet, and 30-day Load Recovery. Studies advance by natural calendar date without check-ins, missed-day penalties, background processes, or Token-volume acceleration.
+- Added a versioned language-neutral `clinic --json` contract, nested command Help, a Token Metabolic Clinic panel in expanded TUI Overview, and a shared Action Center flow for explicitly starting a study.
+
+### Changed
+
+- Appended a period-sized Clinic section to human-readable `today`, `week`, and `month` reports while keeping `today --json` unchanged, and upgraded the Daily Containment Broadcast diagnosis to use a sealed metabolic sample when available.
+- Advanced Creature state from schema v14 to v15 with an empty Clinic container and optional privacy-safe sealed daily metabolism samples; old files migrate sequentially without inventing historical diagnoses or studies.
+- Updated bilingual READMEs, the new Clinic guide, architecture/security/contribution guidance, AGENTS.md, Explain, Help, and the installable Agent Skill.
+
+### Security
+
+- Clinic rules use usage metadata only and expose stable diagnosis, signal, field, source, exclusion-reason, trend, protocol, and date IDs. They do not persist or reveal exact Tokens, ratios, model names, request timestamps, prompts, responses, tool-call bodies, or paths.
+- `clinic` and `clinic history` are read-only; history derives results from already sealed privacy-safe samples without scanning Agent stores. Only an explicit CLI or confirmed TUI study start writes state, and study seals grant no abilities, experience, Ecology, rarity, collection progress, companion growth, Expedition opportunities, or Token rewards.
+
 ## [3.7.0] - 2026-08-12
 
 ### Added

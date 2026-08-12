@@ -128,6 +128,15 @@ function OverviewDetailsScreen({ snapshot, lang, frame, motion, glitch, compact 
       : overview.status === "quiet"
         ? "withdrawal"
         : "dormant";
+  const clinicDirection = (direction) => ({
+    increasing: zh ? "增加" : "increasing",
+    decreasing: zh ? "减少" : "decreasing",
+    stable: zh ? "持平" : "stable",
+    insufficient: zh ? "样本不足" : "insufficient",
+  })[direction];
+  const clinicTrend = (trend, days) => zh
+    ? `${days} 天 · 可判断 ${trend.observableDays} · 信号 ${trend.signalDays} · ${clinicDirection(trend.direction)}`
+    : `${days}D · ${trend.observableDays} observable · ${trend.signalDays} signals · ${clinicDirection(trend.direction)}`;
   return (
     <Box flexDirection="column">
       <Box gap={1} flexDirection={compact ? "column" : "row"}>
@@ -231,6 +240,35 @@ function OverviewDetailsScreen({ snapshot, lang, frame, motion, glitch, compact 
         <Text color="green">
           {zh ? "病理星图" : "PATHOLOGY CONSTELLATIONS"} · {overview.chronicle.collectionSets.completed}/{overview.chronicle.collectionSets.total}
         </Text>
+      </Panel>
+      <Panel
+        title={zh ? "Token 代谢门诊" : "TOKEN METABOLIC CLINIC"}
+        color="cyan"
+        marginTop={1}
+      >
+        <Text bold color="cyan">{overview.clinic.diagnosis.label}</Text>
+        <Text dimColor>{overview.clinic.diagnosis.detail}</Text>
+        <Text>
+          {zh ? "字段" : "FIELDS"} · {overview.clinic.evidence.fieldsUsed.join(" · ") || (zh ? "暂无" : "none")}
+        </Text>
+        <Text>
+          {zh ? "来源" : "SOURCES"} · {overview.clinic.evidence.sourceIds.join(" · ") || (zh ? "暂无" : "none")}
+        </Text>
+        <Text color="cyan">{clinicTrend(overview.clinic.trends.days7, 7)}</Text>
+        <Text color="cyan">{clinicTrend(overview.clinic.trends.days30, 30)}</Text>
+        {overview.clinic.study.active ? (
+          <Text color="yellow">
+            {zh ? "研究中" : "STUDY ACTIVE"} · {overview.clinic.study.label} · {overview.clinic.study.active.progress.elapsedDays}/{overview.clinic.study.active.durationDays}
+          </Text>
+        ) : overview.clinic.study.latest ? (
+          <Text color="green">
+            {zh ? "最近印章" : "LATEST SEAL"} · {overview.clinic.study.label} · {overview.clinic.study.resultLabel}
+          </Text>
+        ) : (
+          <Text color="yellow">
+            {zh ? "尚无研究 · 可在行动中心启动" : "NO STUDY · start one in the Action Center"}
+          </Text>
+        )}
       </Panel>
       <Panel
         title={zh ? "今天可做" : "AVAILABLE TODAY"}

@@ -1,7 +1,9 @@
 import { createRequire } from "node:module";
 
 import { companionPeriodSummary } from "./companion.mjs";
-import { creatureCodex } from "./creature.mjs";
+import { creatureCodex, loadCreatureState } from "./creature.mjs";
+import { deriveClinicReport } from "./clinic.mjs";
+import { deriveClinicStudyHistory } from "./clinic-studies.mjs";
 import { creatureArt } from "./renderers/creature-art.mjs";
 import { creatureCasebook } from "./application/creature-casebook.mjs";
 import { deriveHabitat } from "./habitat.mjs";
@@ -45,19 +47,22 @@ import { runLaboratory } from "./commands/laboratory.mjs";
 import { runExpedition } from "./commands/expedition.mjs";
 import { runShare } from "./commands/share.mjs";
 import { runTui } from "./commands/tui.mjs";
+import { runClinic } from "./commands/clinic.mjs";
+import { renderClinicPeriod } from "./renderers/clinic.mjs";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json");
 async function runToday(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const date = options.date ?? localDate(new Date(), timezone);
+  const currentDate = localDate(new Date(), timezone);
+  const date = options.date ?? currentDate;
 
   if (options.json) {
     const [report] = await reportsForDates(options, [date], timezone);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } else {
-    const dates = Array.from({ length: 8 }, (_, index) =>
-      shiftDate(date, index - 7),
+    const dates = Array.from({ length: 31 }, (_, index) =>
+      shiftDate(date, index - 30),
     );
     const reports = await reportsForDates(options, dates, timezone);
     const creatureContext =
@@ -76,8 +81,14 @@ async function runToday(options) {
     const codex = creatureContext
       ? creatureCodex(creatureContext.state, creature.date)
       : null;
+    const state = creatureContext?.state ?? await loadCreatureState();
+    const studyHistory = deriveClinicStudyHistory(state, date);
+    const clinic = deriveClinicReport(reports, date, {
+      currentDate,
+      study: studyHistory.active ?? studyHistory.records[0] ?? null,
+    });
     const mutation = creature
-      ? `${renderCreatureTodaySummary(creature, codex, options.lang)}${renderHabitatPeriod(
+      ? `${renderClinicPeriod(clinic, options.lang, "today")}${renderCreatureTodaySummary(creature, codex, options.lang)}${renderHabitatPeriod(
           deriveHabitat(
             creatureContext.state,
             creature,
@@ -89,11 +100,11 @@ async function runToday(options) {
           options.lang,
           "today",
         )}`
-      : "";
+      : renderClinicPeriod(clinic, options.lang, "today");
     process.stdout.write(
       renderReceipt(
         reports.at(-1),
-        reports.slice(0, -1),
+        reports.slice(-8, -1),
         options.lang,
         mutation,
       ),
@@ -103,11 +114,14 @@ async function runToday(options) {
 
 async function runWeek(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const endDate = options.date ?? localDate(new Date(), timezone);
-  const dates = Array.from({ length: 7 }, (_, index) =>
-    shiftDate(endDate, index - 6),
+  const currentDate = localDate(new Date(), timezone);
+  const endDate = options.date ?? currentDate;
+  const scanDates = Array.from({ length: 31 }, (_, index) =>
+    shiftDate(endDate, index - 30),
   );
-  const reports = await reportsForDates(options, dates, timezone);
+  const scannedReports = await reportsForDates(options, scanDates, timezone);
+  const reports = scannedReports.slice(-7);
+  const dates = reports.map(({ date }) => date);
   const creatureContext =
     options.source === "all"
       ? await runCreature(
@@ -134,23 +148,37 @@ async function runWeek(options) {
         creatureArt(creatureContext.result),
       )
     : null;
+  const state = creatureContext?.state ?? await loadCreatureState();
+  const studyHistory = deriveClinicStudyHistory(state, endDate);
+  const clinic = deriveClinicReport(scannedReports, endDate, {
+    currentDate,
+    study: studyHistory.active ?? studyHistory.records[0] ?? null,
+  });
   process.stdout.write(
     renderWeek(
       reports,
       options.lang,
-      `${casebook ? renderCreatureCasebook(casebook, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}${renderHabitatPeriod(habitat, dates[0], endDate, options.lang, "week")}`,
+      `${renderClinicPeriod(clinic, options.lang, "week")}${casebook ? renderCreatureCasebook(casebook, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}${renderHabitatPeriod(habitat, dates[0], endDate, options.lang, "week")}`,
     ),
   );
 }
 
 async function runMonth(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const endDate = options.date ?? localDate(new Date(), timezone);
+  const currentDate = localDate(new Date(), timezone);
+  const endDate = options.date ?? currentDate;
   const dayCount = Number(endDate.slice(8));
   const dates = Array.from({ length: dayCount }, (_, index) =>
     `${endDate.slice(0, 8)}${String(index + 1).padStart(2, "0")}`,
   );
-  const reports = await reportsForDates(options, dates, timezone);
+  const scanDates = Array.from({ length: 31 }, (_, index) =>
+    shiftDate(endDate, index - 30),
+  );
+  const scannedReports = await reportsForDates(options, scanDates, timezone);
+  const reportsByDate = new Map(
+    scannedReports.map((report) => [report.date, report]),
+  );
+  const reports = dates.map((date) => reportsByDate.get(date));
   const creatureContext =
     options.source === "all"
       ? await runCreature(
@@ -177,11 +205,27 @@ async function runMonth(options) {
         creatureArt(creatureContext.result),
       )
     : null;
+  const state = creatureContext?.state ?? await loadCreatureState();
+  const studyHistory = deriveClinicStudyHistory(state, endDate);
+  const completedThisMonth = studyHistory.records.find(
+    (study) =>
+      study.status === "completed" &&
+      study.endsAt >= dates[0] &&
+      study.endsAt <= endDate,
+  );
+  const clinic = deriveClinicReport(scannedReports, endDate, {
+    currentDate,
+    study:
+      completedThisMonth ??
+      studyHistory.active ??
+      studyHistory.records[0] ??
+      null,
+  });
   process.stdout.write(
     renderMonth(
       reports,
       options.lang,
-      `${autopsy ? renderCreatureAutopsy(autopsy, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}${renderHabitatPeriod(habitat, dates[0], endDate, options.lang, "month")}`,
+      `${renderClinicPeriod(clinic, options.lang, "month")}${autopsy ? renderCreatureAutopsy(autopsy, options.lang) : ""}${renderCompanionPeriod(companionPeriod, options.lang)}${renderHabitatPeriod(habitat, dates[0], endDate, options.lang, "month")}`,
     ),
   );
 }
@@ -304,6 +348,7 @@ const COMMAND_HANDLERS = {
   lab: runLaboratory,
   expedition: runExpedition,
   doctor: runDoctor,
+  clinic: runClinic,
   explain: (options) => runExplain(options.lang, options.topic),
 };
 
@@ -330,7 +375,7 @@ async function main(rawArgs = process.argv.slice(2)) {
       : options.command && !options.command.startsWith("-")
         ? [
             options.command,
-            ...(["creature", "lab", "expedition"].includes(options.command) && options.action
+            ...(["creature", "lab", "expedition", "clinic"].includes(options.command) && options.action
               ? [options.action]
               : []),
           ]

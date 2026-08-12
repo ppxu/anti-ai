@@ -128,6 +128,13 @@ const COMMAND_REGISTRY = Object.freeze([
     },
   },
   {
+    id: "clinic",
+    summary: {
+      zh: "查看 Token 代谢诊断与被动研究",
+      en: "Inspect Token metabolism and passive studies",
+    },
+  },
+  {
     id: "explain",
     summary: {
       zh: "解释统计、资源换算和隐私边界",
@@ -186,6 +193,8 @@ const EXPEDITION_ACTION_IDS = Object.freeze([
   "history",
   "abandon",
 ]);
+
+const CLINIC_ACTION_IDS = Object.freeze(["start", "history"]);
 
 const EXPLAIN_TOPIC_IDS = Object.freeze([
   "resources",
@@ -264,6 +273,10 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
     zh: "只读诊断，不修改 Agent 记录或异变体档案。",
     en: "Read-only diagnostics; Agent records and mutation state are unchanged.",
   },
+  clinic: {
+    zh: "门诊和历史只读；只有 clinic start 会写入一个本地研究协议。",
+    en: "Clinic and history views are read-only; only clinic start writes one local study protocol.",
+  },
   explain: {
     zh: "只读说明。",
     en: "Read-only explanation.",
@@ -274,6 +287,7 @@ export {
   COMMAND_IDS,
   COMMAND_REGISTRY,
   COMMAND_STATE_BEHAVIOR,
+  CLINIC_ACTION_IDS,
   CREATURE_ACTION_IDS,
   EXPEDITION_ACTION_IDS,
   EXPLAIN_TOPIC_IDS,

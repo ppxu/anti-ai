@@ -86,7 +86,7 @@ Overview sharing now prepares the short daily `briefing` card. The explicit 1200
 
 ## State and privacy
 
-Creature state remains schema v14. Chronicle, constellation progress, Legendary reveal, and Collection Mutation are recalculated for the requested historical date and are not stored in `~/.anti-ai/creature.json`.
+Creature state uses schema v15. Chronicle, constellation progress, Legendary reveal, and Collection Mutation are recalculated for the requested historical date and are not stored in `~/.anti-ai/creature.json`.
 
 Historical views exclude later discoveries and later Expedition results. Public Chronicle JSON and dossier SVG never expose exact Tokens, request counts, model or Agent names, prompts, responses, tool calls, local paths, per-request timestamps, internal plan hashes, or unopened Expedition events.
 

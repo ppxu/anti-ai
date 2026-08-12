@@ -113,7 +113,7 @@ The laboratory is a collection and narrative system. More Token use is not a sho
 
 ## State and privacy
 
-Creature state uses schema v14. The Laboratory v2 section stores only:
+Creature state uses schema v15. The Laboratory v2 section stores only:
 
 - a laboratory format version and next batch number;
 - stable culture and material IDs;

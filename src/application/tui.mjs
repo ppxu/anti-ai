@@ -45,6 +45,12 @@ import { deriveDailyBriefing } from "./daily-briefing.mjs";
 import { createProjectionContext } from "./projections.mjs";
 import { deriveMutationChronicle } from "../chronicle.mjs";
 import { presentMutationChronicle } from "../renderers/chronicle.mjs";
+import {
+  clinicProtocol,
+  deriveClinicStudyHistory,
+  deriveSealedClinicTrends,
+} from "../clinic-studies.mjs";
+import { DIAGNOSIS_CONTENT, STUDY_RESULTS } from "../renderers/clinic.mjs";
 
 const ANSI_PATTERN = /\u001B\[[0-9;]*m/g;
 
@@ -200,6 +206,49 @@ function archiveRecordLabel(group, type, lang) {
     lang,
     ...(labels[group]?.[type] ?? [type, type]),
   );
+}
+
+function tuiClinicModel(state, date, lang) {
+  const metabolism = state.days?.[date]?.metabolism ?? null;
+  const diagnosisId = metabolism?.mainDiagnosisId ?? "insufficient_evidence";
+  const diagnosisCopy = DIAGNOSIS_CONTENT[diagnosisId];
+  const history = deriveClinicStudyHistory(state, date);
+  const trends = deriveSealedClinicTrends(state, date);
+  const study = history.active ?? history.records[0] ?? null;
+  return {
+    diagnosis: {
+      id: diagnosisId,
+      label: localized(lang, ...diagnosisCopy.label),
+      detail: metabolism
+        ? localized(
+            lang,
+            `已封存 · 基准 ${metabolism.baselineActiveDays} 个活跃日 · 来源 ${metabolism.sourceIds.join(" · ") || "暂无"}`,
+            `SEALED · baseline ${metabolism.baselineActiveDays} active days · sources ${metabolism.sourceIds.join(" · ") || "none"}`,
+          )
+        : localized(
+            lang,
+            "代谢样本尚未封存；浏览模式拒绝扫描原始记录。",
+            "The metabolic sample is not sealed; browsing refuses to scan raw records.",
+          ),
+    },
+    evidence: {
+      fieldsUsed: metabolism?.fieldsUsed ?? [],
+      sourceIds: metabolism?.sourceIds ?? [],
+      excludedSourceIds: metabolism?.excludedSourceIds ?? [],
+      baselineActiveDays: metabolism?.baselineActiveDays ?? 0,
+    },
+    trends,
+    study: {
+      active: history.active,
+      latest: history.records[0] ?? null,
+      label: study
+        ? localized(lang, ...clinicProtocol(study.protocolId).labels)
+        : null,
+      resultLabel: study?.resultId
+        ? localized(lang, ...STUDY_RESULTS[study.resultId])
+        : null,
+    },
+  };
 }
 
 function archiveDayPresentation(day, lang) {
@@ -448,6 +497,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     .split("\n")
     .filter(Boolean);
   const status = overviewStatus(state, creature, date);
+  const clinic = tuiClinicModel(state, date, lang);
   const expedition = expeditionStatus(state, creature, date);
   const presentExpedition = (record) => {
     if (!record) return null;
@@ -661,7 +711,9 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     laboratoryModel,
     lang,
   );
-  const primaryAction = actions.find(({ available }) => available) ?? null;
+  const primaryAction = actions.find(
+    ({ id, available }) => available && id !== "start_study",
+  ) ?? null;
   const presentedDay = brief.day ? archiveDayPresentation(brief.day, lang) : null;
   const habitatScene = presentHabitatScene(habitat.scene, lang);
   const dailyBriefing = deriveDailyBriefing({
@@ -669,7 +721,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     status,
     statusLabel,
     day: presentedDay,
-    diagnosis: chronicle.diagnosis,
+    diagnosis: clinic.diagnosis.label,
     habitat: habitatScene,
     recommendation: primaryAction,
     lang,
@@ -682,6 +734,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
     readOnly: true,
     actions,
     primaryAction,
+    clinic,
     dailyBriefing,
     navigation: tuiCopy(lang).navigation,
     expedition: {
@@ -737,6 +790,7 @@ function deriveTuiSnapshot(state, date, lang = "zh") {
           total: chronicle.collectionSets.total,
         },
       },
+      clinic,
       brief: {
         day: presentedDay,
         nextMilestone: {

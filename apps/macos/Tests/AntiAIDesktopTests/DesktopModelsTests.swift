@@ -5,6 +5,11 @@ import Testing
 
 @testable import AntiAIDesktop
 
+@MainActor
+private func prepareAppKitForTesting() {
+  _ = NSApplication.shared
+}
+
 @Test func snapshotRejectsUnknownMajorVersion() {
   let snapshot = DesktopSnapshot(
     version: 2,
@@ -202,6 +207,7 @@ import Testing
 
 @MainActor
 @Test func specimenFitsInsideTheTransparentPanel() throws {
+  prepareAppKitForTesting()
   let scene = SpecimenScene(size: SpecimenPanelController.sceneSize)
   let specimen = try #require(scene.children.first)
   let bounds = specimen.calculateAccumulatedFrame()
@@ -217,6 +223,7 @@ import Testing
 
 @MainActor
 @Test func everyBaseOrganVariantFitsTheFormalDesktopCanvas() throws {
+  prepareAppKitForTesting()
   let prototype = DesktopSnapshot.prototype
   let variants: [(String, [String])] = [
     ("body", (1...6).map { String(format: "body_%02d", $0) }),
@@ -277,6 +284,7 @@ import Testing
 
 @MainActor
 @Test func desktopPositionIsMovableByDefaultAndLockPersists() throws {
+  prepareAppKitForTesting()
   let suiteName = "anti-ai-desktop-tests-\(UUID().uuidString)"
   let defaults = try #require(UserDefaults(suiteName: suiteName))
   defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -305,6 +313,7 @@ import Testing
 
 @MainActor
 @Test func fullScreenSuppressionPreservesTheUsersVisibilityChoice() throws {
+  prepareAppKitForTesting()
   let suiteName = "anti-ai-desktop-full-screen-tests-\(UUID().uuidString)"
   let defaults = try #require(UserDefaults(suiteName: suiteName))
   defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -404,6 +413,7 @@ import Testing
 
 @MainActor
 @Test func statusMenuExposesConfiguredUpdateActions() throws {
+  prepareAppKitForTesting()
   var checked = false
   var automaticChecks = false
   let controller = StatusMenuController(
@@ -462,6 +472,7 @@ import Testing
 
 @MainActor
 @Test func statusMenuStartsFullyChineseAndSwitchesFullyToEnglish() throws {
+  prepareAppKitForTesting()
   var selectedLanguage: DesktopLanguage?
   let controller = StatusMenuController(
     specimenId: "140a55f3",

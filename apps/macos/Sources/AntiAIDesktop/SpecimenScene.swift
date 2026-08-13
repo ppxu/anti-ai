@@ -219,7 +219,12 @@ final class SpecimenScene: SKScene {
     let mouthIndex = geneIndex(snapshot.creature.mouthId)
     let barCount = [2, 3, 1, 3, 4, 1, 2, 2][mouthIndex]
     let spacing = [10, 9, 0, 8, 6, 0, 11, 7][mouthIndex]
-    jawBasePositions = (0..<barCount).map { 33 + CGFloat(barCount - 1 - $0) * CGFloat(spacing) }
+    jawBasePositions = []
+    for index in 0..<barCount {
+      let step: Int = barCount - 1 - index
+      let offset: CGFloat = CGFloat(step * spacing)
+      jawBasePositions.append(CGFloat(33) + offset)
+    }
     for y in jawBasePositions {
       let bar = stroke(
         points: [CGPoint(x: -19, y: y), CGPoint(x: 19, y: y)],

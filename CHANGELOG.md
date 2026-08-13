@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Reworked the bilingual READMEs into concise project landing pages, added bilingual documentation indexes, and moved source counting, resource formulas, everyday comparisons, assumptions, and primary references into standalone methodology guides without changing CLI behavior.
+
 ## [4.0.0] - 2026-08-13
 
 ### Added

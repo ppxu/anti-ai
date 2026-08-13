@@ -15,7 +15,6 @@ import {
   creatureLabel,
   deriveCreature,
   loadCreatureState,
-  saveCreatureState,
 } from "../creature.mjs";
 import {
   laboratoryLabel,
@@ -43,6 +42,7 @@ import {
   availableInteractionTargets,
   executeContainmentMutation,
 } from "./action-execution.mjs";
+import { persistCreatureState } from "./desktop.mjs";
 import { settleCreatureState } from "./settlement.mjs";
 import { deriveTuiSnapshot } from "./tui.mjs";
 import { CLINIC_PROTOCOLS } from "../clinic-studies.mjs";
@@ -590,7 +590,7 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
       { ...options, lang },
       timezone,
     );
-    await saveCreatureState(settled.state);
+    await persistCreatureState(settled.state, date);
     const day = settled.state.days[date];
     const impact = settleImpact(settled.report, {
       today: {

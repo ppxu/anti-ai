@@ -86,6 +86,13 @@ const COMMAND_REGISTRY = Object.freeze([
     },
   },
   {
+    id: "desktop",
+    summary: {
+      zh: "关联和刷新 macOS 桌面伴生体",
+      en: "Link and refresh the macOS desktop companion",
+    },
+  },
+  {
     id: "share",
     summary: {
       zh: "输出隐私安全的 SVG 分享卡",
@@ -198,6 +205,8 @@ const CLINIC_ACTION_IDS = Object.freeze(["start", "history"]);
 
 const ENCOUNTER_ACTION_IDS = Object.freeze(["visitors", "host", "release"]);
 
+const DESKTOP_ACTION_IDS = Object.freeze(["link", "status", "refresh"]);
+
 const EXPLAIN_TOPIC_IDS = Object.freeze([
   "resources",
   "comparisons",
@@ -213,6 +222,7 @@ const FULL_SOURCE_COMMAND_IDS = Object.freeze([
   "codex",
   "tui",
   "expedition",
+  "desktop",
 ]);
 
 const FULL_SOURCE_SHARE_CARD_IDS = Object.freeze(
@@ -242,6 +252,10 @@ const COMMAND_STATE_BEHAVIOR = Object.freeze({
   tui: {
     zh: "浏览和取消保持只读；影响预览可能扫描元数据，陈列或每日叙事动作仅在明确确认后写入稳定 ID。",
     en: "Browsing and cancellation stay read-only; impact preview may scan metadata, and displays or daily narrative actions write stable IDs only after explicit confirmation.",
+  },
+  desktop: {
+    zh: "status 只读；link 和 refresh 会显式扫描用量、结算到今天，并原子更新隐私安全快照。",
+    en: "status is read-only; link and refresh explicitly scan usage, settle through today, and atomically update the privacy-safe snapshot.",
   },
   share: {
     zh: "只读快照；所有卡片都不会推进成长或培养物。",
@@ -291,6 +305,7 @@ export {
   COMMAND_STATE_BEHAVIOR,
   CLINIC_ACTION_IDS,
   CREATURE_ACTION_IDS,
+  DESKTOP_ACTION_IDS,
   ENCOUNTER_ACTION_IDS,
   EXPEDITION_ACTION_IDS,
   EXPLAIN_TOPIC_IDS,

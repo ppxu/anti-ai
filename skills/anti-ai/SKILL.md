@@ -1,6 +1,6 @@
 ---
 name: anti-ai
-description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak or Token-metabolism pattern, wants a privacy-safe resource, briefing, specimen, wanted, pathology, fossil, encounter, prognosis, culture, companion, habitat, expedition, or dossier share card, wants to exchange a pollution code, manage a local Visitor Archive or Habitat stay, run a local mutation encounter, use the interactive containment console, or asks about their token-fed mutation creature, Token Metabolic Clinic, passive study, daily containment broadcast, mutation chronicle, pathology sets, containment expeditions, pollution laboratory, symbiotic companion, containment habitat, containment incidents, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
+description: Inspect and explain local Codex, Claude Code, OpenCode, OpenClaw, Hermes, or Pi token usage with the anti-ai CLI. Use this skill whenever the user asks how many AI tokens they used, which models consumed them, wants daily/weekly/monthly AI usage, requests an AI resource or environmental receipt, asks for an AI-free streak or Token-metabolism pattern, wants a privacy-safe resource, briefing, specimen, wanted, pathology, fossil, encounter, prognosis, culture, companion, habitat, expedition, or dossier share card, wants to exchange a pollution code, manage a local Visitor Archive or Habitat stay, run a local mutation encounter, use or configure the interactive console or macOS desktop specimen, or asks about their token-fed mutation creature, Token Metabolic Clinic, passive study, daily containment broadcast, mutation chronicle, pathology sets, containment expeditions, pollution laboratory, symbiotic companion, containment habitat, containment incidents, private codex, collections, generations, fossils, evolution choices, turning-point cases, prognosis, or living casebook—even when they do not mention anti-ai by name.
 compatibility: Requires Node.js 22+ and the anti-ai CLI. Reads only local usage metadata from supported Agent JSONL or optional SQLite stores.
 ---
 
@@ -34,6 +34,18 @@ Use the `anti-ai` CLI as the single source of truth for local token accounting a
    Summarize whether each source is available, but do not expose absolute log paths unless the user explicitly asks.
 
 ## Choose the right workflow
+
+### macOS desktop specimen
+
+The native macOS companion is human-facing and local-only. After installing the CLI and desktop app, the user must explicitly create its one-shot bridge and first privacy-safe snapshot:
+
+```bash
+anti-ai desktop link
+anti-ai desktop status
+anti-ai desktop refresh
+```
+
+`desktop status` is read-only. `desktop link` records the current absolute Node and CLI entry paths; `desktop refresh` performs the normal current-day settlement and atomically replaces `~/.anti-ai/desktop/snapshot-v1.json`. Do not edit either desktop JSON file, invent paths, invoke the native menu, or change its update preference on the user's behalf. The snapshot omits exact Tokens, models, sources, paths, and conversation content. The native app displays missing, invalid, incompatible, stale, refreshing, and failed states explicitly, preserves the previous valid specimen after refresh failure, and uses only fixed one-shot refresh/TUI bridge actions—never a daemon or telemetry. Its isolated updater checks only a signed HTTPS desktop feed after manual action or explicit opt-in, uploads no product data, and never updates the separately installed npm CLI.
 
 ### Human-only interactive console
 

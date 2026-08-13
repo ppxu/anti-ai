@@ -29,6 +29,8 @@ The TUI source lives in `src/tui/`; keep input orchestration in `app.jsx`, scree
 
 Run `npm run verify` before requesting review. Changes to state behavior also need migration, read-only snapshot, and concurrent-write coverage as applicable.
 
+The formal macOS presentation adapter lives in `apps/macos/` and remains outside the npm tarball. Keep all accounting and gameplay rules in Node; Swift may consume only `Desktop Snapshot v1` and the fixed one-shot bridge. Sparkle is limited to signed desktop-app distribution: automatic checks default off, system profiling stays disabled, and updater code must never receive snapshot or gameplay data. For native changes run `swift format lint --recursive --strict Sources Tests Package.swift`, `swift test`, and `./scripts/build-release.sh <version>` from that directory. Stable public releases require a non-committed Ed25519 key, signed appcast/update ZIP, Developer ID signing, notarization, and real-device acceptance. An update-enabled ad-hoc preview is permitted only as an explicitly labeled temporary exception and requires `ANTI_AI_ALLOW_UNNOTARIZED_RELEASE=1`.
+
 ## Pull requests
 
 Keep pull requests focused and explain:

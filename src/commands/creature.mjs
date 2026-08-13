@@ -15,7 +15,6 @@ import {
   deriveCreature,
   loadCreatureState,
   resetCreatureState,
-  saveCreatureState,
 } from "../creature.mjs";
 import { creatureArt } from "../renderers/creature-art.mjs";
 import { collectionPhenotypeCopy } from "../collection-phenotype.mjs";
@@ -54,10 +53,15 @@ import { applyContainmentAction } from "../application/action-execution.mjs";
 import { expeditionDestination } from "../expedition/content.mjs";
 import { deriveMutationChronicle } from "../chronicle.mjs";
 import { renderMutationChronicle } from "../renderers/chronicle.mjs";
+import {
+  clearLinkedDesktopSnapshot,
+  persistCreatureState,
+} from "../application/desktop.mjs";
 
 async function runCreature(options, mode = "render") {
   if (options.action === "reset") {
     await resetCreatureState();
+    await clearLinkedDesktopSnapshot();
     if (options.json) {
       process.stdout.write(`${JSON.stringify({ reset: true })}\n`);
     } else {
@@ -275,7 +279,7 @@ async function runCreature(options, mode = "render") {
       return;
     }
   }
-  if (!mode.startsWith("snapshot-")) await saveCreatureState(state);
+  if (!mode.startsWith("snapshot-")) await persistCreatureState(state, date);
 
   if (options.action === "incident") {
     const incident = incidentAction.value;

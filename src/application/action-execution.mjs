@@ -11,7 +11,6 @@ import {
   creatureCodex,
   deriveCreature,
   loadCreatureState,
-  saveCreatureState,
   selectCreatureEvolution,
 } from "../creature.mjs";
 import {
@@ -27,6 +26,7 @@ import {
   laboratoryView,
 } from "../laboratory.mjs";
 import { deriveContainmentActions } from "./action-catalog.mjs";
+import { persistCreatureState } from "./desktop.mjs";
 
 function availableInteractionTargets(state, date, kind) {
   const hasCompanion = laboratoryCompanion(state, date).companion !== null;
@@ -150,7 +150,7 @@ async function executeContainmentMutation(actionId, options = {}, session = {}) 
     };
   }
 
-  await saveCreatureState(state);
+  await persistCreatureState(state, options.date);
   return {
     id: actionId,
     status: "completed",

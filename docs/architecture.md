@@ -2,19 +2,32 @@
 
 `anti-ai` is a local-first CLI. It keeps one npm package, one optional native adapter, and one privacy-safe JSON state file. The package is internally divided into Core, Application, Infrastructure, and presentation adapters without introducing a workspace or monorepo. This keeps installation and publishing simple while leaving explicit seams that can become packages later if independent consumers actually appear. The accounting and gameplay core remains framework-free; the human-only `tui` adapter uses Ink and React compiled into one self-contained distribution artifact. The project still avoids a service, account, telemetry pipeline, or background process, and keeps required runtime dependencies at zero.
 
+The native Swift/AppKit app under `apps/macos/` is a formal presentation consumer,
+not part of the npm package or the Node runtime graph. It consumes only the
+versioned, privacy-safe `Desktop Snapshot v1` and a validated one-shot CLI bridge.
+Scanner, settlement, growth, Clinic, visitor, Expedition, and action rules remain
+owned by the Node application and domain layers; the desktop process does not
+duplicate them, inspect Agent logs, or introduce a daemon. Sparkle is an isolated
+native distribution dependency: it may check only the signed HTTPS app feed after
+manual action or explicit opt-in and never enters the npm dependency graph.
+
 ## Runtime flow
 
 1. `bin/anti-ai.mjs` calls the exported CLI `main()`.
 2. `src/registry.mjs` defines supported commands, cards, and local sources.
 3. explicit report and gameplay commands continue through the source adapters in `src/infrastructure/sources/`, application use cases, domain modules, and the existing terminal or SVG adapters. `src/scanner.mjs` remains a compatibility facade.
 4. `tui` loads a presentation-neutral snapshot, a session-scoped action controller, and a local share-export controller from `src/application/`, then dynamically imports the bundled Ink adapter from `dist/tui.mjs`.
-5. terminal, TUI, and SVG adapters format derived results without reading raw conversation text.
+5. `desktop link` records an exact Node/CLI bridge and writes the first snapshot; `desktop refresh` uses normal settlement and atomically replaces that snapshot. Linked gameplay writes refresh the same projection without making snapshot failure block the already-valid gameplay write.
+6. the native app reads the snapshot and may invoke only fixed `desktop refresh` or `tui` entry points; terminal, TUI, SVG, and desktop adapters format derived results without reading raw conversation text.
+7. the isolated update adapter may fetch a signed HTTPS appcast and notarized desktop archive after manual action or explicit opt-in; it never reads product state and never replaces the independent npm CLI.
 
 Source adapters are isolated. A broken source does not hide healthy sources when scanning `all`; output receives a source ID and error code, never a local record or conversation excerpt. SQLite adapters load `better-sqlite3` only when an existing SQLite source is selected.
 
 ## State boundary
 
 `~/.anti-ai/creature.json` remains the only persistent gameplay file. It stores discrete usage bands and derived game state, not exact Tokens, model names, prompts, responses, tool calls, or source paths.
+
+`~/.anti-ai/desktop/link-v1.json` and `snapshot-v1.json` are private integration/presentation files, not gameplay state. Both use mode `0600` and atomic replacement. The link alone may contain validated absolute Node/CLI paths; the snapshot cannot contain paths or raw accounting. `desktop status` reads both without scanning or writing. `creature reset` also removes the desktop snapshot so a destroyed specimen cannot remain visible as current.
 
 - Human-readable full-source `today`, `week`, and `month`, plus `creature`, `encounter --save`, `encounter host`, `encounter release`, state-changing Laboratory actions, explicit Expedition actions, and `clinic start`, may write local history.
 - Source-filtered reports and `today --json` are accounting-only.
@@ -29,6 +42,8 @@ State loading validates the schema plus all present nested state envelopes befor
 Add a local Agent by registering its metadata in `src/registry.mjs`, implementing the adapter in `src/infrastructure/sources/jsonl.mjs` or `sqlite.mjs`, and registering it in `src/infrastructure/sources/index.mjs`. JSONL adapters should stream records. SQLite adapters must be read-only, optional, and return empty usage when their database does not exist. Shared parsing, numeric normalization, snapshot deduplication, and lazy native loading belong in `runtime.mjs`; do not copy them into an adapter.
 
 Add a command in `src/commands/` when it owns substantial orchestration. Keep parsing and allowlists in the registry/CLI layer, domain calculations in their domain module, and formatting in `src/cli/render.mjs` or `src/renderers/`.
+
+Desktop projection belongs in `src/application/desktop-snapshot.mjs`; bridge/snapshot filesystem mechanics belong in `src/infrastructure/desktop-store.mjs`; public orchestration belongs in `src/commands/desktop.mjs`. All existing writes use `persistCreatureState()` so a valid link receives one best-effort snapshot update. The projection reuses TUI/Application views for bilingual briefing, Clinic, Habitat, companion, visitor, and recommendation semantics rather than copying their priority rules. Swift may ignore new fields within major version 1, but both runtimes reject an unknown major version. `DesktopUpdateController` is a separate native distribution adapter: update configuration must be injected at release time, automatic checks default off, system profiling stays disabled, and no update API may receive snapshot or gameplay data.
 
 Presentation-neutral queries and action orchestration belong in `src/application/`. `action-catalog.mjs` derives availability, disabled reasons, and confirmation mode; `actions.mjs` owns the TUI preview/confirmation session; `action-execution.mjs` is the single write-oriented use case shared by CLI and TUI; `settlement.mjs` contains the shared settlement pipeline; and `archive.mjs` derives the post-hatch daily containment record. `daily-briefing.mjs` reduces the selected archive day, Clinic diagnosis, collection delta, Living Habitat scene, and action availability into one deterministic five-section broadcast with at most one recommendation. `projections.mjs` memoizes request-local Creature, Codex, companion, Laboratory, and shelf views so a screen or export does not repeatedly rebuild the same graph. `share-export.mjs` is the single card-preparation path for CLI and TUI, selects a writable target directory without mutating it, and creates the directory/file only after confirmation. CLI commands and the TUI call these services instead of duplicating domain rules; the TUI must not call command handlers or execute arbitrary shell commands. Domain modules remain the only owners of mutation rules. `src/clinic.mjs` owns pure diagnosis and trend rules; `src/clinic-studies.mjs` derives passive-study status from sealed samples; `src/application/clinic.mjs` is the shared study-start mutation used by CLI and TUI. `src/visitation.mjs` owns visitor archive, stay invariants, and deterministic cohabitation derivation; `src/visitation-content.mjs` owns route-balanced bilingual content; `src/application/visitation.mjs` is the shared intake/host/release service used by CLI and TUI. `creature-casebook.mjs` owns period casebook queries, while `src/chronicle.mjs` composes them into current identity, 7/30/90-day course, and generation comparison. `src/creature/codex.mjs` derives the collection projection from an already-derived Creature, and `src/creature/state.mjs` owns schema normalization, sequential migration, and persistence wiring. `src/collection-sets.mjs` owns route-balanced, presentation-only constellation definitions, reveal rules, and case phases; `src/collection-phenotype.mjs` derives milestone-triggered Collection Mutations from dated fixed discoveries without changing the base appearance identity. None of these query modules writes state or owns an action. `src/habitat-scenes.mjs` owns route-balanced Living Habitat archetypes and derives its environment, subject pose, relationship context, recent trace, cycle, and bulletin without persisting them. `src/incidents.mjs` owns deterministic incident eligibility, contextual selection, sealed responses, delayed aftermaths, and two-chapter chains. `src/expedition.mjs` owns non-stacking local-date eligibility, stable ten-cell plans, choices, effects, collection unlocks, and historical filtering; `src/expedition/content.mjs` owns bilingual content, while `presentation.mjs` derives the shared event hierarchy and return summary consumed by CLI, TUI, and SVG adapters. Adapters only present or invoke those rules.
 
@@ -46,5 +61,7 @@ Creature content belongs in `src/creature/content.mjs`; pure appearance composit
 - `npm run test:coverage`: minimum 90% lines, 90% functions, and 75% branches for `src`.
 - `npm run test:package`: packs the real tarball, installs it without optional native dependencies, and runs the installed CLI.
 - `npm run verify`: complete local and prepublish gate.
+- `cd apps/macos && swift test`: native schema, anatomy, motion, position, localization, full-screen, bridge, and update-configuration contract tests.
+- `cd apps/macos && ./scripts/build-release.sh <version>`: universal app/DMG/update-ZIP build, embedded-framework and nested-signature verification, size budget, visible-window startup, and clean-exit smoke. Public artifacts additionally require an Ed25519-signed appcast, Developer ID notarization, and real-device acceptance.
 
-CI runs the complete gate on Node.js 22, 24, and 26. CodeQL and Dependabot cover source and dependency drift.
+CI runs the complete Node gate on Node.js 22, 24, and 26, plus native formatting, tests, and arm64/x86_64 release builds on a macOS 15 runner targeting macOS 14. CodeQL and Dependabot cover source and dependency drift.

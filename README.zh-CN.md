@@ -39,7 +39,7 @@
 
 - Node.js 22 或更高版本
 - 已在本机使用过至少一个受支持的 Agent，存在 JSONL 或 SQLite 本地记录
-- 当前已在 macOS 验证
+- CLI 已在 macOS 验证；可选原生桌面伴生体要求 macOS 14+
 
 ## 安装
 
@@ -112,6 +112,10 @@ anti-ai clinic history
 anti-ai tui
 anti-ai tui --lang en
 anti-ai tui --no-motion
+
+anti-ai desktop link
+anti-ai desktop status
+anti-ai desktop refresh
 
 anti-ai codex
 anti-ai codex --json
@@ -190,6 +194,24 @@ anti-ai explain --lang en
 ```
 
 `today --json`、`codex --json`、`creature --json`、`encounter --json`、`lab --json`、`expedition --json` 和 `clinic --json` 不受展示语言影响，字段名和结构保持稳定。
+
+### macOS 桌面伴生体
+
+v4.0 新增可选的原生 Swift/AppKit 桌面异变体。它以独立通用 macOS 应用分发，不进入 npm 包或 Node 依赖图。先安装 CLI，再明确把桌面应用关联到这一次安装：
+
+```bash
+npm install -g anti-ai
+anti-ai desktop link
+open /Applications/anti-ai.app
+```
+
+`desktop link` 会把当前 Node 可执行文件和 CLI 入口的绝对路径写入私有本地 bridge 文件，并生成第一份 `Desktop Snapshot v1`。`desktop refresh` 会显式扫描受支持的用量元数据、结算到今天，再原子替换快照；`desktop status` 完全只读。关联后，CLI/TUI 原本就会发生的玩法写入也会同步更新快照，但不会启动后台 watcher 或 daemon。
+
+150×140 pt 的透明本体默认可直接拖动。菜单栏可以锁定或重置位置、显示/隐藏、切换四种展示态、三档动态和语言、刷新、手动检查或明确开启自动 App 更新、打开完整 TUI 或退出；自动检查默认关闭。应用遵循系统“减少动态效果”，屏幕休眠时暂停，多屏变化后恢复到可见区域，并在其他应用全屏时自动隐藏。缺失、过期、损坏、不兼容或同步失败会明确显示在菜单中，不再用原型数据掩盖。
+
+桌面端只消费稳定展示 ID 和双语派生文案，不读取 Agent 日志。快照不包含精确 Token、请求数、模型、来源、路径、Prompt、回复、工具调用、逐请求时间或内部哈希。Scanner、成长、门诊、访客、远征和动作规则继续由 Node 唯一负责。隔离的 Sparkle 更新器只接受 HTTPS 签名发布，不上传本地产品数据，也不会更新独立安装的 npm CLI。架构、本地构建、更新行为、分发和隐私边界见[桌面伴生体指南](./docs/desktop.zh-CN.md)。[English](./docs/desktop.md)。
+
+> **v4.0 桌面预览说明：**当前 macOS 应用只使用 ad-hoc 签名，尚未经过 Apple 公证。请只从[官方 v4.0.0 Release](https://github.com/ppxu/anti-ai/releases/tag/v4.0.0)下载；首次启动可能需要前往**系统设置 → 隐私与安全性 → 仍要打开**。更新归档有项目 Ed25519 签名保护，但它不能替代 Developer ID 身份或 Apple 公证。
 
 ### `tui`
 
@@ -473,6 +495,7 @@ WaterSense 淋浴采用 EPA 的 `2.0 gal/min` 上限（约 `7.6L/min`），标�
 ## 隐私
 
 - 完全本地运行，不联网发送日志
+- 可选桌面更新器是唯一联网例外：手动或明确开启的检查只获取签名 HTTPS 更新源，不上传产品数据
 - 扫描 JSONL/SQLite 时只处理时间、消息 ID、模型和 usage 元数据
 - 不采集、不保存、不输出 Prompt、回复或工具调用正文
 - 默认分享卡片不包含路径、模型名、请求数或精确 Token

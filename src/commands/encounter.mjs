@@ -1,7 +1,6 @@
 import {
   creatureLabel,
   loadCreatureState,
-  saveCreatureState,
 } from "../creature.mjs";
 import { creatureArt } from "../renderers/creature-art.mjs";
 import {
@@ -16,6 +15,7 @@ import { localized } from "../shared.mjs";
 import { localDate } from "../scanner.mjs";
 import { VisitationError, deriveVisitorArchive } from "../visitation.mjs";
 import { executeVisitationMutation } from "../application/visitation.mjs";
+import { persistCreatureState } from "../application/desktop.mjs";
 import { runCreature } from "./creature.mjs";
 
 function encounterErrorMessage(error, lang) {
@@ -163,7 +163,7 @@ async function runEncounter(options) {
   const { encounter, state } = context;
   if (options.save) {
     const collected = saveEncounterSpecimen(state, encounter);
-    await saveCreatureState(state);
+    await persistCreatureState(state, options.date);
     encounter.saved = true;
     encounter.alreadyCollected = !collected;
   }

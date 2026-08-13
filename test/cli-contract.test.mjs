@@ -853,9 +853,12 @@ test("top-level help keeps only global options and points to command help", () =
 
 test("--version prints the published package version", () => {
   const result = runCli(["--version"]);
+  const packageVersion = JSON.parse(
+    readFileSync(path.join(projectDir, "package.json"), "utf8"),
+  ).version;
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, "anti-ai 3.9.0\n");
+  assert.equal(result.stdout, `anti-ai ${packageVersion}\n`);
   assert.equal(result.stderr, "");
 });
 

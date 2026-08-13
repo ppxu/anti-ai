@@ -6,7 +6,6 @@ import {
 import {
   creatureLabel,
   loadCreatureState,
-  saveCreatureState,
 } from "../creature.mjs";
 import {
   laboratoryCulture,
@@ -20,6 +19,7 @@ import { localized } from "../shared.mjs";
 import { CODEX_RARITY_COLORS } from "../cli/render.mjs";
 import { runCreature } from "./creature.mjs";
 import { executeContainmentMutation } from "../application/action-execution.mjs";
+import { persistCreatureState } from "../application/desktop.mjs";
 
 async function runLaboratory(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -43,7 +43,7 @@ async function runLaboratory(options) {
   }
   if (options.action === "companion") {
     syncLaboratoryCompanion(state, date);
-    await saveCreatureState(state);
+    await persistCreatureState(state, date);
     const view = laboratoryCompanion(state, date);
     if (options.json) {
       process.stdout.write(`${JSON.stringify(view, null, 2)}\n`);

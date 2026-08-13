@@ -48,6 +48,7 @@ import { runExpedition } from "./commands/expedition.mjs";
 import { runShare } from "./commands/share.mjs";
 import { runTui } from "./commands/tui.mjs";
 import { runClinic } from "./commands/clinic.mjs";
+import { runDesktop } from "./commands/desktop.mjs";
 import { renderClinicPeriod } from "./renderers/clinic.mjs";
 
 const require = createRequire(import.meta.url);
@@ -342,6 +343,7 @@ const COMMAND_HANDLERS = {
   month: runMonth,
   codex: runCodex,
   tui: runTui,
+  desktop: runDesktop,
   share: runShare,
   creature: runCreature,
   encounter: runEncounter,
@@ -375,7 +377,7 @@ async function main(rawArgs = process.argv.slice(2)) {
       : options.command && !options.command.startsWith("-")
         ? [
             options.command,
-            ...(["creature", "lab", "expedition", "clinic", "encounter"].includes(options.command) && options.action
+            ...(["creature", "lab", "expedition", "clinic", "encounter", "desktop"].includes(options.command) && options.action
               ? [options.action]
               : []),
           ]

@@ -343,6 +343,29 @@ const COMMAND_HELP = {
     ],
     related: ["clinic start", "clinic history", "today", "doctor"],
   },
+  desktop: {
+    usage: "anti-ai desktop [status|link|refresh] [options]",
+    summary: [
+      "关联并检查原生 macOS 桌面伴生体。",
+      "Link and inspect the native macOS desktop companion.",
+    ],
+    output: [
+      "显示 CLI 关联、隐私安全快照和最后同步状态，不公开本地路径。",
+      "Shows CLI linkage, privacy-safe snapshot, and last-sync health without exposing local paths.",
+    ],
+    options: [["--json", "输出稳定状态 ID", "Print stable status IDs"]],
+    examples: [
+      "anti-ai desktop link",
+      "anti-ai desktop status",
+      "anti-ai desktop refresh",
+      "anti-ai desktop status --json",
+    ],
+    note: [
+      "桌面端不直接读取 Agent 日志；link 和 refresh 只启动一次性 CLI 进程。",
+      "The desktop app never reads Agent logs directly; link and refresh use one-shot CLI processes only.",
+    ],
+    related: ["desktop link", "desktop status", "desktop refresh", "tui"],
+  },
   explain: {
     usage: "anti-ai explain [resources|comparisons|sources|creature|privacy]",
     summary: ["解释工具的计算依据和边界。", "Explain the tool's methods and boundaries."],
@@ -365,6 +388,33 @@ const COMMAND_HELP = {
 };
 
 const ACTION_HELP = {
+  "desktop link": {
+    usage: "anti-ai desktop link [options]",
+    summary: ["关联桌面伴生体与当前 CLI。", "Link the desktop companion to the current CLI."],
+    output: ["记录固定 Node/CLI 绝对路径并生成第一份桌面快照。", "Records fixed absolute Node/CLI paths and writes the first desktop snapshot."],
+    options: [["--json", "输出稳定关联状态", "Print stable bridge status"]],
+    examples: ["anti-ai desktop link", "anti-ai desktop link --json"],
+    note: ["路径只写入本地私有 bridge 文件，不进入桌面快照或分享内容。", "Paths stay in the private local bridge file and never enter snapshots or shares."],
+    related: ["desktop", "desktop status", "desktop refresh"],
+  },
+  "desktop status": {
+    usage: "anti-ai desktop status [options]",
+    summary: ["只读检查桌面关联与快照。", "Read the desktop bridge and snapshot health."],
+    output: ["显示 missing、invalid、ready、stale 或 incompatible 状态。", "Reports missing, invalid, ready, stale, or incompatible states."],
+    options: [["--json", "输出稳定状态 ID", "Print stable status IDs"]],
+    examples: ["anti-ai desktop status", "anti-ai desktop status --json"],
+    note: ["不会扫描 Agent 记录、结算成长或改写任何文件。", "Does not scan Agent records, settle growth, or write any file."],
+    related: ["desktop", "desktop link", "desktop refresh"],
+  },
+  "desktop refresh": {
+    usage: "anti-ai desktop refresh [options]",
+    summary: ["刷新桌面快照。", "Refresh the desktop snapshot."],
+    output: ["通过现有 Scanner 和成长逻辑结算今天，再原子替换隐私安全快照。", "Settles today through the existing Scanner and growth logic, then atomically replaces the privacy-safe snapshot."],
+    options: [["--json", "输出稳定同步状态", "Print stable sync status"]],
+    examples: ["anti-ai desktop refresh", "anti-ai desktop refresh --json"],
+    note: ["刷新失败会保留上一份可读快照；不会启动 daemon 或网络服务。", "A failed refresh preserves the previous readable snapshot and starts no daemon or network service."],
+    related: ["desktop", "desktop link", "desktop status", "tui"],
+  },
   "clinic start": {
     usage: "anti-ai clinic start <cache-rehab|context-diet|load-recovery> [options]",
     summary: ["启动一个按自然日推进的本地被动研究。", "Start one local passive study driven by calendar days."],
@@ -829,7 +879,7 @@ function renderTopLevelHelp(lang = "zh") {
       "Turn local AI tokens into an uncomfortable resource bill.",
     ),
     "",
-    ...commandGroup(localized(lang, "开始使用", "START"), ["tui", "help"]),
+    ...commandGroup(localized(lang, "开始使用", "START"), ["tui", "desktop", "help"]),
     ...commandGroup(localized(lang, "用量账单", "RECEIPTS"), [
       "today",
       "week",

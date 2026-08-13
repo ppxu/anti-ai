@@ -14,9 +14,9 @@ import {
   creatureLabel,
   deriveCreature,
   loadCreatureState,
-  saveCreatureState,
 } from "../creature.mjs";
 import { localized } from "../shared.mjs";
+import { persistCreatureState } from "./desktop.mjs";
 
 function applyVisitationMutation(state, action, date, foreignSpecimenId) {
   if (action === "host") return hostVisitor(state, foreignSpecimenId, date);
@@ -33,7 +33,7 @@ async function executeVisitationMutation(action, options = {}, session = {}) {
     options.foreignSpecimenId,
   );
   if (selected.error) return selected;
-  if (selected.changed) await saveCreatureState(state);
+  if (selected.changed) await persistCreatureState(state, options.date);
   return {
     version: 1,
     action,
@@ -109,7 +109,7 @@ async function executeVisitorIntake(preview, options = {}, session = {}) {
     return { status: "unavailable", reason: "preview_mismatch" };
   }
   const collected = saveEncounterSpecimen(state, encounter);
-  if (collected) await saveCreatureState(state);
+  if (collected) await persistCreatureState(state, options.date);
   return {
     status: "completed",
     changed: collected,

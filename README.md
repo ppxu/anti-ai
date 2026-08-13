@@ -53,7 +53,7 @@ Token counts are measurable. The electricity, water, and carbon impact of propri
 
 - Node.js 22 or newer
 - Local records from at least one supported Agent (JSONL or SQLite)
-- Verified on macOS; the implementation uses cross-platform Node.js paths and APIs
+- CLI verified on macOS; the optional native desktop companion requires macOS 14+
 
 ## Install
 
@@ -112,6 +112,10 @@ anti-ai clinic history
 anti-ai tui
 anti-ai tui --lang en
 anti-ai tui --no-motion
+
+anti-ai desktop link
+anti-ai desktop status
+anti-ai desktop refresh
 
 anti-ai codex
 anti-ai codex --json
@@ -190,6 +194,24 @@ anti-ai explain --lang en
 ```
 
 `today --json`, `codex --json`, `creature --json`, `encounter --json`, `lab --json`, `expedition --json`, and `clinic --json` ignore presentation language and keep stable machine-readable keys.
+
+### macOS desktop companion
+
+v4.0 adds an optional native Swift/AppKit desktop specimen. It is distributed as a separate universal macOS app and does not enter the npm package or Node dependency graph. Install the CLI first, then explicitly link the app to that exact installation:
+
+```bash
+npm install -g anti-ai
+anti-ai desktop link
+open /Applications/anti-ai.app
+```
+
+`desktop link` records the absolute Node executable and CLI entry in a private local bridge file, then creates the first `Desktop Snapshot v1`. `desktop refresh` explicitly scans supported usage metadata, settles through today, and atomically replaces the snapshot. `desktop status` is read-only. Once linked, ordinary CLI/TUI gameplay writes also keep the snapshot current; no background watcher or daemon is started.
+
+The 150×140-point transparent specimen is directly draggable by default. Its menu bar item controls position locking, reset, visibility, four display states, three motion levels, language, refresh, manual or explicitly enabled automatic app update checks, full TUI launch, and quit. Automatic checks are off by default. It follows system Reduce Motion, pauses during display sleep, restores a visible multi-screen position, and hides while another application is full-screen. Missing, stale, invalid, incompatible, or failed synchronization remains visible as menu status instead of being hidden behind prototype data.
+
+The app consumes only stable presentation IDs and bilingual derived copy. It never reads Agent logs and the snapshot omits exact Tokens, request counts, models, sources, paths, prompts, responses, tool calls, per-request timestamps, and internal hashes. Scanner, growth, Clinic, Visitor, Expedition, and action rules remain owned by Node. Its isolated Sparkle updater uses signed HTTPS releases, never uploads local product data, and does not update the separately installed npm CLI. See the [Desktop Companion guide](./docs/desktop.md) for architecture, local source builds, update behavior, distribution, and privacy boundaries. [中文版](./docs/desktop.zh-CN.md).
+
+> **v4.0 desktop preview:** the current macOS app is ad-hoc signed and not notarized by Apple. Download it only from the [official v4.0.0 release](https://github.com/ppxu/anti-ai/releases/tag/v4.0.0). First launch may require **System Settings → Privacy & Security → Open Anyway**. The update archive is protected by the project's Ed25519 signature, but this does not replace Developer ID identity or notarization.
 
 ### `tui`
 
@@ -454,6 +476,7 @@ The remaining rounded consumer-item values are display assumptions, not environm
 ## Privacy
 
 - Runs locally and sends no log data over the network
+- The optional desktop updater is the sole network exception: manual or opt-in checks fetch a signed HTTPS app feed without uploading product data
 - Retains only timestamp, message ID, model, and usage metadata while scanning
 - Does not store or print prompts, responses, or tool-call content
 - The default share card omits paths, model names, request counts, and exact token counts

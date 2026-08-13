@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-08-13
+
+### Added
+
+- Added a native macOS 14+ desktop companion built with Swift, AppKit, and SpriteKit. The transparent 150×140-point specimen stays outside the npm runtime, supports direct dragging and persistent locking, four deterministic display states, three low-rate motion levels, bilingual menus, Reduce Motion, display sleep, multi-screen recovery, and automatic hiding behind a full-screen application.
+- Added the public `anti-ai desktop link`, `desktop status`, and `desktop refresh` commands plus nested bilingual Help. Linking records the exact Node and CLI entry points, writes the first snapshot, and lets the app invoke only a fixed one-shot refresh action.
+- Added `Desktop Snapshot v1`, a bilingual presentation contract for the current specimen, companion, visitor, Habitat, Daily Containment Broadcast, Clinic diagnosis, and at most one existing recommendation. Existing CLI/TUI gameplay writes update it atomically after an explicit desktop link.
+- Added a reproducible universal macOS release pipeline that builds arm64 and x86_64, generates a native icon, creates a signed `.app` plus DMG, verifies bundle metadata, architectures, visible-window startup, package size, DMG integrity, and clean termination, and optionally signs and notarizes Developer ID distribution images.
+- Added an isolated Sparkle 2 updater for the native app with bilingual manual checks, explicitly opt-in automatic checks, Ed25519-signed HTTPS releases, disabled system profiling, and a separate update ZIP/appcast release pipeline. The npm CLI remains independently managed.
+
+### Changed
+
+- Promoted `apps/macos/` from an isolated technical spike to the formal native presentation adapter while keeping Scanner, settlement, growth, Clinic, visitor, Expedition, and action rules exclusively in Node.
+- Replaced the prototype-only fixed specimen with a snapshot-driven geometric anatomy. Stage, body, eyes, mouth, core, limbs, tail, pathology crest, Ecology marks, chromatic overlay, inherited scar, and evolution graft now project from stable existing appearance IDs without changing the CLI fingerprint.
+- Desktop startup now surfaces missing, stale, invalid, and incompatible snapshots instead of silently pretending the bundled prototype is current. Refresh failure preserves the last readable snapshot and reports a local menu status.
+- Distributed the v4.0.0 macOS app as an explicitly labeled, ad-hoc-signed, unnotarized preview while Developer ID access is unavailable. The build requires an explicit override, publishes SHA-256 checksums, and keeps stable desktop distribution gated on Developer ID signing, Apple notarization, and real-device acceptance.
+- Updated bilingual READMEs, architecture, desktop, security, contribution, Agent Skill, and repository guidance for the native release boundary.
+
+### Security
+
+- The desktop app never scans Agent records and has no account, server, telemetry, hook, login item, or daemon. Its only network path is the isolated updater, which remains off until a manual check or explicit automatic-check opt-in, uses HTTPS and signed archives, disables system profiling, and never sends snapshots, Creature state, usage metadata, or logs. It reads only `~/.anti-ai/desktop/snapshot-v1.json` for product state and executes linked binaries directly through `Process`; no user-controlled shell command is accepted.
+- Desktop snapshots explicitly omit exact Tokens, request counts, model/source names, prompts, responses, tool-call bodies, local paths, per-request timestamps, and internal hashes. Bridge paths stay in the private `link-v1.json` file and never enter desktop status JSON, snapshots, or shares.
+- Snapshot and link files use private directories, mode `0600`, temporary-file plus rename replacement, stable major-version checks, and fixed ID validation. Opening the full TUI uses one generated, shell-quoted, mode `0700` local command file containing only the validated linked Node path, CLI path, and fixed `tui` action.
+
 ## [3.9.0] - 2026-08-12
 
 ### Added

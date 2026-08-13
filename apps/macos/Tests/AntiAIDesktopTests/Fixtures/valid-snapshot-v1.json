@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-12T00:00:00.000Z",
+  "date": "2026-08-12",
+  "language": "bilingual",
+  "status": "active",
+  "lastSettledDate": "2026-08-12",
+  "title": {
+    "zh": "续杯中的请求兽",
+    "en": "Refilling Request Beast"
+  },
+  "creature": {
+    "specimenId": "140a55f3",
+    "fingerprint": "6ddf1c0d5913",
+    "stageIndex": 2,
+    "ecologyId": "paradox",
+    "pathologyId": "frenzy",
+    "formId": "sealed_request_hydra",
+    "paletteId": "paradox_r_v2",
+    "poseId": "idle",
+    "bodyId": "body_05",
+    "eyesId": "eyes_02",
+    "mouthId": "mouth_02",
+    "coreId": "core_02",
+    "limbsId": "limbs_01",
+    "tailId": "tail_04",
+    "chromaticId": "meeting_radiation",
+    "scarId": null,
+    "graftId": null
+  },
+  "briefing": {
+    "status": "settled",
+    "sections": []
+  },
+  "clinic": {
+    "diagnosisId": "stable_metabolism",
+    "evidenceState": "sealed",
+    "label": {
+      "zh": "代谢稳定",
+      "en": "Stable metabolism"
+    }
+  },
+  "recommendation": null,
+  "privacy": {
+    "containsExactTokens": false,
+    "containsModels": false,
+    "containsPaths": false,
+    "containsConversation": false
+  }
+}

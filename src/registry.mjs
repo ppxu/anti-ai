@@ -206,6 +206,13 @@ const CLINIC_ACTION_IDS = Object.freeze(["start", "history"]);
 const ENCOUNTER_ACTION_IDS = Object.freeze(["visitors", "host", "release"]);
 
 const DESKTOP_ACTION_IDS = Object.freeze(["link", "status", "refresh"]);
+const TUI_AREA_IDS = Object.freeze([
+  "overview",
+  "habitat",
+  "expedition",
+  "laboratory",
+  "codex",
+]);
 
 const EXPLAIN_TOPIC_IDS = Object.freeze([
   "resources",
@@ -315,4 +322,5 @@ export {
   SHARE_CARD_IDS,
   SOURCE_IDS,
   SOURCE_REGISTRY,
+  TUI_AREA_IDS,
 };

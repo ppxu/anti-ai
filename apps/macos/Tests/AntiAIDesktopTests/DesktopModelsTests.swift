@@ -359,6 +359,7 @@ private func prepareAppKitForTesting() {
   #expect(copy.motion == "动态")
   #expect(DesktopMotionLevel.allCases.map(copy.motionLevel) == ["关闭", "低动态", "完整动态"])
   #expect(copy.languageMenu == "语言")
+  #expect(copy.settings == "设置")
   #expect(copy.refreshSnapshot == "刷新桌面快照")
   #expect(copy.openTUI == "打开完整 TUI")
   #expect(copy.checkForUpdates == "检查更新…")
@@ -380,6 +381,7 @@ private func prepareAppKitForTesting() {
   #expect(copy.motion == "Motion")
   #expect(DesktopMotionLevel.allCases.map(copy.motionLevel) == ["Off", "Low", "Full"])
   #expect(copy.languageMenu == "Language")
+  #expect(copy.settings == "Settings")
   #expect(copy.refreshSnapshot == "Refresh Snapshot")
   #expect(copy.openTUI == "Open Full TUI")
   #expect(copy.checkForUpdates == "Check for Updates…")
@@ -424,7 +426,7 @@ private func prepareAppKitForTesting() {
     onTogglePositionLock: { false },
     onResetPosition: {},
     onRefreshSnapshot: {},
-    onOpenTUI: {},
+    onOpenTUI: { _ in },
     onLanguage: { _ in },
     onState: { _ in },
     onMotion: { _ in },
@@ -440,11 +442,14 @@ private func prepareAppKitForTesting() {
   )
 
   controller.menuWillOpen(controller.menu)
+  let settingsMenu = try #require(
+    controller.menu.items.first(where: { $0.title == "设置" })?.submenu
+  )
   let checkItem = try #require(
-    controller.menu.items.first(where: { $0.title == "检查更新…" })
+    settingsMenu.items.first(where: { $0.title == "检查更新…" })
   )
   let automaticItem = try #require(
-    controller.menu.items.first(where: { $0.title == "自动检查更新" })
+    settingsMenu.items.first(where: { $0.title == "自动检查更新" })
   )
   #expect(checkItem.isEnabled)
   #expect(automaticItem.state == .off)
@@ -454,6 +459,74 @@ private func prepareAppKitForTesting() {
   #expect(NSApp.sendAction(automaticItem.action!, to: automaticItem.target, from: automaticItem))
   #expect(automaticChecks)
   #expect(automaticItem.state == .on)
+}
+
+@MainActor
+@Test func statusMenuGroupsStatusActionsAndSettingsAndRoutesTheRecommendation() throws {
+  prepareAppKitForTesting()
+  let prototype = DesktopSnapshot.prototype
+  let snapshot = DesktopSnapshot(
+    version: prototype.version,
+    generatedAt: prototype.generatedAt,
+    date: prototype.date,
+    language: prototype.language,
+    title: .init(zh: "续杯中的请求兽", en: "Request Beast on Refill"),
+    creature: prototype.creature,
+    clinic: .init(
+      diagnosisId: "stable_metabolism",
+      evidenceState: "observed",
+      label: .init(zh: "稳定复发", en: "Stable Relapse")
+    ),
+    recommendation: .init(
+      id: "inspect_culture",
+      label: .init(zh: "检查培养物", en: "Inspect Culture"),
+      target: "culture"
+    ),
+    privacy: prototype.privacy
+  )
+  var openedArea: TuiArea?
+  let controller = StatusMenuController(
+    specimenId: prototype.creature.specimenId,
+    positionLocked: false,
+    language: .zh,
+    onToggleVisibility: {},
+    onTogglePositionLock: { false },
+    onResetPosition: {},
+    onRefreshSnapshot: {},
+    onOpenTUI: { openedArea = $0 },
+    onLanguage: { _ in },
+    onState: { _ in },
+    onMotion: { _ in },
+    onQuit: {}
+  )
+  controller.update(snapshot: snapshot)
+
+  let titles = controller.menu.items.map(\.title)
+  let refreshIndex = try #require(titles.firstIndex(of: "刷新桌面快照"))
+  let openIndex = try #require(titles.firstIndex(of: "打开完整 TUI"))
+  let settingsIndex = try #require(titles.firstIndex(of: "设置"))
+  #expect(refreshIndex < openIndex)
+  #expect(openIndex < settingsIndex)
+  #expect(!titles.contains("锁定位置"))
+
+  let settings = try #require(controller.menu.items[settingsIndex].submenu)
+  #expect(settings.items.map(\.title).contains("锁定位置"))
+  #expect(settings.items.map(\.title).contains("展示状态"))
+  #expect(settings.items.map(\.title).contains("语言"))
+
+  let recommendation = try #require(
+    controller.menu.items.first(where: { $0.title.contains("检查培养物") })
+  )
+  #expect(
+    NSApp.sendAction(recommendation.action!, to: recommendation.target, from: recommendation)
+  )
+  #expect(openedArea == .laboratory)
+
+  controller.update(snapshot: nil, syncState: .invalidSnapshot)
+  let invalidTitles = controller.menu.items.map(\.title)
+  #expect(invalidTitles.contains("快照损坏 · 已保留本体"))
+  #expect(!invalidTitles.contains("续杯中的请求兽"))
+  #expect(!invalidTitles.contains(where: { $0.contains("检查培养物") }))
 }
 
 @MainActor
@@ -482,7 +555,7 @@ private func prepareAppKitForTesting() {
     onTogglePositionLock: { false },
     onResetPosition: {},
     onRefreshSnapshot: {},
-    onOpenTUI: {},
+    onOpenTUI: { _ in },
     onLanguage: { selectedLanguage = $0 },
     onState: { _ in },
     onMotion: { _ in },
@@ -490,22 +563,27 @@ private func prepareAppKitForTesting() {
   )
 
   let chineseTitles = controller.menu.items.map(\.title)
-  #expect(chineseTitles.contains("显示 / 隐藏异变体"))
-  #expect(chineseTitles.contains("锁定位置"))
-  #expect(chineseTitles.contains("展示状态"))
-  #expect(chineseTitles.contains("动态"))
-  #expect(chineseTitles.contains("语言"))
+  #expect(chineseTitles.contains("设置"))
+  let chineseSettingsMenu = try #require(
+    controller.menu.items.first(where: { $0.title == "设置" })?.submenu
+  )
+  let chineseSettingsTitles = chineseSettingsMenu.items.map(\.title)
+  #expect(chineseSettingsTitles.contains("显示 / 隐藏异变体"))
+  #expect(chineseSettingsTitles.contains("锁定位置"))
+  #expect(chineseSettingsTitles.contains("展示状态"))
+  #expect(chineseSettingsTitles.contains("动态"))
+  #expect(chineseSettingsTitles.contains("语言"))
   let chineseStateMenu = try #require(
-    controller.menu.items.first(where: { $0.title == "展示状态" })?.submenu
+    chineseSettingsMenu.items.first(where: { $0.title == "展示状态" })?.submenu
   )
   let chineseMotionMenu = try #require(
-    controller.menu.items.first(where: { $0.title == "动态" })?.submenu
+    chineseSettingsMenu.items.first(where: { $0.title == "动态" })?.submenu
   )
   #expect(chineseStateMenu.items.map(\.title) == ["待机", "过载", "清醒", "异常"])
   #expect(chineseMotionMenu.items.map(\.title) == ["关闭", "低动态", "完整动态"])
 
   let languageMenu = try #require(
-    controller.menu.items.first(where: { $0.title == "语言" })?.submenu
+    chineseSettingsMenu.items.first(where: { $0.title == "语言" })?.submenu
   )
   let englishItem = try #require(languageMenu.items.first(where: { $0.title == "English" }))
   let didSwitch = NSApp.sendAction(englishItem.action!, to: englishItem.target, from: englishItem)
@@ -513,16 +591,21 @@ private func prepareAppKitForTesting() {
   #expect(selectedLanguage == .en)
 
   let englishTitles = controller.menu.items.map(\.title)
-  #expect(englishTitles.contains("Show / Hide Specimen"))
-  #expect(englishTitles.contains("Lock Position"))
-  #expect(englishTitles.contains("Display State"))
-  #expect(englishTitles.contains("Motion"))
-  #expect(englishTitles.contains("Language"))
+  #expect(englishTitles.contains("Settings"))
+  let englishSettingsMenu = try #require(
+    controller.menu.items.first(where: { $0.title == "Settings" })?.submenu
+  )
+  let englishSettingsTitles = englishSettingsMenu.items.map(\.title)
+  #expect(englishSettingsTitles.contains("Show / Hide Specimen"))
+  #expect(englishSettingsTitles.contains("Lock Position"))
+  #expect(englishSettingsTitles.contains("Display State"))
+  #expect(englishSettingsTitles.contains("Motion"))
+  #expect(englishSettingsTitles.contains("Language"))
   let englishStateMenu = try #require(
-    controller.menu.items.first(where: { $0.title == "Display State" })?.submenu
+    englishSettingsMenu.items.first(where: { $0.title == "Display State" })?.submenu
   )
   let englishMotionMenu = try #require(
-    controller.menu.items.first(where: { $0.title == "Motion" })?.submenu
+    englishSettingsMenu.items.first(where: { $0.title == "Motion" })?.submenu
   )
   #expect(englishStateMenu.items.map(\.title) == ["Idle", "Overload", "Clarity", "Anomaly"])
   #expect(englishMotionMenu.items.map(\.title) == ["Off", "Low", "Full"])
@@ -576,12 +659,12 @@ private func prepareAppKitForTesting() {
     cliEntryPath: "/opt/anti-ai/bin/anti-ai.mjs"
   )
 
-  _ = try DesktopTerminalLauncher().prepare(link: link, at: url)
+  _ = try DesktopTerminalLauncher().prepare(link: link, area: .laboratory, at: url)
   let contents = try String(contentsOf: url, encoding: .utf8)
   #expect(
     contents == """
       #!/bin/zsh
-      exec '/Applications/Node'\\''s Runtime/node' '/opt/anti-ai/bin/anti-ai.mjs' tui
+      exec '/Applications/Node'\\''s Runtime/node' '/opt/anti-ai/bin/anti-ai.mjs' tui --area laboratory
       """)
   let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
   #expect((attributes[.posixPermissions] as? NSNumber)?.intValue == 0o700)

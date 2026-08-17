@@ -136,7 +136,11 @@ struct DesktopTerminalLauncher {
     "'\(value.replacingOccurrences(of: "'", with: "'\\''"))'"
   }
 
-  func prepare(link: DesktopBridgeLink, at url: URL = commandURL()) throws -> URL {
+  func prepare(
+    link: DesktopBridgeLink,
+    area: TuiArea = .overview,
+    at url: URL = commandURL()
+  ) throws -> URL {
     try fileManager.createDirectory(
       at: url.deletingLastPathComponent(),
       withIntermediateDirectories: true,
@@ -144,7 +148,7 @@ struct DesktopTerminalLauncher {
     )
     let contents = """
       #!/bin/zsh
-      exec \(shellQuote(link.nodePath)) \(shellQuote(link.cliEntryPath)) tui
+      exec \(shellQuote(link.nodePath)) \(shellQuote(link.cliEntryPath)) tui --area \(area.rawValue)
       """
     try Data(contents.utf8).write(to: url, options: .atomic)
     try fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
@@ -152,11 +156,12 @@ struct DesktopTerminalLauncher {
   }
 
   func openTUI(
+    area: TuiArea = .overview,
     linkURL: URL = DesktopBridgeStore.defaultURL(),
     commandURL: URL = commandURL()
   ) throws {
     let link = try DesktopBridgeStore().load(from: linkURL)
-    guard workspace.open(try prepare(link: link, at: commandURL)) else {
+    guard workspace.open(try prepare(link: link, area: area, at: commandURL)) else {
       throw DesktopBridgeError.terminalLaunchFailed
     }
   }

@@ -882,12 +882,16 @@ test("the containment console navigates all five product areas by keyboard", asy
     React.createElement(TuiApp, {
       snapshot,
       lang: "zh",
+      initialArea: "habitat",
       initialMotion: "off",
     }),
   );
   t.after(() => screen.unmount());
 
   assert.match(screen.lastFrame(), /收容控制台/u);
+  assert.match(screen.lastFrame(), /活体生态舱/u);
+  screen.stdin.write("1");
+  await new Promise((resolve) => setImmediate(resolve));
   assert.match(screen.lastFrame(), /每日收容播报/u);
   assert.match(screen.lastFrame(), /系统状态/u);
   assert.match(screen.lastFrame(), /建议处置/u);

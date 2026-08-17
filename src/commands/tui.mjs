@@ -32,6 +32,7 @@ async function runTui(options) {
   const { startTui } = await import("../../dist/tui.mjs");
   startTui(session.snapshot, {
     lang: options.lang,
+    area: options.area,
     motion: options.noMotion ? "off" : "low",
     actionController: session.actionController,
     visitorController: session.visitorController,

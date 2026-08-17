@@ -35,6 +35,7 @@ enum DesktopSyncState: Equatable, Sendable {
   case missingSnapshot
   case invalidSnapshot
   case incompatibleSnapshot
+  case tuiLaunchFailed
   case failed
 }
 

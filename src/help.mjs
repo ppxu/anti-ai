@@ -108,11 +108,13 @@ const COMMAND_HELP = {
     ],
     options: [
       ["--date <YYYY-MM-DD>", "查看指定日期的已结算档案", "Inspect the settled file at a date"],
+      ["--area <overview|habitat|expedition|laboratory|codex>", "从指定区域打开", "Open directly in one area"],
       ["--no-motion", "以完全静态模式启动", "Start in fully static mode"],
     ],
     examples: [
       "anti-ai tui",
       "anti-ai tui --lang en",
+      "anti-ai tui --area habitat",
       "anti-ai tui --no-motion",
     ],
     note: [

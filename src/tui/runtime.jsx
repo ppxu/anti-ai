@@ -8,6 +8,7 @@ function startTui(snapshot, options = {}) {
     <TuiApp
       snapshot={snapshot}
       lang={options.lang ?? "zh"}
+      initialArea={options.area ?? "overview"}
       initialMotion={options.motion ?? "low"}
       actionController={options.actionController ?? null}
       visitorController={options.visitorController ?? null}

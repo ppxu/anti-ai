@@ -7,8 +7,59 @@ final class NonActivatingSpecimenPanel: NSPanel {
   override var canBecomeMain: Bool { false }
 }
 
+@MainActor
 final class DraggableSpecimenView: SKView {
-  override var mouseDownCanMoveWindow: Bool { true }
+  var onSingleClick: (() -> Void)?
+  var onDoubleClick: (() -> Void)?
+
+  private var pointerInteraction = SpecimenPointerInteraction()
+  private var pendingSingleClick: DispatchWorkItem?
+
+  override var mouseDownCanMoveWindow: Bool { false }
+
+  override func mouseDown(with event: NSEvent) {
+    if event.clickCount >= 2 {
+      pendingSingleClick?.cancel()
+      pendingSingleClick = nil
+    }
+    pointerInteraction.begin(
+      at: NSEvent.mouseLocation,
+      windowOrigin: window?.frame.origin ?? .zero
+    )
+  }
+
+  override func mouseDragged(with event: NSEvent) {
+    guard let origin = pointerInteraction.drag(to: NSEvent.mouseLocation) else { return }
+    pendingSingleClick?.cancel()
+    pendingSingleClick = nil
+    window?.setFrameOrigin(origin)
+  }
+
+  override func mouseUp(with event: NSEvent) {
+    switch pointerInteraction.end(clickCount: event.clickCount) {
+    case .singleClick:
+      scheduleSingleClick()
+    case .doubleClick:
+      pendingSingleClick?.cancel()
+      pendingSingleClick = nil
+      onDoubleClick?()
+    case .drag, .none:
+      break
+    }
+  }
+
+  private func scheduleSingleClick() {
+    pendingSingleClick?.cancel()
+    let workItem = DispatchWorkItem { [weak self] in
+      self?.pendingSingleClick = nil
+      self?.onSingleClick?()
+    }
+    pendingSingleClick = workItem
+    DispatchQueue.main.asyncAfter(
+      deadline: .now() + NSEvent.doubleClickInterval,
+      execute: workItem
+    )
+  }
 }
 
 @MainActor
@@ -17,14 +68,26 @@ final class SpecimenPanelController: NSWindowController, NSWindowDelegate {
   static let sceneSize = CGSize(width: 300, height: 280)
 
   let scene: SpecimenScene
+  let spriteView: DraggableSpecimenView
   private(set) var isPositionLocked: Bool
   private let positionStore: WindowPositionStore
+  private let insightBubbleController = SpecimenInsightBubbleController()
+  private let onOpenTUI: (TuiArea) -> Void
+  private var currentInsight = DesktopInsightProjector().project(
+    snapshot: nil,
+    syncState: .missingSnapshot,
+    language: .zh
+  )
   private var userWantsVisible = true
   private var fullScreenSuppressed = false
   private var displaySleeping = false
 
-  init(positionStore: WindowPositionStore = WindowPositionStore()) {
+  init(
+    positionStore: WindowPositionStore = WindowPositionStore(),
+    onOpenTUI: @escaping (TuiArea) -> Void = { _ in }
+  ) {
     self.positionStore = positionStore
+    self.onOpenTUI = onOpenTUI
     isPositionLocked = positionStore.loadPositionLocked()
     scene = SpecimenScene(size: Self.sceneSize)
 
@@ -44,13 +107,19 @@ final class SpecimenPanelController: NSWindowController, NSWindowDelegate {
     panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
     panel.animationBehavior = .none
 
-    let spriteView = DraggableSpecimenView(frame: CGRect(origin: .zero, size: Self.panelSize))
+    spriteView = DraggableSpecimenView(frame: CGRect(origin: .zero, size: Self.panelSize))
     spriteView.allowsTransparency = true
     spriteView.ignoresSiblingOrder = true
     spriteView.presentScene(scene)
     panel.contentView = spriteView
 
     super.init(window: panel)
+    spriteView.onSingleClick = { [weak self] in
+      self?.handlePointerOutcome(.singleClick)
+    }
+    spriteView.onDoubleClick = { [weak self] in
+      self?.handlePointerOutcome(.doubleClick)
+    }
     panel.delegate = self
     restoreVisiblePosition()
   }
@@ -74,6 +143,7 @@ final class SpecimenPanelController: NSWindowController, NSWindowDelegate {
   }
 
   private func hidePanel() {
+    insightBubbleController.dismiss()
     savePosition()
     window?.orderOut(nil)
     updateRenderingPause()
@@ -109,6 +179,7 @@ final class SpecimenPanelController: NSWindowController, NSWindowDelegate {
   func setPositionLocked(_ locked: Bool) {
     guard let panel = window else { return }
     if locked {
+      insightBubbleController.dismiss()
       savePosition()
     }
     isPositionLocked = locked
@@ -118,15 +189,51 @@ final class SpecimenPanelController: NSWindowController, NSWindowDelegate {
   }
 
   func resetPosition() {
+    insightBubbleController.dismiss()
     positionStore.reset()
     restoreVisiblePosition()
   }
 
   func clampToVisibleScreen() {
+    insightBubbleController.dismiss()
     restoreVisiblePosition()
   }
 
+  func update(
+    snapshot: DesktopSnapshot?,
+    syncState: DesktopSyncState,
+    language: DesktopLanguage
+  ) {
+    currentInsight = DesktopInsightProjector().project(
+      snapshot: snapshot,
+      syncState: syncState,
+      language: language
+    )
+    if insightBubbleController.isVisible, let window {
+      insightBubbleController.show(currentInsight, relativeTo: window)
+    }
+  }
+
+  func handlePointerOutcome(_ outcome: SpecimenPointerOutcome) {
+    switch outcome {
+    case .singleClick:
+      guard let window else { return }
+      insightBubbleController.show(currentInsight, relativeTo: window)
+    case .doubleClick:
+      insightBubbleController.dismiss()
+      onOpenTUI(currentInsight.targetArea)
+    case .drag:
+      insightBubbleController.dismiss()
+    case .none:
+      break
+    }
+  }
+
+  var isInsightVisible: Bool { insightBubbleController.isVisible }
+  var insightWindow: NSWindow? { insightBubbleController.window }
+
   func windowDidMove(_ notification: Notification) {
+    insightBubbleController.dismiss()
     guard !isPositionLocked else { return }
     savePosition()
   }

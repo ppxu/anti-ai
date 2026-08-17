@@ -8,7 +8,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
   private let onTogglePositionLock: () -> Bool
   private let onResetPosition: () -> Void
   private let onRefreshSnapshot: () -> Void
-  private let onOpenTUI: () -> Void
+  private let onOpenTUI: (TuiArea) -> Void
   private let onLanguage: (DesktopLanguage) -> Void
   private let onQuit: () -> Void
   private let updatesConfigured: Bool
@@ -40,7 +40,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     onTogglePositionLock: @escaping () -> Bool,
     onResetPosition: @escaping () -> Void,
     onRefreshSnapshot: @escaping () -> Void,
-    onOpenTUI: @escaping () -> Void,
+    onOpenTUI: @escaping (TuiArea) -> Void,
     onLanguage: @escaping (DesktopLanguage) -> Void,
     onState: @escaping (SpecimenDisplayState) -> Void,
     onMotion: @escaping (DesktopMotionLevel) -> Void,
@@ -87,10 +87,16 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
   }
 
   func update(snapshot: DesktopSnapshot) {
+    update(snapshot: snapshot, syncState: .ready)
+  }
+
+  func update(snapshot: DesktopSnapshot?, syncState: DesktopSyncState) {
     self.snapshot = snapshot
-    specimenId = snapshot.creature.specimenId
-    currentState = SpecimenDisplayState(rawValue: snapshot.creature.poseId) ?? .idle
-    syncState = .ready
+    if let snapshot {
+      specimenId = snapshot.creature.specimenId
+      currentState = SpecimenDisplayState(rawValue: snapshot.creature.poseId) ?? .idle
+    }
+    self.syncState = syncState
     rebuildMenu()
   }
 
@@ -153,17 +159,27 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.addItem(
           item(
             "\(copy.recommendation) · \(recommendation)…",
-            action: #selector(openTUI)
+            action: #selector(openRecommendation)
           ))
       }
     }
     menu.addItem(.separator())
-    menu.addItem(item(copy.toggleVisibility, action: #selector(toggleVisibility), key: "h"))
+    let refresh = item(copy.refreshSnapshot, action: #selector(refreshSnapshot), key: "r")
+    refresh.isEnabled = syncState != .refreshing
+    menu.addItem(refresh)
+    menu.addItem(item(copy.openTUI, action: #selector(openTUI), key: "t"))
+    menu.addItem(.separator())
+
+    let settingsMenu = NSMenu(title: copy.settings)
+    settingsMenu.addItem(
+      item(copy.toggleVisibility, action: #selector(toggleVisibility), key: "h")
+    )
     let lockItem = item(copy.lockPosition, action: #selector(togglePositionLock), key: "l")
     lockItem.state = currentPositionLocked ? .on : .off
     positionLockItem = lockItem
-    menu.addItem(lockItem)
-    menu.addItem(item(copy.resetPosition, action: #selector(resetPosition)))
+    settingsMenu.addItem(lockItem)
+    settingsMenu.addItem(item(copy.resetPosition, action: #selector(resetPosition)))
+    settingsMenu.addItem(.separator())
 
     let stateMenu = NSMenu(title: copy.displayState)
     for state in SpecimenDisplayState.allCases {
@@ -179,7 +195,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
     let stateRoot = NSMenuItem(title: copy.displayState, action: nil, keyEquivalent: "")
     stateRoot.submenu = stateMenu
-    menu.addItem(stateRoot)
+    settingsMenu.addItem(stateRoot)
 
     let motionMenu = NSMenu(title: copy.motion)
     for level in DesktopMotionLevel.allCases {
@@ -195,7 +211,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
     let motionRoot = NSMenuItem(title: copy.motion, action: nil, keyEquivalent: "")
     motionRoot.submenu = motionMenu
-    menu.addItem(motionRoot)
+    settingsMenu.addItem(motionRoot)
 
     let languageMenu = NSMenu(title: copy.languageMenu)
     for language in DesktopLanguage.allCases {
@@ -212,18 +228,13 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
     let languageRoot = NSMenuItem(title: copy.languageMenu, action: nil, keyEquivalent: "")
     languageRoot.submenu = languageMenu
-    menu.addItem(languageRoot)
+    settingsMenu.addItem(languageRoot)
 
-    menu.addItem(.separator())
-    let refresh = item(copy.refreshSnapshot, action: #selector(refreshSnapshot), key: "r")
-    refresh.isEnabled = syncState != .refreshing
-    menu.addItem(refresh)
-    menu.addItem(item(copy.openTUI, action: #selector(openTUI), key: "t"))
-    menu.addItem(.separator())
+    settingsMenu.addItem(.separator())
     let checkUpdates = item(copy.checkForUpdates, action: #selector(checkForUpdates))
     checkUpdates.isEnabled = updatesConfigured && onCanCheckForUpdates()
     checkForUpdatesItem = checkUpdates
-    menu.addItem(checkUpdates)
+    settingsMenu.addItem(checkUpdates)
     let automaticChecks = item(
       copy.automaticUpdateChecks,
       action: #selector(toggleAutomaticUpdateChecks)
@@ -231,7 +242,11 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     automaticChecks.isEnabled = updatesConfigured
     automaticChecks.state = currentAutomaticUpdateChecks ? .on : .off
     automaticUpdateChecksItem = automaticChecks
-    menu.addItem(automaticChecks)
+    settingsMenu.addItem(automaticChecks)
+
+    let settingsRoot = NSMenuItem(title: copy.settings, action: nil, keyEquivalent: "")
+    settingsRoot.submenu = settingsMenu
+    menu.addItem(settingsRoot)
     menu.addItem(.separator())
     menu.addItem(item(copy.quit, action: #selector(quit), key: "q"))
   }
@@ -249,7 +264,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
   }
   @objc private func resetPosition() { onResetPosition() }
   @objc private func refreshSnapshot() { onRefreshSnapshot() }
-  @objc private func openTUI() { onOpenTUI() }
+  @objc private func openTUI() { onOpenTUI(.overview) }
+  @objc private func openRecommendation() {
+    onOpenTUI(.from(recommendationTarget: snapshot?.recommendation?.target))
+  }
   @objc private func checkForUpdates() { onCheckForUpdates() }
   @objc private func toggleAutomaticUpdateChecks() {
     currentAutomaticUpdateChecks = onToggleAutomaticUpdates()

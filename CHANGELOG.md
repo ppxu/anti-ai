@@ -6,9 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-08-17
+
+### Added
+
+- Added a lightweight desktop living touchpoint: clicking the unlocked specimen opens a transient non-activating snapshot insight, dragging remains position-only, and double-clicking opens the recommendation's allowlisted TUI area with Overview as the safe fallback.
+- Added `anti-ai tui --area overview|habitat|expedition|laboratory|codex` with nested bilingual Help, strict CLI validation, desktop bridge routing, and initial-screen controller support.
+
 ### Changed
 
 - Reworked the bilingual READMEs into concise project landing pages, added bilingual documentation indexes, and moved source counting, resource formulas, everyday comparisons, assumptions, and primary references into standalone methodology guides without changing CLI behavior.
+- Reorganized the bilingual desktop menu around status, primary actions, and one Settings submenu so position, display, motion, language, and updater controls no longer compete with current specimen information.
+- Split native specimen geometry, palette, playback scheduling, pointer interaction, insight projection, and bubble presentation out of the scene/controller monoliths while keeping Desktop Snapshot v1, Creature state, gameplay values, and growth rules unchanged.
+- Updated bilingual READMEs, desktop and architecture guides, CLI Help, the installable Agent Skill, native package guides, and release notes for the v4.1 interaction contract.
+
+### Security
+
+- Desktop TUI navigation remains a one-shot local bridge: area values are enum-backed in Swift, allowlisted in Node, shell-quoted with the already validated Node/CLI paths, and rejected before interactive startup when unsupported. The insight bubble reads only the existing privacy-safe snapshot and adds no telemetry, watcher, daemon, background gameplay, or network path.
 
 ## [4.0.0] - 2026-08-13
 

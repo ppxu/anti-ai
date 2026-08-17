@@ -21,12 +21,20 @@ struct DesktopMenuCopy: Sendable {
   var displayState: String { language == .zh ? "展示状态" : "Display State" }
   var motion: String { language == .zh ? "动态" : "Motion" }
   var languageMenu: String { language == .zh ? "语言" : "Language" }
+  var settings: String { language == .zh ? "设置" : "Settings" }
   var refreshSnapshot: String { language == .zh ? "刷新桌面快照" : "Refresh Snapshot" }
+  var linkDesktop: String {
+    language == .zh ? "运行 anti-ai desktop link" : "Run anti-ai desktop link"
+  }
+  var relinkDesktop: String {
+    language == .zh ? "重新运行 anti-ai desktop link" : "Run anti-ai desktop link again"
+  }
   var openTUI: String { language == .zh ? "打开完整 TUI" : "Open Full TUI" }
   var checkForUpdates: String { language == .zh ? "检查更新…" : "Check for Updates…" }
   var automaticUpdateChecks: String {
     language == .zh ? "自动检查更新" : "Automatically Check for Updates"
   }
+  var currentState: String { language == .zh ? "当前状态" : "Current State" }
   var lastSync: String { language == .zh ? "最后同步" : "Last Sync" }
   var diagnosis: String { language == .zh ? "主诊断" : "Diagnosis" }
   var recommendation: String { language == .zh ? "建议处置" : "Recommended" }
@@ -41,6 +49,7 @@ struct DesktopMenuCopy: Sendable {
     case (.zh, .missingSnapshot): "尚无快照 · 请刷新"
     case (.zh, .invalidSnapshot): "快照损坏 · 已保留本体"
     case (.zh, .incompatibleSnapshot): "快照版本不兼容"
+    case (.zh, .tuiLaunchFailed): "无法打开 TUI · 请检查桌面关联"
     case (.zh, .failed): "刷新失败 · 旧快照仍可用"
     case (.en, .ready): "Synced"
     case (.en, .stale): "Snapshot is stale · refresh recommended"
@@ -49,6 +58,7 @@ struct DesktopMenuCopy: Sendable {
     case (.en, .missingSnapshot): "No snapshot · refresh required"
     case (.en, .invalidSnapshot): "Invalid snapshot · specimen preserved"
     case (.en, .incompatibleSnapshot): "Incompatible snapshot version"
+    case (.en, .tuiLaunchFailed): "Unable to open TUI · check desktop link"
     case (.en, .failed): "Refresh failed · previous snapshot preserved"
     }
   }

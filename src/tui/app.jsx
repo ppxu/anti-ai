@@ -32,18 +32,14 @@ import {
   ShareOverlay,
 } from "./screens.jsx";
 import { VisitorOverlay } from "./visitor-views.jsx";
+import { TUI_AREA_IDS } from "../registry.mjs";
 
-const SCREEN_IDS = [
-  "overview",
-  "habitat",
-  "expedition",
-  "laboratory",
-  "codex",
-];
+const SCREEN_IDS = TUI_AREA_IDS;
 
 function TuiApp({
   snapshot: initialSnapshot,
   lang = "zh",
+  initialArea = "overview",
   initialMotion = "low",
   actionController = null,
   shareController = null,
@@ -56,7 +52,7 @@ function TuiApp({
   const compact = columns <= 80;
   const [controller, dispatchController] = useReducer(
     tuiControllerReducer,
-    { snapshot: initialSnapshot, motion: initialMotion },
+    { snapshot: initialSnapshot, motion: initialMotion, initialArea },
     createTuiControllerState,
   );
   const {

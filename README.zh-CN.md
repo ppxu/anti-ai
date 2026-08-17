@@ -90,7 +90,9 @@ open /Applications/anti-ai.app
 
 它只读取经过收敛的本地快照，不读取 Agent 日志；没有守护进程和遥测。唯一网络路径是 Sparkle 签名更新检查，只有手动触发或明确开启后才会运行。
 
-> v4.0.0 桌面版目前使用 ad-hoc 签名，尚未经过 Apple 公证。请只从[官方 Release](https://github.com/ppxu/anti-ai/releases/tag/v4.0.0)下载；首次启动可能需要进入**系统设置 → 隐私与安全性 → 仍要打开**。
+本体未锁定时，单击会显示一张不抢焦点的短状态气泡，拖动可调整位置，双击则进入当前建议对应的 TUI 区域。菜单常驻展示状态和主要动作；位置、展示态、动态、语言与更新统一收进“设置”。
+
+> v4.1.0 桌面版目前使用 ad-hoc 签名，尚未经过 Apple 公证。请只从[官方 Release](https://github.com/ppxu/anti-ai/releases/tag/v4.1.0)下载；首次启动可能需要进入**系统设置 → 隐私与安全性 → 仍要打开**。
 
 安装、操作、更新和隐私边界详见[桌面伴生体说明](./docs/desktop.zh-CN.md)。
 

@@ -1,7 +1,14 @@
-function createTuiControllerState({ snapshot, motion = "low" }) {
+import { TUI_AREA_IDS } from "../registry.mjs";
+
+function createTuiControllerState({
+  snapshot,
+  motion = "low",
+  initialArea = "overview",
+}) {
+  const initialAreaIndex = TUI_AREA_IDS.indexOf(initialArea);
   return {
     snapshot,
-    activeIndex: 0,
+    activeIndex: initialAreaIndex >= 0 ? initialAreaIndex : 0,
     overviewMode: "briefing",
     showHelp: false,
     motion,

@@ -3,14 +3,9 @@ import SpriteKit
 
 @MainActor
 final class SpecimenScene: SKScene {
-  private enum Palette {
-    static let lime = NSColor(calibratedRed: 0.78, green: 1, blue: 0.29, alpha: 1)
-    static let cyan = NSColor(calibratedRed: 0.40, green: 0.96, blue: 0.94, alpha: 1)
-    static let magenta = NSColor(calibratedRed: 0.82, green: 0.17, blue: 0.73, alpha: 1)
-    static let amber = NSColor(calibratedRed: 1, green: 0.76, blue: 0.24, alpha: 1)
-  }
+  private typealias Palette = SpecimenPalette
 
-  private let motionDirector = SpecimenMotionDirector()
+  private var playback = SpecimenPlaybackController()
   private let bodyRoot = SKNode()
   private let shoulderRoot = SKNode()
   private let limeGroup = SKNode()
@@ -27,14 +22,11 @@ final class SpecimenScene: SKScene {
   private let coreGlow = SKShapeNode(circleOfRadius: 18)
   private let delayedCircuitNode = SKShapeNode(rectOf: CGSize(width: 4, height: 4), cornerRadius: 1)
   private var jawBasePositions: [CGFloat] = []
-  private var lastFrame = -1
-  private var lastUpdateTime: TimeInterval = 0
-  private var externallyPaused = false
   private var snapshot: DesktopSnapshot
 
   var displayState: SpecimenDisplayState = .idle {
     didSet {
-      lastFrame = -1
+      playback.reset()
       applyCurrentFrame(0)
     }
   }
@@ -67,17 +59,18 @@ final class SpecimenScene: SKScene {
   }
 
   override func update(_ currentTime: TimeInterval) {
-    let level = motionLevel.constrained(reduceMotion: reduceMotion)
-    guard level != .off else { return }
-    let interval = 1 / max(level.framesPerSecond, 1)
-    guard lastUpdateTime == 0 || currentTime - lastUpdateTime >= interval else { return }
-    lastUpdateTime = currentTime
-    let frame = (lastFrame + 1) % SpecimenMotionDirector.frameCount
+    guard
+      let frame = playback.nextFrame(
+        at: currentTime,
+        level: motionLevel,
+        reduceMotion: reduceMotion
+      )
+    else { return }
     applyCurrentFrame(frame)
   }
 
   func setRenderingPaused(_ paused: Bool) {
-    externallyPaused = paused
+    playback.setExternallyPaused(paused)
     configurePlayback()
   }
 
@@ -109,15 +102,14 @@ final class SpecimenScene: SKScene {
   private func configurePlayback() {
     let level = motionLevel.constrained(reduceMotion: reduceMotion)
     view?.preferredFramesPerSecond = max(Int(level.framesPerSecond), 1)
-    view?.isPaused = externallyPaused || level == .off
+    view?.isPaused = playback.externallyPaused || level == .off
     if level == .off {
       applyCurrentFrame(0)
     }
   }
 
   private func applyCurrentFrame(_ frame: Int) {
-    lastFrame = frame
-    let pose = motionDirector.pose(
+    let pose = playback.pose(
       for: displayState,
       frame: frame,
       level: motionLevel,
@@ -538,38 +530,4 @@ final class SpecimenScene: SKScene {
       ))
   }
 
-  private func geneIndex(_ identifier: String, count: Int = 8) -> Int {
-    max(0, min(count - 1, (Int(identifier.suffix(2)) ?? 1) - 1))
-  }
-
-  private func stroke(points: [CGPoint], color: NSColor, width: CGFloat) -> SKShapeNode {
-    let path = CGMutablePath()
-    guard let first = points.first else { return SKShapeNode() }
-    path.move(to: first)
-    for point in points.dropFirst() { path.addLine(to: point) }
-    return shape(path: path, color: color, width: width)
-  }
-
-  private func shape(path: CGPath, color: NSColor, width: CGFloat) -> SKShapeNode {
-    let node = SKShapeNode(path: path)
-    node.strokeColor = color
-    node.fillColor = .clear
-    node.lineWidth = width
-    node.lineCap = .round
-    node.lineJoin = .round
-    return node
-  }
-
-  private func circle(
-    radius: CGFloat,
-    color: NSColor,
-    filled: Bool,
-    width: CGFloat = 1
-  ) -> SKShapeNode {
-    let node = SKShapeNode(circleOfRadius: radius)
-    node.fillColor = filled ? color : .clear
-    node.strokeColor = color
-    node.lineWidth = width
-    return node
-  }
 }

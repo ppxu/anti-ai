@@ -13,11 +13,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private var panelController: SpecimenPanelController?
   private var statusMenuController: StatusMenuController?
   private var workspaceObservers: [NSObjectProtocol] = []
+  private var currentSnapshot: DesktopSnapshot?
+  private var currentSyncState: DesktopSyncState = .missingSnapshot
+  private var currentLanguage: DesktopLanguage = .zh
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApp.setActivationPolicy(.accessory)
 
-    let panelController = SpecimenPanelController()
+    currentLanguage = languageStore.load()
+    let panelController = SpecimenPanelController(
+      onOpenTUI: { [weak self] area in self?.openTUI(area: area) }
+    )
     self.panelController = panelController
     panelController.show()
     updateController = DesktopUpdateController()
@@ -25,15 +31,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     statusMenuController = StatusMenuController(
       specimenId: DesktopSnapshot.prototype.creature.specimenId,
       positionLocked: panelController.isPositionLocked,
-      language: languageStore.load(),
+      language: currentLanguage,
       onToggleVisibility: { [weak panelController] in panelController?.toggleVisibility() },
       onTogglePositionLock: {
         [weak panelController] in panelController?.togglePositionLock() ?? false
       },
       onResetPosition: { [weak panelController] in panelController?.resetPosition() },
       onRefreshSnapshot: { [weak self] in self?.refreshSnapshot() },
-      onOpenTUI: { [weak self] in self?.openTUI() },
-      onLanguage: { [weak self] language in self?.languageStore.save(language) },
+      onOpenTUI: { [weak self] area in self?.openTUI(area: area) },
+      onLanguage: { [weak self] language in
+        self?.currentLanguage = language
+        self?.languageStore.save(language)
+        self?.updatePanelInsight()
+      },
       onState: { [weak panelController] state in panelController?.scene.displayState = state },
       onMotion: { [weak panelController] level in panelController?.scene.motionLevel = level },
       onQuit: { NSApp.terminate(nil) },
@@ -73,24 +83,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private func apply(_ result: DesktopSnapshotLoadResult) {
     switch result {
     case .ready(let snapshot):
-      statusMenuController?.update(snapshot: snapshot)
+      currentSnapshot = snapshot
+      currentSyncState = .ready
+      statusMenuController?.update(snapshot: snapshot, syncState: .ready)
       panelController?.scene.apply(snapshot)
     case .stale(let snapshot):
-      statusMenuController?.update(snapshot: snapshot)
-      statusMenuController?.update(syncState: .stale)
+      currentSnapshot = snapshot
+      currentSyncState = .stale
+      statusMenuController?.update(snapshot: snapshot, syncState: .stale)
       panelController?.scene.apply(snapshot)
     case .missing:
       let linked = (try? DesktopBridgeStore().load(from: DesktopBridgeStore.defaultURL())) != nil
-      statusMenuController?.update(syncState: linked ? .missingSnapshot : .unlinked)
+      currentSnapshot = nil
+      currentSyncState = linked ? .missingSnapshot : .unlinked
+      statusMenuController?.update(snapshot: nil, syncState: currentSyncState)
     case .incompatible:
-      statusMenuController?.update(syncState: .incompatibleSnapshot)
+      currentSnapshot = nil
+      currentSyncState = .incompatibleSnapshot
+      statusMenuController?.update(snapshot: nil, syncState: .incompatibleSnapshot)
     case .invalid:
-      statusMenuController?.update(syncState: .invalidSnapshot)
+      currentSnapshot = nil
+      currentSyncState = .invalidSnapshot
+      statusMenuController?.update(snapshot: nil, syncState: .invalidSnapshot)
     }
+    updatePanelInsight()
   }
 
   private func refreshSnapshot() {
+    currentSyncState = .refreshing
     statusMenuController?.update(syncState: .refreshing)
+    updatePanelInsight()
     Task { [weak self] in
       guard let self else { return }
       do {
@@ -99,18 +121,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         await MainActor.run { self.apply(result) }
       } catch {
         await MainActor.run {
+          self.currentSyncState = .failed
           self.statusMenuController?.update(syncState: .failed)
+          self.updatePanelInsight()
         }
       }
     }
   }
 
-  private func openTUI() {
+  private func openTUI(area: TuiArea) {
     do {
-      try terminalLauncher.openTUI()
+      try terminalLauncher.openTUI(area: area)
     } catch {
-      statusMenuController?.update(syncState: .failed)
+      currentSyncState = .tuiLaunchFailed
+      statusMenuController?.update(syncState: .tuiLaunchFailed)
+      updatePanelInsight()
     }
+  }
+
+  private func updatePanelInsight() {
+    panelController?.update(
+      snapshot: currentSnapshot,
+      syncState: currentSyncState,
+      language: currentLanguage
+    )
   }
 
   private func observeWorkspace() {

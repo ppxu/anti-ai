@@ -22,6 +22,7 @@ import {
   FULL_SOURCE_SHARE_CARD_IDS,
   SHARE_CARD_IDS,
   SOURCE_IDS,
+  TUI_AREA_IDS,
 } from "./registry.mjs";
 import {
   inspectLocalSources,
@@ -414,6 +415,14 @@ async function main(rawArgs = process.argv.slice(2)) {
     } else if (!["all", ...SOURCE_IDS].includes(options.source)) {
       process.stderr.write(
         `${localized(options.lang, `不支持的数据源：${options.source}`, `Unsupported data source: ${options.source}`)}\n`,
+      );
+      process.exitCode = 2;
+    } else if (
+      options.command === "tui" &&
+      !TUI_AREA_IDS.includes(options.area)
+    ) {
+      process.stderr.write(
+        `${localized(options.lang, `不支持的 TUI 区域：${options.area}`, `Unsupported TUI area: ${options.area}`)}\n`,
       );
       process.exitCode = 2;
     } else if (

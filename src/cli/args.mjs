@@ -19,6 +19,7 @@ function parseArgs(argv) {
     full: false,
     save: false,
     noMotion: false,
+    area: "overview",
     card: undefined,
     code: undefined,
     with: undefined,
@@ -42,6 +43,12 @@ function parseArgs(argv) {
       options.save = true;
     } else if (arg === "--no-motion" && command === "tui") {
       options.noMotion = true;
+    } else if (arg === "--area" && command === "tui") {
+      if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
+        options.missing ??= arg;
+      } else {
+        options.area = rest[++index];
+      }
     } else if (arg === "--date") {
       if (rest[index + 1] === undefined || rest[index + 1].startsWith("-")) {
         options.missing ??= arg;

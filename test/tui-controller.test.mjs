@@ -38,6 +38,20 @@ test("the TUI controller keeps one explicit state envelope", () => {
   );
 });
 
+test("the TUI controller can start in one allowlisted area", () => {
+  const habitat = createTuiControllerState({
+    snapshot: snapshot(),
+    initialArea: "habitat",
+  });
+  const unknown = createTuiControllerState({
+    snapshot: snapshot(),
+    initialArea: "settings",
+  });
+
+  assert.equal(habitat.activeIndex, 1);
+  assert.equal(unknown.activeIndex, 0);
+});
+
 test("TUI motion pauses behind help, action, share, and visitor overlays", () => {
   const active = {
     activeId: "habitat",

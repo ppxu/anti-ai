@@ -874,6 +874,20 @@ test("an unknown option fails with a useful error", () => {
   assert.equal(tuiOnly.stdout, "");
 });
 
+test("tui exposes and validates its fixed starting area", () => {
+  const help = runCli(["help", "tui", "--lang", "en"]);
+  const invalid = runCli(["tui", "--area", "settings", "--lang", "en"]);
+
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(
+    help.stdout,
+    /--area <overview\|habitat\|expedition\|laboratory\|codex>/,
+  );
+  assert.equal(invalid.status, 2);
+  assert.equal(invalid.stderr, "Unsupported TUI area: settings\n");
+  assert.equal(invalid.stdout, "");
+});
+
 test("an option that needs a value fails when the value is missing", () => {
   const result = runCli(["today", "--date"]);
 

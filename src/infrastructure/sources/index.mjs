@@ -95,46 +95,126 @@ async function inspectLocalSources(source = "all") {
   );
 }
 
-async function reportsForDates(options, dates, timezone) {
-  const sourceResults = {};
-  const warnings = [];
-  const selected = sourceAdapters().filter(
+function notifyScanProgress(options, event) {
+  try {
+    options.onScanProgress?.(event);
+  } catch {
+    // Presentation callbacks must never make a local source scan fail.
+  }
+}
+
+async function scanReportsForDates(
+  options,
+  dates,
+  timezone,
+  adapters = sourceAdapters(),
+) {
+  const selected = adapters.filter(
     (adapter) => options.source === "all" || adapter.id === options.source,
   );
-  for (const adapter of selected) {
-    try {
-      sourceResults[adapter.id] = await adapter.scan(dates, timezone);
-    } catch (error) {
-      if (options.source !== "all") {
-        throw new SourceScanError(adapter.id, error);
-      }
-      sourceResults[adapter.id] = sourceUsageByDate(dates);
-      warnings.push({ source: adapter.id, code: error?.code ?? "UNKNOWN" });
-    }
-  }
-  return dates.map((date) => {
-    const sources = {};
-    const models = {};
-    for (const [source, results] of Object.entries(sourceResults)) {
-      const sourceResult = results.get(date);
-      sources[source] = sourceResult.usage;
-      models[source] = sourceResult.models;
-    }
-    const totals = emptyUsage();
-    for (const usage of Object.values(sources)) addUsage(totals, usage);
-    return {
-      date,
-      timezone,
-      sources,
-      models,
-      totals,
-      ...(warnings.length > 0 ? { warnings } : {}),
-    };
+  notifyScanProgress(options, {
+    type: "scan:start",
+    sourceIds: selected.map(({ id }) => id),
+    dates,
   });
+  try {
+    const entries = await Promise.all(
+      selected.map(async (adapter) => {
+        try {
+          return {
+            id: adapter.id,
+            results: await adapter.scan(dates, timezone),
+            warning: null,
+          };
+        } catch (error) {
+          if (options.source !== "all") {
+            throw new SourceScanError(adapter.id, error);
+          }
+          return {
+            id: adapter.id,
+            results: sourceUsageByDate(dates),
+            warning: {
+              source: adapter.id,
+              code: error?.code ?? "UNKNOWN",
+            },
+          };
+        }
+      }),
+    );
+    const sourceResults = Object.fromEntries(
+      entries.map(({ id, results }) => [id, results]),
+    );
+    const warnings = entries
+      .map(({ warning }) => warning)
+      .filter(Boolean);
+    return dates.map((date) => {
+      const sources = {};
+      const models = {};
+      for (const [source, results] of Object.entries(sourceResults)) {
+        const sourceResult = results.get(date);
+        sources[source] = sourceResult.usage;
+        models[source] = sourceResult.models;
+      }
+      const totals = emptyUsage();
+      for (const usage of Object.values(sources)) addUsage(totals, usage);
+      return {
+        date,
+        timezone,
+        sources,
+        models,
+        totals,
+        ...(warnings.length > 0 ? { warnings } : {}),
+      };
+    });
+  } finally {
+    notifyScanProgress(options, { type: "scan:finish" });
+  }
+}
+
+function createReportSession(
+  options,
+  timezone,
+  { adapters = sourceAdapters() } = {},
+) {
+  let coveredDates = new Set();
+  let reportsByDate = new Map();
+  let queue = Promise.resolve();
+
+  const session = {
+    reportsForDates(dates) {
+      const requestedDates = [...dates];
+      const operation = queue.then(async () => {
+        const missingDates = [...new Set(requestedDates.filter(
+          (date) => !coveredDates.has(date),
+        ))].sort();
+        if (missingDates.length > 0) {
+          const reports = await scanReportsForDates(
+            options,
+            missingDates,
+            timezone,
+            adapters,
+          );
+          for (const report of reports) {
+            reportsByDate.set(report.date, report);
+            coveredDates.add(report.date);
+          }
+        }
+        return requestedDates.map((date) => reportsByDate.get(date));
+      });
+      queue = operation.catch(() => {});
+      return operation;
+    },
+  };
+  return session;
+}
+
+async function reportsForDates(options, dates, timezone) {
+  return createReportSession(options, timezone).reportsForDates(dates);
 }
 
 export {
   SourceScanError,
+  createReportSession,
   inspectLocalSources,
   reportsForDates,
   sourceAdapters,

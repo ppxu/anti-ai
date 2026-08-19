@@ -187,6 +187,47 @@ test("the 80-column TUI starts and advances an expedition with one Enter per ord
     external: ["ink", "react"],
   });
   const { TuiApp } = await import(pathToFileURL(output).href);
+  const shortScreen = render(
+    React.createElement(TuiApp, {
+      snapshot: session.snapshot,
+      lang: "zh",
+      initialMotion: "off",
+      terminalColumns: 80,
+      terminalRows: 24,
+    }),
+  );
+  t.after(() => shortScreen.unmount());
+  const shortFrame = shortScreen.lastFrame();
+  assert.ok(shortFrame.split("\n").length <= 24, shortFrame);
+  assert.match(shortFrame, /每日收容播报/u);
+  assert.match(shortFrame, /建议处置/u);
+  assert.match(shortFrame, /\? 帮助/u);
+  assert.match(shortFrame, /q 退出/u);
+  assert.doesNotMatch(shortFrame, /e 完整档案 · 2 生态舱 · 5 图鉴/u);
+
+  const englishSession = await createContainmentSession({
+    date,
+    lang: "en",
+    source: "all",
+  });
+  const englishShortScreen = render(
+    React.createElement(TuiApp, {
+      snapshot: englishSession.snapshot,
+      lang: "en",
+      initialMotion: "off",
+      terminalColumns: 80,
+      terminalRows: 24,
+    }),
+  );
+  t.after(() => englishShortScreen.unmount());
+  const englishShortFrame = englishShortScreen.lastFrame();
+  assert.ok(englishShortFrame.split("\n").length <= 24, englishShortFrame);
+  assert.match(englishShortFrame, /DAILY CONTAINMENT BROADCAST/u);
+  assert.match(englishShortFrame, /RECOMMENDED RESPONSE/u);
+  assert.match(englishShortFrame, /\? help/u);
+  assert.match(englishShortFrame, /q quit/u);
+  assert.doesNotMatch(englishShortFrame, /[\p{Script=Han}]/u);
+
   const screen = render(
     React.createElement(TuiApp, {
       snapshot: session.snapshot,

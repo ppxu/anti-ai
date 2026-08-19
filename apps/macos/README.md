@@ -1,7 +1,7 @@
 # anti-ai macOS desktop companion
 
 This isolated Swift/AppKit package is the formal native presentation adapter for
-anti-ai v4.1. It stays outside the npm package and consumes only the
+anti-ai v4.2. It stays outside the npm package and consumes only the
 privacy-safe `Desktop Snapshot v1` produced by the CLI.
 
 [中文说明](./README.zh-CN.md) · [Complete desktop guide](../../docs/desktop.md)
@@ -31,7 +31,7 @@ specimen. The visual anatomy is deterministically assembled from all 40 base
 organ variants plus stage, route, pathology, palette, chromatic, scar, and graft
 signals already derived by Node.
 
-The v4.1.0 download is an explicitly temporary unnotarized preview. It is
+The v4.2.0 download is an explicitly temporary unnotarized preview. It is
 ad-hoc signed and may require **System Settings → Privacy & Security → Open
 Anyway** after the first blocked launch. Download only from the official GitHub
 release. The Sparkle archive has an Ed25519 signature, but this does not replace
@@ -48,14 +48,14 @@ swift format lint --recursive --strict Sources Tests
 swift test
 swift run AntiAIDesktop
 ./scripts/measure-runtime.sh 10 1
-./scripts/build-release.sh 4.1.0
+./scripts/build-release.sh 4.2.0
 ```
 
 The release script builds a universal arm64/x86_64 app, DMG, and Sparkle update
 ZIP; signs nested components; checks architecture and size; verifies a visible
 window; and confirms clean termination. Without release credentials it uses
 ad-hoc signing, disables update actions, and produces a local release candidate.
-The explicit v4.1 preview path requires a Sparkle Ed25519 key, a signed appcast,
+The explicit v4.2 preview path requires a Sparkle Ed25519 key, a signed appcast,
 and `ANTI_AI_ALLOW_UNNOTARIZED_RELEASE=1`. Stable public distribution
 additionally requires Developer ID signing, notarization, stapling, and
 real-device acceptance; see the complete desktop guide for environment

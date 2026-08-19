@@ -629,6 +629,32 @@ test("week renders its mutation follow-up after everyday translation inside one 
   assert.equal(result.stdout.trimEnd().split("\n").at(-1).startsWith("└"), true);
 });
 
+test("period reports keep every visible line inside the default 80-column frame", (t) => {
+  const home = mkdtempSync(path.join(tmpdir(), "anti-ai-period-width-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const environment = {
+    HOME: home,
+    ANTI_AI_CODEX_DIR: baselineCodexDir,
+    ANTI_AI_CREATURE_SEED: "period-width",
+    NO_COLOR: "1",
+  };
+  const reports = [
+    runCli(["week", "--date", "2026-07-23"], environment),
+    runCli(["month", "--date", "2026-07-23"], environment),
+  ];
+
+  for (const result of reports) {
+    assert.equal(result.status, 0, result.stderr);
+    const lines = result.stdout.trimEnd().split("\n");
+    const frameWidth = terminalWidth(lines[0]);
+    assert.equal(frameWidth, 80);
+    assert.ok(
+      lines.every((line) => terminalWidth(line) <= frameWidth),
+      result.stdout,
+    );
+  }
+});
+
 test("week and month keep achievement category colors", (t) => {
   const home = mkdtempSync(path.join(tmpdir(), "anti-ai-period-achievement-color-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));

@@ -9,6 +9,11 @@ import { inclusiveDateRange, isValidDate, shiftDate } from "./core/date.mjs";
 import { addModelUsage, addUsage } from "./core/usage.mjs";
 import { dailyVerdict, periodFooter, rotatingCopy } from "./reporting/verdict.mjs";
 
+const DEFAULT_REPORT_COLUMNS = 80;
+const MIN_REPORT_COLUMNS = 40;
+const MAX_REPORT_COLUMNS = 80;
+const ANSI_TOKEN_PATTERN = /\u001B\[[0-9;]*m|./gu;
+
 function formatChange(current, baseline, lang = "zh") {
   if (baseline === 0) {
     return current === 0 ? "0.00%" : localized(lang, "首次记录", "first record");
@@ -31,6 +36,89 @@ function padTerminal(value, width) {
   return `${value}${" ".repeat(Math.max(0, width - terminalWidth(value)))}`;
 }
 
+function reportColumns(columns = process.stdout.columns) {
+  const value = Number(columns);
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_REPORT_COLUMNS;
+  return Math.max(
+    MIN_REPORT_COLUMNS,
+    Math.min(MAX_REPORT_COLUMNS, Math.floor(value)),
+  );
+}
+
+function reportBorder(position, width) {
+  const glyphs = {
+    top: ["┌", "┐"],
+    middle: ["├", "┤"],
+    bottom: ["└", "┘"],
+  }[position];
+  return `${glyphs[0]}${"─".repeat(width - 2)}${glyphs[1]}`;
+}
+
+function splitTerminalChunk(value, width) {
+  const chunks = [];
+  let chunk = "";
+  let chunkWidth = 0;
+  for (const token of String(value).match(ANSI_TOKEN_PATTERN) ?? []) {
+    const widthDelta = terminalWidth(token);
+    if (widthDelta > 0 && chunkWidth + widthDelta > width && chunkWidth > 0) {
+      chunks.push(chunk);
+      chunk = "";
+      chunkWidth = 0;
+    }
+    chunk += token;
+    chunkWidth += widthDelta;
+  }
+  if (chunk) chunks.push(chunk);
+  return chunks;
+}
+
+function wrapTerminalLine(value, width) {
+  const source = String(value);
+  if (source === "" || terminalWidth(source) <= width) return [source];
+  const leading = source.match(/^ */u)?.[0] ?? "";
+  const body = source.slice(leading.length);
+  const continuation = " ".repeat(
+    Math.min(8, Math.max(4, terminalWidth(leading) + 2)),
+  );
+  const continuationWidth = terminalWidth(continuation);
+  const lines = [];
+  let line = leading;
+  let pendingWhitespace = "";
+
+  for (const unit of body.split(/(\s+)/u)) {
+    if (!unit) continue;
+    if (/^\s+$/u.test(unit)) {
+      pendingWhitespace += unit;
+      continue;
+    }
+    const candidate = `${line}${pendingWhitespace}${unit}`;
+    if (terminalWidth(candidate) <= width) {
+      line = candidate;
+      pendingWhitespace = "";
+      continue;
+    }
+    if (line.trim()) lines.push(line.trimEnd());
+    pendingWhitespace = "";
+    const chunks = splitTerminalChunk(
+      unit,
+      Math.max(1, width - continuationWidth),
+    );
+    for (const chunk of chunks.slice(0, -1)) {
+      lines.push(`${continuation}${chunk}`);
+    }
+    line = `${continuation}${chunks.at(-1) ?? ""}`;
+  }
+  if (line.trim()) lines.push(line.trimEnd());
+  return lines;
+}
+
+function renderReportFrame(lines, columns = process.stdout.columns) {
+  const width = reportColumns(columns);
+  return lines
+    .flatMap((line) => wrapTerminalLine(line, width))
+    .join("\n");
+}
+
 function renderComparison(comparison) {
   return `  ${comparison.icon}  ${padTerminal(comparison.label, 18)} ${comparison.value}`;
 }
@@ -43,7 +131,7 @@ function resourceBreakdownLines(
 ) {
   const resources = estimateResources(totals);
   const comparisons = everydayComparisons(resources, period, lang);
-  return [
+  const lines = [
     `  ${color("33", `${title} · ${localized(lang, "公开高位参照", "named public high-side reference")}`)}`,
     `  ⚡  ${formatResource(resources.energyWh, "Wh")} · ${referenceLabel(resources.energyWh, lang)}`,
     `  💧  ${formatResource(resources.waterMl, "mL")} · ${referenceLabel(resources.waterMl, lang)}`,
@@ -52,6 +140,7 @@ function resourceBreakdownLines(
     `  ${color("33", localized(lang, "生活翻译（终于像人话了）", "Everyday translation"))}`,
     ...comparisons.map(renderComparison),
   ];
+  return lines;
 }
 
 function sourceLabel(source) {
@@ -89,7 +178,7 @@ function sourceWarningLines(reports, lang = "zh") {
     }
   }
   if (failures.size === 0) return [];
-  return [
+  const lines = [
     color(
       "33",
       localized(
@@ -103,6 +192,7 @@ function sourceWarningLines(reports, lang = "zh") {
       ),
     ),
   ];
+  return lines;
 }
 
 function displayModelName(model) {
@@ -192,9 +282,9 @@ function renderReceipt(
       totals.cacheWriteInputTokens,
   );
   const lines = [
-    color("2", "┌──────────────────────────────────────────────┐"),
+    color("2", reportBorder("top", reportColumns())),
     `  ${color("1;31", `YOUR AI RECEIPT · ${date}`)}`,
-    color("2", "├──────────────────────────────────────────────┤"),
+    color("2", reportBorder("middle", reportColumns())),
     "",
     `  ${color("1", `${formatTokens(totals.totalTokens)} tokens`)} · ${totals.requests} ${localized(lang, "次模型请求", totals.requests === 1 ? "model request" : "model requests")}`,
     "",
@@ -234,10 +324,10 @@ function renderReceipt(
     `  ${localized(lang, "运行 anti-ai explain resources 查看参照边界", "Run anti-ai explain resources for reference boundaries")}`,
     "",
     `  ${color("2", periodFooter("today", date, lang))}`,
-    color("2", "└──────────────────────────────────────────────┘"),
+    color("2", reportBorder("bottom", reportColumns())),
     "",
   ];
-  return lines.join("\n");
+  return renderReportFrame(lines);
 }
 
 function renderWeek(dailyReports, lang = "zh", mutationSection = "") {
@@ -259,10 +349,10 @@ function renderWeek(dailyReports, lang = "zh", mutationSection = "") {
   const modelLines = combinedModelBreakdownLines(dailyReports, 5, lang);
   const warningLines = sourceWarningLines(dailyReports, lang);
 
-  return [
-    color("2", "┌──────────────────────────────────────────────┐"),
+  const lines = [
+    color("2", reportBorder("top", reportColumns())),
     `  ${color("1;31", `YOUR AI HANGOVER · ${firstDate} → ${lastDate}`)}`,
-    color("2", "├──────────────────────────────────────────────┤"),
+    color("2", reportBorder("middle", reportColumns())),
     "",
     ...rows,
     "",
@@ -281,9 +371,10 @@ function renderWeek(dailyReports, lang = "zh", mutationSection = "") {
       : []),
     "",
     `  ${color("2", periodFooter("week", lastDate, lang))}`,
-    color("2", "└──────────────────────────────────────────────┘"),
+    color("2", reportBorder("bottom", reportColumns())),
     "",
-  ].join("\n");
+  ];
+  return renderReportFrame(lines);
 }
 
 function heatLevel(tokens, maxTokens) {
@@ -357,10 +448,10 @@ function renderMonth(dailyReports, lang = "zh", mutationSection = "") {
   const modelLines = combinedModelBreakdownLines(dailyReports, 5, lang);
   const warningLines = sourceWarningLines(dailyReports, lang);
 
-  return [
-    color("2", "┌──────────────────────────────────────────────┐"),
+  const lines = [
+    color("2", reportBorder("top", reportColumns())),
     `  ${color("1;31", `YOUR AI CALENDAR · ${firstDate} → ${lastDate}`)}`,
-    color("2", "├──────────────────────────────────────────────┤"),
+    color("2", reportBorder("middle", reportColumns())),
     "",
     weekdayHeader,
     ...rows,
@@ -401,9 +492,10 @@ function renderMonth(dailyReports, lang = "zh", mutationSection = "") {
       : []),
     "",
     `  ${color("2", periodFooter("month", lastDate, lang))}`,
-    color("2", "└──────────────────────────────────────────────┘"),
+    color("2", reportBorder("bottom", reportColumns())),
     "",
-  ].join("\n");
+  ];
+  return renderReportFrame(lines);
 }
 
 export {

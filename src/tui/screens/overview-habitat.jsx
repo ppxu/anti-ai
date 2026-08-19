@@ -5,7 +5,15 @@ import { deriveCompanionFrame, deriveHabitatSceneFrame, deriveSpecimenFrame } fr
 import { Panel } from "../panel.jsx";
 import { CabinetSlots, ProgressBar } from "./chrome.jsx";
 
-function DailyBriefingScreen({ snapshot, lang, frame, motion, glitch, compact }) {
+function DailyBriefingScreen({
+  snapshot,
+  lang,
+  frame,
+  motion,
+  glitch,
+  compact,
+  dense = false,
+}) {
   const { overview, dailyBriefing } = snapshot;
   const zh = lang === "zh";
   const ecologyColor = {
@@ -38,58 +46,75 @@ function DailyBriefingScreen({ snapshot, lang, frame, motion, glitch, compact })
     awaiting: "yellow",
     quiet: "gray",
   };
+  const briefingPanel = (
+    <Panel
+      title={`${zh ? "每日收容播报" : "DAILY CONTAINMENT BROADCAST"} · ${dailyBriefing.date}`}
+      color="cyan"
+      flexGrow={dense ? undefined : 1}
+    >
+      {dense ? (
+        <Text dimColor>#{overview.specimenId} · {overview.title}</Text>
+      ) : null}
+      {sections.map((section) => dense ? (
+        <Text key={section.id}>
+          <Text bold color={colors[section.kind] ?? "white"}>{section.label}</Text>
+          {` · ${section.detail}`}
+        </Text>
+      ) : (
+        <Box key={section.id} flexDirection="column" marginBottom={1}>
+          <Text bold color={colors[section.kind] ?? "white"}>
+            {section.label}
+          </Text>
+          <Text>{section.detail}</Text>
+        </Box>
+      ))}
+    </Panel>
+  );
   return (
     <Box flexDirection="column">
-      <Box gap={1} flexDirection={compact ? "column" : "row"}>
-        <Panel
-          title={zh ? "今日标本" : "TODAY'S SPECIMEN"}
-          color={ecologyColor}
-          width={compact ? undefined : "40%"}
-        >
-          <Text color={glitch ? "magenta" : ecologyColor}>
-            {deriveSpecimenFrame(overview.art, frame, motion, {
-              glitch,
-              pose,
-              temperament: overview.temperament,
-              chromaticAbilityId: overview.chromaticAbilityId,
-            }).join("\n")}
-          </Text>
-          <Text dimColor>#{overview.specimenId} · {overview.title}</Text>
-        </Panel>
-        <Panel
-          title={`${zh ? "每日收容播报" : "DAILY CONTAINMENT BROADCAST"} · ${dailyBriefing.date}`}
-          color="cyan"
-          flexGrow={1}
-        >
-          {sections.map((section) => (
-            <Box key={section.id} flexDirection="column" marginBottom={1}>
-              <Text bold color={colors[section.kind] ?? "white"}>
-                {section.label}
-              </Text>
-              <Text>{section.detail}</Text>
-            </Box>
-          ))}
-        </Panel>
-      </Box>
-      <Panel title={habitat.label} color="green" marginTop={1}>
+      {dense ? briefingPanel : (
+        <Box gap={1} flexDirection={compact ? "column" : "row"}>
+          <Panel
+            title={zh ? "今日标本" : "TODAY'S SPECIMEN"}
+            color={ecologyColor}
+            width={compact ? undefined : "40%"}
+          >
+            <Text color={glitch ? "magenta" : ecologyColor}>
+              {deriveSpecimenFrame(overview.art, frame, motion, {
+                glitch,
+                pose,
+                temperament: overview.temperament,
+                chromaticAbilityId: overview.chromaticAbilityId,
+              }).join("\n")}
+            </Text>
+            <Text dimColor>#{overview.specimenId} · {overview.title}</Text>
+          </Panel>
+          {briefingPanel}
+        </Box>
+      )}
+      <Panel title={habitat.label} color="green" marginTop={dense ? 0 : 1}>
         <Text>{habitat.detail}</Text>
-        <Text dimColor>{zh ? "2 查看完整生态舱" : "2 opens the full Habitat"}</Text>
+        {!dense ? (
+          <Text dimColor>{zh ? "2 查看完整生态舱" : "2 opens the full Habitat"}</Text>
+        ) : null}
       </Panel>
       <Panel
         title={zh ? "建议处置" : "RECOMMENDED RESPONSE"}
         color="yellow"
-        marginTop={1}
+        marginTop={dense ? 0 : 1}
       >
         {dailyBriefing.recommendation ? (
           <>
             <Text bold color="yellow">
               Enter · {dailyBriefing.recommendation.label}
             </Text>
-            <Text dimColor>
-              {zh
-                ? "只推荐这一项；a 可查看完整行动中心。"
-                : "Only this action is recommended; a opens the full action center."}
-            </Text>
+            {!dense ? (
+              <Text dimColor>
+                {zh
+                  ? "只推荐这一项；a 可查看完整行动中心。"
+                  : "Only this action is recommended; a opens the full action center."}
+              </Text>
+            ) : null}
           </>
         ) : (
           <Text dimColor>
@@ -98,9 +123,11 @@ function DailyBriefingScreen({ snapshot, lang, frame, motion, glitch, compact })
               : "No response is required. The specimen may do nothing."}
           </Text>
         )}
-        <Text dimColor>
-          {zh ? "e 完整档案 · 2 生态舱 · 5 图鉴" : "e full file · 2 Habitat · 5 Codex"}
-        </Text>
+        {!dense ? (
+          <Text dimColor>
+            {zh ? "e 完整档案 · 2 生态舱 · 5 图鉴" : "e full file · 2 Habitat · 5 Codex"}
+          </Text>
+        ) : null}
       </Panel>
     </Box>
   );

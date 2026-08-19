@@ -1,5 +1,6 @@
 export {
   SourceScanError,
+  createReportSession,
   inspectLocalSources,
   reportsForDates,
   sourceAdapters,

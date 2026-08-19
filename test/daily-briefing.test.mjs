@@ -11,6 +11,37 @@ import {
 } from "./helpers.mjs";
 
 import { deriveTuiSnapshot } from "../src/application/tui.mjs";
+import { deriveDailyBriefing } from "../src/application/daily-briefing.mjs";
+
+test("the key change never repeats the dedicated collection update", () => {
+  const briefing = deriveDailyBriefing({
+    date: "2026-08-19",
+    status: "active",
+    statusLabel: "今日已进食",
+    day: {
+      usageBandLabel: "校准污染",
+      summary: "污染 +1 · 清醒 +0",
+      pathologyChanges: [],
+      discoveries: [{ id: "fixture", label: "分裂影子换班" }],
+      activities: [],
+      ecologyGains: { pollution: 0, clarity: 0 },
+    },
+    diagnosis: "代谢暂稳",
+    habitat: {
+      name: "递归不在场",
+      bulletin: "镜像值班员已经代签。",
+    },
+    recommendation: null,
+    lang: "zh",
+  });
+  const change = briefing.sections.find(({ id }) => id === "change");
+  const collection = briefing.sections.find(({ id }) => id === "collection");
+
+  assert.equal(change.kind, "quiet");
+  assert.equal(change.label, "无其他显著变化");
+  assert.equal(collection.count, 1);
+  assert.match(collection.detail, /分裂影子换班/u);
+});
 
 test("the daily briefing is a deterministic bilingual read-only projection", (t) => {
   const workspace = mkdtempSync(path.join(tmpdir(), "anti-ai-briefing-"));

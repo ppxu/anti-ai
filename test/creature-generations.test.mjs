@@ -80,7 +80,7 @@ test("creature seals a fossil at day ninety and offers balanced next-generation 
   assert.equal(todayAtBoundary.status, 0, todayAtBoundary.stderr);
   assert.match(todayAtBoundary.stdout, /永久化石 #[0-9a-f]{8} 已封存/);
   assert.match(
-    todayAtBoundary.stdout,
+    todayAtBoundary.stdout.replace(/\s+/gu, " "),
     /第 2 代进化待选择.*anti-ai creature evolve/,
   );
   assert.equal(weekAfterBoundary.status, 0, weekAfterBoundary.stderr);

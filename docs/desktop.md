@@ -2,7 +2,7 @@
 
 [简体中文](./desktop.zh-CN.md)
 
-anti-ai v4.1 keeps the optional native desktop presentation for macOS 14 or newer deliberately small while adding a direct living touchpoint. The CLI and TUI remain the complete accounting and gameplay products.
+anti-ai v4.2 keeps the optional native desktop presentation for macOS 14 or newer deliberately small while adding a direct living touchpoint. The CLI and TUI remain the complete accounting and gameplay products.
 
 ## Install and link
 
@@ -77,21 +77,21 @@ Requirements: macOS 14+, Xcode Command Line Tools, and Swift 6.1+.
 
 ```bash
 cd apps/macos
-./scripts/build-release.sh 4.1.0
+./scripts/build-release.sh 4.2.0
 ```
 
 The script runs formatting and tests, cross-builds arm64 and x86_64, combines a universal binary, embeds Sparkle, creates the icon and app bundle, signs nested helpers from the inside out, creates a compressed DMG plus an update ZIP, and verifies metadata, both architectures, signatures, visible-window startup, a package size below 15 MiB, and clean termination. With no environment configuration it uses an ad-hoc signature and leaves the update menu disabled, which is suitable for local verification.
 
-## Install the v4.1 unnotarized preview
+## Install the v4.2 unnotarized preview
 
-The v4.1.0 desktop download is an explicitly temporary **unnotarized preview**. It is ad-hoc signed rather than identified and notarized by Apple. Download it only from the [official v4.1.0 GitHub release](https://github.com/ppxu/anti-ai/releases/tag/v4.1.0), optionally compare the published SHA-256 file, drag `anti-ai.app` to Applications, and try opening it once. If macOS blocks it and you choose to continue, open **System Settings → Privacy & Security**, scroll to Security, choose **Open Anyway**, then confirm **Open**. Apple warns that overriding this protection carries additional risk; do not use a copy obtained from another source.
+The v4.2.0 desktop download is an explicitly temporary **unnotarized preview**. It is ad-hoc signed rather than identified and notarized by Apple. Download it only from the [official v4.2.0 GitHub release](https://github.com/ppxu/anti-ai/releases/tag/v4.2.0), optionally compare the published SHA-256 file, drag `anti-ai.app` to Applications, and try opening it once. If macOS blocks it and you choose to continue, open **System Settings → Privacy & Security**, scroll to Security, choose **Open Anyway**, then confirm **Open**. Apple warns that overriding this protection carries additional risk; do not use a copy obtained from another source.
 
 The Sparkle archive still requires the project's Ed25519 update signature, but that verifies the archive and does not replace Apple Developer ID identity or notarization. Automatic checks remain off by default. This preview path must be explicitly selected when building:
 
 ```bash
 ANTI_AI_ALLOW_UNNOTARIZED_RELEASE=1 \
 ANTI_AI_SPARKLE_PUBLIC_KEY="<generated Sparkle public key>" \
-./scripts/build-release.sh 4.1.0
+./scripts/build-release.sh 4.2.0
 ```
 
 Future stable desktop distribution remains gated on Developer ID signing, Apple notarization, and the real-device acceptance below.
@@ -110,7 +110,7 @@ Then set the public key, a Developer ID identity, and a `notarytool` Keychain pr
 ANTI_AI_SPARKLE_PUBLIC_KEY="<public key printed above>" \
 ANTI_AI_CODESIGN_IDENTITY="Developer ID Application: Example (TEAMID)" \
 ANTI_AI_NOTARY_PROFILE="anti-ai-notary" \
-./scripts/build-release.sh 4.1.0
+./scripts/build-release.sh 4.2.0
 ```
 
 This signs with the hardened runtime, notarizes and staples the app before packaging the update, notarizes the DMG, verifies both distribution paths, and writes SHA-256 files. The signing key is injected at build time and must never be committed.
@@ -119,10 +119,10 @@ Generate the signed feed after the release ZIP exists:
 
 ```bash
 ANTI_AI_SPARKLE_RELEASE_NOTES_FILE="../../release-notes.md" \
-./scripts/generate-appcast.sh 4.1.0
+./scripts/generate-appcast.sh 4.2.0
 ```
 
-The script uses the same Keychain account, retains up to three feed entries, disables delta generation to keep the release path small, and writes `dist/appcast.xml`. Upload the DMG, update ZIP, and `appcast.xml` to the matching GitHub release. The default app feed is GitHub's `releases/latest/download/appcast.xml`; both feed and archive URLs can be overridden with documented `ANTI_AI_SPARKLE_*` environment variables. Publishing artifacts remains a separate release action.
+The script uses the same Keychain account, stages only the current version's archive and optional release notes, generates one newly signed item, then merges up to two unchanged historical items from the previous `dist/appcast.xml`. This prevents an old archive from inheriting the current release's download URL. Set `ANTI_AI_SPARKLE_PREVIOUS_APPCAST` when the previous feed lives elsewhere. Delta generation remains disabled and the final feed is written to `dist/appcast.xml`. Upload the DMG, update ZIP, and `appcast.xml` to the matching GitHub release. The default app feed is GitHub's `releases/latest/download/appcast.xml`; both feed and archive URLs can be overridden with documented `ANTI_AI_SPARKLE_*` environment variables. Publishing artifacts remains a separate release action.
 
 ## Release acceptance
 

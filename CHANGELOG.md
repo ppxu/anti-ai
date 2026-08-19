@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-08-19
+
+### Changed
+
+- Reduced local-report latency by parsing only bounded Codex usage/model records, caching timezone formatters, scanning independent Agent sources concurrently, and scanning only missing dates when report and Creature settlement ranges overlap within one request.
+- Added a delayed bilingual stderr activity indicator for slow interactive scans while keeping JSON, redirected output, and TUI rendering clean.
+- Made human-readable reports wrap within the current terminal width, and added a height-aware 80×24 Overview that preserves the daily broadcast, recommendation, and navigation without repeating the collection update.
+- Isolated Sparkle feed generation to the current release archive, then merged up to two byte-stable historical items so old archives cannot be regenerated with the new release URL.
+
+### Security
+
+- Performance reuse remains memory-only for one command or confirmed TUI action. Report wrapping, compact TUI presentation, and appcast history merging add no gameplay field, persistent usage index, watcher, daemon, telemetry, network path, or conversation-content processing.
+
 ## [4.1.0] - 2026-08-17
 
 ### Added

@@ -20,11 +20,13 @@ The structured projection always exposes five sections in this order:
 
 1. **System status** — whether the date is settled and its broad usage/ecology summary;
 2. **Current diagnosis** — the existing deterministic Chronicle diagnosis;
-3. **Key change** — the first applicable item from hatch/pathology, collection, local record, ecology drift, or no material change;
-4. **Collection update** — a separate visible count so narrative and collection events cannot be confused;
+3. **Key change** — the first applicable non-collection item from hatch/pathology, local record, ecology drift, or no other material change;
+4. **Collection update** — the only place collection changes are summarized, so one discovery is never repeated as both narrative and collection news;
 5. **Habitat reaction** — the existing deterministic Living Habitat scene and bulletin.
 
 At most one existing action is recommended. `Enter` handles that recommendation using the same action service and confirmation rules as the full action center. The broadcast does not create another action, reward, rarity roll, or daily opportunity.
+
+When the terminal is 30 rows high or shorter, Overview removes the large specimen art and secondary hints, then keeps the same five sections, recommendation, area navigation, Help, and exit control inside a compact frame. This affects presentation only.
 
 ## Full file
 

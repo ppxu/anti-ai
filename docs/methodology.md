@@ -129,6 +129,8 @@ The tree comparison reports how long one urban tree would need to sequester the 
 
 ## Privacy and reproducibility
 
-Scanning retains only the metadata required to aggregate timestamp, message identity, model, and usage. It does not store or print prompts, responses, or tool-call content, and it creates no persistent usage index.
+Scanning retains only the metadata required to aggregate timestamp, message identity, model, and usage. It does not store or print prompts, responses, or tool-call content, and it creates no persistent usage index. Selected sources scan concurrently. A request-local session scans only dates missing from its current in-memory result when report and settlement ranges overlap; reuse ends with the command or confirmed TUI action. Codex JSONL parsing decodes only bounded usage/model candidates, so oversized unrelated records are skipped rather than materialized as conversation text.
+
+When an interactive terminal scan outlasts a short delay, stderr shows a localized activity indicator. The indicator is disabled for JSON, non-interactive stderr, and the TUI, and it never enters report data.
 
 For reproducible machine processing, use `--json`; for the exact methodology embedded in an installed version, use `anti-ai explain`. The public constants and selection logic live in [`src/methodology.mjs`](../src/methodology.mjs) and the display conversions in [`src/comparisons.mjs`](../src/comparisons.mjs).

@@ -6,6 +6,9 @@ import { addModelUsage, addUsage } from "../../core/usage.mjs";
 import { emptyUsage } from "../../shared.mjs";
 
 let sqliteDriverPromise;
+const localDateFormatters = new Map();
+const JSONL_READ_BUFFER_BYTES = 1024 * 1024;
+const JSONL_MAX_CANDIDATE_BYTES = 1024 * 1024;
 
 async function sqliteDatabaseConstructor() {
   sqliteDriverPromise ??= import("better-sqlite3")
@@ -23,12 +26,86 @@ async function sqliteDatabaseConstructor() {
 }
 
 function localDate(timestamp, timezone) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(timestamp));
+  let formatter = localDateFormatters.get(timezone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    localDateFormatters.set(timezone, formatter);
+  }
+  return formatter.format(new Date(timestamp));
+}
+
+async function visitBoundedJsonlRecords(
+  file,
+  markers,
+  visit,
+  {
+    maxCandidateBytes = JSONL_MAX_CANDIDATE_BYTES,
+    readBufferBytes = JSONL_READ_BUFFER_BYTES,
+  } = {},
+) {
+  const markerBuffers = markers.map((marker) => Buffer.from(marker));
+  let carry = null;
+  let oversized = false;
+
+  const visitLine = (line) => {
+    if (!markerBuffers.some((marker) => line.includes(marker))) return;
+    try {
+      visit(JSON.parse(line.toString("utf8")));
+    } catch {
+      // Malformed and unrelated records are ignored like the streaming adapters.
+    }
+  };
+
+  const finishLine = (segment) => {
+    if (oversized) {
+      carry = null;
+      oversized = false;
+      return;
+    }
+    if (carry === null) {
+      visitLine(segment);
+      return;
+    }
+    const length = carry.length + segment.length;
+    if (length <= maxCandidateBytes) {
+      visitLine(Buffer.concat([carry, segment], length));
+    }
+    carry = null;
+  };
+
+  for await (const chunk of createReadStream(file, {
+    highWaterMark: readBufferBytes,
+  })) {
+    let start = 0;
+    while (start < chunk.length) {
+      const newline = chunk.indexOf(10, start);
+      if (newline < 0) break;
+      finishLine(chunk.subarray(start, newline));
+      start = newline + 1;
+    }
+
+    const tail = chunk.subarray(start);
+    if (tail.length === 0 || oversized) continue;
+    if (carry === null) {
+      if (tail.length <= maxCandidateBytes) carry = tail;
+      else oversized = true;
+      continue;
+    }
+    const length = carry.length + tail.length;
+    if (length <= maxCandidateBytes) {
+      carry = Buffer.concat([carry, tail], length);
+    } else {
+      carry = null;
+      oversized = true;
+    }
+  }
+
+  if (carry !== null && !oversized) visitLine(carry);
 }
 
 async function* matchingFiles(root, matches, modifiedSince = undefined) {
@@ -221,4 +298,5 @@ export {
   sourceUsageByDate,
   sqliteDatabaseConstructor,
   usageFromFields,
+  visitBoundedJsonlRecords,
 };

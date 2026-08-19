@@ -19,7 +19,14 @@ import { localDate, reportsForDates } from "../scanner.mjs";
 import { CREATURE_BASELINE_WINDOW } from "../creature/balance.mjs";
 import { deriveMetabolismSnapshot } from "../clinic.mjs";
 
-async function settleCreatureState(state, date, options, timezone) {
+async function settleCreatureState(
+  state,
+  date,
+  options,
+  timezone,
+  reportSession = null,
+  additionalScanDates = [],
+) {
   const currentDate = localDate(new Date(), timezone);
   const defaultStart = shiftDate(date, -29);
   const observedDates = Object.keys(state.days);
@@ -37,7 +44,13 @@ async function settleCreatureState(state, date, options, timezone) {
     shiftDate(startDate, -CREATURE_BASELINE_WINDOW),
     date,
   );
-  const scannedReports = await reportsForDates(options, scanDates, timezone);
+  const requestedScanDates = [...new Set([
+    ...scanDates,
+    ...additionalScanDates,
+  ])].sort();
+  const scannedReports = reportSession
+    ? await reportSession.reportsForDates(requestedScanDates)
+    : await reportsForDates(options, requestedScanDates, timezone);
   const reportsByDate = new Map(
     scannedReports.map((report) => [report.date, report]),
   );

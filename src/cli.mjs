@@ -25,15 +25,16 @@ import {
   TUI_AREA_IDS,
 } from "./registry.mjs";
 import {
+  createReportSession,
   inspectLocalSources,
   localDate,
-  reportsForDates,
   SourceScanError,
 } from "./scanner.mjs";
 import { localized } from "./shared.mjs";
 import { StateConflictError } from "./state-store.mjs";
 import { parseArgs } from "./cli/args.mjs";
 import { runExplain } from "./cli/explain.mjs";
+import { createScanProgress } from "./cli/progress.mjs";
 import {
   renderCodex,
   renderCompanionPeriod,
@@ -58,15 +59,15 @@ async function runToday(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const currentDate = localDate(new Date(), timezone);
   const date = options.date ?? currentDate;
+  const reportSession = createReportSession(options, timezone);
 
   if (options.json) {
-    const [report] = await reportsForDates(options, [date], timezone);
+    const [report] = await reportSession.reportsForDates([date]);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } else {
     const dates = Array.from({ length: 31 }, (_, index) =>
       shiftDate(date, index - 30),
     );
-    const reports = await reportsForDates(options, dates, timezone);
     const creatureContext =
       options.source === "all"
         ? await runCreature(
@@ -77,8 +78,10 @@ async function runToday(options) {
               json: false,
             },
             "context",
+            { reportSession, reportDates: dates },
           )
         : null;
+    const reports = await reportSession.reportsForDates(dates);
     const creature = creatureContext?.result ?? null;
     const codex = creatureContext
       ? creatureCodex(creatureContext.state, creature.date)
@@ -118,12 +121,10 @@ async function runWeek(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const currentDate = localDate(new Date(), timezone);
   const endDate = options.date ?? currentDate;
+  const reportSession = createReportSession(options, timezone);
   const scanDates = Array.from({ length: 31 }, (_, index) =>
     shiftDate(endDate, index - 30),
   );
-  const scannedReports = await reportsForDates(options, scanDates, timezone);
-  const reports = scannedReports.slice(-7);
-  const dates = reports.map(({ date }) => date);
   const creatureContext =
     options.source === "all"
       ? await runCreature(
@@ -134,8 +135,12 @@ async function runWeek(options) {
             json: false,
           },
           "context",
+          { reportSession, reportDates: scanDates },
         )
       : null;
+  const scannedReports = await reportSession.reportsForDates(scanDates);
+  const reports = scannedReports.slice(-7);
+  const dates = reports.map(({ date }) => date);
   const casebook = creatureContext
     ? creatureCasebook(creatureContext.state, dates[0], endDate)
     : null;
@@ -169,6 +174,7 @@ async function runMonth(options) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const currentDate = localDate(new Date(), timezone);
   const endDate = options.date ?? currentDate;
+  const reportSession = createReportSession(options, timezone);
   const dayCount = Number(endDate.slice(8));
   const dates = Array.from({ length: dayCount }, (_, index) =>
     `${endDate.slice(0, 8)}${String(index + 1).padStart(2, "0")}`,
@@ -176,11 +182,6 @@ async function runMonth(options) {
   const scanDates = Array.from({ length: 31 }, (_, index) =>
     shiftDate(endDate, index - 30),
   );
-  const scannedReports = await reportsForDates(options, scanDates, timezone);
-  const reportsByDate = new Map(
-    scannedReports.map((report) => [report.date, report]),
-  );
-  const reports = dates.map((date) => reportsByDate.get(date));
   const creatureContext =
     options.source === "all"
       ? await runCreature(
@@ -191,8 +192,14 @@ async function runMonth(options) {
             json: false,
           },
           "context",
+          { reportSession, reportDates: scanDates },
         )
       : null;
+  const scannedReports = await reportSession.reportsForDates(scanDates);
+  const reportsByDate = new Map(
+    scannedReports.map((report) => [report.date, report]),
+  );
+  const reports = dates.map((date) => reportsByDate.get(date));
   const autopsy = creatureContext
     ? creatureCasebook(creatureContext.state, dates[0], endDate)
     : null;
@@ -479,7 +486,20 @@ async function main(rawArgs = process.argv.slice(2)) {
       );
       process.exitCode = 2;
     } else if (Object.hasOwn(COMMAND_HANDLERS, options.command)) {
-      await COMMAND_HANDLERS[options.command](options);
+      const progress = createScanProgress({
+        stream: process.stderr,
+        lang: options.lang,
+        enabled:
+          Boolean(process.stderr.isTTY) &&
+          !options.json &&
+          options.command !== "tui",
+      });
+      options.onScanProgress = progress.handle;
+      try {
+        await COMMAND_HANDLERS[options.command](options);
+      } finally {
+        progress.stop();
+      }
     } else {
       process.stderr.write(
         `Usage: anti-ai <${COMMAND_IDS.filter((id) => id !== "help").join("|")}> [--date YYYY-MM-DD] [--source all|${SOURCE_IDS.join("|")}] [--lang zh|en] [--json]\n`,

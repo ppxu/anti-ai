@@ -15,8 +15,21 @@ function ProgressBar({ value, width = 18, color = "cyan" }) {
   );
 }
 
-function Header({ snapshot, lang }) {
+function Header({ snapshot, lang, dense = false }) {
   const zh = lang === "zh";
+  const settlement = snapshot.overview.status === "awaiting"
+    ? zh ? "待结算" : "UNSETTLED"
+    : zh ? "已结算" : "SETTLED";
+  if (dense) {
+    return (
+      <Box justifyContent="space-between">
+        <Text bold color="red">
+          {zh ? "ANTI-AI · 收容控制台" : "ANTI-AI · CONTAINMENT CONSOLE"}
+        </Text>
+        <Text dimColor>{snapshot.date} · {settlement}</Text>
+      </Box>
+    );
+  }
   return (
     <Box flexDirection="column">
       <Box justifyContent="space-between">
@@ -37,9 +50,9 @@ function Header({ snapshot, lang }) {
   );
 }
 
-function Navigation({ navigation, activeId }) {
+function Navigation({ navigation, activeId, dense = false }) {
   return (
-    <Box gap={2} marginY={1}>
+    <Box gap={dense ? 1 : 2} marginY={dense ? 0 : 1}>
       {navigation.map((item) => {
         const active = item.id === activeId;
         return (

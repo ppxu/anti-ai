@@ -12,35 +12,27 @@ import {
   preferSnapshot,
   sourceUsageByDate,
   usageFromFields,
+  visitBoundedJsonlRecords,
 } from "./runtime.mjs";
+
+const CODEX_USAGE_MARKERS = [
+  '"type":"token_count"',
+  '"type":"turn_context"',
+];
 
 async function scanCodex(root, dates, timezone) {
   const results = sourceUsageByDate(dates);
   for await (const file of jsonlFiles(root, earliestLocalMidnight(dates))) {
     let currentModel = "unknown";
-    const lines = readline.createInterface({
-      input: createReadStream(file),
-      crlfDelay: Infinity,
-    });
-    for await (const line of lines) {
-      if (
-        !line.includes('"type":"token_count"') &&
-        !line.includes('"type":"turn_context"')
-      ) continue;
-      let record;
-      try {
-        record = JSON.parse(line);
-      } catch {
-        continue;
-      }
+    await visitBoundedJsonlRecords(file, CODEX_USAGE_MARKERS, (record) => {
       if (record?.type === "turn_context") {
         currentModel = record?.payload?.model ?? currentModel;
-        continue;
+        return;
       }
       const usage = record?.payload?.info?.last_token_usage;
-      if (record?.payload?.type !== "token_count" || !usage) continue;
+      if (record?.payload?.type !== "token_count" || !usage) return;
       const result = results.get(localDate(record.timestamp, timezone));
-      if (!result) continue;
+      if (!result) return;
       const delta = usageFromFields({
         input: usage.input_tokens,
         output: usage.output_tokens,
@@ -52,7 +44,7 @@ async function scanCodex(root, dates, timezone) {
       });
       addUsage(result.usage, delta);
       addModelUsage(result.models, currentModel, delta);
-    }
+    });
   }
   return results;
 }

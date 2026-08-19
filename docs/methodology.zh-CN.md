@@ -129,6 +129,8 @@ OpenCode 和 Hermes 使用可选的 `better-sqlite3` 适配器。驱动缺失或
 
 ## 隐私与复现
 
-扫描只保留聚合所需的时间、消息身份、模型与用量元数据，不保存或打印 prompt、response 和 tool-call 内容，也不创建持久用量索引。
+扫描只保留聚合所需的时间、消息身份、模型与用量元数据，不保存或打印 prompt、response 和 tool-call 内容，也不创建持久用量索引。被选中的来源会并发扫描；报告与结算区间重叠时，请求级会话只扫描当前内存结果中缺失的日期，复用范围不会超出当前命令或已确认的 TUI 动作。Codex JSONL 只解码有大小上限的用量/模型候选记录，因此超大的无关记录会被跳过，不会以会话正文形式进入内存。
+
+交互式终端扫描超过短暂延迟后，stderr 会显示本地化活动提示。JSON、非交互式 stderr 和 TUI 不显示该提示，报告数据也不会包含它。
 
 需要稳定机器处理时使用 `--json`；需要检查当前安装版本采用的方法时使用 `anti-ai explain`。公开常量与高位选择逻辑位于 [`src/methodology.mjs`](../src/methodology.mjs)，展示换算位于 [`src/comparisons.mjs`](../src/comparisons.mjs)。

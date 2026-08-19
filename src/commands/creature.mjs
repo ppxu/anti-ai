@@ -58,7 +58,7 @@ import {
   persistCreatureState,
 } from "../application/desktop.mjs";
 
-async function runCreature(options, mode = "render") {
+async function runCreature(options, mode = "render", session = {}) {
   if (options.action === "reset") {
     await resetCreatureState();
     await clearLinkedDesktopSnapshot();
@@ -81,6 +81,7 @@ async function runCreature(options, mode = "render") {
         json: false,
       },
       "snapshot-context",
+      session,
     );
     if (!context) return;
     const habitat = deriveHabitat(
@@ -126,6 +127,7 @@ async function runCreature(options, mode = "render") {
         json: false,
       },
       "snapshot-context",
+      session,
     );
     if (!context) return;
     const chronicle = deriveMutationChronicle(
@@ -144,7 +146,7 @@ async function runCreature(options, mode = "render") {
   const date = options.date ?? localDate(new Date(), timezone);
   let state;
   try {
-    state = await loadCreatureState();
+    state = session.state ?? await loadCreatureState();
   } catch {
     if (["result", "snapshot-result"].includes(mode)) return null;
     process.stderr.write(
@@ -153,7 +155,14 @@ async function runCreature(options, mode = "render") {
     process.exitCode = 1;
     return;
   }
-  const settlement = await settleCreatureState(state, date, options, timezone);
+  const settlement = await settleCreatureState(
+    state,
+    date,
+    options,
+    timezone,
+    session.reportSession,
+    session.reportDates,
+  );
   state = settlement.state;
   let creature = settlement.creature;
   let evolutionAction = null;

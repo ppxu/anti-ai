@@ -19,7 +19,9 @@ CLI bridge。Scanner、结算、成长、门诊、访客、远征和行动规则
 6. 原生应用读取快照，并且只能调用固定的 `desktop refresh` 或 `tui` 入口；终端、TUI、SVG 与桌面适配层都只格式化派生结果，不读取会话正文。
 7. 隔离更新适配器只能在手动操作或明确开启后获取签名 HTTPS appcast 与已公证桌面更新包；它不读取产品状态，也不替换独立的 npm CLI。
 
-来源适配器彼此隔离。扫描 `all` 时，单个来源损坏不会遮蔽其他健康来源；输出只包含来源 ID 和错误码，不包含本地记录或会话片段。只有选中了实际存在的 SQLite 来源时，才会加载 `better-sqlite3`。
+来源适配器彼此隔离，并会在一次报告扫描中并发启动。扫描 `all` 时，单个来源损坏不会遮蔽其他健康来源；输出只包含来源 ID 和错误码，不包含本地记录或会话片段。只有选中了实际存在的 SQLite 来源时，才会加载 `better-sqlite3`。完整来源的人类可读 `today`、`week`、`month` 会与异变体结算共享一次请求级报告会话；TUI 的结算预览与确认写入也共享同一会话，因此重叠日期不会重复扫描。这份缓存只存在于当前命令或 TUI 动作中，不会变成持久用量索引。
+
+Codex 适配器以有界字节记录读取 JSONL，只解码 `turn_context` 与 `token_count` 候选项。超大的无关记录会在不保留、不解码正文的前提下跳过，相邻用量记录仍保持精确。耗时较长的交互式扫描会在 stderr 延迟显示双语状态；管道输出、JSON 与 TUI 不受干扰。人类可读报告框会限制在 40–80 列，并按可见终端宽度换行，不改变 JSON 契约。
 
 ## 状态边界
 
@@ -37,17 +39,19 @@ CLI bridge。Scanner、结算、成长、门诊、访客、远征和行动规则
 
 ## 扩展边界
 
-新增本地 Agent 时，在 `src/registry.mjs` 注册元数据，在 `src/infrastructure/sources/jsonl.mjs` 或 `sqlite.mjs` 实现适配器，并在 `src/infrastructure/sources/index.mjs` 注册。JSONL 应流式读取；SQLite 必须只读、可选，并在数据库不存在时返回空用量。公共解析、数值归一化、快照去重和原生模块懒加载放在 `runtime.mjs`，不要复制到具体适配器。
+新增本地 Agent 时，在 `src/registry.mjs` 注册元数据，在 `src/infrastructure/sources/jsonl.mjs` 或 `sqlite.mjs` 实现适配器，并在 `src/infrastructure/sources/index.mjs` 注册。JSONL 应流式读取并避免解码无关载荷；SQLite 必须只读、可选，并在数据库不存在时返回空用量。公共有界记录解析、日期格式化、数值归一化、快照去重和原生模块懒加载放在 `runtime.mjs`，并发扫描编排与请求级复用放在 `index.mjs`，不要复制到具体适配器。
 
 拥有较多编排逻辑的新命令放入 `src/commands/`。参数与白名单归注册/CLI 层，领域计算归领域模块，展示归 `src/cli/render.mjs` 或 `src/renderers/`。
 
-桌面投影放在 `src/application/desktop-snapshot.mjs`；bridge 与快照的文件系统机制放在 `src/infrastructure/desktop-store.mjs`；公开编排放在 `src/commands/desktop.mjs`。所有已有写入都通过 `persistCreatureState()`，因此有效关联会收到一次尽力而为的快照同步。投影复用 TUI/Application 的双语播报、门诊、生态舱、伴生物、访客与建议语义，不复制它们的优先级规则。Swift 可以忽略主版本 1 中新增的字段，但两个运行时都会拒绝未知主版本。`DesktopUpdateController` 是独立原生分发适配器：更新配置必须在发版时注入，自动检查默认关闭，系统画像保持关闭，任何更新 API 都不能接收快照或玩法数据。
+桌面投影放在 `src/application/desktop-snapshot.mjs`；bridge 与快照的文件系统机制放在 `src/infrastructure/desktop-store.mjs`；公开编排放在 `src/commands/desktop.mjs`。所有已有写入都通过 `persistCreatureState()`，因此有效关联会收到一次尽力而为的快照同步。投影复用 TUI/Application 的双语播报、门诊、生态舱、伴生物、访客与建议语义，不复制它们的优先级规则。Swift 可以忽略主版本 1 中新增的字段，但两个运行时都会拒绝未知主版本。`DesktopUpdateController` 是独立原生分发适配器：更新配置必须在发版时注入，自动检查默认关闭，系统画像保持关闭，任何更新 API 都不能接收快照或玩法数据。生成 appcast 时只暂存当前归档并生成一条签名记录，再由 `merge-appcast.mjs` 保留经过校验且下载地址不被改写的历史记录。
 
 桌面交互只属于展示层。Swift 从既有快照派生短状态气泡，先区分点击与位移再路由，并且只把已知建议目标转换成五个枚举约束的 TUI 区域；Node 在 `src/registry.mjs` 暴露同一组固定区域 ID，`anti-ai tui --area` 会在进入交互运行时前拒绝其他值。原生场景把几何、配色、播放调度、面板交互和气泡展示拆成独立文件，但不会把成长或建议优先级规则移出 Node。
 
 与展示无关的查询模型和动作编排放入 `src/application/`：`action-catalog.mjs` 派生可用性、禁用原因与确认模式；`actions.mjs` 负责 TUI 预览与确认会话；`action-execution.mjs` 是 CLI 与 TUI 共享的唯一写操作用例；`settlement.mjs` 保存共享结算链路；`archive.mjs` 派生孵化后的逐日收容记录。`daily-briefing.mjs` 把所选日期的档案记录、门诊诊断、收藏变化、活体生态舱场景和动作可用性压缩成一份确定性的五段播报，并且最多给出一个建议动作。`projections.mjs` 在一次请求内缓存异变体、图鉴、伴生物、实验室和培养架投影，避免同一屏幕或导出重复计算整张对象图。`share-export.mjs` 是 CLI 与 TUI 共用的卡片准备链路，以只读方式选择可写目录，并在确认后才创建目录和文件。CLI 命令和 TUI 调用这些服务，不重复实现领域规则；TUI 不能调用命令处理器或执行任意 Shell 命令，异变规则仍只能由领域模块负责。`src/clinic.mjs` 负责纯诊断和趋势规则，`src/clinic-studies.mjs` 从已封存样本派生被动研究状态，`src/application/clinic.mjs` 是 CLI 与 TUI 共享的研究启动写入服务。`src/visitation.mjs` 负责访客档案、共处状态约束和确定性共处投影，`src/visitation-content.mjs` 保存路线对等的双语内容，`src/application/visitation.mjs` 是 CLI 与 TUI 共用的接待/入住/送离服务。`creature-casebook.mjs` 负责区间病历查询，`src/chronicle.mjs` 再把它组合成当前身份、7/30/90 天病程和世代对照；`src/creature/codex.mjs` 从已经派生的异变体构建收藏投影，`src/creature/state.mjs` 负责 schema 归一化、顺序迁移和持久化接线；`src/collection-sets.mjs` 负责路线对等且只影响展示的星座定义、显露规则与病程阶段；`src/collection-phenotype.mjs` 根据带日期的固定发现派生里程碑馆藏异变，但不改变基础外观身份。这些查询模块都不能写状态或拥有动作。`src/habitat-scenes.mjs` 负责路线平衡的活体生态舱原型，并只读派生环境、本体姿态、关系语境、近期痕迹、时段和短讯。`src/incidents.mjs` 独立负责确定性的事故资格、上下文选择、响应封存、延迟后果和双章节事件链。`src/expedition.mjs` 负责不累计的本地日期资格、稳定十格计划、分叉、变化、收藏解锁和历史日期过滤；`src/expedition/content.mjs` 负责双语内容，`presentation.mjs` 派生 CLI、TUI 与 SVG 共同消费的事件层级和返航总结。适配层只负责展示或调用这些规则。
 
 TUI 必须消费结构化快照，不能解析终端文案；五个区域依次为总览、生态舱、远征、实验室和图鉴。总览默认显示播报，`e` 只在会话内展开完整年鉴/标本档案和门诊投影；播报不是弹窗，数字键始终可以直接离开。门诊研究复用行动中心，不增加第六个区域、打卡动作或后台计时器。图鉴读取同一组十二项派生星座并按三条路线分栏。总览 `s` 与 CLI `share --card briefing` 渲染同一份播报结构，dossier 继续承担长期病程分享。生态舱直接消费与终端和 SVG 适配层相同的活体场景和可选访客投影，不重复拼装展示规则；`v` 浮层执行“粘贴 AA1 → 只读校验预览 → 明确保存”，再通过共享访客服务完成档案入住与送离。schema v14 曾增加远征索引，schema v15 新增门诊容器和隐私安全的每日代谢样本，schema v16 新增空的版本化访客共处记录，不会虚构访客或历史共处。既有内容迁移仍会给旧记录补上 `contentVersion: 1`，只让新结算日期进入 v2 内容池。`src/consequence-cabinet.mjs` 负责 3 个陈列位引用与确定性每日叙事反馈；`src/application/tui-motion.mjs` 负责确定性的 ASCII 帧、器官观察、异色故障特征、伴生动作、事件回放场景、低频活体环境变化和临时远征光标动态，本身不能访问计时器或持久化；`src/application/tui-controller.mjs` 负责显式的临时控制状态、总览展示模式与 reducer，并保证 Help、动作、分享和访客浮层打开时暂停动态；`src/tui/app.jsx` 负责输入和控制编排，`src/tui/screens/` 下的组件只负责各自页面展示。动态刷新最高 4 FPS，离开活体页面后暂停，也能在不改变快照的前提下彻底关闭。
+
+终端高度不超过 30 行时，默认总览会切换到纯展示层的紧凑布局，移除大型图形和重复提示，同时保留播报、建议操作、导航、帮助和退出入口。
 
 Ink 与 React 只存在于 `devDependencies`，由 `scripts/build-tui.mjs` 打包为 `dist/tui.mjs`；普通命令不会加载框架，安装包仍没有必需运行时依赖。只编辑 `src/tui/`，不要直接修改生成产物。
 

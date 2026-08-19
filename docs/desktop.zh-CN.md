@@ -2,7 +2,7 @@
 
 [English](./desktop.md)
 
-anti-ai v4.1 继续把 macOS 14 或更高版本的可选原生桌面层保持得足够轻，同时增加一个直接的“活体触点”。完整统计和玩法仍由 CLI 与 TUI 承担。
+anti-ai v4.2 继续把 macOS 14 或更高版本的可选原生桌面层保持得足够轻，同时增加一个直接的“活体触点”。完整统计和玩法仍由 CLI 与 TUI 承担。
 
 ## 安装与关联
 
@@ -77,21 +77,21 @@ Swift 解码器会忽略未知字段，遇到未知主版本会安全失败。�
 
 ```bash
 cd apps/macos
-./scripts/build-release.sh 4.1.0
+./scripts/build-release.sh 4.2.0
 ```
 
 脚本会执行格式与测试，分别交叉构建 arm64 和 x86_64，合成通用二进制，嵌入 Sparkle，生成图标和应用包，从内到外签名嵌套 helper，并制作压缩 DMG 与更新 ZIP；随后验证元数据、双架构、签名、可见窗口启动、低于 15 MiB 的包体积和退出无残留。没有额外环境配置时使用 ad-hoc 签名并禁用更新菜单，适合本机验证。
 
-## 安装 v4.1 未公证预览版
+## 安装 v4.2 未公证预览版
 
-v4.1.0 桌面下载是明确的临时**未公证预览版**：它只使用 ad-hoc 签名，没有 Apple 可识别的开发者身份，也没有经过 Apple 公证。请只从[官方 v4.1.0 GitHub Release](https://github.com/ppxu/anti-ai/releases/tag/v4.1.0)下载，可以再核对随包发布的 SHA-256 文件；把 `anti-ai.app` 拖入“应用程序”后先尝试打开一次。如果 macOS 阻止启动且你确认要继续，请进入**系统设置 → 隐私与安全性**，滚动到“安全性”，选择**仍要打开**，然后再次确认“打开”。Apple 明确提醒绕过这项保护会带来额外风险，因此不要运行来自其他渠道的副本。
+v4.2.0 桌面下载是明确的临时**未公证预览版**：它只使用 ad-hoc 签名，没有 Apple 可识别的开发者身份，也没有经过 Apple 公证。请只从[官方 v4.2.0 GitHub Release](https://github.com/ppxu/anti-ai/releases/tag/v4.2.0)下载，可以再核对随包发布的 SHA-256 文件；把 `anti-ai.app` 拖入“应用程序”后先尝试打开一次。如果 macOS 阻止启动且你确认要继续，请进入**系统设置 → 隐私与安全性**，滚动到“安全性”，选择**仍要打开**，然后再次确认“打开”。Apple 明确提醒绕过这项保护会带来额外风险，因此不要运行来自其他渠道的副本。
 
 Sparkle 更新包仍必须通过项目的 Ed25519 签名校验，但它只验证更新归档，不能替代 Apple Developer ID 身份和公证。自动检查仍默认关闭。构建这种预览包时必须显式选择该模式：
 
 ```bash
 ANTI_AI_ALLOW_UNNOTARIZED_RELEASE=1 \
 ANTI_AI_SPARKLE_PUBLIC_KEY="<已生成的 Sparkle 公钥>" \
-./scripts/build-release.sh 4.1.0
+./scripts/build-release.sh 4.2.0
 ```
 
 未来的稳定桌面分发仍以 Developer ID 签名、Apple 公证和下方真机验收为门禁。
@@ -110,7 +110,7 @@ swift build
 ANTI_AI_SPARKLE_PUBLIC_KEY="<上一步输出的公钥>" \
 ANTI_AI_CODESIGN_IDENTITY="Developer ID Application: Example (TEAMID)" \
 ANTI_AI_NOTARY_PROFILE="anti-ai-notary" \
-./scripts/build-release.sh 4.1.0
+./scripts/build-release.sh 4.2.0
 ```
 
 此时脚本会启用 hardened runtime 与时间戳，在生成更新包前公证并装订 App，再公证 DMG，校验两条分发路径并写出 SHA-256 文件。签名公钥只在构建时注入，私钥绝不能提交。
@@ -119,10 +119,10 @@ ANTI_AI_NOTARY_PROFILE="anti-ai-notary" \
 
 ```bash
 ANTI_AI_SPARKLE_RELEASE_NOTES_FILE="../../release-notes.md" \
-./scripts/generate-appcast.sh 4.1.0
+./scripts/generate-appcast.sh 4.2.0
 ```
 
-脚本复用同一钥匙串账户，最多保留三条更新记录，不生成 delta 以保持发布链轻量，并写出 `dist/appcast.xml`。把 DMG、更新 ZIP 与 `appcast.xml` 上传到对应 GitHub Release。默认更新源是 GitHub 的 `releases/latest/download/appcast.xml`；更新源和下载地址均可通过文档中的 `ANTI_AI_SPARKLE_*` 环境变量覆盖。真正上传仍是独立发版动作。
+脚本复用同一钥匙串账户，只把当前版本的更新包与可选发布说明放入临时目录，生成一条新签名记录，再从上一份 `dist/appcast.xml` 合并最多两条保持原样的历史记录，避免旧归档被错误换成当前版本下载地址。上一份更新源位于其他位置时可设置 `ANTI_AI_SPARKLE_PREVIOUS_APPCAST`。脚本仍不生成 delta，最终写出 `dist/appcast.xml`。把 DMG、更新 ZIP 与 `appcast.xml` 上传到对应 GitHub Release。默认更新源是 GitHub 的 `releases/latest/download/appcast.xml`；更新源和下载地址均可通过文档中的 `ANTI_AI_SPARKLE_*` 环境变量覆盖。真正上传仍是独立发版动作。
 
 ## 发布验收
 

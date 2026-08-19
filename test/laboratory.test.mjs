@@ -1203,7 +1203,7 @@ test("today week and month report companion growth without raw usage", (t) => {
     /伴生病程\s+7 个印记 · 培养物 → 共生异形 · 污染寄生/,
   );
   assert.match(
-    month.stdout,
+    month.stdout.replace(/\s+/gu, " "),
     /COMPANION COURSE\s+7 IMPRINTS · POLLUTION CULTURE → SYMBIOTIC ABERRATION · POLLUTION PARASITE/,
   );
   assert.doesNotMatch(month.stdout, /[\p{Script=Han}]/u);
@@ -1594,8 +1594,14 @@ test("codex collects sealed laboratory cultures without creating duplicates", (t
   );
   assert.match(human.stdout, /污染培养物\s+\[1\]/);
   assert.match(human.stdout, new RegExp(`#${culture.id}`));
-  assert.match(week.stdout, /新增收藏\s+\d+ .* 培养 1/);
-  assert.match(month.stdout, /NEW COLLECTIONS\s+\d+ .* cultures 1/);
+  assert.match(
+    week.stdout.replace(/\s+/gu, " "),
+    /新增收藏\s+\d+ .* 培养 1/,
+  );
+  assert.match(
+    month.stdout.replace(/\s+/gu, " "),
+    /NEW COLLECTIONS\s+\d+ .* cultures 1/,
+  );
   assert.doesNotMatch(
     `${first.stdout}${human.stdout}`,
     /"totalTokens"|"modelName"|"prompt"|"response"|"requestTimestamp"|session\.jsonl/,

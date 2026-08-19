@@ -663,12 +663,12 @@ test("today week and month surface collection discoveries", (t) => {
   assert.match(today.stdout, /图鉴入库\s+\+2 · 熄火幼核 · 动态标本/);
   assert.equal(week.status, 0, week.stderr);
   assert.match(
-    week.stdout,
+    week.stdout.replace(/\s+/gu, " "),
     /新增收藏\s+2 · 形态 1 · 成就 0 · 异色 0 · 伤痕 0 · 标本 1 · 外来 0 · 化石 0 · 病例 0 · 培养 0/,
   );
   assert.equal(month.status, 0, month.stderr);
   assert.match(
-    month.stdout,
+    month.stdout.replace(/\s+/gu, " "),
     /NEW COLLECTIONS\s+2 · forms 1 · achievements 0 · chromatics 0 · scars 0 · specimens 1 · foreign 0 · fossils 0 · cases 0 · cultures 0/,
   );
 });

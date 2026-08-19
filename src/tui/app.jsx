@@ -45,11 +45,14 @@ function TuiApp({
   shareController = null,
   visitorController = null,
   terminalColumns = undefined,
+  terminalRows = undefined,
 }) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const columns = terminalColumns ?? stdout?.columns ?? 80;
+  const rows = terminalRows ?? stdout?.rows ?? 40;
   const compact = columns <= 80;
+  const dense = rows <= 30;
   const [controller, dispatchController] = useReducer(
     tuiControllerReducer,
     { snapshot: initialSnapshot, motion: initialMotion, initialArea },
@@ -931,6 +934,7 @@ function TuiApp({
         motion={motion}
         glitch={glitch}
         compact={compact}
+        dense={dense}
       />
     ),
     habitat: (
@@ -1000,11 +1004,15 @@ function TuiApp({
       : activeId === "expedition" && snapshot.expedition.latest
         ? ` · s ${zh ? "分享返航总结" : "share return summary"}`
     : activeId === "overview" && snapshot.primaryAction
-      ? compact
+      ? dense
+        ? ` · Enter ${snapshot.primaryAction.target === "expedition" ? (zh ? "远征" : "expedition") : (zh ? "处理" : "act")} · e ${zh ? "档案" : "file"}`
+        : compact
         ? ` · e ${zh ? "档案" : "file"} · Enter ${snapshot.primaryAction.target === "expedition" ? (zh ? "远征" : "expedition") : (zh ? "处理" : "act")} · s ${zh ? "分享" : "share"}`
         : ` · e ${overviewMode === "briefing" ? (zh ? "完整档案" : "full file") : (zh ? "收起档案" : "collapse")} · Enter ${snapshot.primaryAction.target === "expedition" ? (zh ? "前往远征" : "open expedition") : (zh ? "处理" : "act")} · s ${zh ? "分享播报" : "share broadcast"}`
       : activeId === "overview"
-        ? compact
+        ? dense
+          ? ` · e ${zh ? "档案" : "file"}`
+          : compact
           ? ` · e ${zh ? "档案" : "file"} · s ${zh ? "分享" : "share"}`
           : ` · e ${overviewMode === "briefing" ? (zh ? "完整档案" : "full file") : (zh ? "收起档案" : "collapse")} · s ${zh ? "分享播报" : "share broadcast"}`
         : activeId === "codex" && ["detail", "archive_detail"].includes(codexMode)
@@ -1017,7 +1025,9 @@ function TuiApp({
               actions.some(({ id, available }) => id === "incubate" && available)
             ? ` · Enter ${zh ? "培养" : "incubate"}`
         : "";
-  const navigationFooter = compact
+  const navigationFooter = dense
+    ? `1–5 ${zh ? "区域" : "areas"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"}`
+    : compact
     ? `1–5 ${zh ? "区域" : "areas"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${motionLabel}`
     : `1–5 ${zh ? "区域" : "areas"} · ← → ${zh ? "切换" : "switch"} · a ${zh ? "行动" : "actions"} · ? ${zh ? "帮助" : "help"} · m ${zh ? "动态" : "motion"} ${motionLabel}`;
   const actionOverlay = {
@@ -1064,15 +1074,16 @@ function TuiApp({
 
   return (
     <Box flexDirection="column" paddingX={1} width={columns}>
-      <Header snapshot={snapshot} lang={lang} />
+      <Header snapshot={snapshot} lang={lang} dense={dense} />
       <Navigation
         navigation={snapshot.navigation}
         activeId={showHelp || actionMode !== null || shareMode !== null || visitorMode !== null ? null : activeId}
+        dense={dense}
       />
       {showHelp ? (
         <HelpOverlay lang={lang} activeId={activeId} codexMode={codexMode} />
       ) : visitorOverlay ?? shareOverlay ?? actionOverlay ?? screen}
-      <Box marginTop={1} justifyContent="space-between">
+      <Box marginTop={dense ? 0 : 1} justifyContent="space-between">
         <Text dimColor>
           {visitorMode !== null
             ? zh

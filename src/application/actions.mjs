@@ -21,7 +21,7 @@ import {
   laboratoryShelf,
   laboratoryView,
 } from "../laboratory.mjs";
-import { localDate } from "../scanner.mjs";
+import { createReportSession, localDate } from "../scanner.mjs";
 import { localized } from "../shared.mjs";
 import {
   INCIDENT_AFTERMATH_DELAY,
@@ -100,9 +100,22 @@ function settleImpact(report, creature) {
   };
 }
 
-async function settlePreview(state, date, timezone, options, action) {
+async function settlePreview(
+  state,
+  date,
+  timezone,
+  options,
+  action,
+  reportSession = null,
+) {
   const projected = cloneState(state);
-  const settled = await settleCreatureState(projected, date, options, timezone);
+  const settled = await settleCreatureState(
+    projected,
+    date,
+    options,
+    timezone,
+    reportSession,
+  );
   const today = settled.state.days[date];
   const creature = {
     ...settled.creature,
@@ -513,7 +526,14 @@ async function previewContainmentAction(actionId, options = {}, session = {}) {
   }
   if (!action.available) return { ...action, choices: [] };
   if (actionId === "settle_today") {
-    return settlePreview(state, date, timezone, { ...options, lang }, action);
+    return settlePreview(
+      state,
+      date,
+      timezone,
+      { ...options, lang },
+      action,
+      session.reportSession,
+    );
   }
   if (actionId === "choose_intervention") {
     return interventionPreview(state, date, lang, action);
@@ -589,6 +609,7 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
       date,
       { ...options, lang },
       timezone,
+      session.reportSession,
     );
     await persistCreatureState(settled.state, date);
     const day = settled.state.days[date];
@@ -750,9 +771,10 @@ async function executeContainmentAction(actionId, options = {}, session = {}) {
 }
 
 async function createContainmentSession(options = {}) {
-  const { date } = actionDate(options);
+  const { date, timezone } = actionDate(options);
   const lang = options.lang ?? "zh";
   let state = await loadCreatureState();
+  let pendingSettlementReports = null;
   const recoverVisitorFailure = async (error) => {
     state = await loadCreatureState();
     const conflict = error instanceof StateConflictError;
@@ -776,14 +798,26 @@ async function createContainmentSession(options = {}) {
   return {
     snapshot: deriveTuiSnapshot(state, date, lang),
     actionController: {
-      preview: (actionId, target) =>
-        previewContainmentAction(actionId, { ...options, target }, { state }),
+      preview: (actionId, target) => {
+        pendingSettlementReports =
+          actionId === "settle_today"
+            ? createReportSession(options, timezone)
+            : null;
+        return previewContainmentAction(
+          actionId,
+          { ...options, target },
+          { state, reportSession: pendingSettlementReports },
+        );
+      },
       execute: async (actionId, choice) => {
+        const reportSession =
+          actionId === "settle_today" ? pendingSettlementReports : null;
+        pendingSettlementReports = null;
         try {
           return await executeContainmentAction(
             actionId,
             { ...options, choice },
-            { state },
+            { state, reportSession },
           );
         } catch (error) {
           state = await loadCreatureState();

@@ -18,7 +18,7 @@ Preserve these product rules:
 - Support Node.js 22 or newer using ESM.
 - Keep required runtime dependencies at zero.
 - Native source adapters must be optional, lazy-loaded, read-only, and safely degradable.
-- Stream JSONL inputs; do not load complete Agent histories into memory.
+- Stream JSONL inputs, decode only bounded candidate records, and do not load complete Agent histories into memory.
 - A scanner may parse a local record to reach its usage metadata, but it must never access content fields for product behavior or copy, retain, log, or render prompts, responses, tool-call bodies, project paths, or other conversation content.
 
 ## Read before editing
@@ -33,7 +33,7 @@ Preserve these product rules:
 
 - `bin/anti-ai.mjs` is a minimal launcher.
 - `src/registry.mjs` owns command, card, and source metadata.
-- `src/scanner.mjs` is the stable source-scanning facade; isolated adapters live in `src/infrastructure/sources/`.
+- `src/scanner.mjs` is the stable source-scanning facade; isolated adapters, concurrent orchestration, and request-local report sessions live in `src/infrastructure/sources/`. Never turn request-local reuse into a persistent usage index.
 - `src/core/` owns dependency-light validation, date, and usage primitives.
 - `src/commands/` owns command orchestration.
 - `src/application/` owns presentation-neutral query and action models.
@@ -54,7 +54,7 @@ Preserve these product rules:
 - `src/cli/` and `src/renderers/` own terminal and SVG presentation.
 - `src/tui/app.jsx` owns input orchestration, `src/tui/screens/` owns view components, and `dist/tui.mjs` is generated and must not be edited directly.
 - `src/state-store.mjs` owns validation-aware state loading, backups, locking, and atomic writes.
-- `apps/macos/` is the isolated formal native desktop consumer outside the npm tarball. It may read only `Desktop Snapshot v1` and invoke fixed allowlisted actions through a validated one-shot CLI bridge; it must not import or reimplement Node domain rules, scan Agent logs, or add a daemon. Its Sparkle adapter may access only a signed HTTPS app feed after manual action or explicit opt-in; keep system profiling off, keep private keys out of the repository, and never pass snapshot/gameplay data to updater APIs.
+- `apps/macos/` is the isolated formal native desktop consumer outside the npm tarball. It may read only `Desktop Snapshot v1` and invoke fixed allowlisted actions through a validated one-shot CLI bridge; it must not import or reimplement Node domain rules, scan Agent logs, or add a daemon. Its Sparkle adapter may access only a signed HTTPS app feed after manual action or explicit opt-in; keep system profiling off, keep private keys out of the repository, never pass snapshot/gameplay data to updater APIs, and generate each current item from an isolated current-version archive before merging validated historical feed items without rewriting their URLs.
 
 Avoid runtime import cycles, protected-layer inversions, and source modules over 1,500 lines; `npm run check` enforces all three. Register new public IDs centrally instead of adding duplicate allowlists.
 TUI actions must call application services, never command handlers or arbitrary shell commands. Browsing and cancellation stay read-only; mutations require explicit user input. Irreversible or higher-impact actions use a confirmation screen, while focused Expedition start, advance, and branch keys may execute directly when the keypress itself is the documented confirmation.

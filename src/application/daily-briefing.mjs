@@ -22,19 +22,6 @@ function keyChange(day, lang) {
       target: "overview",
     };
   }
-  const discovery = day.discoveries[0];
-  if (discovery) {
-    return {
-      kind: "collection",
-      label: localized(lang, "收藏变化", "COLLECTION CHANGE"),
-      detail: localized(
-        lang,
-        `新增 ${day.discoveries.length} 项 · ${discovery.label}`,
-        `${day.discoveries.length} new · ${discovery.label}`,
-      ),
-      target: "codex",
-    };
-  }
   const activity = day.activities[0];
   if (activity) {
     return {
@@ -55,6 +42,22 @@ function keyChange(day, lang) {
         `vs yesterday · pollution +${ecology.pollution} · clarity +${ecology.clarity}`,
       ),
       target: "habitat",
+    };
+  }
+  if (day.discoveries.length > 0) {
+    return {
+      kind: "quiet",
+      label: localized(
+        lang,
+        "无其他显著变化",
+        "NO OTHER MATERIAL CHANGE",
+      ),
+      detail: localized(
+        lang,
+        "除下方收藏更新外，今天没有值得追加页码的病理变化。",
+        "Beyond the collection update below, no pathology justified another page today.",
+      ),
+      target: "overview",
     };
   }
   return {

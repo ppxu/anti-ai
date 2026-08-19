@@ -36,6 +36,8 @@ Human-readable output defaults to Simplified Chinese. Pass `--lang en` for Engli
 - **Interfaces:** use the scriptable CLI, interactive Ink TUI, privacy-safe SVG cards, or optional native macOS desktop companion.
 - **Local first:** conversation content stays on your machine. There is no account, telemetry, leaderboard, or background usage index.
 
+Human reports wrap to the current terminal width. On short terminals, the TUI condenses Overview while keeping the daily broadcast, recommendation, area navigation, and Help visible.
+
 ## Requirements
 
 - Node.js 22 or newer
@@ -92,7 +94,7 @@ It reads a deliberately minimal local snapshot rather than Agent logs. It has no
 
 Click the unlocked specimen for a short, non-activating status bubble; drag to move it, or double-click to open the recommended TUI area. The menu keeps status and primary actions visible while display, motion, language, position, and update controls live under **Settings**.
 
-> The v4.1.0 desktop build is ad-hoc signed and not notarized by Apple. Download it only from the [official release](https://github.com/ppxu/anti-ai/releases/tag/v4.1.0); first launch may require **System Settings → Privacy & Security → Open Anyway**.
+> The v4.2.0 desktop build is ad-hoc signed and not notarized by Apple. Download it only from the [official release](https://github.com/ppxu/anti-ai/releases/tag/v4.2.0); first launch may require **System Settings → Privacy & Security → Open Anyway**.
 
 See the [Desktop Companion guide](./docs/desktop.md) for installation, controls, update behavior, and privacy boundaries.
 
